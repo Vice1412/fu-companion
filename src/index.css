@@ -13,6 +13,11 @@
   font-family: 'Fabula Ultima Icons', sans-serif !important;
   font-weight: normal;
   font-style: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 :root {
