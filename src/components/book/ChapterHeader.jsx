@@ -16,7 +16,9 @@ export default function ChapterHeader({
   onExitToCover,
   onOpenDice,
   onBackup,
-  onRestore
+  onRestore,
+  extraLeft = null,
+  extraRight = null
 }) {
   const soundOn = isSoundEnabled();
 
@@ -25,13 +27,15 @@ export default function ChapterHeader({
     onExitToCover();
   };
 
+  const ChapterIcon = chapter?.icon;
+
   return (
-    <header className="border-b border-sky-200 bg-[#e0f2fe]/90 backdrop-blur-md px-3 sm:px-6 py-2.5 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-colors">
+    <header className="border-b border-sky-200 bg-[#e0f2fe]/90 backdrop-blur-md px-3 sm:px-6 py-2 flex items-center justify-between sticky top-0 z-40 shadow-sm transition-colors min-h-[52px]">
       {/* Left: Exit to Book Cover Button */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         <button
           onClick={handleExit}
-          className="group inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 to-cyan-700 hover:from-sky-500 hover:to-cyan-600 text-white shadow-md shadow-sky-950/20 text-xs sm:text-sm font-serif font-bold transition-all hover:scale-105 active:scale-95"
+          className="group inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-sky-400 bg-gradient-to-r from-sky-600 to-cyan-700 hover:from-sky-500 hover:to-cyan-600 text-white shadow-md shadow-sky-950/20 text-xs sm:text-sm font-serif font-bold transition-all hover:scale-105 active:scale-95 shrink-0"
           title="合上當前章節，返回典籍封面目錄以選擇其他功能"
         >
           <GiReturnArrow className="w-4 h-4 text-sky-200 group-hover:-translate-x-0.5 transition-transform" />
@@ -45,25 +49,45 @@ export default function ChapterHeader({
         <div className="hidden sm:block h-6 w-px bg-sky-300" />
 
         {/* Current Chapter Indicator */}
-        <div className="hidden md:flex items-center gap-2">
-          <img
-            src={appIcon}
-            alt="FU Icon"
-            className="w-7 h-7 rounded border border-sky-300 object-contain bg-white p-0.5"
-          />
-          <span className="font-serif font-black text-sm text-slate-800 tracking-wide">
-            {chapter.title}
-          </span>
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {ChapterIcon ? (
+            <span className="p-1.5 rounded-lg bg-amber-100/90 border border-amber-300/80 text-amber-800 shadow-sm flex items-center justify-center shrink-0">
+              <ChapterIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </span>
+          ) : (
+            <img
+              src={appIcon}
+              alt="FU Icon"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded border border-sky-300 object-contain bg-white p-0.5 shrink-0"
+            />
+          )}
+          <div className="flex flex-col justify-center">
+            <span className="font-serif font-black text-base sm:text-lg md:text-xl text-slate-800 tracking-wide leading-none">
+              {chapter.title}
+            </span>
+            {chapter.subtitle && (
+              <span className="text-[10px] sm:text-xs font-serif font-bold text-slate-500 hidden md:inline tracking-wider mt-0.5">
+                {chapter.subtitle}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Extra Left Controls (e.g. Color Theme Selector) */}
+        {extraLeft && (
+          <div className="flex items-center ml-1">
+            {extraLeft}
+          </div>
+        )}
       </div>
 
-      {/* Center on mobile / small screen */}
-      <div className="md:hidden flex items-center text-xs font-serif font-bold text-slate-800">
-        <span className="truncate max-w-[150px] sm:max-w-none">{chapter.title}</span>
-      </div>
+      {/* Right: Extra Right + Quick Tools */}
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
+        {extraRight}
 
-      {/* Right: Quick Tools */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Vertical Divider if extraRight present */}
+        {extraRight && <div className="hidden sm:block h-5 w-px bg-sky-300/70 my-auto mx-0.5" />}
+
         {/* Dice Roller Button in Header */}
         <button
           onClick={onOpenDice}

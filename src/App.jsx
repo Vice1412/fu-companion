@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { GiRollingDices } from 'react-icons/gi';
+import {
+  GiRollingDices,
+  GiDragonHead,
+  GiVisoredHelm,
+  GiSwordClash,
+  GiPocketWatch
+} from 'react-icons/gi';
 import BookCoverHub from './components/book/BookCoverHub';
 import ChapterHeader from './components/book/ChapterHeader';
 import BookPageFlipOverlay from './components/book/BookPageFlipOverlay';
@@ -12,19 +18,24 @@ import DiceRollerModal from './features/dice-roller/DiceRollerModal';
 const CHAPTER_METAS = {
   workshop: {
     id: 'workshop',
-    title: 'NPC工坊'
+    title: 'NPC工坊',
+    subtitle: '管理與檢視您創建的所有自定義 NPC',
+    icon: GiDragonHead
   },
   character: {
     id: 'character',
-    title: '角色卡助手'
+    title: '角色卡助手',
+    icon: GiVisoredHelm
   },
   combat: {
     id: 'combat',
-    title: '戰鬥輪次'
+    title: '戰鬥輪次',
+    icon: GiSwordClash
   },
   clocks: {
     id: 'clocks',
-    title: '命刻記錄'
+    title: '命刻記錄',
+    icon: GiPocketWatch
   }
 };
 
@@ -34,6 +45,8 @@ export default function App() {
   const [transitionState, setTransitionState] = useState(null); // 'opening' | 'closing' | null
   const [targetChapterId, setTargetChapterId] = useState(null);
   const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
+  const [headerExtraLeft, setHeaderExtraLeft] = useState(null);
+  const [headerExtraRight, setHeaderExtraRight] = useState(null);
 
   // Trigger opening page flip to feature
   const handleSelectChapter = (chapterId) => {
@@ -148,12 +161,17 @@ export default function App() {
             onOpenDice={() => setIsDiceModalOpen(true)}
             onBackup={handleFullBackup}
             onRestore={handleFullRestore}
+            extraLeft={activeChapter === 'workshop' ? headerExtraLeft : null}
+            extraRight={activeChapter === 'workshop' ? headerExtraRight : null}
           />
 
           {/* Exclusive Main Body */}
           {activeChapter === 'workshop' ? (
             <main className="flex-1 w-full flex flex-col min-h-0 overflow-hidden">
-              <NPCWorkshop />
+              <NPCWorkshop
+                setHeaderExtraLeft={setHeaderExtraLeft}
+                setHeaderExtraRight={setHeaderExtraRight}
+              />
             </main>
           ) : (
             <>
