@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette } from 'lucide-react';
 import { GiDragonHead } from 'react-icons/gi';
-import modLogo from '../../assets/Fabula Ultima Mod Logo - White Background.png';
 import appIcon from '../../assets/app-icon.png';
 
 import {
@@ -5551,20 +5550,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 ))}
               </div>
             )}
-
-            {/* 第三方授權聲明 (Third-Party License Notice) */}
-            <div className="mt-auto pt-6 border-t border-[#d6c7ab]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-              <div className="text-center space-y-2">
-                <img src={modLogo} alt="FU Mod Logo" className="h-8 object-contain mx-auto opacity-70" />
-                <div className="text-[11px] text-[#6b5a4b] leading-relaxed max-w-2xl mx-auto">
-                  <p><span className="font-bold text-[#3c2415]">FU NPC Builder</span> is an independent production by <span className="font-bold text-[#3c2415]">ScarletVice</span>.</p>
-                  <p>It is not affiliated with Need Games or Rooster Games.</p>
-                  <p>Published under the <a href="https://need.games/wp-content/uploads/2024/06/Fabula-Ultima-Third-Party-Tabletop-License-1.0.pdf" target="_blank" rel="noopener noreferrer" className="text-amber-800 hover:text-amber-700 underline underline-offset-2 transition-colors">Fabula Ultima Third-Party Tabletop License 1.0</a>.</p>
-                  <p>Fabula Ultima is © Emanuele Galletto, Need Games and Rooster Games.</p>
-                  <p className="pt-1">This tool requires the <span className="font-bold text-[#3c2415]">Fabula Ultima Core Rulebook</span> and <span className="font-bold text-[#3c2415]">Fabula Ultima Bestiary vol.1</span>.</p>
-                </div>
-              </div>
-            </div>
 
           </div>
         </div>

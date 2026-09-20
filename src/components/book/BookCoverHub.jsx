@@ -14,6 +14,7 @@ import {
   GiPlainArrow
 } from 'react-icons/gi';
 import appIcon from '../../assets/app-icon.png';
+import modLogo from '../../assets/Fabula Ultima Mod Logo - White Background.png';
 import { isSoundEnabled, toggleSoundEnabled, playPageFlipSound } from '../../utils/soundEffects';
 
 export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, onRestore, isOpening }) {
@@ -277,10 +278,25 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
         <div className="hidden md:block w-3 shrink-0 book-pages-edge-right border-l border-sky-800/40" />
       </div>
 
-      {/* Bottom Subtle Copyright Note */}
-      <div className="mt-4 text-center text-[11px] text-sky-900/80 font-serif">
-        FU Companion 《物語助手》 · 純前端零伺服器架構 · 數據即時保存於瀏覽器
-      </div>
+      {/* 第三方授權聲明 (Third-Party License Notice) */}
+      <footer 
+        className={`w-full max-w-2xl mx-auto mt-6 mb-2 text-center space-y-2 z-10 transition-opacity duration-300 ${
+          isOpening ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+        style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+      >
+        <img src={modLogo} alt="Fabula Ultima Mod Logo" className="h-7 object-contain mx-auto opacity-75" />
+        <div className="text-[11px] text-slate-600 leading-relaxed">
+          <p><span className="font-bold text-slate-800">FU Companion</span> is an independent production (developed with assistance from Antigravity) by <span className="font-bold text-slate-800">ScarletVice</span>.</p>
+          <p>It is not affiliated with Need Games or Rooster Games.</p>
+          <p>Published under the <a href="https://need.games/wp-content/uploads/2024/06/Fabula-Ultima-Third-Party-Tabletop-License-1.0.pdf" target="_blank" rel="noopener noreferrer" className="text-sky-800 hover:text-sky-600 underline underline-offset-2 transition-colors">Fabula Ultima Third-Party Tabletop License 1.0</a>.</p>
+          <p>Fabula Ultima is &copy; Emanuele Galletto, Need Games and Rooster Games.</p>
+          <p>This tool requires the <span className="font-bold text-slate-800">Fabula Ultima Core Rulebook</span>.</p>
+        </div>
+        <div className="text-[10px] text-sky-900/60 font-serif pt-1">
+          FU Companion 《物語助手》 · 純前端零伺服器架構 · 數據即時保存於瀏覽器
+        </div>
+      </footer>
     </div>
   );
 }

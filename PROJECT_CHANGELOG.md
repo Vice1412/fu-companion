@@ -83,5 +83,18 @@
 - **建置驗證**：
   - 通過 `npm run build` 完整打包編譯無警告。
 
+### [2026-09-20] - 第三方授權聲明遷移至首頁封面與聲明內容更新
+- **授權聲明外移 (Relocate License Notice to Cover Hub)**：
+  - 將原本位於 NPC 工坊存檔庫底部的第三方授權聲明（Third-Party License Notice）自工坊內徹底移除。
+  - 將其外移至網站主入口封面（`BookCoverHub.jsx`）底部，作為整站全域的官方授權聲明。
+- **聲明內容規範與技術標註更新**：
+  - 專案名稱由 `FU NPC Builder` 改為 `FU Companion`。
+  - 於 `production` 處新增 Google Antigravity 輔助開發標註：`(developed with assistance from Antigravity)`。
+  - 移除原先對 Bestiary vol.1 的引用，調整為僅引用核心規則書：`This tool requires the Fabula Ultima Core Rulebook.`。
+  - 動效融合：開書動畫觸發時，該聲明區塊隨封面 UI 平滑淡出（`isOpening` 同步漸隱），維持沉浸式翻頁視覺。
+- **建置驗證**：
+  - 通過 `npm run build` 完整打包編譯無警告。
+
+
 
 
