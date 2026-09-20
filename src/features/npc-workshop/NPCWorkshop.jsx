@@ -863,7 +863,23 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
             {skill.attack && (
               <div className="bg-[#f8f3e6] border border-[#e2d6c1] p-2 my-1 rounded text-sm">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
-                  <span className="text-blue-900 font-bold"><span className="text-[#3c2f21] bg-[#e8dec8] px-1 rounded mr-1">[{renderFormattedText(skill.attack.distance, skill.selections, npcLevel, partyLevel)}]</span>{renderFormattedText(skill.attack.formula, skill.selections, npcLevel, partyLevel)}</span><span className="text-stone-400 text-xs">✦</span><span className="text-red-800 font-bold">[HR + {skill.attack.baseDmg}] {renderFormattedText(skill.attack.type, skill.selections, npcLevel, partyLevel)}傷害</span>
+                  <span className="text-blue-900 font-bold">
+                    <span className="text-[#3c2f21] bg-[#e8dec8] px-1.5 py-0.5 rounded mr-1 inline-flex items-center gap-1">
+                      <span className="fu-icon text-sm leading-none">{skill.attack.distance?.includes('遠程') ? 'r' : 'm'}</span>
+                      [{renderFormattedText(skill.attack.distance, skill.selections, npcLevel, partyLevel)}]
+                    </span>
+                    {renderFormattedText(skill.attack.formula, skill.selections, npcLevel, partyLevel)}
+                  </span>
+                  <span className="text-stone-400 text-xs">✦</span>
+                  <span className="text-red-800 font-bold">
+                    [HR + {skill.attack.baseDmg}]{' '}
+                    {TYPE_STYLES[skill.attack.type]?.fuIcon && (
+                      <span className={`fu-icon text-sm mr-0.5 ${TYPE_STYLES[skill.attack.type]?.color || ''}`}>
+                        {TYPE_STYLES[skill.attack.type]?.fuIcon}
+                      </span>
+                    )}
+                    {renderFormattedText(skill.attack.type, skill.selections, npcLevel, partyLevel)}傷害
+                  </span>
                 </div>
                 {displayExtra && <div className="text-[#574c43] mt-1 text-xs border-t border-[#d6c7ab]/60 pt-1 whitespace-pre-wrap">{renderFormattedText(displayExtra, skill.selections, npcLevel, partyLevel)}</div>}
               </div>
@@ -996,8 +1012,23 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
       {skill.attack && (
         <div className={`bg-[#fffdf9] border-l-4 p-2.5 my-1 text-sm ml-2 md:ml-4 rounded-r border border-stone-200 shadow-sm ${skill.isSecretArt ? 'border-l-fuchsia-600' : skill.category === 'boss' ? 'border-l-amber-600' : 'border-l-red-700'}`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-blue-900 font-bold"><span className="text-stone-900">[{renderFormattedText(replacedDist, skill.selections, npcLevel, partyLevel, true)}]</span> {renderFormattedText(replacedForm, skill.selections, npcLevel, partyLevel, true)} {finalStats.Acc !== 0 && <span className="text-amber-700 font-bold">{finalStats.Acc > 0 ? `+ ${finalStats.Acc}` : `- ${Math.abs(finalStats.Acc)}`}</span>}</span>
-            <span className="text-stone-400 text-xs">✦</span><span className="text-red-900 font-bold">[HR + <span className="font-extrabold">{skill.attack.baseDmg + finalStats.Dmg}</span>] {renderFormattedText(replacedType, skill.selections, npcLevel, partyLevel, true)}傷害</span>
+            <span className="text-blue-900 font-bold">
+              <span className="text-stone-900 inline-flex items-center gap-1 mr-1">
+                <span className="fu-icon text-sm leading-none">{String(replacedDist).includes('遠程') ? 'r' : 'm'}</span>
+                [{renderFormattedText(replacedDist, skill.selections, npcLevel, partyLevel, true)}]
+              </span>
+              {renderFormattedText(replacedForm, skill.selections, npcLevel, partyLevel, true)} {finalStats.Acc !== 0 && <span className="text-amber-700 font-bold">{finalStats.Acc > 0 ? `+ ${finalStats.Acc}` : `- ${Math.abs(finalStats.Acc)}`}</span>}
+            </span>
+            <span className="text-stone-400 text-xs">✦</span>
+            <span className="text-red-900 font-bold">
+              [HR + <span className="font-extrabold">{skill.attack.baseDmg + finalStats.Dmg}</span>]{' '}
+              {TYPE_STYLES[replacedType]?.fuIcon && (
+                <span className={`fu-icon text-sm mr-0.5 ${TYPE_STYLES[replacedType]?.color || ''}`}>
+                  {TYPE_STYLES[replacedType]?.fuIcon}
+                </span>
+              )}
+              {renderFormattedText(replacedType, skill.selections, npcLevel, partyLevel, true)}傷害
+            </span>
           </div>
           {replacedExtra && <div className="text-stone-700 mt-1.5 pt-1.5 border-t border-stone-200 leading-relaxed text-xs whitespace-pre-wrap">{renderFormattedText(replacedExtra, skill.selections, npcLevel, partyLevel, true)}</div>}
         </div>
@@ -3168,13 +3199,25 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
 
             <div className="flex flex-col lg:flex-row gap-4 mb-5 border p-4 justify-between lg:items-center shadow-sm rounded-lg transition-colors duration-300" style={{ backgroundColor: currentTheme.subpanelBg, borderColor: currentTheme.border }}>
               <div className="flex gap-6 justify-center lg:justify-start border-b lg:border-b-0 border-[#e2d6c1] pb-3 lg:pb-0">
-                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">HP</span><span className="text-2xl font-bold text-red-700 drop-shadow-sm">{finalStats.HP}</span></div><div className="w-px bg-[#d6c7ab]"></div>
-                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">MP</span><span className="text-2xl font-bold text-blue-700 drop-shadow-sm">{finalStats.MP}</span></div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">HP</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-red-700 drop-shadow-sm">{finalStats.HP}</span>
+                    <span className="text-xs font-bold text-red-800/90 bg-red-100/80 border border-red-300/80 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs" title={`危機生命值 (Crisis Threshold ≤ ${Math.floor(finalStats.HP / 2)})`}>
+                      <span className="fu-icon text-sm leading-none">w</span> {Math.floor(finalStats.HP / 2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="w-px bg-[#d6c7ab]"></div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">MP</span>
+                  <span className="text-2xl font-bold text-blue-700 drop-shadow-sm">{finalStats.MP}</span>
+                </div>
               </div>
               <div className="flex gap-4 sm:gap-6 justify-center lg:justify-end flex-wrap">
-                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">先攻</span><span className="text-2xl font-bold text-amber-700 drop-shadow-sm">{isRevealed('stats') ? finalStats.Init : '??'}</span></div><div className="w-px bg-[#d6c7ab]"></div>
-                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">物防</span><span className="text-xl sm:text-2xl font-bold text-[#2c221e] drop-shadow-sm mt-auto">{isRevealed('stats') ? finalStats.Def : '??'}</span></div><div className="w-px bg-[#d6c7ab]"></div>
-                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">魔防</span><span className="text-xl sm:text-2xl font-bold text-purple-800 drop-shadow-sm mt-auto">{isRevealed('stats') ? finalStats.MDef : '??'}</span></div>
+                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">先攻 INIT</span><span className="text-2xl font-bold text-amber-700 drop-shadow-sm">{isRevealed('stats') ? finalStats.Init : '??'}</span></div><div className="w-px bg-[#d6c7ab]"></div>
+                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">物防 DEF</span><span className="text-xl sm:text-2xl font-bold text-[#2c221e] drop-shadow-sm mt-auto">{isRevealed('stats') ? finalStats.Def : '??'}</span></div><div className="w-px bg-[#d6c7ab]"></div>
+                <div className="flex flex-col items-center"><span className="text-xs text-[#7c6a58] font-bold mb-1 tracking-widest">魔防 M.DEF</span><span className="text-xl sm:text-2xl font-bold text-purple-800 drop-shadow-sm mt-auto">{isRevealed('stats') ? finalStats.MDef : '??'}</span></div>
               </div>
             </div>
 
@@ -3287,7 +3330,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <>
                 {groupedSkills.attack.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">{CATEGORIES.find(c => c.id === 'attack')?.fuIcon || 'a'}</span> 基本攻擊與技能</h3>
+                    <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">m</span> 基本攻擊 (BASIC ATTACKS)</h3>
                     <div className="flex flex-col gap-3 mb-4 ml-2">
                       {groupedSkills.attack.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
@@ -3297,7 +3340,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 )}
                 {(finalStats.spellList.length > 0 || groupedSkills.spell.length > 0) && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span> 咒語</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">c</span> 咒語 (SPELLS)</h3>
                       {finalStats.spellList.length > 0 && (
                         <div className="flex flex-col gap-3 mb-4 ml-2">
                           {finalStats.spellList.map((spellObj, i) => {
@@ -3390,7 +3433,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 <>
                   {groupedSkills.action.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}>⚡ 其餘行動</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">s</span> 其餘行動 (OTHER ACTIONS)</h3>
                       {groupedSkills.action.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
                       ))}
@@ -3398,7 +3441,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                   )}
                   {groupedSkills.rule.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}>📜 特殊規則</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="text-lg">📜</span> 特殊規則 (SPECIAL RULES)</h3>
                       {groupedSkills.rule.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
                       ))}
@@ -3436,7 +3479,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       if (isRevealed('stats')) {
         if (state.traits) text += `*特質: ${state.traits}*\n`;
         text += `\`DEX d${stats.DEX.replace('d','')} | INS d${stats.INS.replace('d','')} | MIG d${stats.MIG.replace('d','')} | WLP d${stats.WLP.replace('d','')}\`\n`;
-        text += `\`HP ${stats.HP} | MP ${stats.MP} | 先攻 ${stats.Init} | 物防 ${stats.Def} | 魔防 ${stats.MDef}\`\n`;
+        text += `\`HP ${stats.HP} (危機 ${Math.floor(stats.HP / 2)}) | MP ${stats.MP} | 先攻 ${stats.Init} | 物防 DEF ${stats.Def} | 魔防 M.DEF ${stats.MDef}\`\n`;
         let affs = [];
         DAMAGE_TYPES.forEach(t => {
           const aff = mergedAffinities[t];
@@ -3449,12 +3492,12 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         if (stats.statusImmunities.length > 0) text += `*異常免疫*: ${stats.statusImmunities.join(', ')}\n`;
         text += `\n`;
       } else {
-        text += `\`HP ${stats.HP} | MP ${stats.MP} | 先攻 ?? | 物防 ?? | 魔防 ??\`\n\n`;
+        text += `\`HP ${stats.HP} (危機 ${Math.floor(stats.HP / 2)}) | MP ${stats.MP} | 先攻 ?? | 物防 DEF ?? | 魔防 M.DEF ??\`\n\n`;
       }
 
       if (isRevealed('combat')) {
         if (stats.spellList && stats.spellList.length > 0) {
-          text += `**🔮 咒語**\n`;
+          text += `**🔮 咒語 (SPELLS)**\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3476,7 +3519,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
           });
         }
 
-        text += `**⚔️ 技能與行動**\n`;
+        text += `**⚔️ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS)**\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
@@ -3497,7 +3540,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       if (isRevealed('stats')) {
         if (state.traits) text += `特質: ${state.traits}\n`;
         text += `DEX d${stats.DEX.replace('d','')} | INS d${stats.INS.replace('d','')} | MIG d${stats.MIG.replace('d','')} | WLP d${stats.WLP.replace('d','')}\n`;
-        text += `HP: ${stats.HP} | MP: ${stats.MP} | 先攻: ${stats.Init} | 物防: ${stats.Def} | 魔防: ${stats.MDef}\n`;
+        text += `HP: ${stats.HP} (危機: ${Math.floor(stats.HP / 2)}) | MP: ${stats.MP} | 先攻 INIT: ${stats.Init} | 物防 DEF: ${stats.Def} | 魔防 M.DEF: ${stats.MDef}\n`;
         DAMAGE_TYPES.forEach(t => {
           const aff = mergedAffinities[t];
           if (aff && aff !== 'normal') {
@@ -3510,7 +3553,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       }
       if (isRevealed('combat')) {
         if (stats.spellList && stats.spellList.length > 0) {
-          text += `[ 咒語 ]\n`;
+          text += `[ 咒語 (SPELLS) ]\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3524,7 +3567,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
           });
           text += `\n`;
         }
-        text += `[ 技能與行動 ]\n`;
+        text += `[ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS) ]\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
@@ -3543,7 +3586,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       if (isRevealed('stats')) {
         if (state.traits) md += `*特質: ${state.traits}*\n`;
         md += `\n**DEX ${stats.DEX.startsWith('d') ? stats.DEX : 'd' + stats.DEX} | INS ${stats.INS.startsWith('d') ? stats.INS : 'd' + stats.INS} | MIG ${stats.MIG.startsWith('d') ? stats.MIG : 'd' + stats.MIG} | WLP ${stats.WLP.startsWith('d') ? stats.WLP : 'd' + stats.WLP}**\n`;
-        md += `**HP: ${stats.HP} | MP: ${stats.MP} | 先攻: ${stats.Init} | 物防: ${stats.Def} | 魔防: ${stats.MDef}**\n\n`;
+        md += `**HP: ${stats.HP} (危機 ${Math.floor(stats.HP / 2)}) | MP: ${stats.MP} | 先攻: ${stats.Init} | 物防 DEF: ${stats.Def} | 魔防 M.DEF: ${stats.MDef}**\n\n`;
 
         let affStr = "";
         DAMAGE_TYPES.forEach(t => {
@@ -3557,7 +3600,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         if (stats.statusImmunities.length > 0) md += `* 異常免疫: ${stats.statusImmunities.join('、')}\n`;
         md += `\n`;
       } else {
-        md += `**HP: ${stats.HP} | MP: ${stats.MP} | 先攻: ?? | 物防: ?? | 魔防: ??**\n\n`;
+        md += `**HP: ${stats.HP} (危機 ${Math.floor(stats.HP / 2)}) | MP: ${stats.MP} | 先攻: ?? | 物防 DEF: ?? | 魔防 M.DEF: ??**\n\n`;
       }
 
       if (revealLevel === 'full' && (state.selectedNegativeSkills || []).length > 0) {
@@ -3575,7 +3618,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         const validNpcName = state.name && state.name.trim() !== "" && state.name !== "未知實體" ? state.name.trim() : null;
 
         if (stats.spellList && stats.spellList.length > 0) {
-          md += `#### 🔮 咒語\n`;
+          md += `#### 🔮 咒語 (SPELLS)\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3616,7 +3659,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
           });
         }
 
-        md += `#### ⚔️ 技能與行動\n`;
+        md += `#### ⚔️ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS)\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let rawName = s.customName || s.originalName;

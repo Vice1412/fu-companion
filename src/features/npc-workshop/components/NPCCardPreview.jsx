@@ -130,8 +130,8 @@ export default function NPCCardPreview({
           </div>
           <div className="text-base font-mono font-black text-red-900 mt-0.5">
             {maxHp}
-            <span className="text-[10px] text-red-700 ml-1.5 font-normal">
-              (危機 ≤{crisisHp})
+            <span className="text-[10px] text-red-700 ml-1.5 font-bold inline-flex items-center gap-0.5" title={`危機值 ≤${crisisHp}`}>
+              <span className="fu-icon text-xs leading-none">w</span> {crisisHp}
             </span>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function NPCCardPreview({
         {/* Def */}
         <div className="bg-[#fef3c7] rounded-lg p-2.5 border border-[#fcd34d]">
           <div className="text-[10px] text-amber-900 font-mono uppercase font-bold flex items-center gap-1">
-            <Shield className="w-3 h-3 text-amber-700" /> 物理防禦
+            <Shield className="w-3 h-3 text-amber-700" /> 物防 DEF
           </div>
           <div className="text-base font-mono font-black text-amber-950 mt-0.5">
             {stats.Def}
@@ -159,7 +159,7 @@ export default function NPCCardPreview({
         {/* Magic Def & Initiative */}
         <div className="bg-[#ede9fe] rounded-lg p-2.5 border border-[#ddd6fe]">
           <div className="text-[10px] text-purple-900 font-mono uppercase font-bold flex items-center gap-1">
-            <Zap className="w-3 h-3 text-purple-700" /> 魔防 / 先攻
+            <Zap className="w-3 h-3 text-purple-700" /> 魔防 M.DEF / 先攻 INIT
           </div>
           <div className="text-base font-mono font-black text-purple-950 mt-0.5">
             {stats.MDef} <span className="text-xs text-stone-500 font-normal">/</span> +{stats.Init}
@@ -219,7 +219,7 @@ export default function NPCCardPreview({
         {attacks.length > 0 && (
           <div>
             <h4 className="text-xs font-mono font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <Swords className="w-3.5 h-3.5 text-amber-700" /> 基礎攻擊 (Attacks)
+              <span className="fu-icon text-sm">m</span> 基本攻擊 (BASIC ATTACKS)
             </h4>
             <div className="space-y-2">
               {attacks.map((att, idx) => {
@@ -229,7 +229,8 @@ export default function NPCCardPreview({
                   <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                     <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
                       <span>⚔️ {att.name || att.skillName || '普通攻擊'}</span>
-                      <span className="text-[11px] font-mono text-stone-600">
+                      <span className="text-[11px] font-mono text-stone-600 inline-flex items-center gap-1">
+                        <span className="fu-icon text-xs leading-none">{(att.selections?.distance || '').includes('遠程') ? 'r' : 'm'}</span>
                         [{att.selections?.distance || '近戰'}] 【{att.selections?.formula || 'DEX + MIG'}】+ {stats.Acc || 0}
                       </span>
                     </div>
@@ -248,7 +249,7 @@ export default function NPCCardPreview({
         {spells.length > 0 && (
           <div>
             <h4 className="text-xs font-mono font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-700" /> 咒語 (Spells)
+              <span className="fu-icon text-sm">c</span> 咒語 (SPELLS)
             </h4>
             <div className="space-y-2">
               {spells.map((sp, idx) => (
@@ -268,17 +269,45 @@ export default function NPCCardPreview({
           </div>
         )}
 
-        {/* Boss Skills, Negative Skills & Special Rules */}
-        {(bossSkills.length > 0 || rules.length > 0 || otherActions.length > 0) && (
+        {/* Other Actions */}
+        {otherActions.length > 0 && (
           <div>
-            <h4 className="text-xs font-mono font-bold text-red-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <Skull className="w-3.5 h-3.5 text-red-700" /> 特殊能力、Boss 絕技與負面技能
+            <h4 className="text-xs font-mono font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
+              <span className="fu-icon text-sm">s</span> 其餘行動 (OTHER ACTIONS)
             </h4>
             <div className="space-y-2">
-              {[...bossSkills, ...rules, ...otherActions].filter(sk => !sk.hideInPreview).map((sk, idx) => {
-                let badgeLabel = '特殊能力';
+              {otherActions.filter(sk => !sk.hideInPreview).map((sk, idx) => {
+                const nameText = sk.name || sk.originalName || sk.skillName || '行動';
+                const descText = sk.desc || sk.originalDesc || sk.customDesc || '';
+                return (
+                  <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
+                    <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
+                      <span>⚡ {nameText}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-[#eee6d3] text-[#3c2f21] border-[#d6c7ab]">
+                        行動
+                      </span>
+                    </div>
+                    <p className="text-[#3c2f21] leading-relaxed font-sans">
+                      {renderDescription(descText, sk.selections)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Boss Skills, Negative Skills & Special Rules */}
+        {(bossSkills.length > 0 || rules.length > 0) && (
+          <div>
+            <h4 className="text-xs font-mono font-bold text-red-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
+              <span>📜</span> 特殊規則 (SPECIAL RULES)
+            </h4>
+            <div className="space-y-2">
+              {[...bossSkills, ...rules].filter(sk => !sk.hideInPreview).map((sk, idx) => {
+                let badgeLabel = '特殊規則';
                 let badgeClass = 'bg-[#eee6d3] text-[#3c2f21] border-[#d6c7ab]';
-                let icon = '⚡';
+                let icon = '📜';
 
                 if (sk.source === 'customization') {
                   badgeLabel = '客製化';

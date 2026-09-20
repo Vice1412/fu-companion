@@ -13,14 +13,14 @@ export const SPONSOR_CONFIG = {
   authorName: "ScarletVice",
 };
 
-export const DAMAGE_TYPES = ['風', '電', '暗', '土', '火', '冰', '光', '物理', '毒'];
+export const DAMAGE_TYPES = ['物理', '風', '電', '暗', '土', '火', '冰', '光', '毒'];
 export const DAMAGE_TYPES_NO_PHYS = ['風', '電', '暗', '土', '火', '冰', '光', '毒'];
 export const AFFINITY_STATES = { normal: { label: '一般', bg: 'bg-stone-100', border: 'border-stone-300', text: 'text-stone-700' }, vul: { label: '弱點', bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-900 font-bold' }, res: { label: '抗性', bg: 'bg-amber-100', border: 'border-amber-400', text: 'text-amber-950 font-bold' }, imm: { label: '免疫', bg: 'bg-sky-100', border: 'border-sky-400', text: 'text-sky-900 font-bold' }, abs: { label: '吸收', bg: 'bg-emerald-100', border: 'border-emerald-400', text: 'text-emerald-900 font-bold' } };
 export const LEVELS = [5, 10, 20, 30, 40, 50, 60];
 export const PARTY_LEVELS = [5, 20, 40];
 export const RANKS = ["士兵", "精英", "冠位"];
-export const CATEGORIES = [{ id: 'attack', name: '攻擊', icon: '⚔️', fuIcon: 'm' }, { id: 'spell', name: '咒語', icon: '🔮', fuIcon: 'c' }, { id: 'action', name: '其餘行動', icon: '⚡' }, { id: 'rule', name: '特殊規則', icon: '📜' }, { id: 'boss', name: 'Boss', icon: '👑' }];
-export const TYPE_STYLES = { '風': { emoji: '🌪️', fuIcon: 'a', color: 'text-cyan-700 font-bold' }, '電': { emoji: '⚡', fuIcon: 'b', color: 'text-amber-600 font-bold' }, '暗': { emoji: '🌑', fuIcon: 'd', color: 'text-indigo-950 font-bold' }, '土': { emoji: '🏔️', fuIcon: 'e', color: 'text-amber-800 font-bold' }, '火': { emoji: '🔥', fuIcon: 'f', color: 'text-red-700 font-bold' }, '冰': { emoji: '❄️', fuIcon: 'i', color: 'text-blue-700 font-bold' }, '光': { emoji: '☀️', fuIcon: 'l', color: 'text-amber-600 font-bold' }, '物理': { emoji: '⚔️', fuIcon: 'p', color: 'text-stone-700 font-bold' }, '毒': { emoji: '☠️', fuIcon: 't', color: 'text-fuchsia-800 font-bold' }, '攻擊性咒語': { emoji: '💥', fuIcon: 'o', color: 'text-red-700 font-bold' } };
+export const CATEGORIES = [{ id: 'attack', name: '基本攻擊', icon: '⚔️', fuIcon: 'm' }, { id: 'spell', name: '咒語', icon: '🔮', fuIcon: 'c' }, { id: 'action', name: '其餘行動', icon: '⚡', fuIcon: 's' }, { id: 'rule', name: '特殊規則', icon: '📜' }, { id: 'boss', name: 'Boss', icon: '👑' }];
+export const TYPE_STYLES = { '物理': { emoji: '⚔️', fuIcon: 'p', color: 'text-stone-700 font-bold' }, '風': { emoji: '🌪️', fuIcon: 'a', color: 'text-cyan-700 font-bold' }, '電': { emoji: '⚡', fuIcon: 'b', color: 'text-amber-600 font-bold' }, '暗': { emoji: '🌑', fuIcon: 'd', color: 'text-indigo-950 font-bold' }, '土': { emoji: '🏔️', fuIcon: 'e', color: 'text-amber-800 font-bold' }, '火': { emoji: '🔥', fuIcon: 'f', color: 'text-red-700 font-bold' }, '冰': { emoji: '❄️', fuIcon: 'i', color: 'text-blue-700 font-bold' }, '光': { emoji: '☀️', fuIcon: 'l', color: 'text-amber-600 font-bold' }, '毒': { emoji: '☠️', fuIcon: 't', color: 'text-fuchsia-800 font-bold' }, '攻擊性咒語': { emoji: '💥', fuIcon: 'o', color: 'text-red-700 font-bold' } };
 export const STATUS_OPTIONS = ["眩暈", "動搖", "緩慢", "虛弱"]; export const STATUS_AND_POISON = ["眩暈", "動搖", "緩慢", "虛弱", "中毒", "憤怒"]; export const ACTION_TYPES = ["攻擊", "裝備", "防禦", "阻礙", "使用庫存", "推進目標", "咒語", "研究", "技能"];
 
 export const ROLE_ICONS = {

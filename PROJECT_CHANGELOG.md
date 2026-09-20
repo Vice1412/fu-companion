@@ -92,9 +92,26 @@
   - 於 `production` 處新增 Google Antigravity 輔助開發標註：`(developed with assistance from Antigravity)`。
   - 移除原先對 Bestiary vol.1 的引用，調整為僅引用核心規則書：`This tool requires the Fabula Ultima Core Rulebook.`。
   - 動效融合：開書動畫觸發時，該聲明區塊隨封面 UI 平滑淡出（`isOpening` 同步漸隱），維持沉浸式翻頁視覺。
+### [2026-09-20] - NPC 工坊全面對齊官方 Style Guide 規範 (Page 11)
+- **官方風格指南對齊 (Fabula Ultima Third-Party License Style Guide Alignment)**：
+  - 下載並深入對照官方最新發佈之風格手冊（Page 11 "WRITING NPC PROFILES"），針對 NPC 數據區塊（Statblock）與技能類別實施規範化修改。
+- **屬性相性順序標準化 (Canonical Affinity Order `p a b d e f i l t`)**：
+  - 將原本順序倒置（物理排在倒數第二）的 `DAMAGE_TYPES` 嚴格修訂為官方標準核心九相順序：
+    - `物理` (p)、`風` (a)、`電` (b)、`暗` (d)、`土` (e)、`火` (f)、`冰` (i)、`光` (l)、`毒` (t)。
+  - 連帶修訂 `NPCWorkshop.jsx` 預覽分類、`NPCCardPreview.jsx` 抗性矩陣、`constants.js` 與 `NPCBuilder.jsx` 步驟 4 的抗性循環排列順序。
+- **生命值危機臨界值標準指示符 (`HP X w X`)**：
+  - 角色卡核心資源區於 HP 旁增加官方 Crisis 專屬圖標（來自 `FabulaUltimaIcons-Regular.otf` 之 `w` 字符）與數值標記：`w Math.floor(HP / 2)`。
+  - 同步更新即時預覽、角色卡預覽（`NPCCardPreview.jsx`）與 Discord / Plain / Markdown 複製格式（`HP X (危機 X)`）。
+- **防禦與先攻專用術語規範 (`DEF`, `M.DEF`, `INIT`)**：
+  - 依風格指南縮寫規範，防禦與先攻表頭嚴格對齊為 `物防 DEF`、`魔防 M.DEF`、`先攻 INIT`。
+- **攻擊射程專用符號與傷害屬性圖示 (`m` Melee / `r` Ranged)**：
+  - 基本攻擊欄位前方全面內嵌官方武器射程字型字符：近戰攻擊標註 `m`（近戰標記）、遠程攻擊標註 `r`（遠程標記）。
+  - 傷害類型標籤前補齊屬性官方符號（如物理 `p`、火 `f`、冰 `i`、電 `b` 等）。
+- **NPC 技能動作分類規範化 (Four Canonical Action Categories)**：
+  - 依手冊第 11 頁標準四大分類嚴格統一標題與符號：
+    - **基本攻擊 (BASIC ATTACKS)**：配備 `m` 官方近戰圖標。
+    - **咒語 (SPELLS)**：配備 `c` 官方咒語圖標與 `o` 攻擊性咒語圖標。
+    - **其餘行動 (OTHER ACTIONS)**：配備 `s` 官方行動圖標。
+    - **特殊規則 (SPECIAL RULES)**：配備 `📜` 典籍規則圖標。
 - **建置驗證**：
-  - 通過 `npm run build` 完整打包編譯無警告。
-
-
-
-
+  - 通過 Vite Production Build (`npm run build`)，零錯誤、零警告。
