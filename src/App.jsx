@@ -54,10 +54,10 @@ export default function App() {
     setTargetChapterId(chapterId);
     setTransitionState('opening');
 
-    // Page flip timing: at 700ms switch views, overlay completes at 850ms
+    // Page flip timing: at 550ms switch views while overlay page is wide open
     setTimeout(() => {
       setActiveChapter(chapterId);
-    }, 600);
+    }, 550);
 
     setTimeout(() => {
       setTransitionState(null);
@@ -70,10 +70,10 @@ export default function App() {
     if (transitionState) return;
     setTransitionState('closing');
 
-    // Page flip timing: at 500ms switch view back to cover
+    // Page flip timing: at 380ms switch view back to cover so it fades in smoothly under the closing book
     setTimeout(() => {
       setActiveChapter(null);
-    }, 500);
+    }, 380);
 
     setTimeout(() => {
       setTransitionState(null);
@@ -141,19 +141,34 @@ export default function App() {
 
       {/* Screen 1: The Book Cover Hub (書的封面入口頁) */}
       {!activeChapter && (
-        <div className={`flex-1 flex flex-col ${transitionState === 'closing' ? 'animate-page-dissolve-in' : ''}`}>
+        <div
+          className={`flex-1 flex flex-col transition-all duration-500 ease-out ${
+            transitionState === 'opening'
+              ? 'opacity-0 scale-[0.96] pointer-events-none'
+              : transitionState === 'closing'
+              ? 'animate-page-dissolve-in'
+              : 'opacity-100 scale-100'
+          }`}
+        >
           <BookCoverHub
             onSelectChapter={handleSelectChapter}
             onOpenDice={() => setIsDiceModalOpen(true)}
             onBackup={handleFullBackup}
             onRestore={handleFullRestore}
+            isOpening={transitionState === 'opening'}
           />
         </div>
       )}
 
       {/* Screen 2: The Exclusive Chapter Workspace (點擊後完全呈現該功能) */}
       {activeChapter && currentMeta && (
-        <div className="flex-1 flex flex-col animate-page-dissolve-in">
+        <div
+          className={`flex-1 flex flex-col ${
+            transitionState === 'closing'
+              ? 'opacity-0 scale-[0.98] transition-all duration-350 ease-out pointer-events-none'
+              : 'animate-page-dissolve-in'
+          }`}
+        >
           {/* Dedicated Chapter Header with Exit to Cover */}
           <ChapterHeader
             chapter={currentMeta}
