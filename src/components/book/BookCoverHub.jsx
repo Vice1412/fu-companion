@@ -16,7 +16,7 @@ import {
 import appIcon from '../../assets/app-icon.png';
 import { isSoundEnabled, toggleSoundEnabled, playPageFlipSound } from '../../utils/soundEffects';
 
-export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, onRestore }) {
+export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, onRestore, isOpening }) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [hoveredChapter, setHoveredChapter] = useState(null);
 
@@ -85,7 +85,9 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
       <div className="absolute bottom-12 right-12 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Utility Ribbon (Sound toggle, backup, restore) */}
-      <div className="w-full max-w-5xl flex items-center justify-between py-2 px-2 z-20 mb-3 text-xs text-[#475569]">
+      <div className={`w-full max-w-5xl flex items-center justify-between py-2 px-2 z-20 mb-3 text-xs text-[#475569] transition-opacity duration-300 ${
+        isOpening ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/80 border border-sky-300 text-sky-900 font-serif tracking-wider shadow-sm backdrop-blur-sm">
             <GiSparkles className="w-4 h-4 text-sky-600" />
@@ -124,8 +126,10 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
         </div>
       </div>
 
-      {/* Main Grimoire Book Body */}
-      <div className="relative w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col md:flex-row book-cover-leather border border-sky-400/50 overflow-hidden z-10 transition-all duration-300">
+      {/* Main Grimoire Book Body (點擊進入時優雅漸隱，絕不出現兩本書重疊) */}
+      <div className={`relative w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col md:flex-row book-cover-leather border border-sky-400/50 overflow-hidden z-10 transition-all duration-500 ease-out ${
+        isOpening ? 'opacity-0 scale-[0.96] pointer-events-none' : 'opacity-100 scale-100'
+      }`}>
         
         {/* Left Book Spine (書脊立體構造) */}
         <div className="hidden md:flex w-16 shrink-0 book-spine-gradient flex-col items-center justify-between py-8 border-r border-sky-800/40 relative shadow-2xl">
