@@ -1,0 +1,94 @@
+import React from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function JRPGInput({
+  label,
+  error,
+  type = 'text',
+  className = '',
+  wrapperClassName = '',
+  icon: Icon,
+  ...props
+}) {
+  return (
+    <div className={twMerge(clsx("flex flex-col gap-1.5", wrapperClassName))}>
+      {label && (
+        <label className="text-xs font-bold text-[#3c2f21] flex items-center justify-between">
+          <span>{label}</span>
+        </label>
+      )}
+      <div className="relative flex items-center">
+        {Icon && (
+          <div className="absolute left-3 text-[#8c7b6c] pointer-events-none">
+            <Icon className="w-4 h-4" />
+          </div>
+        )}
+        <input
+          type={type}
+          className={twMerge(
+            clsx(
+              "w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3.5 py-2 text-sm text-[#2c221e] placeholder-[#8c7b6c] outline-none transition-all duration-150 shadow-sm",
+              "focus:border-amber-700 focus:ring-1 focus:ring-amber-600/30 focus:bg-white",
+              Icon && "pl-9",
+              error && "border-red-500 focus:border-red-600 focus:ring-red-500/20",
+              type === 'number' && "font-mono font-bold",
+              className
+            )
+          )}
+          {...props}
+        />
+      </div>
+      {error && <span className="text-xs text-red-600 font-bold">{error}</span>}
+    </div>
+  );
+}
+
+export function JRPGSelect({
+  label,
+  options = [],
+  value,
+  onChange,
+  className = '',
+  wrapperClassName = '',
+  placeholder = '請選擇...',
+  ...props
+}) {
+  return (
+    <div className={twMerge(clsx("flex flex-col gap-1.5", wrapperClassName))}>
+      {label && (
+        <label className="text-xs font-bold text-[#3c2f21]">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <select
+          value={value}
+          onChange={onChange}
+          className={twMerge(
+            clsx(
+              "w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3.5 py-2 text-sm text-[#2c221e] outline-none transition-all duration-150 appearance-none cursor-pointer shadow-sm",
+              "focus:border-amber-700 focus:ring-1 focus:ring-amber-600/30 focus:bg-white font-medium",
+              className
+            )
+          )}
+          {...props}
+        >
+          {placeholder && <option value="" disabled className="bg-white text-stone-500">{placeholder}</option>}
+          {options.map((opt) => {
+            const val = typeof opt === 'object' ? opt.value : opt;
+            const lbl = typeof opt === 'object' ? opt.label : opt;
+            return (
+              <option key={val} value={val} className="bg-white text-[#2c221e]">
+                {lbl}
+              </option>
+            );
+          })}
+        </select>
+        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#8c7b6c] text-xs">
+          ▼
+        </div>
+      </div>
+    </div>
+  );
+}
