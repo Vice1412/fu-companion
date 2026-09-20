@@ -31,7 +31,17 @@ export const SPECIES_DATA = [
       maxPicks: 1,
       options: [
         { id: 'b1', text: '對兩種你選擇的狀態效果的免疫。', needsSelection: true, selectionConfig: { key: 'sp_construct_imm_status', label: '選擇狀態', type: 'multiselect_2', options: ['眩暈', '動搖', '緩慢', '虛弱', '憤怒'] } },
-        { id: 'b2', text: '在有利於此構造體獨特設計、工具或程式設計的情況下，對抗檢定獲得 +3 加成。' },
+        {
+          id: 'b2',
+          text: '在有利於此構造體獨特設計、工具或程式設計【{sp_construct_domain}】的情況下，對抗檢定獲得 +3 加成。',
+          needsSelection: true,
+          selectionConfig: {
+            key: 'sp_construct_domain',
+            label: '加成領域',
+            type: 'text',
+            placeholder: '輸入此構造體獲得加成的領域（例如：破拆作業、水下維護、警衛監控、數據分析）'
+          }
+        },
         { id: 'b3', text: '飛行技能。近戰攻擊能以飛行生物為目標。不能被作爲近戰攻擊的目標，除非攻擊者正在飛行或是有能接觸飛行目標的方法。受到弱點傷害時，直到該輪結束都會被迫降落，並失去這個技能的所有收益。PC也可通過花費一個機會來迫使降落。處於危機時，失去這個技能的所有收益。' },
         { id: 'b4', text: '一個來自你 NPC 定位的額外定位技能。' }
       ]

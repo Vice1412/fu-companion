@@ -1223,22 +1223,40 @@ export default function NPCBuilder({
                             const selectedBenefits = npc.speciesConfig?.selectedBenefits || [];
                             const isChecked = selectedBenefits.includes(b.id);
                             return (
-                              <label key={b.id} className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-[#eee6d3] cursor-pointer text-xs">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    const next = isChecked
-                                      ? selectedBenefits.filter(id => id !== b.id)
-                                      : [...selectedBenefits, b.id];
-                                    updateField('speciesConfig', { ...(npc.speciesConfig || {}), selectedBenefits: next });
-                                  }}
-                                  className="mt-0.5 rounded accent-amber-700"
-                                />
-                                <div>
-                                  <p className="text-[#2c221e] text-xs leading-relaxed">{b.text || b.name}</p>
-                                </div>
-                              </label>
+                              <div key={b.id} className="p-2 rounded-lg hover:bg-[#eee6d3] transition-colors">
+                                <label className="flex items-start gap-2.5 cursor-pointer text-xs">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      const next = isChecked
+                                        ? selectedBenefits.filter(id => id !== b.id)
+                                        : [...selectedBenefits, b.id];
+                                      updateField('speciesConfig', { ...(npc.speciesConfig || {}), selectedBenefits: next });
+                                    }}
+                                    className="mt-0.5 rounded accent-amber-700"
+                                  />
+                                  <div>
+                                    <p className="text-[#2c221e] text-xs leading-relaxed">{b.text || b.name}</p>
+                                  </div>
+                                </label>
+                                {isChecked && b.needsSelection && b.selectionConfig?.type === 'text' && (
+                                  <div className="mt-2 pl-6">
+                                    {b.selectionConfig.label && (
+                                      <div className="text-[11px] font-bold text-amber-900 mb-1">
+                                        ✦ {b.selectionConfig.label}：
+                                      </div>
+                                    )}
+                                    <input
+                                      type="text"
+                                      className="w-full bg-[#fffdf9] border border-[#d6c7ab] p-1.5 rounded text-xs text-[#2c221e] focus:border-amber-600 outline-none placeholder-[#8c7b6c] font-bold shadow-inner"
+                                      placeholder={b.selectionConfig.placeholder || ''}
+                                      value={npc.speciesConfig?.[b.selectionConfig.key] || ''}
+                                      onChange={e => updateField('speciesConfig', { ...(npc.speciesConfig || {}), [b.selectionConfig.key]: e.target.value })}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </div>

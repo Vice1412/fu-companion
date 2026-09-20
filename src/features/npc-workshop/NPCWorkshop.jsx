@@ -119,6 +119,7 @@ const TEMPLATE_KEY_TRANSLATIONS = {
   action2: "指定動作2",
   encRes: "恢復資源",
   sp_humanoid_bg: "背景領域",
+  sp_construct_domain: "加成領域",
   customName: "名稱",
   name: "名稱",
   skillName: "技能名稱",
@@ -2514,11 +2515,12 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
           // 2. Scan Benefits for Mechanical Rules
           sp.benefitsConfig.options
             .filter(o => state.speciesConfig.selectedBenefits.includes(o.id))
-            .filter(o => o.text.includes('飛行技能') || o.text.includes('身體能力') || o.text.includes('獨特設計') || o.text.includes('sp_humanoid_bg') || o.text.includes('【荊棘】'))
+            .filter(o => o.text.includes('飛行技能') || o.text.includes('身體能力') || o.text.includes('獨特設計') || o.text.includes('sp_humanoid_bg') || o.text.includes('sp_construct_domain') || o.text.includes('【荊棘】'))
             .forEach(o => {
               let name = "特殊規則";
               if (o.text.includes('飛行技能')) name = "飛行";
-              else if (o.text.includes('身體能力') || o.text.includes('獨特設計')) name = "身體能力";
+              else if (o.text.includes('獨特設計') || o.text.includes('sp_construct_domain')) name = "獨特設計";
+              else if (o.text.includes('身體能力')) name = "身體能力";
               else if (o.text.includes('sp_humanoid_bg')) name = "背景與訓練";
               else if (o.text.includes('【荊棘】')) name = "荊棘";
 
@@ -3258,7 +3260,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 .filter(o => benefits.includes(o.id))
                 .filter(o => {
                   const text = o.text;
-                  if (text.includes('飛行技能') || text.includes('身體能力') || text.includes('獨特設計') || text.includes('背景或訓練') || text.includes('【荊棘】')) return false;
+                  if (text.includes('飛行技能') || text.includes('身體能力') || text.includes('獨特設計') || text.includes('背景或訓練') || text.includes('sp_construct_domain') || text.includes('【荊棘】')) return false;
                   if (text.includes('最大 HP 增加') || text.includes('最大 MP 增加')) return false;
                   if (text.includes('定位技能')) return false;
                   if (text.includes('狀態效果的免疫') || text.includes('狀態效果免疫')) return false;
@@ -4231,9 +4233,14 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                                         <div className="pl-10 pb-2 space-y-3 animate-in slide-in-from-top-2 duration-300">
                                           {opt.selectionConfig.type === 'text' && (
                                             <div className="max-w-md mt-1">
+                                              {opt.selectionConfig.label && (
+                                                <label className="block text-xs font-bold text-amber-900 mb-1 flex items-center gap-1">
+                                                  <span>✦ {opt.selectionConfig.label}：</span>
+                                                </label>
+                                              )}
                                               <input
                                                 type="text"
-                                                className="w-full bg-[#fffdf9] border border-[#d6c7ab] p-2 rounded text-sm text-[#2c221e] focus:border-amber-600 outline-none placeholder-[#8c7b6c] font-bold"
+                                                className="w-full bg-[#fffdf9] border border-[#d6c7ab] p-2 rounded text-sm text-[#2c221e] focus:border-amber-600 outline-none placeholder-[#8c7b6c] font-bold shadow-inner"
                                                 placeholder={opt.selectionConfig.placeholder || ""}
                                                 value={state.speciesConfig[opt.selectionConfig.key] || ''}
                                                 onChange={(e) => handleSpeciesConfigChange(opt.selectionConfig.key, e.target.value)}
