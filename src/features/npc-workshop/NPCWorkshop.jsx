@@ -1626,41 +1626,26 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   const [activeBossTab, setActiveBossTab] = useState(null);
   const [revealLevel, setRevealLevel] = useState('full'); // 'full', '7', '10', '13'
   const [roleDrafts, setRoleDrafts] = useState({});
-  const [appTheme, setAppTheme] = useState(() => {
-    const saved = localStorage.getItem('fabula-npc-theme');
+  const [cardTheme, setCardTheme] = useState(() => {
+    const saved = localStorage.getItem('fabula-npc-card-theme') || localStorage.getItem('fabula-npc-theme');
     return saved && THEMES[saved] ? saved : 'amber';
   });
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-codex-theme', appTheme);
-  }, [appTheme]);
+  // Workshop UI itself is fixed to its classic warm beige/amber parchment palette
+  const workshopTheme = THEMES.amber;
+  // Card Preview Theme is customizable
+  const currentTheme = THEMES[cardTheme] || THEMES.amber;
 
-  const currentTheme = THEMES[appTheme] || THEMES.amber;
-
-  // Push theme toggle button to upper ChapterHeader
+  // Clear extra header on left (palette moved to character preview toolbar)
   useEffect(() => {
     if (setHeaderExtraLeft) {
-      setHeaderExtraLeft(
-        <button
-          onClick={() => setIsPaletteOpen(prev => !prev)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm transition-all duration-300 text-xs font-bold ${
-            isPaletteOpen
-              ? 'bg-amber-100 text-amber-950 border-amber-500 scale-105 shadow-md'
-              : 'bg-white/90 text-slate-700 border-sky-300 hover:border-amber-600 hover:text-amber-900'
-          }`}
-          title="切換介面配色主題"
-        >
-          <Palette size={14} className="shrink-0 transition-colors" style={{ color: currentTheme.accent }} />
-          <span>{currentTheme.name.split(' ')[0]}</span>
-          <ChevronDown size={12} className={`transition-transform duration-300 ${isPaletteOpen ? 'rotate-180' : ''}`} />
-        </button>
-      );
+      setHeaderExtraLeft(null);
     }
     return () => {
       if (setHeaderExtraLeft) setHeaderExtraLeft(null);
     };
-  }, [isPaletteOpen, appTheme, currentTheme, setHeaderExtraLeft]);
+  }, [setHeaderExtraLeft]);
 
   // Push NPC Workshop action controls to upper ChapterHeader right side
   useEffect(() => {
@@ -1702,7 +1687,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <button
                 onClick={handleSaveToLibrary}
                 className="text-white px-2.5 py-1.5 rounded-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm text-xs flex items-center gap-1"
-                style={{ backgroundColor: currentTheme.accent }}
+                style={{ backgroundColor: workshopTheme.accent }}
                 title="儲存 NPC"
               >
                 <Save size={14} /> <span className="hidden sm:inline">儲存 NPC</span>
@@ -1732,7 +1717,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   }, [
     activeMainTab,
     state?.isFreeModeEnabled,
-    currentTheme,
+    workshopTheme,
     setHeaderExtraLeft,
     setHeaderExtraRight
   ]);
@@ -3891,7 +3876,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
             <div className="flex justify-center mt-4">
               <button
                 onClick={nextStep}
-                style={{ backgroundColor: currentTheme.accent }}
+                style={{ backgroundColor: workshopTheme.accent }}
                 className="group relative px-10 py-4 text-white font-black tracking-[0.2em] rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-[-20deg]"></div>
@@ -4368,7 +4353,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                       ? 'bg-[#fbf7ee] text-[#2c221e] shadow-sm'
                       : 'text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#dfd3bc]/60'
                   }`}
-                  style={step4SubTab === tab.id ? { borderBottom: `2px solid ${currentTheme.accent}` } : {}}
+                  style={step4SubTab === tab.id ? { borderBottom: `2px solid ${workshopTheme.accent}` } : {}}
                 >
                   <span>{tab.emoji}</span>
                   <span className="hidden sm:inline">{tab.label}</span>
@@ -5427,7 +5412,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   };
 
   return (
-    <div className="h-[calc(100vh-53px)] min-h-[650px] w-full font-sans flex flex-col overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: currentTheme.appBg, color: currentTheme.textDark }}>
+    <div className="h-[calc(100vh-53px)] min-h-[650px] w-full font-sans flex flex-col overflow-hidden relative bg-[#fbf7ee] text-[#3c2415]">
 
       {/* 全域浮動提示 (Toast Notification) */}
       <AvatarCropperModal
@@ -5456,85 +5441,34 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         </div>
       )}
 
-      {/* 頂部延伸拱形半圓形托盤 Container (點擊上排色彩按鈕時開啟) */}
-      {isPaletteOpen && (
-        <>
-          {/* 全域點擊遮罩 (Click-away backdrop) */}
-          <div
-            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] animate-in fade-in duration-200"
-            onClick={() => setIsPaletteOpen(false)}
-          />
-
-          {/* 頂部延伸拱形半圓形托盤 (畫面頂部居中伸出) */}
-          <div className="fixed top-[52px] left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-200 max-w-[calc(100vw-1rem)]">
-            <div
-              className="relative px-4 sm:px-6 pt-2.5 pb-4 sm:pb-5 rounded-b-[32px] sm:rounded-b-[36px] border-b-2 border-x-2 shadow-2xl backdrop-blur-md flex flex-col items-center gap-2 transition-colors duration-300"
-              style={{
-                backgroundColor: currentTheme.panelBg,
-                borderColor: currentTheme.accent,
-                color: currentTheme.textDark,
-                minWidth: '270px'
-              }}
-            >
-              {/* 托盤頂部裝飾條 */}
-              <div className="w-10 h-1 rounded-full bg-[#d6c7ab]/80 mb-0.5" />
-              <div className="text-[11px] font-bold opacity-75 tracking-wider mb-0.5 flex items-center gap-1">
-                <Palette size={12} /> 選擇色彩主題
-              </div>
-
-              {/* 6 色主題拱形半圓形選擇列 */}
-              <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                {Object.keys(THEMES).map(t => {
-                  const isSelected = appTheme === t;
-                  return (
-                    <button
-                      key={t}
-                      onClick={() => {
-                        setAppTheme(t);
-                        localStorage.setItem('fabula-npc-theme', t);
-                        setIsPaletteOpen(false);
-                      }}
-                      className="group relative flex flex-col items-center justify-center transition-all duration-300 focus:outline-none"
-                      title={THEMES[t].name}
-                    >
-                      <div
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 flex items-center justify-center shadow-md ${
-                          isSelected
-                            ? 'ring-2 ring-offset-2 scale-110 shadow-lg'
-                            : 'hover:scale-125 opacity-85 hover:opacity-100'
-                        }`}
-                        style={{
-                          backgroundColor: THEMES[t].accent,
-                          borderColor: THEMES[t].accentDark,
-                          ringColor: THEMES[t].accent
-                        }}
-                      >
-                        {isSelected && (
-                          <Check className="text-white drop-shadow-sm stroke-[3]" size={16} />
-                        )}
-                      </div>
-                      <span className={`text-[10px] font-bold mt-1 transition-opacity ${isSelected ? 'opacity-100 font-black' : 'opacity-70 group-hover:opacity-100'}`}>
-                        {THEMES[t].name.split(' ')[0]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
       {activeMainTab !== 'library' && (
-        <div className="flex border-b-2 flex-shrink-0 transition-colors duration-300" style={{ backgroundColor: currentTheme.subpanelBg, borderColor: currentTheme.border }}>
-          <button onClick={() => setActiveMainTab('build')} className={`flex-1 py-2 sm:py-3.5 text-sm sm:text-base font-bold tracking-widest flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 transition-all duration-200 ${activeMainTab === 'build' ? 'shadow-sm' : 'hover:opacity-80'}`} style={{ backgroundColor: activeMainTab === 'build' ? currentTheme.appBg : 'transparent', borderColor: activeMainTab === 'build' ? currentTheme.accent : 'transparent', borderBottomWidth: '3px', color: activeMainTab === 'build' ? currentTheme.accentDark : '#6b5a4b' }}><Settings size={18} className="sm:w-[18px] sm:h-[18px] w-4 h-4" /> 構築頁面</button>
-          <button onClick={() => setActiveMainTab('preview')} className={`flex-1 py-2 sm:py-3.5 text-sm sm:text-base font-bold tracking-widest flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 transition-all duration-200 ${activeMainTab === 'preview' ? 'shadow-sm' : 'hover:opacity-80'}`} style={{ backgroundColor: activeMainTab === 'preview' ? currentTheme.appBg : 'transparent', borderColor: activeMainTab === 'preview' ? currentTheme.accent : 'transparent', borderBottomWidth: '3px', color: activeMainTab === 'preview' ? currentTheme.accentDark : '#6b5a4b' }}><Eye size={18} className="sm:w-[18px] sm:h-[18px] w-4 h-4" /> 角色卡預覽</button>
+        <div className="flex border-b-2 flex-shrink-0 bg-[#f4ebd9] border-[#d6c7ab]">
+          <button
+            onClick={() => setActiveMainTab('build')}
+            className={`flex-1 py-2 sm:py-3.5 text-sm sm:text-base font-bold tracking-widest flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 transition-all duration-200 ${
+              activeMainTab === 'build'
+                ? 'bg-[#fbf7ee] text-amber-900 border-b-[3px] border-amber-600 shadow-sm'
+                : 'text-[#6b5a4b] hover:bg-[#eee6d3]/60'
+            }`}
+          >
+            <Settings size={18} className="sm:w-[18px] sm:h-[18px] w-4 h-4" /> 構築頁面
+          </button>
+          <button
+            onClick={() => setActiveMainTab('preview')}
+            className={`flex-1 py-2 sm:py-3.5 text-sm sm:text-base font-bold tracking-widest flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 transition-all duration-200 ${
+              activeMainTab === 'preview'
+                ? 'bg-[#fbf7ee] text-amber-900 border-b-[3px] border-amber-600 shadow-sm'
+                : 'text-[#6b5a4b] hover:bg-[#eee6d3]/60'
+            }`}
+          >
+            <Eye size={18} className="sm:w-[18px] sm:h-[18px] w-4 h-4" /> 角色卡預覽
+          </button>
         </div>
       )}
 
       {/* 檔案庫 Tab 內容 (Library View) */}
       {activeMainTab === 'library' && (
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar animate-in fade-in transition-colors duration-300" style={{ backgroundColor: currentTheme.appBg }}>
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar animate-in fade-in bg-[#fbf7ee]">
           <div className="max-w-6xl mx-auto flex flex-col min-h-full">
             <div className="flex justify-end mb-6 border-b border-[#d6c7ab] pb-4">
               <div className="flex gap-2 w-full sm:w-auto justify-end">
@@ -5733,7 +5667,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                             ? 'text-white'
                             : 'bg-[#d6c7ab] text-[#6b5a4b]'
                         }`}
-                        style={{ backgroundColor: currentStep === s.num ? currentTheme.accent : undefined }}
+                        style={{ backgroundColor: currentStep === s.num ? workshopTheme.accent : undefined }}
                       >
                         {s.num}
                       </span>
@@ -5745,16 +5679,15 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
             </div>
 
             {/* 主表單與桌面雙欄容器 */}
-            <div className="flex-1 flex flex-col relative overflow-hidden transition-colors duration-300" style={{ backgroundColor: currentTheme.appBg }}>
+            <div className="flex-1 flex flex-col relative overflow-hidden bg-[#fbf7ee]">
               {/* 手機頂部橫向步驟指示條 */}
-              <div className="md:hidden sticky top-0 z-30 backdrop-blur border-b px-3 py-2 flex items-center gap-2 transition-colors duration-300" style={{ backgroundColor: currentTheme.headerBg, borderColor: currentTheme.border }}>
-                <span className="text-xs font-black tracking-wide shrink-0" style={{ color: currentTheme.textDark }}>步驟 {currentStep}/{steps.length}</span>
-                <div className="flex-1 rounded-full h-1.5 overflow-hidden" style={{ backgroundColor: currentTheme.border }}>
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(currentStep / steps.length) * 100}%`, backgroundColor: currentTheme.accent }}></div>
+              <div className="md:hidden sticky top-0 z-30 backdrop-blur border-b px-3 py-2 flex items-center gap-2 bg-[#f4ebd9] border-[#d6c7ab]">
+                <span className="text-xs font-black tracking-wide shrink-0 text-[#3c2415]">步驟 {currentStep}/{steps.length}</span>
+                <div className="flex-1 rounded-full h-1.5 overflow-hidden bg-[#d6c7ab]">
+                  <div className="h-full rounded-full transition-all duration-500 bg-amber-700" style={{ width: `${(currentStep / steps.length) * 100}%` }}></div>
                 </div>
                 <select
-                  className="text-xs font-bold border px-2 py-1 rounded outline-none max-w-[140px] truncate transition-colors duration-300"
-                  style={{ backgroundColor: currentTheme.cardBg, borderColor: currentTheme.border, color: currentTheme.textDark }}
+                  className="text-xs font-bold border px-2 py-1 rounded outline-none max-w-[140px] truncate bg-[#fffdf9] border-[#d6c7ab] text-[#3c2415]"
                   value={currentStep}
                   onChange={e => setCurrentStep(Number(e.target.value))}
                 >
@@ -5772,11 +5705,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 </div>
 
                 {/* 右半欄：常駐角色卡預覽 (僅 xl+ 顯示) */}
-                <div className="hidden xl:flex w-[45%] flex-shrink-0 border-l flex-col overflow-y-auto custom-scrollbar transition-colors duration-300" style={{ backgroundColor: currentTheme.subpanelBg, borderColor: currentTheme.border }}>
-                  <div className="sticky top-0 z-10 backdrop-blur border-b px-4 py-2 flex items-center gap-2 transition-colors duration-300" style={{ backgroundColor: currentTheme.headerBg, borderColor: currentTheme.border }}>
-                    <Eye size={14} style={{ color: currentTheme.accent }} />
-                    <span className="text-xs font-black tracking-widest" style={{ color: currentTheme.textDark }}>即時預覽</span>
-                    <span className="text-[10px] ml-auto border px-2 py-0.5 rounded transition-colors duration-300" style={{ backgroundColor: currentTheme.cardBg, borderColor: currentTheme.border, color: currentTheme.textDark }}>修改左側數值，預覽即時同步</span>
+                <div className="hidden xl:flex w-[45%] flex-shrink-0 border-l flex-col overflow-y-auto custom-scrollbar bg-[#f4ebd9] border-[#d6c7ab]">
+                  <div className="sticky top-0 z-10 backdrop-blur border-b px-4 py-2 flex items-center gap-2 bg-[#f4ebd9] border-[#d6c7ab]">
+                    <Eye size={14} className="text-amber-700" />
+                    <span className="text-xs font-black tracking-widest text-[#3c2415]">即時預覽</span>
+                    <span className="text-[10px] ml-auto border px-2 py-0.5 rounded bg-[#fffdf9] border-[#d6c7ab] text-[#3c2415]">修改左側數值，預覽即時同步</span>
                   </div>
                   <div className="px-4 py-4">
                     {renderCharacterCard()}
@@ -5786,18 +5719,18 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
 
               {/* 固定在底部的全局導航按鈕 (除了步驟一保留原樣) */}
               {currentStep !== 1 && (
-                <div className="w-full border-t py-3 shrink-0 z-50 relative shadow-[0_-10px_20px_-10px_rgba(44,34,30,0.1)] transition-colors duration-300" style={{ backgroundColor: currentTheme.headerBg, borderColor: currentTheme.border, paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+                <div className="w-full border-t py-3 shrink-0 z-50 relative shadow-[0_-10px_20px_-10px_rgba(44,34,30,0.1)] bg-[#f4ebd9] border-[#d6c7ab]" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
                   <div className="max-w-4xl mx-auto flex justify-between items-center px-4 md:px-8">
                     <button onClick={prevStep} className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold transition-all text-sm text-[#3c2f21] bg-[#eee6d3] hover:bg-[#e4d9c0] border border-[#d6c7ab] shadow-sm">
                       <ChevronLeft size={16} /> 上一步
                     </button>
 
                     {currentStep === 8 ? (
-                      <button onClick={() => setActiveMainTab('preview')} className="flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-md text-sm text-white hover:scale-105" style={{ backgroundColor: currentTheme.accent }}>
+                      <button onClick={() => setActiveMainTab('preview')} className="flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-md text-sm text-white hover:scale-105 bg-amber-700 hover:bg-amber-600">
                         <Check size={16} /> 預覽角色卡
                       </button>
                     ) : (
-                      <button onClick={nextStep} className="flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-md text-sm text-white hover:scale-105" style={{ backgroundColor: currentTheme.accent }}>
+                      <button onClick={nextStep} className="flex items-center gap-2 px-8 py-2.5 rounded-lg font-bold transition-all shadow-md text-sm text-white hover:scale-105 bg-amber-700 hover:bg-amber-600">
                         下一步 <ChevronRight size={16} />
                       </button>
                     )}
@@ -5860,21 +5793,77 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         <div className="flex-1 overflow-y-auto bg-[#fbf7ee] custom-scrollbar animate-in fade-in">
           <div className="mx-auto flex flex-col items-center px-4 py-6 md:px-8 md:py-8 min-h-full max-w-4xl">
             <div className="w-full flex flex-wrap justify-between items-center mb-4 bg-[#f4ebd9]/95 backdrop-blur p-3 rounded-lg border border-[#d6c7ab] shadow-md sticky top-0 z-20 gap-2">
-              <div className="flex items-center gap-4">
-                <span className="text-[#3c2415] text-sm font-bold flex items-center gap-2"><Eye size={16} className="text-amber-600" /> 研究檢定結果</span>
-                <div className="flex bg-[#fffdf9] rounded-lg p-1 border border-[#d6c7ab] shadow-inner overflow-hidden">
-                  {['full', '7', '10', '13'].map(lv => (
-                    <button
-                      key={lv}
-                      onClick={() => setRevealLevel(lv)}
-                      className={`px-3 py-1 rounded text-[11px] font-black transition-all ${revealLevel === lv
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-[#6b5a4b] hover:text-[#2c221e]'
-                        }`}
-                    >
-                      {lv === 'full' ? '完整' : `${lv}+`}
-                    </button>
-                  ))}
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#3c2415] text-sm font-bold flex items-center gap-1.5"><Eye size={16} className="text-amber-700" /> 研究檢定</span>
+                  <div className="flex bg-[#fffdf9] rounded-lg p-1 border border-[#d6c7ab] shadow-inner overflow-hidden">
+                    {['full', '7', '10', '13'].map(lv => (
+                      <button
+                        key={lv}
+                        onClick={() => setRevealLevel(lv)}
+                        className={`px-3 py-1 rounded text-[11px] font-black transition-all ${revealLevel === lv
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-[#6b5a4b] hover:text-[#2c221e]'
+                          }`}
+                      >
+                        {lv === 'full' ? '完整' : `${lv}+`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 角色卡配色風格選擇器 (專屬移至預覽工具列) */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsPaletteOpen(prev => !prev)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-[#fffdf9] border-[#d6c7ab] hover:border-amber-600 text-xs font-bold text-[#3c2415] shadow-sm transition-all hover:scale-105"
+                    title="切換角色卡配色風格"
+                  >
+                    <Palette size={15} style={{ color: currentTheme.accent }} />
+                    <span className="hidden sm:inline">卡片風格：</span>
+                    <span>{currentTheme.name}</span>
+                    <ChevronDown size={13} className={`transition-transform duration-200 ${isPaletteOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isPaletteOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsPaletteOpen(false)} />
+                      <div className="absolute left-0 top-full mt-1.5 bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl shadow-2xl p-2.5 z-50 min-w-[220px] animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="text-[11px] font-bold text-[#6b5a4b] mb-2 px-1 flex items-center justify-between border-b border-[#d6c7ab]/60 pb-1.5">
+                          <span className="flex items-center gap-1"><Palette size={12} /> 選擇角色卡風格</span>
+                          <span className="text-[10px] text-amber-800 font-mono">6 種經典主題</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {Object.keys(THEMES).map(t => {
+                            const theme = THEMES[t];
+                            const isSelected = cardTheme === t;
+                            return (
+                              <button
+                                key={t}
+                                onClick={() => {
+                                  setCardTheme(t);
+                                  localStorage.setItem('fabula-npc-card-theme', t);
+                                  setIsPaletteOpen(false);
+                                }}
+                                className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-all text-xs font-bold ${
+                                  isSelected
+                                    ? 'border-amber-600 bg-amber-50 text-amber-950 shadow-sm ring-1 ring-amber-500/40'
+                                    : 'border-[#d6c7ab]/80 bg-[#fffdf9] text-[#574c43] hover:bg-[#f4ebd9] hover:border-amber-400'
+                                }`}
+                              >
+                                <div
+                                  className="w-3.5 h-3.5 rounded-full shrink-0 border shadow-xs"
+                                  style={{ backgroundColor: theme.accent, borderColor: theme.accentDark }}
+                                />
+                                <span className="truncate">{theme.name.replace(/^[^\s]+\s*/, '')}</span>
+                                {isSelected && <Check size={12} className="ml-auto text-amber-800 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
