@@ -131,7 +131,7 @@ export default function NPCCardPreview({
           <div className="text-base font-mono font-black text-red-900 mt-0.5">
             {maxHp}
             <span className="text-[10px] text-red-700 ml-1.5 font-bold inline-flex items-center gap-0.5" title={`危機值 ≤${crisisHp}`}>
-              <span className="fu-icon text-xs leading-none">w</span> {crisisHp}
+              <span className="fu-icon text-xs leading-none translate-y-[1.5px]">w</span> {crisisHp}
             </span>
           </div>
         </div>
@@ -229,14 +229,22 @@ export default function NPCCardPreview({
                   <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                     <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
                       <span>⚔️ {att.name || att.skillName || '普通攻擊'}</span>
-                      <span className="text-[11px] font-mono text-stone-600 inline-flex items-center gap-1">
-                        <span className="fu-icon text-xs leading-none">{(att.selections?.distance || '').includes('遠程') ? 'r' : 'm'}</span>
-                        [{att.selections?.distance || '近戰'}] 【{att.selections?.formula || 'DEX + MIG'}】+ {stats.Acc || 0}
+                      <span className="inline-flex items-center gap-1.5 font-mono text-stone-600">
+                        <span className="inline-flex items-center gap-1 text-[#3c2f21] bg-[#e8dec8] px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0 shadow-2xs">
+                          <span className="fu-icon text-xs leading-none translate-y-[0.5px]">{(att.selections?.distance || '').includes('遠程') ? 'r' : 'm'}</span>
+                          <span>{att.selections?.distance || '近戰'}</span>
+                        </span>
+                        <span>【{att.selections?.formula || 'DEX + MIG'}】+ {stats.Acc || 0}</span>
                       </span>
                     </div>
-                    <p className="text-[#3c2f21] leading-relaxed font-sans">
-                      傷害: 【HR + {stats.Dmg || 5}】點 <span className="fu-icon text-xs inline-block align-middle">{style.fuIcon}</span> <strong>{attType}</strong> 傷害。
-                      {att.desc && ` ${renderDescription(att.desc, att.selections)}`}
+                    <p className="text-[#3c2f21] leading-relaxed font-sans flex flex-wrap items-center gap-1">
+                      <span>傷害: 【HR + {stats.Dmg || 5}】點</span>
+                      <span className={`inline-flex items-center gap-0.5 ${style.color || ''}`}>
+                        <span className="fu-icon text-xs leading-none translate-y-[0.5px]">{style.fuIcon}</span>
+                        <strong>{attType}</strong>
+                      </span>
+                      <span>傷害。</span>
+                      {att.desc && <span className="ml-1">{renderDescription(att.desc, att.selections)}</span>}
                     </p>
                   </div>
                 );

@@ -280,13 +280,13 @@ const renderFormattedText = (text, selections, npcLevel = 5, partyLevel = 5, hid
       }
       if (Array.isArray(val)) return <span key={i} className="font-bold text-[#2c221e]">{val.map((v, vi) => <span key={vi} className="block ml-2">● {v}</span>)}</span>;
       if (typeof val === 'string' && (val.includes('{') || val.includes('['))) return <React.Fragment key={i}>{renderFormattedText(val, selections, npcLevel, partyLevel, hideMeta)}</React.Fragment>;
-      if (DAMAGE_TYPES.includes(val)) return <span key={i} className={`inline-flex items-center gap-0.5 font-extrabold ${TYPE_STYLES[val].color} tracking-wide mx-0.5 drop-shadow-sm`}>{TYPE_STYLES[val].fuIcon ? <span className="fu-icon text-lg translate-y-[1px]">{TYPE_STYLES[val].fuIcon}</span> : TYPE_STYLES[val].emoji}<span>{val}</span></span>;
-      return <span key={i} className="font-extrabold text-[#2c221e] mx-0.5">{val}</span>;
+      if (DAMAGE_TYPES.includes(val)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[val].color} tracking-wide drop-shadow-sm`}>{TYPE_STYLES[val].fuIcon ? <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[val].fuIcon}</span> : TYPE_STYLES[val].emoji}<span>{val}</span></span>;
+      return <span key={i} className="font-extrabold text-[#2c221e]">{val}</span>;
     }
     if (part.startsWith('<') && part.endsWith('>')) {
       const type = part.slice(1, -1);
       if (/^\/?(?:meta|status)/i.test(type)) return null;
-      if (DAMAGE_TYPES.includes(type)) return <span key={i} className={`inline-flex items-center gap-0.5 font-extrabold ${TYPE_STYLES[type].color} tracking-wide mx-0.5 drop-shadow-sm`}>{TYPE_STYLES[type].fuIcon ? <span className="fu-icon text-lg translate-y-[1px]">{TYPE_STYLES[type].fuIcon}</span> : TYPE_STYLES[type].emoji}<span>{type}</span></span>;
+      if (DAMAGE_TYPES.includes(type)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[type].color} tracking-wide drop-shadow-sm`}>{TYPE_STYLES[type].fuIcon ? <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[type].fuIcon}</span> : TYPE_STYLES[type].emoji}<span>{type}</span></span>;
       return part;
     }
     return part;
@@ -860,30 +860,45 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
 
         return (
           <>
-            {skill.attack && (
-              <div className="bg-[#f8f3e6] border border-[#e2d6c1] p-2 my-1 rounded text-sm">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
-                  <span className="text-blue-900 font-bold">
-                    <span className="text-[#3c2f21] bg-[#e8dec8] px-1.5 py-0.5 rounded mr-1 inline-flex items-center gap-1">
-                      <span className="fu-icon text-sm leading-none">{skill.attack.distance?.includes('遠程') ? 'r' : 'm'}</span>
-                      [{renderFormattedText(skill.attack.distance, skill.selections, npcLevel, partyLevel)}]
+            {skill.attack && (() => {
+              let resolvedType = skill.attack.type;
+              if (typeof resolvedType === 'string' && resolvedType.startsWith('{') && resolvedType.endsWith('}')) {
+                const k = resolvedType.slice(1, -1);
+                resolvedType = skill.selections?.[k] || resolvedType;
+              }
+              const typeInfo = TYPE_STYLES[resolvedType];
+              const isRanged = String(skill.attack.distance).includes('遠程') || skill.selections?.distance === '遠程';
+
+              return (
+                <div className="bg-[#f8f3e6] border border-[#e2d6c1] p-2 my-1 rounded text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mb-1">
+                    <span className="inline-flex items-center gap-1 text-[#3c2f21] bg-[#e8dec8] px-2 py-0.5 rounded text-xs font-bold shrink-0 shadow-2xs">
+                      <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{isRanged ? 'r' : 'm'}</span>
+                      <span>{renderFormattedText(skill.attack.distance, skill.selections, npcLevel, partyLevel)}</span>
                     </span>
-                    {renderFormattedText(skill.attack.formula, skill.selections, npcLevel, partyLevel)}
-                  </span>
-                  <span className="text-stone-400 text-xs">✦</span>
-                  <span className="text-red-800 font-bold">
-                    [HR + {skill.attack.baseDmg}]{' '}
-                    {TYPE_STYLES[skill.attack.type]?.fuIcon && (
-                      <span className={`fu-icon text-sm mr-0.5 ${TYPE_STYLES[skill.attack.type]?.color || ''}`}>
-                        {TYPE_STYLES[skill.attack.type]?.fuIcon}
-                      </span>
-                    )}
-                    {renderFormattedText(skill.attack.type, skill.selections, npcLevel, partyLevel)}傷害
-                  </span>
+                    <span className="text-blue-900 font-bold">
+                      {renderFormattedText(skill.attack.formula, skill.selections, npcLevel, partyLevel)}
+                    </span>
+                    <span className="text-stone-400 text-xs select-none">✦</span>
+                    <span className="inline-flex items-center gap-1 font-bold text-red-800">
+                      <span>[HR + {skill.attack.baseDmg}]</span>
+                      {DAMAGE_TYPES.includes(resolvedType) ? (
+                        <span className={`inline-flex items-center gap-0.5 ${typeInfo?.color || 'text-red-800'}`}>
+                          {typeInfo?.fuIcon && (
+                            <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{typeInfo.fuIcon}</span>
+                          )}
+                          <span>{resolvedType}</span>
+                        </span>
+                      ) : (
+                        renderFormattedText(skill.attack.type, skill.selections, npcLevel, partyLevel)
+                      )}
+                      <span>傷害</span>
+                    </span>
+                  </div>
+                  {displayExtra && <div className="text-[#574c43] mt-1 text-xs border-t border-[#d6c7ab]/60 pt-1 whitespace-pre-wrap">{renderFormattedText(displayExtra, skill.selections, npcLevel, partyLevel)}</div>}
                 </div>
-                {displayExtra && <div className="text-[#574c43] mt-1 text-xs border-t border-[#d6c7ab]/60 pt-1 whitespace-pre-wrap">{renderFormattedText(displayExtra, skill.selections, npcLevel, partyLevel)}</div>}
-              </div>
-            )}
+              );
+            })()}
             {displayDesc && (
               <div className="text-sm text-[#3c2415] leading-relaxed whitespace-pre-wrap mt-1">{renderFormattedText(displayDesc, skill.selections, npcLevel, partyLevel)}</div>
             )}
@@ -1009,30 +1024,50 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
         </div>
       )}
 
-      {skill.attack && (
-        <div className={`bg-[#fffdf9] border-l-4 p-2.5 my-1 text-sm ml-2 md:ml-4 rounded-r border border-stone-200 shadow-sm ${skill.isSecretArt ? 'border-l-fuchsia-600' : skill.category === 'boss' ? 'border-l-amber-600' : 'border-l-red-700'}`}>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-blue-900 font-bold">
-              <span className="text-stone-900 inline-flex items-center gap-1 mr-1">
-                <span className="fu-icon text-sm leading-none">{String(replacedDist).includes('遠程') ? 'r' : 'm'}</span>
-                [{renderFormattedText(replacedDist, skill.selections, npcLevel, partyLevel, true)}]
+      {skill.attack && (() => {
+        let resolvedType = replacedType;
+        if (typeof resolvedType === 'string' && resolvedType.startsWith('{') && resolvedType.endsWith('}')) {
+          const k = resolvedType.slice(1, -1);
+          resolvedType = skill.selections?.[k] || resolvedType;
+        }
+        const typeInfo = TYPE_STYLES[resolvedType];
+        const isRanged = String(replacedDist).includes('遠程') || skill.selections?.distance === '遠程';
+
+        return (
+          <div className={`bg-[#fffdf9] border-l-4 p-2.5 my-1 text-sm ml-2 md:ml-4 rounded-r border border-stone-200 shadow-sm ${skill.isSecretArt ? 'border-l-fuchsia-600' : skill.category === 'boss' ? 'border-l-amber-600' : 'border-l-red-700'}`}>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <span className="inline-flex items-center gap-1 text-[#3c2f21] bg-[#e8dec8] px-2 py-0.5 rounded text-xs font-bold shrink-0 shadow-2xs">
+                <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{isRanged ? 'r' : 'm'}</span>
+                <span>{renderFormattedText(replacedDist, skill.selections, npcLevel, partyLevel, true)}</span>
               </span>
-              {renderFormattedText(replacedForm, skill.selections, npcLevel, partyLevel, true)} {finalStats.Acc !== 0 && <span className="text-amber-700 font-bold">{finalStats.Acc > 0 ? `+ ${finalStats.Acc}` : `- ${Math.abs(finalStats.Acc)}`}</span>}
-            </span>
-            <span className="text-stone-400 text-xs">✦</span>
-            <span className="text-red-900 font-bold">
-              [HR + <span className="font-extrabold">{skill.attack.baseDmg + finalStats.Dmg}</span>]{' '}
-              {TYPE_STYLES[replacedType]?.fuIcon && (
-                <span className={`fu-icon text-sm mr-0.5 ${TYPE_STYLES[replacedType]?.color || ''}`}>
-                  {TYPE_STYLES[replacedType]?.fuIcon}
-                </span>
-              )}
-              {renderFormattedText(replacedType, skill.selections, npcLevel, partyLevel, true)}傷害
-            </span>
+              <span className="text-blue-900 font-bold inline-flex items-center gap-1">
+                <span>{renderFormattedText(replacedForm, skill.selections, npcLevel, partyLevel, true)}</span>
+                {finalStats.Acc !== 0 && (
+                  <span className="text-amber-700 font-bold">
+                    {finalStats.Acc > 0 ? `+ ${finalStats.Acc}` : `- ${Math.abs(finalStats.Acc)}`}
+                  </span>
+                )}
+              </span>
+              <span className="text-stone-400 text-xs select-none">✦</span>
+              <span className="inline-flex items-center gap-1 font-bold text-red-900">
+                <span>[HR + <span className="font-extrabold">{skill.attack.baseDmg + finalStats.Dmg}</span>]</span>
+                {DAMAGE_TYPES.includes(resolvedType) ? (
+                  <span className={`inline-flex items-center gap-0.5 ${typeInfo?.color || 'text-red-900'}`}>
+                    {typeInfo?.fuIcon && (
+                      <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{typeInfo.fuIcon}</span>
+                    )}
+                    <span>{resolvedType}</span>
+                  </span>
+                ) : (
+                  renderFormattedText(replacedType, skill.selections, npcLevel, partyLevel, true)
+                )}
+                <span>傷害</span>
+              </span>
+            </div>
+            {replacedExtra && <div className="text-stone-700 mt-1.5 pt-1.5 border-t border-stone-200 leading-relaxed text-xs whitespace-pre-wrap">{renderFormattedText(replacedExtra, skill.selections, npcLevel, partyLevel, true)}</div>}
           </div>
-          {replacedExtra && <div className="text-stone-700 mt-1.5 pt-1.5 border-t border-stone-200 leading-relaxed text-xs whitespace-pre-wrap">{renderFormattedText(replacedExtra, skill.selections, npcLevel, partyLevel, true)}</div>}
-        </div>
-      )}
+        );
+      })()}
       {(!skill.attack || replacedDesc) && <div className="text-sm text-stone-800 leading-relaxed whitespace-pre-wrap ml-2 md:ml-4">{renderFormattedText(replacedDesc, skill.selections, npcLevel, partyLevel, true)}</div>}
       {skill.isSecretArt && (
         <div className="text-fuchsia-900 mt-1.5 ml-2 md:ml-4 text-xs font-bold">
@@ -3204,7 +3239,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold text-red-700 drop-shadow-sm">{finalStats.HP}</span>
                     <span className="text-xs font-bold text-red-800/90 bg-red-100/80 border border-red-300/80 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs" title={`危機生命值 (Crisis Threshold ≤ ${Math.floor(finalStats.HP / 2)})`}>
-                      <span className="fu-icon text-sm leading-none">w</span> {Math.floor(finalStats.HP / 2)}
+                      <span className="fu-icon text-xs leading-none translate-y-[1.5px]">w</span> {Math.floor(finalStats.HP / 2)}
                     </span>
                   </div>
                 </div>
