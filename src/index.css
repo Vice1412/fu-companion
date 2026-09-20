@@ -205,81 +205,125 @@ body {
   box-shadow: 0 0 25px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(186, 230, 253, 0.25);
 }
 
-/* Page Turn Keyframes */
+/* Page Turn Keyframes - Pure GPU Composited (transform & opacity only) */
 @keyframes pageTurnForward {
   0% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) translateZ(0);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   }
-  40% {
-    box-shadow: -20px 30px 50px rgba(0, 0, 0, 0.7);
+  45% {
+    box-shadow: -25px 35px 60px rgba(0, 0, 0, 0.75);
   }
   100% {
-    transform: rotateY(-180deg);
+    transform: rotateY(-180deg) translateZ(0);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   }
 }
 
 @keyframes pageTurnReverse {
   0% {
-    transform: rotateY(-180deg);
+    transform: rotateY(-180deg) translateZ(0);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   }
-  60% {
-    box-shadow: -20px 30px 50px rgba(0, 0, 0, 0.7);
+  55% {
+    box-shadow: -25px 35px 60px rgba(0, 0, 0, 0.75);
   }
   100% {
-    transform: rotateY(0deg);
+    transform: rotateY(0deg) translateZ(0);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   }
 }
 
 .animate-page-turn-forward {
   transform-origin: left center;
-  animation: pageTurnForward 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: pageTurnForward 0.85s cubic-bezier(0.32, 0, 0.18, 1) forwards;
+  will-change: transform;
 }
 
 .animate-page-turn-reverse {
   transform-origin: left center;
-  animation: pageTurnReverse 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: pageTurnReverse 0.85s cubic-bezier(0.32, 0, 0.18, 1) forwards;
+  will-change: transform;
 }
 
-/* Dissolve & Reveal Transitions */
+/* Book Stage Zoom In/Out Camera Motion (鏡頭縮放過渡) */
+@keyframes bookStageZoomOpen {
+  0% {
+    transform: scale(0.94) translateZ(0);
+    opacity: 0.85;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.12) translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.18) translateZ(0);
+    opacity: 0;
+  }
+}
+
+@keyframes bookStageZoomClose {
+  0% {
+    transform: scale(1.15) translateZ(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.98) translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateZ(0);
+    opacity: 1;
+  }
+}
+
+.animate-book-stage-open {
+  animation: bookStageZoomOpen 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-book-stage-close {
+  animation: bookStageZoomClose 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* GPU-Accelerated Dissolve & Reveal (零 Blur 重繪，確保極致流暢) */
 @keyframes pageDissolveIn {
   0% {
     opacity: 0;
-    transform: scale(0.97) translateY(8px);
-    filter: blur(4px);
-  }
-  50% {
-    opacity: 0.5;
+    transform: scale(0.98) translateZ(0);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
+    transform: scale(1) translateZ(0);
   }
 }
 
 @keyframes pageDissolveOut {
   0% {
     opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
+    transform: scale(1) translateZ(0);
   }
   100% {
     opacity: 0;
-    transform: scale(0.97) translateY(-8px);
-    filter: blur(4px);
+    transform: scale(0.97) translateZ(0);
   }
 }
 
 .animate-page-dissolve-in {
-  animation: pageDissolveIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageDissolveIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-page-dissolve-out {
-  animation: pageDissolveOut 0.4s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: pageDissolveOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* Dynamic Shadow Sweep across the turning page */

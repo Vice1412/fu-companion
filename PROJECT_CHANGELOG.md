@@ -41,5 +41,12 @@
     - 步驟 1 底部 Quick Select 快捷按鈕。
     - NPC 檔案庫存檔卡片角色標籤。
     - `NPCBuilder.jsx` 戰術定位選擇器。
+- **翻頁動效升級（GPU 合成層縮放過渡）**：
+  - 實現「運鏡式翻開/合上縮放過渡」：
+    - **翻開典籍 (Open)**：書本自 `scale(0.94)` 伴隨 3D 翻頁流暢推進放大至 `scale(1.18)`，無縫融會至工作區。
+    - **合上典籍 (Close)**：書本自 `scale(1.15)` 翻頁合閉，平滑收縮落回 `scale(1.0)` 封面。
+  - **極致效能優化 (0 卡頓保障)**：
+    - 徹底移除全螢幕 `backdrop-blur` 與 keyframe `blur` 濾鏡（避免每秒 60 次的 GPU 像素重繪）。
+    - 100% 依託硬體加速屬性（`transform: scale/rotateY/translateZ` 與 `opacity`），在 `will-change` 獨立圖層運行，確保低配電腦與行動裝置維持 60fps。
 - **建置驗證**：
   - 通過 Vite Production Build (`npm run build`)，無任何編譯與語法警告。

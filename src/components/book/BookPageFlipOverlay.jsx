@@ -6,14 +6,16 @@ export default function BookPageFlipOverlay({ direction, targetChapter, onAnimat
 
   return (
     <div
-      className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden bg-slate-900/40 backdrop-blur-md perspective-book transition-opacity duration-300"
+      className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden bg-slate-950/75 perspective-book transition-opacity duration-300"
       onAnimationEnd={onAnimationEnd}
     >
       {/* Dynamic Background Light Sweep */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-400/20 via-cyan-300/10 to-transparent pointer-events-none" />
 
-      {/* 3D Book Stage */}
-      <div className="relative w-full max-w-4xl h-[520px] sm:h-[600px] flex items-center justify-center transform-style-3d px-4">
+      {/* 3D Book Stage with Camera Zoom In/Out Motion */}
+      <div className={`relative w-full max-w-4xl h-[520px] sm:h-[600px] flex items-center justify-center transform-style-3d px-4 ${
+        isOpening ? 'animate-book-stage-open' : 'animate-book-stage-close'
+      }`}>
         
         {/* Underneath Page: The Interior Parchment Page (內頁底紙 - 琉璃白玉質感) */}
         <div className="absolute w-[90%] sm:w-[85%] h-full rounded-2xl bg-[#f0f9ff] border-2 border-sky-300/80 shadow-2xl p-8 sm:p-12 flex flex-col justify-between overflow-hidden">

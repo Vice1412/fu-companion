@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette, Coffee, Heart } from 'lucide-react';
+import { GiDragonHead } from 'react-icons/gi';
 import modLogo from '../../assets/Fabula Ultima Mod Logo - White Background.png';
 import appIcon from '../../assets/app-icon.png';
 
@@ -1535,7 +1536,7 @@ function AvatarCropperModal({ isOpen, imageSrc, onClose, onConfirm }) {
   );
 }
 
-export default function App() {
+export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   const sheetRef = useRef(null);
 
   const [library, setLibrary] = useState(() => {
@@ -1636,6 +1637,105 @@ export default function App() {
   }, [appTheme]);
 
   const currentTheme = THEMES[appTheme] || THEMES.amber;
+
+  // Push theme toggle button to upper ChapterHeader
+  useEffect(() => {
+    if (setHeaderExtraLeft) {
+      setHeaderExtraLeft(
+        <button
+          onClick={() => setIsPaletteOpen(prev => !prev)}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm transition-all duration-300 text-xs font-bold ${
+            isPaletteOpen
+              ? 'bg-amber-100 text-amber-950 border-amber-500 scale-105 shadow-md'
+              : 'bg-white/90 text-slate-700 border-sky-300 hover:border-amber-600 hover:text-amber-900'
+          }`}
+          title="切換介面配色主題"
+        >
+          <Palette size={14} className="shrink-0 transition-colors" style={{ color: currentTheme.accent }} />
+          <span>{currentTheme.name.split(' ')[0]}</span>
+          <ChevronDown size={12} className={`transition-transform duration-300 ${isPaletteOpen ? 'rotate-180' : ''}`} />
+        </button>
+      );
+    }
+    return () => {
+      if (setHeaderExtraLeft) setHeaderExtraLeft(null);
+    };
+  }, [isPaletteOpen, appTheme, currentTheme, setHeaderExtraLeft]);
+
+  // Push NPC Workshop action controls to upper ChapterHeader right side
+  useEffect(() => {
+    if (setHeaderExtraRight) {
+      setHeaderExtraRight(
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {activeMainTab !== 'library' && (
+            <button
+              onClick={() => setActiveMainTab('library')}
+              className="text-xs font-bold text-slate-700 hover:text-amber-900 flex items-center gap-1 bg-white hover:bg-sky-50 px-2 py-1.5 rounded-lg border border-sky-300 transition-colors shadow-sm"
+              title="回到檔案庫"
+            >
+              <LayoutPanelLeft size={14} /> <span className="hidden sm:inline">回到檔案庫</span>
+            </button>
+          )}
+
+          {activeMainTab !== 'library' && state && (
+            <button
+              onClick={handleFreeModeToggleClick}
+              className={`px-2 py-1.5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1 text-xs shadow-sm border ${
+                state.isFreeModeEnabled
+                  ? 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-400 ring-1 ring-fuchsia-400/50 hover:bg-fuchsia-200'
+                  : 'bg-white text-slate-700 border-sky-300 hover:bg-sky-50'
+              }`}
+              title={state.isFreeModeEnabled ? '規則限制已解除（點擊恢復嚴謹模式）' : '點擊解除規則限制'}
+            >
+              {state.isFreeModeEnabled ? <Unlock size={14} className="text-fuchsia-700" /> : <Lock size={14} />}
+              <span className="hidden sm:inline">
+                {state.isFreeModeEnabled ? '🔓 解除規則限制' : '🔒 嚴謹模式'}
+              </span>
+              <span className="sm:hidden">
+                {state.isFreeModeEnabled ? '🔓 已解除' : '🔒 嚴謹'}
+              </span>
+            </button>
+          )}
+
+          {activeMainTab !== 'library' && (
+            <>
+              <button
+                onClick={handleSaveToLibrary}
+                className="text-white px-2.5 py-1.5 rounded-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm text-xs flex items-center gap-1"
+                style={{ backgroundColor: currentTheme.accent }}
+                title="儲存 NPC"
+              >
+                <Save size={14} /> <span className="hidden sm:inline">儲存 NPC</span>
+              </button>
+              <label
+                className="cursor-pointer text-slate-700 hover:text-sky-900 px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 border border-sky-300 transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
+                title="讀取 JSON"
+              >
+                <Upload size={14} /> <span className="hidden sm:inline">讀取 JSON</span>
+                <input type="file" accept=".json" className="hidden" onChange={handleImportJSON} />
+              </label>
+              <button
+                onClick={handleExportJSON}
+                className="text-slate-700 hover:text-sky-900 px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 border border-sky-300 transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
+                title="匯出 JSON"
+              >
+                <Download size={14} /> <span className="hidden sm:inline">匯出 JSON</span>
+              </button>
+            </>
+          )}
+        </div>
+      );
+    }
+    return () => {
+      if (setHeaderExtraRight) setHeaderExtraRight(null);
+    };
+  }, [
+    activeMainTab,
+    state?.isFreeModeEnabled,
+    currentTheme,
+    setHeaderExtraLeft,
+    setHeaderExtraRight
+  ]);
 
   // --- Task 3.1: Global Keyboard Shortcuts ---
   useEffect(() => {
@@ -5356,144 +5456,74 @@ export default function App() {
         </div>
       )}
 
-      <div className="border-b p-3 shadow-sm flex justify-between items-center z-50 flex-shrink-0 transition-colors duration-300" style={{ backgroundColor: currentTheme.headerBg, borderColor: currentTheme.border }}>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <img src={appIcon} alt="App Icon" className="h-8 w-8 object-contain pixelated shrink-0 select-none hover:scale-105 transition-transform" />
-            <span className="text-[#d6c7ab] font-bold hidden sm:inline">|</span>
-            <h1 className="text-xs font-black text-[#3c2415] uppercase tracking-[0.2em] hidden sm:block">FU NPC BUILDER</h1>
-          </div>
+      {/* 頂部延伸拱形半圓形托盤 Container (點擊上排色彩按鈕時開啟) */}
+      {isPaletteOpen && (
+        <>
+          {/* 全域點擊遮罩 (Click-away backdrop) */}
+          <div
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] animate-in fade-in duration-200"
+            onClick={() => setIsPaletteOpen(false)}
+          />
 
-          {/* 配色主題選擇器 (頂部伸出半圓形托盤) */}
-          <div className="relative">
-            <button
-              onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full border shadow-sm transition-all duration-300 ${
-                isPaletteOpen
-                  ? 'bg-amber-100 text-amber-950 border-amber-500 scale-105 shadow-md'
-                  : 'bg-[#fffdf9] text-[#6b5a4b] border-[#d6c7ab] hover:border-amber-600 hover:text-[#2c221e]'
-              }`}
-              title="切換介面配色主題"
+          {/* 頂部延伸拱形半圓形托盤 (畫面頂部居中伸出) */}
+          <div className="fixed top-[52px] left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-200 max-w-[calc(100vw-1rem)]">
+            <div
+              className="relative px-4 sm:px-6 pt-2.5 pb-4 sm:pb-5 rounded-b-[32px] sm:rounded-b-[36px] border-b-2 border-x-2 shadow-2xl backdrop-blur-md flex flex-col items-center gap-2 transition-colors duration-300"
+              style={{
+                backgroundColor: currentTheme.panelBg,
+                borderColor: currentTheme.accent,
+                color: currentTheme.textDark,
+                minWidth: '270px'
+              }}
             >
-              <Palette size={15} className="shrink-0 transition-colors" style={{ color: currentTheme.accent }} />
-              <span className="text-xs font-bold">{currentTheme.name.split(' ')[0]}</span>
-              <ChevronDown size={12} className={`transition-transform duration-300 ${isPaletteOpen ? 'rotate-180' : ''}`} />
-            </button>
+              {/* 托盤頂部裝飾條 */}
+              <div className="w-10 h-1 rounded-full bg-[#d6c7ab]/80 mb-0.5" />
+              <div className="text-[11px] font-bold opacity-75 tracking-wider mb-0.5 flex items-center gap-1">
+                <Palette size={12} /> 選擇色彩主題
+              </div>
 
-            {/* 頂部延伸半圓形托盤 Container */}
-            {isPaletteOpen && (
-              <>
-                {/* 全域點擊遮罩 (Click-away backdrop) */}
-                <div
-                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] animate-in fade-in duration-200"
-                  onClick={() => setIsPaletteOpen(false)}
-                />
-
-                {/* 頂部延伸拱形半圓形托盤 (畫面頂部居中伸出，徹底防止手機版左右溢出切邊) */}
-                <div className="fixed top-[52px] left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-200 max-w-[calc(100vw-1rem)]">
-                  <div
-                    className="relative px-4 sm:px-6 pt-2.5 pb-4 sm:pb-5 rounded-b-[32px] sm:rounded-b-[36px] border-b-2 border-x-2 shadow-2xl backdrop-blur-md flex flex-col items-center gap-2 transition-colors duration-300"
-                    style={{
-                      backgroundColor: currentTheme.panelBg,
-                      borderColor: currentTheme.accent,
-                      color: currentTheme.textDark,
-                      minWidth: '270px'
-                    }}
-                  >
-                    {/* 托盤頂部裝飾條 */}
-                    <div className="w-10 h-1 rounded-full bg-[#d6c7ab]/80 mb-0.5" />
-                    <div className="text-[11px] font-bold opacity-75 tracking-wider mb-0.5 flex items-center gap-1">
-                      <Palette size={12} /> 選擇色彩主題
-                    </div>
-
-                    {/* 6 色主題拱形半圓形選擇列 */}
-                    <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                      {Object.keys(THEMES).map(t => {
-                        const isSelected = appTheme === t;
-                        return (
-                          <button
-                            key={t}
-                            onClick={() => {
-                              setAppTheme(t);
-                              localStorage.setItem('fabula-npc-theme', t);
-                              // 無需文字提示，眼睛看了就知道顏色已切換！
-                              setIsPaletteOpen(false);
-                            }}
-                            className="group relative flex flex-col items-center justify-center transition-all duration-300 focus:outline-none"
-                            title={THEMES[t].name}
-                          >
-                            <div
-                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 flex items-center justify-center shadow-md ${
-                                isSelected
-                                  ? 'ring-2 ring-offset-2 scale-110 shadow-lg'
-                                  : 'hover:scale-125 opacity-85 hover:opacity-100'
-                              }`}
-                              style={{
-                                backgroundColor: THEMES[t].accent,
-                                borderColor: THEMES[t].accentDark,
-                                ringColor: THEMES[t].accent
-                              }}
-                            >
-                              {isSelected && (
-                                <Check className="text-white drop-shadow-sm stroke-[3]" size={16} />
-                              )}
-                            </div>
-                            <span className={`text-[10px] font-bold mt-1 transition-opacity ${isSelected ? 'opacity-100 font-black' : 'opacity-70 group-hover:opacity-100'}`}>
-                              {THEMES[t].name.split(' ')[0]}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+              {/* 6 色主題拱形半圓形選擇列 */}
+              <div className="flex items-center justify-center gap-2 sm:gap-2.5">
+                {Object.keys(THEMES).map(t => {
+                  const isSelected = appTheme === t;
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        setAppTheme(t);
+                        localStorage.setItem('fabula-npc-theme', t);
+                        setIsPaletteOpen(false);
+                      }}
+                      className="group relative flex flex-col items-center justify-center transition-all duration-300 focus:outline-none"
+                      title={THEMES[t].name}
+                    >
+                      <div
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 flex items-center justify-center shadow-md ${
+                          isSelected
+                            ? 'ring-2 ring-offset-2 scale-110 shadow-lg'
+                            : 'hover:scale-125 opacity-85 hover:opacity-100'
+                        }`}
+                        style={{
+                          backgroundColor: THEMES[t].accent,
+                          borderColor: THEMES[t].accentDark,
+                          ringColor: THEMES[t].accent
+                        }}
+                      >
+                        {isSelected && (
+                          <Check className="text-white drop-shadow-sm stroke-[3]" size={16} />
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-bold mt-1 transition-opacity ${isSelected ? 'opacity-100 font-black' : 'opacity-70 group-hover:opacity-100'}`}>
+                        {THEMES[t].name.split(' ')[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-
-          {activeMainTab !== 'library' && (
-            <button onClick={() => setActiveMainTab('library')} className="text-sm font-bold text-[#6b5a4b] hover:text-[#2c221e] flex items-center gap-1 bg-[#fffdf9] px-2 sm:px-3 py-1.5 rounded border border-[#d6c7ab] transition-colors" title="回到檔案庫">
-              <LayoutPanelLeft size={16} /> <span className="hidden sm:inline">回到檔案庫</span>
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2 text-sm items-center">
-          {/* 支持開發者 (Ko-fi) 靜音圖示 */}
-          <button
-            onClick={() => setIsSponsorModalOpen(true)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b5a4b] hover:text-amber-900 hover:bg-[#f4ebd9] border border-[#d6c7ab] transition-all duration-200 shrink-0 shadow-sm"
-            title="支持開發者 (Ko-fi)"
-          >
-            <Coffee size={16} />
-          </button>
-          {activeMainTab !== 'library' && state && (
-            <button
-              onClick={handleFreeModeToggleClick}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-full font-bold transition-all duration-300 flex items-center gap-1.5 text-xs shadow-sm border ${
-                state.isFreeModeEnabled
-                  ? 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-400 ring-1 ring-fuchsia-400/50 hover:bg-fuchsia-200'
-                  : 'bg-[#fffdf9] text-[#6b5a4b] border-[#d6c7ab] hover:border-amber-600 hover:text-[#2c221e]'
-              }`}
-              title={state.isFreeModeEnabled ? '規則限制已解除（點擊恢復嚴謹模式）' : '點擊解除規則限制'}
-            >
-              {state.isFreeModeEnabled ? <Unlock size={14} className="text-fuchsia-700" /> : <Lock size={14} />}
-              <span className="hidden sm:inline">
-                {state.isFreeModeEnabled ? '🔓 解除規則限制' : '🔒 嚴謹模式'}
-              </span>
-              <span className="sm:hidden">
-                {state.isFreeModeEnabled ? '🔓 已解除' : '🔒 嚴謹'}
-              </span>
-            </button>
-          )}
-          {activeMainTab !== 'library' && (
-            <>
-              <button onClick={handleSaveToLibrary} className="text-white px-2 sm:px-3 py-1.5 rounded font-bold transition-all hover:scale-105 active:scale-95 shadow-sm text-xs md:text-sm flex items-center gap-1" style={{ backgroundColor: currentTheme.accent }} title="儲存 NPC"><Save size={16} /> <span className="hidden sm:inline">儲存 NPC</span></button>
-              <label className="cursor-pointer text-[#6b5a4b] hover:text-[#2c221e] px-2 sm:px-3 py-1.5 rounded bg-[#fffdf9] hover:bg-[#f4ebd9] border border-[#d6c7ab] transition-colors flex items-center gap-1" title="讀取 JSON"><Upload size={14} /> <span className="hidden sm:inline">讀取 JSON</span> <input type="file" accept=".json" className="hidden" onChange={handleImportJSON} /></label>
-              <button onClick={handleExportJSON} className="text-[#6b5a4b] hover:text-[#2c221e] px-2 sm:px-3 py-1.5 rounded bg-[#fffdf9] hover:bg-[#f4ebd9] border border-[#d6c7ab] transition-colors flex items-center gap-1" title="匯出 JSON"><Download size={14} /> <span className="hidden sm:inline">匯出 JSON</span></button>
-            </>
-          )}
-        </div>
-      </div>
+        </>
+      )}
 
       {activeMainTab !== 'library' && (
         <div className="flex border-b-2 flex-shrink-0 transition-colors duration-300" style={{ backgroundColor: currentTheme.subpanelBg, borderColor: currentTheme.border }}>
@@ -5506,14 +5536,8 @@ export default function App() {
       {activeMainTab === 'library' && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar animate-in fade-in transition-colors duration-300" style={{ backgroundColor: currentTheme.appBg }}>
           <div className="max-w-6xl mx-auto flex flex-col min-h-full">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-8 border-b border-[#d6c7ab] pb-4 gap-4">
-              <div>
-                <h2 className="text-3xl font-black text-[#3c2415] tracking-widest mb-1">
-                  NPC 生成器
-                </h2>
-                <p className="text-[#6b5a4b] text-sm font-bold">管理與檢視您創建的所有自定義 NPC</p>
-              </div>
-              <div className="flex gap-2 w-full md:w-auto">
+            <div className="flex justify-end mb-6 border-b border-[#d6c7ab] pb-4">
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
                 <button onClick={handleBackupAllNPCs} className="bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all hover:scale-105 justify-center text-sm">
                   <Download size={16} /> 備份全庫
                 </button>
@@ -5525,9 +5549,9 @@ export default function App() {
 
             {library.length === 0 ? (
               <div className="text-center py-20 bg-[#fffdf9] rounded-xl border border-[#d6c7ab] border-dashed flex flex-col items-center justify-center shadow-sm">
-                <div className="relative mb-6 group">
-                  <div className="absolute inset-0 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all duration-700 w-24 h-24 -translate-x-4 -translate-y-2"></div>
-                  <img src={appIcon} alt="App Icon" className="h-20 w-20 object-contain pixelated opacity-50 group-hover:opacity-85 transition-all duration-500 relative z-10" />
+                <div className="relative mb-6 group flex items-center justify-center">
+                  <div className="absolute inset-0 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all duration-700 w-28 h-28 -translate-x-4 -translate-y-2"></div>
+                  <GiDragonHead className="w-20 h-20 text-amber-700/60 group-hover:text-amber-800/90 transition-all duration-500 relative z-10 drop-shadow" />
                 </div>
                 <p className="text-[#3c2415] font-bold tracking-widest text-lg">檔案庫目前空空如也</p>
                 <p className="text-[#6b5a4b] text-sm mt-2">點擊右上方按鈕開始創造你的第一個 NPC 吧！</p>
