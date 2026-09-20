@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as htmlToImage from 'html-to-image';
-import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette, Coffee, Heart } from 'lucide-react';
+import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette } from 'lucide-react';
 import { GiDragonHead } from 'react-icons/gi';
 import modLogo from '../../assets/Fabula Ultima Mod Logo - White Background.png';
 import appIcon from '../../assets/app-icon.png';
@@ -26,8 +26,7 @@ import {
   SPELLS_DATA,
   ROLES_DATA,
   SPECIES_DATA,
-  syncLevelPassives,
-  SPONSOR_CONFIG
+  syncLevelPassives
 } from './data';
 
 // --- COMPONENTS ---
@@ -1563,7 +1562,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   const [activeMainTab, setActiveMainTab] = useState('library');
   const [state, setState] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0); 
@@ -5554,34 +5552,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               </div>
             )}
 
-            {/* 贊助支持卡片 (Sponsorship Card) */}
-            <div className="mt-10 mb-6 p-4 rounded-xl bg-[#f4ebd9]/90 border border-[#d6c7ab] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left transition-all hover:border-amber-400">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-100/90 border border-amber-300 flex items-center justify-center shrink-0 text-amber-800 shadow-inner">
-                  <Coffee size={20} />
-                </div>
-                <div className="text-xs sm:text-sm text-[#3c2415] font-medium leading-relaxed">
-                  <span>喜歡的話，☕ 不妨</span>
-                  <a
-                    href={SPONSOR_CONFIG.kofiUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors inline-flex items-center gap-1"
-                  >
-                    請作者 ScarletVice 一杯咖啡
-                  </a>
-                  <span>恢復 HP......</span>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsSponsorModalOpen(true)}
-                className="shrink-0 text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 border border-amber-400 px-3.5 py-1.5 rounded-lg transition-all hover:scale-105 active:scale-95 shadow-sm flex items-center gap-1.5"
-              >
-                <Heart size={14} className="text-red-600 fill-red-600" />
-                <span>支持詳情</span>
-              </button>
-            </div>
-
             {/* 第三方授權聲明 (Third-Party License Notice) */}
             <div className="mt-auto pt-6 border-t border-[#d6c7ab]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
               <div className="text-center space-y-2">
@@ -5916,96 +5886,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
             {renderCharacterCard()}
 
             <div className="h-20 w-full flex-shrink-0"></div>
-          </div>
-        </div>
-      )}
-
-      {/* 贊助專屬彈窗 (Sponsorship Modal) */}
-      {isSponsorModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setIsSponsorModalOpen(false)}
-          />
-
-          {/* Modal Box */}
-          <div className="relative z-10 w-full max-w-lg bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-[#3c2415]">
-            {/* Modal Header */}
-            <div className="bg-[#f4ebd9] px-6 py-4 border-b border-[#d6c7ab] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-amber-100 text-amber-800 rounded-xl border border-amber-300 shadow-sm">
-                  <Coffee size={20} />
-                </div>
-                <h3 className="text-base sm:text-lg font-black tracking-wide text-[#3c2415]">
-                  ☕ 支持《FU NPC Builder》持續冒險
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsSponsorModalOpen(false)}
-                className="text-[#6b5a4b] hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                title="關閉"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
-              {/* Developer Note */}
-              <div className="bg-[#fcf8f0] p-4 rounded-xl border border-[#e8dec8] relative shadow-inner">
-                <p className="text-xs sm:text-sm leading-relaxed text-[#4a3b32] italic">
-                  「本來只是為了自用而開發的小專案，如果能幫到大家真是太好了！一同努力把FU推薦出去吧！」
-                </p>
-              </div>
-
-              {/* Primary Call to Action Button */}
-              <a
-                href={SPONSOR_CONFIG.kofiUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#FF5E5B] hover:bg-[#e04f4c] text-white py-3 px-5 rounded-xl font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Coffee size={20} />
-                <span>前往 Ko-fi 請作者 ScarletVice 喝咖啡</span>
-              </a>
-
-              {/* Future Plans Section */}
-              <div className="border-t border-[#e8dec8] pt-4">
-                <div className="flex items-center gap-2 mb-2 text-xs font-black uppercase tracking-wider text-amber-800">
-                  <Sparkles size={14} />
-                  <span>未來開發計畫 Roadmap</span>
-                </div>
-                <ul className="space-y-2 text-xs text-[#5c4a3e] bg-[#f8f3e8] p-3.5 rounded-xl border border-[#e8dec8]">
-                  <li className="flex items-center gap-2 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
-                    <span>⚔️ 實時戰鬥追蹤器 (Encounter Tracker)</span>
-                  </li>
-                  <li className="flex items-center gap-2 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
-                    <span>📚 官方擴充書內容支援</span>
-                  </li>
-                  <li className="flex items-center gap-2 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
-                    <span>📜 角色卡構築器</span>
-                  </li>
-                  <li className="flex items-center gap-2 font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
-                    <span>⏳ 命刻記錄</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="bg-[#f4ebd9]/60 px-6 py-3 border-t border-[#d6c7ab] flex justify-end">
-              <button
-                onClick={() => setIsSponsorModalOpen(false)}
-                className="px-4 py-1.5 bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] text-xs font-bold rounded-lg transition-colors"
-              >
-                關閉窗口
-              </button>
-            </div>
           </div>
         </div>
       )}
