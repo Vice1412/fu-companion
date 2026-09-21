@@ -115,3 +115,16 @@
     - **特殊規則 (SPECIAL RULES)**：配備 `📜` 典籍規則圖標。
 - **建置驗證**：
   - 通過 Vite Production Build (`npm run build`)，零錯誤、零警告。
+
+### [2026-09-21] - 章節專屬色調頂欄與 NPC 工坊頂欄米褐色對齊
+- **NPC 工坊頂部導覽列改版為羊皮紙米褐色 (Rice-Brown Topbar for NPC Workshop)**：
+  - 將 NPC 工坊頂部的章節導覽欄（`ChapterHeader.jsx`）完全改為米褐色底色（`bg-[#f4ebd9]/95`）、褐色邊框（`border-[#d6c7ab]`）、深棕文字（`text-[#3c2415]`、`text-[#7c6a58]`）與皮革琥珀金色返回按鈕（`from-[#8b5e34] via-[#92400e] to-[#78350f]`），徹底消除原本突兀的亮天藍色，與下方工坊的羊皮紙米褐調完全融為一體。
+  - 同步將工坊注入頂欄右側的快捷操作按鈕（`回到檔案庫`、`🔒 嚴謹模式`、`讀取 JSON`、`匯出 JSON`）改為米白色底配米褐色邊框（`bg-[#fffdf9] border-[#d6c7ab] text-[#3c2415] hover:bg-[#ebdcc4]`）。
+- **全站四大章節專屬色調矩陣 (Chapter-Specific Themes)**：
+  - 各章節頂欄（`ChapterHeader`）、頁面底色與選取高亮（`App.jsx`）、3D 翻頁內頁與翻頁底面（`BookPageFlipOverlay.jsx`）以及頁腳（Footer）全面按章節自訂專屬色系：
+    1. **NPC 工坊 (`workshop`)**：米褐色 / 典籍羊皮紙（`#f4ebd9` / `#fbf7ee` / `#d6c7ab` / `#3c2415`）
+    2. **角色卡助手 (`character`)**：翡翠綠（`#ecfdf5` / `#f4fbf7` / `border-emerald-200` / 墨綠文字）
+    3. **戰鬥輪次 (`combat`)**：緋紅曜石（`#fff1f2` / `#fdf4f5` / `border-rose-200` / 深紅文字）
+    4. **命刻記錄 (`clocks`)**：蒼穹青藍（`#f0f9ff` / `border-sky-200` / 湛藍文字）
+- **建置驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零錯誤編譯。

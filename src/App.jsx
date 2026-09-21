@@ -128,8 +128,52 @@ export default function App() {
   const currentMeta = activeChapter ? CHAPTER_METAS[activeChapter] : null;
   const targetMeta = targetChapterId ? CHAPTER_METAS[targetChapterId] : null;
 
+  const CHAPTER_PAGE_THEMES = {
+    workshop: 'bg-[#fbf7ee] text-[#2c221e] selection:bg-amber-200 selection:text-amber-900',
+    character: 'bg-[#f4fbf7] text-[#1e293b] selection:bg-emerald-200 selection:text-emerald-900',
+    combat: 'bg-[#fdf4f5] text-[#1e293b] selection:bg-rose-200 selection:text-rose-900',
+    clocks: 'bg-[#f0f9ff] text-[#1e293b] selection:bg-cyan-200 selection:text-cyan-900',
+  };
+
+  const CHAPTER_FOOTER_THEMES = {
+    character: {
+      border: 'border-emerald-200',
+      bg: 'bg-emerald-50/70',
+      number: 'text-emerald-900',
+      text: 'text-emerald-800',
+      button: 'text-emerald-800 hover:text-emerald-950',
+      subtext: 'text-emerald-600/80',
+    },
+    combat: {
+      border: 'border-rose-200',
+      bg: 'bg-rose-50/70',
+      number: 'text-rose-900',
+      text: 'text-rose-800',
+      button: 'text-rose-800 hover:text-rose-950',
+      subtext: 'text-rose-600/80',
+    },
+    clocks: {
+      border: 'border-sky-200',
+      bg: 'bg-sky-50/70',
+      number: 'text-sky-900',
+      text: 'text-sky-800',
+      button: 'text-sky-800 hover:text-sky-950',
+      subtext: 'text-sky-600/80',
+    },
+  };
+
+  const activePageTheme = (activeChapter && CHAPTER_PAGE_THEMES[activeChapter]) || 'bg-[#f0f7f9] text-[#1e293b] selection:bg-cyan-200 selection:text-cyan-900';
+  const footerTheme = (activeChapter && CHAPTER_FOOTER_THEMES[activeChapter]) || {
+    border: 'border-[#d6c7ab]',
+    bg: 'bg-[#f5efdf]/60',
+    number: 'text-amber-900',
+    text: 'text-[#6b5a4b]',
+    button: 'text-amber-800 hover:text-amber-950',
+    subtext: 'text-[#8c7b6c]',
+  };
+
   return (
-    <div className="min-h-screen bg-[#f0f7f9] text-[#1e293b] flex flex-col selection:bg-cyan-200 selection:text-cyan-900 relative">
+    <div className={`min-h-screen ${activePageTheme} flex flex-col relative transition-colors duration-300`}>
       
       {/* 3D Page Flip Transition Overlay */}
       {transitionState && (
@@ -197,18 +241,18 @@ export default function App() {
               </main>
 
               {/* Dedicated Feature Footer */}
-              <footer className="border-t border-[#d6c7ab] py-4 px-4 text-center text-xs text-[#6b5a4b] font-medium flex flex-col sm:flex-row items-center justify-between gap-2 bg-[#f5efdf]/60 mt-auto max-w-7xl mx-auto w-full">
+              <footer className={`border-t ${footerTheme.border} py-4 px-4 text-center text-xs ${footerTheme.text} font-medium flex flex-col sm:flex-row items-center justify-between gap-2 ${footerTheme.bg} mt-auto max-w-7xl mx-auto w-full transition-colors duration-300`}>
                 <div className="flex items-center gap-2">
-                  <span className="font-serif font-bold text-amber-900">{currentMeta.number}</span>
+                  <span className={`font-serif font-bold ${footerTheme.number}`}>{currentMeta.number}</span>
                   <span>· {currentMeta.title}</span>
                 </div>
                 <button
                   onClick={handleExitToCover}
-                  className="text-amber-800 hover:text-amber-950 font-serif font-bold underline underline-offset-2 flex items-center gap-1 text-xs"
+                  className={`${footerTheme.button} font-serif font-bold underline underline-offset-2 flex items-center gap-1 text-xs`}
                 >
                   <span>合上本卷並返回封面目錄</span>
                 </button>
-                <p className="text-[11px] text-[#8c7b6c]">純前端零伺服器架構 · 數據即時自動保存</p>
+                <p className={`text-[11px] ${footerTheme.subtext}`}>純前端零伺服器架構 · 數據即時自動保存</p>
               </footer>
             </>
           )}

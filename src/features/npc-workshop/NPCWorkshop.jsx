@@ -1719,7 +1719,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
           {activeMainTab !== 'library' && (
             <button
               onClick={() => setActiveMainTab('library')}
-              className="text-xs font-bold text-slate-700 hover:text-amber-900 flex items-center gap-1 bg-white hover:bg-sky-50 px-2 py-1.5 rounded-lg border border-sky-300 transition-colors shadow-sm"
+              className="text-xs font-bold text-[#3c2415] hover:text-[#2a1708] flex items-center gap-1 bg-[#fffdf9] hover:bg-[#ebdcc4] px-2 py-1.5 rounded-lg border border-[#d6c7ab] transition-colors shadow-sm"
               title="回到檔案庫"
             >
               <LayoutPanelLeft size={14} /> <span className="hidden sm:inline">回到檔案庫</span>
@@ -1732,7 +1732,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               className={`px-2 py-1.5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1 text-xs shadow-sm border ${
                 state.isFreeModeEnabled
                   ? 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-400 ring-1 ring-fuchsia-400/50 hover:bg-fuchsia-200'
-                  : 'bg-white text-slate-700 border-sky-300 hover:bg-sky-50'
+                  : 'bg-[#fffdf9] text-[#3c2415] border-[#d6c7ab] hover:bg-[#ebdcc4]'
               }`}
               title={state.isFreeModeEnabled ? '規則限制已解除（點擊恢復嚴謹模式）' : '點擊解除規則限制'}
             >
@@ -1757,7 +1757,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 <Save size={14} /> <span className="hidden sm:inline">儲存 NPC</span>
               </button>
               <label
-                className="cursor-pointer text-slate-700 hover:text-sky-900 px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 border border-sky-300 transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
+                className="cursor-pointer text-[#3c2415] hover:text-[#2a1708] px-2 py-1.5 rounded-lg bg-[#fffdf9] hover:bg-[#ebdcc4] border border-[#d6c7ab] transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
                 title="讀取 JSON"
               >
                 <Upload size={14} /> <span className="hidden sm:inline">讀取 JSON</span>
@@ -1765,7 +1765,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               </label>
               <button
                 onClick={handleExportJSON}
-                className="text-slate-700 hover:text-sky-900 px-2 py-1.5 rounded-lg bg-white hover:bg-sky-50 border border-sky-300 transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
+                className="text-[#3c2415] hover:text-[#2a1708] px-2 py-1.5 rounded-lg bg-[#fffdf9] hover:bg-[#ebdcc4] border border-[#d6c7ab] transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
                 title="匯出 JSON"
               >
                 <Download size={14} /> <span className="hidden sm:inline">匯出 JSON</span>
