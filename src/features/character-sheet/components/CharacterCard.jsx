@@ -127,10 +127,10 @@ export default function CharacterCard({
       <div className="p-3.5 border-b border-[#d6c7ab] bg-[#f8f3e8] flex flex-wrap items-center justify-between gap-4">
         {/* Dice */}
         <div className="flex items-center gap-2 flex-wrap">
-          <StatBadge stat="dex" value={stats.dex} size="sm" />
-          <StatBadge stat="ins" value={stats.ins} size="sm" />
-          <StatBadge stat="mig" value={stats.mig} size="sm" />
-          <StatBadge stat="wlp" value={stats.wlp} size="sm" />
+          <StatBadge stat="dex" value={stats.currentDex || stats.baseDex || 8} size="sm" />
+          <StatBadge stat="ins" value={stats.currentIns || stats.baseIns || 8} size="sm" />
+          <StatBadge stat="mig" value={stats.currentMig || stats.baseMig || 8} size="sm" />
+          <StatBadge stat="wlp" value={stats.currentWlp || stats.baseWlp || 8} size="sm" />
         </div>
 
         {/* Def & MDef & Init */}
@@ -216,6 +216,32 @@ export default function CharacterCard({
                 <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                   <div className="font-bold text-blue-900 mb-1">👑 {hs.name}</div>
                   <p className="text-[#6b5a4b] leading-relaxed font-sans text-[11px]">{hs.effect}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bonds */}
+        {character.bonds && character.bonds.length > 0 && (
+          <div>
+            <h4 className="text-xs font-mono font-bold text-rose-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
+              <span>💖</span> 情感羈絆 (Bonds)
+            </h4>
+            <div className="space-y-1.5">
+              {character.bonds.map((bond, idx) => (
+                <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs flex items-center justify-between gap-2">
+                  <div className="font-bold text-[#3c2415]">{bond.target}</div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {(bond.feelings || []).map(f => (
+                      <span key={f} className="px-1.5 py-0.5 rounded bg-white border border-[#d6c7ab] text-[10px] text-amber-900 font-bold">
+                        {f}
+                      </span>
+                    ))}
+                    <span className="text-[10px] font-mono text-[#8c7b6c] font-bold">
+                      (+{bond.feelings?.length || 0})
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

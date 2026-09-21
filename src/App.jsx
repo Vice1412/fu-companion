@@ -235,7 +235,9 @@ export default function App() {
           ) : (
             <>
               <main className="flex-1 p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
-                {activeChapter === 'character' && <CharacterSheet />}
+                {activeChapter === 'character' && (
+                  <CharacterSheet onOpenDice={() => setIsDiceModalOpen(true)} />
+                )}
                 {activeChapter === 'combat' && <CombatTracker />}
                 {activeChapter === 'clocks' && <FateClockPage />}
               </main>

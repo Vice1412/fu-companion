@@ -128,3 +128,33 @@
     4. **命刻記錄 (`clocks`)**：蒼穹青藍（`#f0f9ff` / `border-sky-200` / 湛藍文字）
 - **建置驗證**：
   - 通過 Vite Production Build (`npm run build`)，零錯誤編譯。
+
+### [2026-09-21] - 玩家角色卡全系統重構：靈活導引精靈、跑團實戰儀表板與戰役成長體系
+- **手冊與拓展分類體系 (Sourcebook & Expansion System)**：
+  - 新增 [`sourcebookConfig.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/sourcebookConfig.js)，將 28 大職業精確劃分為五大模組：
+    - 核心 15 職 (Core Rulebook - 永遠預設啟用)
+    - 🏰 高等奇幻手冊 (High Fantasy Atlas - 5 職)
+    - ⚙️ 科技奇幻手冊 (Techno Fantasy Atlas - 3 職)
+    - 🌿 自然奇幻手冊 (Natural Fantasy Atlas - 4 職)
+    - 🧪 官方公測修訂 (Playtest Materials)
+  - 提供即時打勾開關，勾選後立即解鎖對應職業與特技。
+- **官方經典 8 大起始範本庫 (Core Starter Archetypes)**：
+  - 新增 [`starterPresets.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/starterPresets.js)，收錄官方規則書推薦的 8 大起始配置：元素魔劍士、神聖護衛、荒野神射手、奧術博學者、暗夜殺手、魔導機巧技師、戰意演說家、魔獸擬態薩滿。
+  - 創角時點擊「官方經典配置」可一鍵套用身世、屬性、職業、裝備與情感羈絆。
+- **三態架構整合 (Tri-Mode Architecture in `CharacterSheet.jsx`)**：
+  1. **名冊總覽 (Roster Mode)**：卡片總覽、即時 HP/MP/金錢/EXP 概覽、複製、刪除、一鍵推入戰鬥房間、JSON 備份匯出入。
+  2. **跑團實戰儀表板 (Play HUD Mode - `CharacterPlayHUD.jsx`)**：
+     - **戰役長期成長體系**：EXP 動態進度條（10 EXP = 1 級），滿 10 點觸發升級彈窗，可點選新職業或提升技能 SL。
+     - **金錢 Zenit 與物語點 FP 記帳**：提供快速增減按鈕。
+     - **資源快速消耗**：HP/MP/IP 加減微調，IP 一鍵製造治療劑、萬能藥、解毒劑與提神藥。
+     - **六大狀態異常即時切換**：眩暈、憤怒、中毒、動搖、緩速、虛弱，點擊切換時下方的敏捷、洞察、體魄、意志屬性骰階自動降級（`reduceDieStep`）。
+     - **點擊屬性即時擲骰**：點擊屬性或武器檢定直接喚醒全域 3D 雙骰骰盅。
+  3. **靈活創角與升級工作台 (Builder Wizard - `CharacterEditor.jsx`)**：
+     - 六大步驟自由跳轉，支援暫時放空。
+     - 頂部常駐**「自檢提醒清單」**，點擊彈出抽屜並可跳轉至指定步驟修復。
+     - 官方三大標準屬性陣列（專精型、均衡型、特化型）一鍵填入與 32 點總和檢驗。
+     - 三維六向情感羈絆輪盤（欽佩/自卑、忠誠/疑忌、眷愛/憎恨）。
+     - 軍用武器/重甲熟練度檢核警告。
+- **建置驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零錯誤編譯。
+
