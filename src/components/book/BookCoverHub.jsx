@@ -28,16 +28,6 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
 
   const CHAPTERS = [
     {
-      id: 'workshop',
-      title: 'NPC工坊',
-      icon: GiDragonHead,
-      color: 'amber',
-      borderGlow: 'hover:border-amber-400 hover:shadow-amber-500/20',
-      accentGradient: 'from-amber-400/10 via-amber-200/5 to-transparent',
-      textColor: 'group-hover:text-amber-800',
-      iconBg: 'bg-gradient-to-br from-amber-50 to-amber-100/80 border-amber-300 text-amber-700 shadow-sm'
-    },
-    {
       id: 'character',
       title: '角色卡助手',
       icon: GiVisoredHelm,
@@ -46,6 +36,16 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
       accentGradient: 'from-emerald-400/10 via-emerald-200/5 to-transparent',
       textColor: 'group-hover:text-emerald-800',
       iconBg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/80 border-emerald-300 text-emerald-700 shadow-sm'
+    },
+    {
+      id: 'workshop',
+      title: 'NPC工坊',
+      icon: GiDragonHead,
+      color: 'amber',
+      borderGlow: 'hover:border-amber-400 hover:shadow-amber-500/20',
+      accentGradient: 'from-amber-400/10 via-amber-200/5 to-transparent',
+      textColor: 'group-hover:text-amber-800',
+      iconBg: 'bg-gradient-to-br from-amber-50 to-amber-100/80 border-amber-300 text-amber-700 shadow-sm'
     },
     {
       id: 'combat',

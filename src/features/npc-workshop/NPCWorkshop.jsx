@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as htmlToImage from 'html-to-image';
-import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette } from 'lucide-react';
-import { GiDragonHead } from 'react-icons/gi';
+import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette, Filter, ArrowUpDown, MessageSquare, FileCode } from 'lucide-react';
+import { GiDragonHead, GiRollingDices } from 'react-icons/gi';
 import appIcon from '../../assets/app-icon.png';
 
 import {
@@ -720,7 +720,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
           <div className="flex flex-col gap-3 w-full bg-[#f8f3e6] p-2.5 rounded border border-[#e2d6c1] text-xs mb-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
-                <label className="block text-[#6b5a4b] mb-1 font-bold">目標 (Target)</label>
+                <label className="block text-[#6b5a4b] mb-1 font-bold">目標</label>
                 <select
                   className="w-full bg-[#fffdf9] border border-[#d6c7ab] p-1 rounded text-[#2c221e] font-bold"
                   value={editSpellData.targetType}
@@ -735,7 +735,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
 
               {editSpellData.targetType === '至多 X 個生物' ? (
                 <div>
-                  <label className="block text-[#6b5a4b] mb-1 font-bold">目標數量 (X)</label>
+                  <label className="block text-[#6b5a4b] mb-1 font-bold">目標數量</label>
                   <input
                     type="number"
                     min="1"
@@ -769,7 +769,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
               </div>
 
               <div>
-                <label className="block text-[#6b5a4b] mb-1 font-bold">持續時間 (Duration)</label>
+                <label className="block text-[#6b5a4b] mb-1 font-bold">持續時間</label>
                 <select
                   className="w-full bg-[#fffdf9] border border-[#d6c7ab] p-1 rounded text-[#2c221e] font-bold"
                   value={editSpellData.duration}
@@ -790,7 +790,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
                   checked={editSpellData.isOffensive}
                   onChange={e => setEditSpellData({ ...editSpellData, isOffensive: e.target.checked })}
                 />
-                <span>⚡ 攻擊性咒語 (包含魔法檢定)</span>
+                <span>攻擊性咒語 (包含魔法檢定)</span>
               </label>
 
               {editSpellData.isOffensive && (
@@ -1081,106 +1081,106 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
 // --- MAIN APP ---
 const THEMES = {
   amber: {
-    name: '📜 琥珀棕',
-    accent: '#b45309',
-    accentHover: '#92400e',
-    accentDark: '#8b5e34',
-    accentLight: '#fef3c7',
-    badgeBg: '#fbf3de',
-    border: '#d6c7ab',
-    appBg: '#fbf7ee',
+    name: '琥珀棕',
+    accent: '#9c4d16',
+    accentHover: '#823f0f',
+    accentDark: '#693108',
+    accentLight: '#faeedd',
+    badgeBg: '#faeedd',
+    border: '#d5c6ad',
+    appBg: '#f9f6f0',
     cardBg: '#fffdf9',
-    sheetBg: '#fbf7ee',
-    panelBg: '#f5efdf',
-    subpanelBg: '#f4ebd9',
-    headerBg: '#f4ebd9',
-    exportBg: '#fbf7ee',
-    textDark: '#3c2415'
+    sheetBg: '#f9f6f0',
+    panelBg: '#f3ebe0',
+    subpanelBg: '#ece1d1',
+    headerBg: '#e7dac8',
+    exportBg: '#f9f6f0',
+    textDark: '#382012'
   },
   blue: {
-    name: '✒️ 經典藍',
-    accent: '#1d4ed8',
-    accentHover: '#1e40af',
-    accentDark: '#1e3a8a',
-    accentLight: '#dbeafe',
-    badgeBg: '#eff6ff',
-    border: '#b0d0ff',
-    appBg: '#f0f5ff',
+    name: '群青藍',
+    accent: '#27527a',
+    accentHover: '#1f4263',
+    accentDark: '#17324c',
+    accentLight: '#dde7f0',
+    badgeBg: '#dde7f0',
+    border: '#b6cad9',
+    appBg: '#f2f5f8',
     cardBg: '#ffffff',
-    sheetBg: '#f4f8ff',
-    panelBg: '#e6f0ff',
-    subpanelBg: '#dbeafe',
-    headerBg: '#e0ecff',
-    exportBg: '#f4f8ff',
-    textDark: '#1e293b'
+    sheetBg: '#f2f5f8',
+    panelBg: '#eaeff4',
+    subpanelBg: '#dfe7ee',
+    headerBg: '#dae3ec',
+    exportBg: '#f2f5f8',
+    textDark: '#142a3e'
   },
   crimson: {
-    name: '🩸 硃砂紅',
-    accent: '#b91c1c',
-    accentHover: '#991b1b',
-    accentDark: '#7f1d1d',
-    accentLight: '#fee2e2',
-    badgeBg: '#fef2f2',
-    border: '#fca5a5',
-    appBg: '#fff5f5',
+    name: '硃砂紅',
+    accent: '#8c2d36',
+    accentHover: '#75232b',
+    accentDark: '#58171e',
+    accentLight: '#f5e6e7',
+    badgeBg: '#f5e6e7',
+    border: '#d8bec2',
+    appBg: '#f8f4f5',
     cardBg: '#ffffff',
-    sheetBg: '#fff8f8',
-    panelBg: '#ffebeb',
-    subpanelBg: '#fee2e2',
-    headerBg: '#fde2e2',
-    exportBg: '#fff8f8',
-    textDark: '#3b1c1c'
+    sheetBg: '#f8f4f5',
+    panelBg: '#f2eaec',
+    subpanelBg: '#ebdfe2',
+    headerBg: '#e6d7db',
+    exportBg: '#f8f4f5',
+    textDark: '#421217'
   },
   emerald: {
-    name: '🌲 森林綠',
-    accent: '#15803d',
-    accentHover: '#166534',
-    accentDark: '#14532d',
-    accentLight: '#dcfce7',
-    badgeBg: '#f0fdf4',
-    border: '#86efac',
-    appBg: '#f0fdf4',
+    name: '翡翠青',
+    accent: '#245c45',
+    accentHover: '#1c4a37',
+    accentDark: '#133829',
+    accentLight: '#e1eee7',
+    badgeBg: '#e1eee7',
+    border: '#b2cdbe',
+    appBg: '#f3f7f5',
     cardBg: '#ffffff',
-    sheetBg: '#f4fcf6',
-    panelBg: '#e6f7ec',
-    subpanelBg: '#dcfce7',
-    headerBg: '#dcfce7',
-    exportBg: '#f4fcf6',
-    textDark: '#143823'
+    sheetBg: '#f3f7f5',
+    panelBg: '#ebf2ee',
+    subpanelBg: '#e1ece5',
+    headerBg: '#dae6df',
+    exportBg: '#f3f7f5',
+    textDark: '#133829'
   },
   purple: {
-    name: '🔮 經典紫',
-    accent: '#7e22ce',
-    accentHover: '#6b21a8',
-    accentDark: '#581c87',
-    accentLight: '#f3e8ff',
-    badgeBg: '#faf5ff',
-    border: '#d8b4fe',
-    appBg: '#fbf5ff',
+    name: '秘術紫',
+    accent: '#5e387c',
+    accentHover: '#4e2c67',
+    accentDark: '#3a1f4f',
+    accentLight: '#eee5f5',
+    badgeBg: '#eee5f5',
+    border: '#ccbfdb',
+    appBg: '#f7f4f9',
     cardBg: '#ffffff',
-    sheetBg: '#faf5ff',
-    panelBg: '#f3e8ff',
-    subpanelBg: '#ede9fe',
-    headerBg: '#ede9fe',
-    exportBg: '#faf5ff',
-    textDark: '#2e104d'
+    sheetBg: '#f7f4f9',
+    panelBg: '#f1eaf6',
+    subpanelBg: '#e9dfef',
+    headerBg: '#e3d6ea',
+    exportBg: '#f7f4f9',
+    textDark: '#321646'
   },
   slate: {
-    name: '🌑 鐵石灰',
-    accent: '#374151',
-    accentHover: '#1f2937',
-    accentDark: '#111827',
-    accentLight: '#e5e7eb',
-    badgeBg: '#f3f4f6',
-    border: '#9ca3af',
-    appBg: '#f8fafc',
+    name: '鐵石灰',
+    accent: '#404a58',
+    accentHover: '#303844',
+    accentDark: '#20262f',
+    accentLight: '#e6eaef',
+    badgeBg: '#e6eaef',
+    border: '#c0c8d2',
+    appBg: '#f5f6f8',
     cardBg: '#ffffff',
-    sheetBg: '#f8fafc',
-    panelBg: '#f1f5f9',
-    subpanelBg: '#e2e8f0',
-    headerBg: '#e2e8f0',
-    exportBg: '#f8fafc',
-    textDark: '#1e293b'
+    sheetBg: '#f5f6f8',
+    panelBg: '#eceff3',
+    subpanelBg: '#e2e6ec',
+    headerBg: '#d9dfe6',
+    exportBg: '#f5f6f8',
+    textDark: '#1b212b'
   }
 };
 
@@ -1334,7 +1334,7 @@ function FreeModeConfirmModal({ isOpen, onClose, onConfirm }) {
           </p>
 
           <ul className="list-disc list-inside text-xs text-[#574c43] space-y-1.5 pl-1 bg-[#f4ebd9] p-3 rounded-xl border border-[#d6c7ab]">
-            <li>自由調整 NPC 的 <strong className="text-fuchsia-900">體質骰子大小 (DEX / INS / MIG / WLP)</strong>。</li>
+            <li>自由調整 NPC 的 <strong className="text-fuchsia-900">體質骰子大小</strong>。</li>
             <li><strong className="text-amber-800">HP, MP, 物防, 魔防</strong> 將依據 Fabula Ultima 體質公式自動連動重算。</li>
             <li>無視等級、職能與技能額度上限限制，自由組合技能與能力。</li>
           </ul>
@@ -1601,7 +1601,7 @@ function AvatarCropperModal({ isOpen, imageSrc, onClose, onConfirm }) {
   );
 }
 
-export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
+export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavChange = null }) {
   const sheetRef = useRef(null);
 
   const [library, setLibrary] = useState(() => {
@@ -1648,6 +1648,75 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
   const [spellSearch, setSpellSearch] = useState('');
   const [copyFormatDropdownOpen, setCopyFormatDropdownOpen] = useState(false);
   const [highlightedSkillId, setHighlightedSkillId] = useState(null);
+
+  // Library Search, Filter & Sort State
+  const [libSearchQuery, setLibSearchQuery] = useState('');
+  const [libRoleFilter, setLibRoleFilter] = useState('all');
+  const [libRankFilter, setLibRankFilter] = useState('all');
+  const [libSortBy, setLibSortBy] = useState('recent'); // 'recent' | 'name_asc' | 'level_desc' | 'level_asc'
+
+  const availableLibRoles = useMemo(() => {
+    const set = new Set();
+    library.forEach(n => { if (n.role) set.add(n.role); });
+    return Array.from(set).sort();
+  }, [library]);
+
+  const availableLibRanks = useMemo(() => {
+    const set = new Set();
+    library.forEach(n => { if (n.rank) set.add(n.rank); });
+    return Array.from(set).sort();
+  }, [library]);
+
+  const filteredLibrary = useMemo(() => {
+    let list = [...library];
+
+    // Search keyword
+    if (libSearchQuery.trim()) {
+      const q = libSearchQuery.toLowerCase().trim();
+      list = list.filter(npc => {
+        const nameMatch = (npc.name || '').toLowerCase().includes(q);
+        const roleMatch = (npc.role || '').toLowerCase().includes(q);
+        const rankMatch = (npc.rank || '').toLowerCase().includes(q);
+        const traitsMatch = (npc.traits || '').toLowerCase().includes(q);
+        const tacticsMatch = (npc.tactics || '').toLowerCase().includes(q);
+        const storyMatch = (npc.story || '').toLowerCase().includes(q);
+        const factionMatch = (npc.faction || '').toLowerCase().includes(q);
+        const speciesLabel = npc.selectedSpeciesId ? (SPECIES_THEMES[npc.selectedSpeciesId]?.label || '') : '';
+        const speciesMatch = speciesLabel.toLowerCase().includes(q);
+        const skillsMatch = (npc.skills || []).some(s => (s.name || '').toLowerCase().includes(q));
+        return nameMatch || roleMatch || rankMatch || traitsMatch || tacticsMatch || storyMatch || factionMatch || speciesMatch || skillsMatch;
+      });
+    }
+
+    // Role filter
+    if (libRoleFilter !== 'all') {
+      list = list.filter(npc => npc.role === libRoleFilter);
+    }
+
+    // Rank filter
+    if (libRankFilter !== 'all') {
+      list = list.filter(npc => npc.rank === libRankFilter);
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (libSortBy === 'name_asc') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (libSortBy === 'level_desc') {
+        return (parseInt(b.level, 10) || 5) - (parseInt(a.level, 10) || 5);
+      }
+      if (libSortBy === 'level_asc') {
+        return (parseInt(a.level, 10) || 5) - (parseInt(b.level, 10) || 5);
+      }
+      // 'recent'
+      const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : (parseInt((a.id || '').replace(/\D/g, ''), 10) || 0);
+      const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : (parseInt((b.id || '').replace(/\D/g, ''), 10) || 0);
+      return timeB - timeA;
+    });
+
+    return list;
+  }, [library, libSearchQuery, libRoleFilter, libRankFilter, libSortBy]);
   const [isWindowDraggingFile, setIsWindowDraggingFile] = useState(false);
   const bottomSheetRef = useRef(null);
   const bsDragStartY = useRef(0);
@@ -1711,78 +1780,104 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
     };
   }, [setHeaderExtraLeft]);
 
+  // Synchronize subNav with ChapterHeader (Aligns with Character Sheet)
+  useEffect(() => {
+    if (!onSubNavChange) return;
+
+    if (activeMainTab !== 'library') {
+      onSubNavChange({
+        label: '返回檔案庫',
+        subTitle: `構建：${state?.name || '自訂 NPC'}`,
+        onBack: () => {
+          handleSaveToLibrary();
+          setActiveMainTab('library');
+        }
+      });
+    } else {
+      onSubNavChange(null);
+    }
+  }, [activeMainTab, state?.name, onSubNavChange]);
+
   // Push NPC Workshop action controls to upper ChapterHeader right side
   useEffect(() => {
     if (setHeaderExtraRight) {
-      setHeaderExtraRight(
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {activeMainTab !== 'library' && (
-            <button
-              onClick={() => setActiveMainTab('library')}
-              className="text-xs font-bold text-[#3c2415] hover:text-[#2a1708] flex items-center gap-1 bg-[#fffdf9] hover:bg-[#ebdcc4] px-2 py-1.5 rounded-lg border border-[#d6c7ab] transition-colors shadow-sm"
-              title="回到檔案庫"
-            >
-              <LayoutPanelLeft size={14} /> <span className="hidden sm:inline">回到檔案庫</span>
-            </button>
-          )}
+      if (activeMainTab === 'library') {
+        setHeaderExtraRight(null);
+      } else {
+        setHeaderExtraRight(
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* 6 色卡片主題切換圓圈 (與角色卡助手完全對齊) */}
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/80 border border-[#d6c7ab] shadow-2xs">
+              {Object.keys(THEMES).map(t => {
+                const themeObj = THEMES[t];
+                const isSelected = cardTheme === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setCardTheme(t);
+                      localStorage.setItem('fabula-npc-card-theme', t);
+                    }}
+                    className={`w-5 h-5 rounded-full transition-all relative flex items-center justify-center cursor-pointer ${
+                      isSelected
+                        ? 'scale-120 shadow-xs ring-2 ring-offset-1'
+                        : 'opacity-70 hover:opacity-100 hover:scale-110'
+                    }`}
+                    style={{
+                      backgroundColor: themeObj.accent,
+                      borderColor: themeObj.accentDark,
+                      ringColor: themeObj.accent
+                    }}
+                    title={`卡片風格：${themeObj.name}`}
+                  >
+                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block shadow-xs" />}
+                  </button>
+                );
+              })}
+            </div>
 
-          {activeMainTab !== 'library' && state && (
-            <button
-              onClick={handleFreeModeToggleClick}
-              className={`px-2 py-1.5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1 text-xs shadow-sm border ${
-                state.isFreeModeEnabled
-                  ? 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-400 ring-1 ring-fuchsia-400/50 hover:bg-fuchsia-200'
-                  : 'bg-[#fffdf9] text-[#3c2415] border-[#d6c7ab] hover:bg-[#ebdcc4]'
-              }`}
-              title={state.isFreeModeEnabled ? '規則限制已解除（點擊恢復嚴謹模式）' : '點擊解除規則限制'}
-            >
-              {state.isFreeModeEnabled ? <Unlock size={14} className="text-fuchsia-700" /> : <Lock size={14} />}
-              <span className="hidden sm:inline">
-                {state.isFreeModeEnabled ? '🔓 解除規則限制' : '🔒 嚴謹模式'}
-              </span>
-              <span className="sm:hidden">
-                {state.isFreeModeEnabled ? '🔓 已解除' : '🔒 嚴謹'}
-              </span>
-            </button>
-          )}
+            {/* 規則模式切換 (自由 / 嚴謹) */}
+            {state && (
+              <button
+                type="button"
+                onClick={handleFreeModeToggleClick}
+                className={`px-2.5 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 text-xs shadow-2xs border cursor-pointer ${
+                  state.isFreeModeEnabled
+                    ? 'bg-fuchsia-50 text-fuchsia-900 border-fuchsia-300 ring-1 ring-fuchsia-400/40 hover:bg-fuchsia-100'
+                    : 'bg-white text-[#3c2415] border-[#d6c7ab] hover:bg-[#ebdcc4]'
+                }`}
+                title={state.isFreeModeEnabled ? '規則限制已解除（點擊恢復嚴謹模式）' : '點擊解除規則限制'}
+              >
+                {state.isFreeModeEnabled ? <Unlock size={13} className="text-fuchsia-700" /> : <Lock size={13} className="text-amber-800" />}
+                <span className="hidden sm:inline">
+                  {state.isFreeModeEnabled ? '自由模式' : '嚴謹模式'}
+                </span>
+              </button>
+            )}
 
-          {activeMainTab !== 'library' && (
-            <>
-              <button
-                onClick={handleSaveToLibrary}
-                className="text-white px-2.5 py-1.5 rounded-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm text-xs flex items-center gap-1"
-                style={{ backgroundColor: workshopTheme.accent }}
-                title="儲存 NPC"
-              >
-                <Save size={14} /> <span className="hidden sm:inline">儲存 NPC</span>
-              </button>
-              <label
-                className="cursor-pointer text-[#3c2415] hover:text-[#2a1708] px-2 py-1.5 rounded-lg bg-[#fffdf9] hover:bg-[#ebdcc4] border border-[#d6c7ab] transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
-                title="讀取 JSON"
-              >
-                <Upload size={14} /> <span className="hidden sm:inline">讀取 JSON</span>
-                <input type="file" accept=".json" className="hidden" onChange={handleImportJSON} />
-              </label>
-              <button
-                onClick={handleExportJSON}
-                className="text-[#3c2415] hover:text-[#2a1708] px-2 py-1.5 rounded-lg bg-[#fffdf9] hover:bg-[#ebdcc4] border border-[#d6c7ab] transition-colors flex items-center gap-1 text-xs font-medium shadow-sm"
-                title="匯出 JSON"
-              >
-                <Download size={14} /> <span className="hidden sm:inline">匯出 JSON</span>
-              </button>
-            </>
-          )}
-        </div>
-      );
+            {/* 儲存按鈕 */}
+            <button
+              type="button"
+              onClick={handleSaveToLibrary}
+              className="text-white px-3 py-1.5 rounded-lg font-bold transition-all hover:scale-102 active:scale-98 shadow-xs text-xs flex items-center gap-1.5 cursor-pointer bg-amber-800 hover:bg-amber-700"
+              title="儲存至 NPC 檔案庫 (Ctrl+S)"
+            >
+              <Save size={13} />
+              <span>儲存</span>
+            </button>
+          </div>
+        );
+      }
     }
     return () => {
       if (setHeaderExtraRight) setHeaderExtraRight(null);
     };
   }, [
     activeMainTab,
+    cardTheme,
+    state?.name,
     state?.isFreeModeEnabled,
-    workshopTheme,
-    setHeaderExtraLeft,
     setHeaderExtraRight
   ]);
 
@@ -2103,7 +2198,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
     if (!state) return;
     setRoleDrafts({});
     setLibrary(prevLib => getReconciledLibrary(state, prevLib));
-    showToast(`💾 已成功儲存「${state.name || "未知實體"}」！`, 'success');
+    showToast(`已成功儲存「${state.name || "未知實體"}」！`, 'success');
   };
 
   const handleToggleNPCLink = (targetId) => {
@@ -3043,7 +3138,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
     if (!sheetRef.current) return;
 
     setRoleDrafts({});
-    showToast("📋 正在處理圖片並複製到剪貼簿，請稍候...");
+    showToast("正在處理圖片並複製到剪貼簿，請稍候...");
 
     try {
       if (document.fonts) {
@@ -3074,10 +3169,10 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       const item = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([item]);
 
-      showToast("✅ 圖片已成功複製到剪貼簿！", "success");
+      showToast("圖片已成功複製到剪貼簿！", "success");
     } catch (error) {
       console.error('Copy to clipboard failed:', error);
-      showToast("❌ 複製失敗，您的瀏覽器可能不支援直接複製圖片，請嘗試匯出。", "error");
+      showToast("複製失敗，您的瀏覽器可能不支援直接複製圖片，請嘗試匯出。", "error");
     }
   };
 
@@ -3088,7 +3183,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
     a.href = dataStr;
     a.download = `${state.name || 'npc'}_fabula_ultima.json`;
     a.click();
-    showToast(`📁 成功匯出「${state.name || 'NPC'}」的存檔資料！`);
+    showToast(`成功匯出「${state.name || 'NPC'}」的存檔資料！`, 'success');
   };
 
   const handleImportJSON = (e) => {
@@ -3365,7 +3460,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <>
                 {groupedSkills.attack.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">m</span> 基本攻擊 (BASIC ATTACKS)</h3>
+                    <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">m</span> 基本攻擊</h3>
                     <div className="flex flex-col gap-3 mb-4 ml-2">
                       {groupedSkills.attack.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
@@ -3375,7 +3470,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 )}
                 {(finalStats.spellList.length > 0 || groupedSkills.spell.length > 0) && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">c</span> 咒語 (SPELLS)</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">c</span> 咒語</h3>
                       {finalStats.spellList.length > 0 && (
                         <div className="flex flex-col gap-3 mb-4 ml-2">
                           {finalStats.spellList.map((spellObj, i) => {
@@ -3468,7 +3563,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 <>
                   {groupedSkills.action.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">s</span> 其餘行動 (OTHER ACTIONS)</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="fu-icon text-[22px] drop-shadow-sm translate-y-[1px]">s</span> 其餘行動</h3>
                       {groupedSkills.action.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
                       ))}
@@ -3476,7 +3571,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                   )}
                   {groupedSkills.rule.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="text-lg">📜</span> 特殊規則 (SPECIAL RULES)</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="text-lg">📜</span> 特殊規則</h3>
                       {groupedSkills.rule.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
                       ))}
@@ -3532,7 +3627,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
 
       if (isRevealed('combat')) {
         if (stats.spellList && stats.spellList.length > 0) {
-          text += `**🔮 咒語 (SPELLS)**\n`;
+          text += `**🔮 咒語**\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3588,7 +3683,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       }
       if (isRevealed('combat')) {
         if (stats.spellList && stats.spellList.length > 0) {
-          text += `[ 咒語 (SPELLS) ]\n`;
+          text += `[ 咒語 ]\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3613,6 +3708,190 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       if (revealLevel === 'full' && state.tactics) {
         text += `\n戰術慣例:\n${state.tactics}\n`;
       }
+    } else if (format === 'ccfolia') {
+      const rankDisplay = state.rank === "冠位" ? `${state.rank} (${state.championMultiplier})` : state.rank;
+      const villainTier = state.villainTier || 'none';
+      const villainInfo = VILLAIN_TIERS[villainTier] || { up: 0, label: '非反派' };
+      const speciesName = state.selectedSpeciesId ? (SPECIES_THEMES[state.selectedSpeciesId]?.label || '') : '';
+
+      // 1. Build Memo (說明欄)
+      const memoLines = [];
+      memoLines.push(`【${rankDisplay}】${state.role}`);
+      if (villainTier !== 'none') {
+        memoLines.push(`反派位階：${villainInfo.label} (UP: ${villainInfo.up})`);
+      }
+      if (speciesName) {
+        memoLines.push(`種族：${speciesName}`);
+      }
+      if (state.faction) {
+        memoLines.push(`陣營：${state.faction}`);
+      }
+      if (state.traits) {
+        memoLines.push(`特質：${state.traits}`);
+      }
+
+      // 相性
+      const affs = [];
+      DAMAGE_TYPES.forEach(t => {
+        const aff = mergedAffinities[t];
+        if (aff && aff !== 'normal') {
+          const label = aff === 'vul' ? '弱點' : aff === 'res' ? '抗性' : aff === 'imm' ? '免疫' : '吸收';
+          affs.push(`${t}:${label}`);
+        }
+      });
+      if (affs.length > 0) {
+        memoLines.push(`相性：${affs.join(', ')}`);
+      }
+      if (stats.statusImmunities && stats.statusImmunities.length > 0) {
+        memoLines.push(`異常免疫：${stats.statusImmunities.join(', ')}`);
+      }
+      if (state.tactics) {
+        memoLines.push(`\n戰術慣例：\n${state.tactics}`);
+      }
+      if (state.story) {
+        memoLines.push(`\n背景故事：\n${state.story}`);
+      }
+
+      // 2. Build Status (HP, MP, UP)
+      const statusArr = [
+        { label: "HP", value: stats.HP, max: stats.HP },
+        { label: "MP", value: stats.MP, max: stats.MP }
+      ];
+      if (villainTier !== 'none' && villainInfo.up > 0) {
+        statusArr.push({ label: "UP", value: villainInfo.up, max: villainInfo.up });
+      }
+
+      // 3. Build Params (DEX, INS, MIG, WLP, DEF, M.DEF, INIT)
+      const dexNum = String(stats.DEX).replace('d', '');
+      const insNum = String(stats.INS).replace('d', '');
+      const migNum = String(stats.MIG).replace('d', '');
+      const wlpNum = String(stats.WLP).replace('d', '');
+      const paramsArr = [
+        { label: "DEX", value: dexNum },
+        { label: "INS", value: insNum },
+        { label: "MIG", value: migNum },
+        { label: "WLP", value: wlpNum },
+        { label: "DEF", value: String(stats.Def) },
+        { label: "M.DEF", value: String(stats.MDef) },
+        { label: "INIT", value: String(stats.Init) }
+      ];
+
+      // 4. Build Commands (Chat Palette / 聊天調色盤)
+      const cmdLines = [];
+      cmdLines.push(`// ===== 屬性檢定與先攻 (Fabula Ultima) =====`);
+      cmdLines.push(`1d{DEX}+1d{INS} 【先攻檢定 DEX+INS】`);
+      cmdLines.push(`1d{DEX}+1d{INS} 【敏捷+洞察檢定】`);
+      cmdLines.push(`1d{DEX}+1d{MIG} 【敏捷+體魄檢定】`);
+      cmdLines.push(`1d{DEX}+1d{WLP} 【敏捷+意志檢定】`);
+      cmdLines.push(`1d{INS}+1d{MIG} 【洞察+體魄檢定】`);
+      cmdLines.push(`1d{INS}+1d{WLP} 【洞察+意志檢定】`);
+      cmdLines.push(`1d{MIG}+1d{WLP} 【體魄+意志檢定】`);
+
+      // 基本攻擊
+      const validSkills = processedSkills.filter(s => !s.isOverBudget);
+      const attackSkills = validSkills.filter(s => s.attack);
+      if (attackSkills.length > 0) {
+        cmdLines.push(``);
+        cmdLines.push(`// ===== 基本攻擊 (BASIC ATTACKS) =====`);
+        attackSkills.forEach(s => {
+          let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
+          const dist = getPlainText(s.attack.distance, s.selections, state.level, state.partyLevel);
+          const rawFormula = getPlainText(s.attack.formula, s.selections, state.level, state.partyLevel);
+          const dmgType = getPlainText(s.attack.type, s.selections, state.level, state.partyLevel);
+          const totalDmg = (s.attack.baseDmg || 0) + (stats.Dmg || 0);
+
+          let diceExpr = '1d{DEX}+1d{MIG}';
+          const match = rawFormula.match(/([A-Za-z]+)\s*\+\s*([A-Za-z]+)/);
+          if (match && match[1] && match[2]) {
+            diceExpr = `1d{${match[1].toUpperCase()}}+1d{${match[2].toUpperCase()}}`;
+          }
+
+          const accMod = stats.Acc || 0;
+          const accStr = accMod > 0 ? `+${accMod}` : accMod < 0 ? `${accMod}` : '';
+
+          cmdLines.push(`${diceExpr}${accStr} 【${skillName}】命中檢定 [${dist}]`);
+          cmdLines.push(`傷害：【${dmgType}】HR + ${totalDmg}`);
+
+          const extraText = getPlainText(s.customDesc || s.originalDesc || s.attack.extra || '', s.selections, state.level, state.partyLevel, true);
+          if (extraText) {
+            cmdLines.push(`效果：${extraText.replace(/\n+/g, ' ')}`);
+          }
+        });
+      }
+
+      // 咒語
+      if (stats.spellList && stats.spellList.length > 0) {
+        cmdLines.push(``);
+        cmdLines.push(`// ===== 咒語 (SPELLS) =====`);
+        stats.spellList.forEach(spellObj => {
+          const rawSpellName = spellObj.name;
+          const selections = spellObj.selections || {};
+          const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+          const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
+          const spellData = SPELLS_DATA[cleanSpellName];
+          const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
+          const isOffensive = cleanSpellName.includes('⚡');
+          const replacedTarget = getPlainText(spellData?.target, selections, state.level, state.partyLevel);
+          const replacedEffect = getPlainText(
+            effectiveDesc ? effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + stats.Dmg}]`) : '',
+            selections, state.level, state.partyLevel, true
+          );
+
+          if (isOffensive) {
+            const totalMagicAcc = (stats.Acc || 0) + (stats.MagicAccModifier || 0);
+            const accStr = totalMagicAcc > 0 ? `+${totalMagicAcc}` : totalMagicAcc < 0 ? `${totalMagicAcc}` : '';
+            let magicDice = '1d{INS}+1d{WLP}';
+            const fMatch = (state.magicFormula || '').match(/([A-Za-z]+)\s*\+\s*([A-Za-z]+)/);
+            if (fMatch && fMatch[1] && fMatch[2]) {
+              magicDice = `1d{${fMatch[1].toUpperCase()}}+1d{${fMatch[2].toUpperCase()}}`;
+            }
+            cmdLines.push(`${magicDice}${accStr} 【${effectiveName.replace('⚡', '')}】魔攻檢定 (MP: ${spellData?.mp || '?'})`);
+            cmdLines.push(`效果：${replacedEffect.replace(/\n+/g, ' ')}`);
+          } else {
+            cmdLines.push(`【${effectiveName.replace('⚡', '')}】咒語發動 (MP: ${spellData?.mp || '?'} | 目標: ${replacedTarget})`);
+            cmdLines.push(`效果：${replacedEffect.replace(/\n+/g, ' ')}`);
+          }
+        });
+      }
+
+      // 特殊規則與能力
+      const otherSkills = validSkills.filter(s => !s.attack);
+      if (otherSkills.length > 0) {
+        cmdLines.push(``);
+        cmdLines.push(`// ===== 特殊規則與能力 =====`);
+        otherSkills.forEach(s => {
+          let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
+          const desc = getPlainText(s.customDesc || s.originalDesc || '', s.selections, state.level, state.partyLevel, true);
+          cmdLines.push(`【${skillName}】${desc.replace(/\n+/g, ' ')}`);
+        });
+      }
+
+      // 狀態管理快捷
+      cmdLines.push(``);
+      cmdLines.push(`// ===== 狀態管理快捷 =====`);
+      cmdLines.push(`:HP-`);
+      cmdLines.push(`:HP+`);
+      cmdLines.push(`:MP-`);
+      cmdLines.push(`:MP+`);
+      if (villainTier !== 'none' && villainInfo.up > 0) {
+        cmdLines.push(`:UP-1`);
+      }
+
+      const ccfoliaData = {
+        kind: "character",
+        data: {
+          name: `${state.name || 'NPC'} (Lv.${state.level || 5})`,
+          memo: memoLines.join('\n'),
+          initiative: parseInt(stats.Init, 10) || 0,
+          externalUrl: "",
+          status: statusArr,
+          params: paramsArr,
+          color: currentTheme?.accent || "#888888",
+          commands: cmdLines.join('\n')
+        }
+      };
+
+      text = JSON.stringify(ccfoliaData, null, 2);
     } else {
       let md = `### ${state.name} (Lv. ${state.level})\n`;
       const rankDisplay = state.rank === "冠位" ? `${state.rank} (${state.championMultiplier})` : state.rank;
@@ -3653,7 +3932,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         const validNpcName = state.name && state.name.trim() !== "" && state.name !== "未知實體" ? state.name.trim() : null;
 
         if (stats.spellList && stats.spellList.length > 0) {
-          md += `#### 🔮 咒語 (SPELLS)\n`;
+          md += `#### 🔮 咒語\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3722,10 +4001,18 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
     }
 
     const trimmedText = text.trim();
+    const handleSuccessToast = () => {
+      if (format === 'ccfolia') {
+        showToast('已複製 ccfolia 棋子！請至 ccfolia 房間按 Ctrl+V 貼上', 'success');
+      } else {
+        const formatName = format === 'discord' ? 'Discord' : format === 'plain' ? '純文字筆記' : 'Markdown';
+        showToast(`已複製全文本角色卡 (${formatName})`, 'success');
+      }
+    };
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(trimmedText).then(() => {
-        const formatName = format === 'discord' ? 'Discord' : format === 'plain' ? '純文字筆記' : 'Markdown';
-        showToast(`📋 已複製全文本角色卡 (${formatName})`, 'success');
+        handleSuccessToast();
       }).catch(() => {
         const textArea = document.createElement("textarea");
         textArea.value = trimmedText;
@@ -3733,8 +4020,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        const formatName = format === 'discord' ? 'Discord' : format === 'plain' ? '純文字筆記' : 'Markdown';
-        showToast(`📋 已複製全文本角色卡 (${formatName})`, 'success');
+        handleSuccessToast();
       });
     } else {
       const textArea = document.createElement("textarea");
@@ -3743,8 +4029,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      const formatName = format === 'discord' ? 'Discord' : format === 'plain' ? '純文字筆記' : 'Markdown';
-      showToast(`📋 已複製全文本角色卡 (${formatName})`, 'success');
+      handleSuccessToast();
     }
   };
 
@@ -4042,14 +4327,14 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
             <div className="relative mt-6 bg-[#f4ebd9]/95 backdrop-blur-md p-4 md:p-6 rounded-xl border border-[#d6c7ab] shadow-md">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm text-[#3c2415] mb-2 font-bold tracking-widest flex items-center gap-2">等級 (Level)</label>
+                  <label className="block text-sm text-[#3c2415] mb-2 font-bold tracking-widest flex items-center gap-2">等級</label>
                   <div className="relative">
                     <select className="w-full bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-lg p-3 text-[#2c221e] outline-none focus:border-amber-600 transition-colors cursor-pointer appearance-none font-bold" value={state.level} onChange={handleLevelChange}>{LEVELS.map(l => <option key={l} value={l}>Lv. {l}</option>)}</select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-700 w-5 h-5 pointer-events-none" />
                   </div>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm text-[#3c2415] mb-2 font-bold tracking-widest flex items-center gap-2">階級 (Rank)</label>
+                  <label className="block text-sm text-[#3c2415] mb-2 font-bold tracking-widest flex items-center gap-2">階級</label>
                   <div className="flex flex-col gap-3">
                     <div className="flex bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl p-1 gap-1 shadow-inner relative overflow-hidden">
                       {RANKS.map(r => (
@@ -4112,7 +4397,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
         return (
           <div className="space-y-4 animate-in fade-in duration-300 max-w-3xl pb-10">
             <div className="bg-[#f5efdf] border-l-4 border-amber-700 p-4 rounded text-[#2c221e] border border-[#d6c7ab] shadow-sm">
-              <h3 className="font-bold mb-1 text-[#3c2415]">步驟 3：設定物種 (Species)</h3>
+              <h3 className="font-bold mb-1 text-[#3c2415]">步驟 3：設定物種</h3>
               <p className="text-sm text-[#574c43]">物種決定了 NPC 的基本屬性、抗性加成以及獨特能力。</p>
             </div>
 
@@ -4475,10 +4760,10 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 {/* Attribute Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                   {[
-                    { key: 'DEX', label: '靈巧 (DEX)', color: 'text-blue-900 border-blue-200 bg-blue-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.dex || ROLES_DATA[state.role]?.base?.DEX) },
-                    { key: 'INS', label: '洞察 (INS)', color: 'text-emerald-900 border-emerald-200 bg-emerald-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.ins || ROLES_DATA[state.role]?.base?.INS) },
-                    { key: 'MIG', label: '力量 (MIG)', color: 'text-red-900 border-red-200 bg-red-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.mig || ROLES_DATA[state.role]?.base?.MIG) },
-                    { key: 'WLP', label: '意志 (WLP)', color: 'text-purple-900 border-purple-200 bg-purple-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.wlp || ROLES_DATA[state.role]?.base?.WLP) }
+                    { key: 'DEX', label: '靈巧 DEX', color: 'text-blue-900 border-blue-200 bg-blue-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.dex || ROLES_DATA[state.role]?.base?.DEX) },
+                    { key: 'INS', label: '洞察 INS', color: 'text-emerald-900 border-emerald-200 bg-emerald-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.ins || ROLES_DATA[state.role]?.base?.INS) },
+                    { key: 'MIG', label: '力量 MIG', color: 'text-red-900 border-red-200 bg-red-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.mig || ROLES_DATA[state.role]?.base?.MIG) },
+                    { key: 'WLP', label: '意志 WLP', color: 'text-purple-900 border-purple-200 bg-purple-50/50', defaultDie: (ROLES_DATA[state.role]?.levels[state.level]?.wlp || ROLES_DATA[state.role]?.base?.WLP) }
                   ].map(attr => {
                     const currentDie = finalStats[attr.key];
                     const isCustomized = state.customDice?.[attr.key] && state.customDice[attr.key] !== attr.defaultDie;
@@ -4560,11 +4845,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               </div>
             )}
 
-            {/* 反派等級 (Villain Tier) */}
+            {/* 反派等級 */}
             <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl p-6 shadow-sm overflow-hidden relative group">
               <div className="absolute top-0 right-0 p-4 opacity-[0.05] text-8xl pointer-events-none group-hover:scale-110 transition-transform">🔥</div>
               <label className="block text-sm text-[#3c2415] mb-4 font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
-                <Crown size={18} className="text-amber-700" /> 反派等級 (Villain Tier)
+                <Crown size={18} className="text-amber-700" /> 反派等級
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.entries(VILLAIN_TIERS).map(([key, tier]) => (
@@ -4637,7 +4922,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                       className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all transform shadow-sm relative ${isSpeciesLocked ? 'opacity-100 border-dashed cursor-default saturate-[1.2] ring-1 ring-amber-600' : isDisabled ? 'opacity-40 cursor-not-allowed saturate-50' : 'hover:scale-105 cursor-pointer'} ${style.bg} ${style.border} ${style.text}`}
                     >
                       {isSpeciesLocked && (
-                        <div className="absolute -top-2 -right-2 bg-[#fffdf9] border-2 border-amber-600 text-amber-900 p-1 rounded-full shadow z-20 flex items-center justify-center" title="物種綁定 (Species Bonded)">
+                        <div className="absolute -top-2 -right-2 bg-[#fffdf9] border-2 border-amber-600 text-amber-900 p-1 rounded-full shadow z-20 flex items-center justify-center" title="物種綁定">
                           <Lock size={10} strokeWidth={3} />
                         </div>
                       )}
@@ -4657,13 +4942,13 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl p-5 shadow-sm overflow-hidden relative group animate-in fade-in slide-in-from-top-4 duration-300">
                 <div className="absolute top-0 right-0 p-4 opacity-[0.05] text-7xl pointer-events-none group-hover:scale-110 transition-transform text-purple-900">🔮</div>
                 <label className="block text-sm text-purple-900 mb-3 font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
-                  <span className="fu-icon text-lg">c</span> 攻擊性咒語檢定公式 (Offensive Spell Formula)
+                  <span className="fu-icon text-lg">c</span> 攻擊性咒語檢定公式
                 </label>
                 <p className="text-xs text-[#574c43] mb-4">此 NPC 獲得了攻擊性咒語。請選擇所有攻擊性咒語適用的精確度檢定公式：</p>
                 <div className="grid grid-cols-2 gap-4 max-w-md">
                   {[
-                    { value: '[INS + WLP]', label: '【洞察】+ 【意志】', desc: '標準魔法檢定 (INS + WLP)' },
-                    { value: '[MIG + WLP]', label: '【力量】+ 【意志】', desc: '近戰/力量魔法檢定 (MIG + WLP)' }
+                    { value: '[INS + WLP]', label: '【洞察】+ 【意志】', desc: '標準魔法檢定' },
+                    { value: '[MIG + WLP]', label: '【力量】+ 【意志】', desc: '近戰/力量魔法檢定' }
                   ].map((opt) => {
                     const isSelected = (state.magicFormula || '[INS + WLP]') === opt.value;
                     return (
@@ -4704,7 +4989,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               </SectionAccordion>
             )}
 
-            <SectionAccordion title="客製化規則 (Customizations)" icon={<Settings size={16} />} current={usedCustomizations} max={maxCustomizations} hideIfZeroMax={!hasChampSupport} titleColor="text-amber-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+            <SectionAccordion title="客製化規則" icon={<Settings size={16} />} current={usedCustomizations} max={maxCustomizations} hideIfZeroMax={!hasChampSupport} titleColor="text-amber-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {ROLES_DATA[state.role].availableSkills.filter(s => s.source === 'customization').map(skill => {
                   const activeSkillData = processedSkills.find(s => s.libId === skill.id);
@@ -4744,7 +5029,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               </div>
             </SectionAccordion>
 
-            <SectionAccordion title="定位技能 (Role Skills)" icon={<ShieldAlert size={16} />} current={usedRoleSkills} max={maxRoleSkills} hideIfZeroMax={true} titleColor="text-blue-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+            <SectionAccordion title="定位技能" icon={<ShieldAlert size={16} />} current={usedRoleSkills} max={maxRoleSkills} hideIfZeroMax={true} titleColor="text-blue-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
               {usedRoleSkillForBoss > 0 && !state.isFreeModeEnabled && (
                 <div className="mb-4 bg-amber-50 border border-amber-300 p-3 rounded text-[11px] text-amber-900 flex items-center gap-2">
                   <AlertTriangle size={14} className="text-amber-700" />
@@ -4808,7 +5093,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <div className="space-y-6">
 
             {allSpellbooksToRender.length > 0 && (
-              <SectionAccordion title="咒語書配置 (Spellbook Configuration)" icon={<BookOpen size={16} />} current={allSpellbooksToRender.reduce((sum, s) => sum + (s.selectedSpells || []).length, 0)} max={allSpellbooksToRender.reduce((sum, s) => sum + (s.spellConfig?.capacity || 0), 0)} titleColor="text-purple-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+              <SectionAccordion title="咒語書配置" icon={<BookOpen size={16} />} current={allSpellbooksToRender.reduce((sum, s) => sum + (s.selectedSpells || []).length, 0)} max={allSpellbooksToRender.reduce((sum, s) => sum + (s.spellConfig?.capacity || 0), 0)} titleColor="text-purple-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
                 <div className="space-y-4">
                   {/* Search box for spells */}
                   <div className="relative">
@@ -4865,7 +5150,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
             )}
 
             {/* Custom Abilities Section (Permanent / 常駐) */}
-            <SectionAccordion title="✨ 完全自訂技能 (Custom Abilities)" icon={<Sparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
+            <SectionAccordion title="✨ 完全自訂技能" icon={<Sparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
               <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-xl mb-6 shadow-sm">
                 <h4 className="text-indigo-900 text-xs font-bold mb-3 flex items-center gap-2"><PlusCircle size={14} /> 快速新增自訂能力</h4>
                 <div className="flex flex-col gap-3">
@@ -4889,16 +5174,16 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                         value={newCustomSkill.category}
                         onChange={(e) => setNewCustomSkill(prev => ({ ...prev, category: e.target.value }))}
                       >
-                        <option value="spell">🔮 咒語 (Spell)</option>
-                        <option value="action">⚡ 其餘行動 (Action)</option>
-                        <option value="rule">📜 特殊規則 (Rule)</option>
+                        <option value="spell">咒語</option>
+                        <option value="action">其餘行動</option>
+                        <option value="rule">特殊規則</option>
                       </select>
 
                       {newCustomSkill.category === 'spell' && (
                         <div className="flex flex-col gap-3 w-full bg-indigo-100/60 p-3 rounded-lg border border-indigo-200 text-xs">
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
-                              <label className="block text-indigo-950 font-bold mb-1">目標 (Target)</label>
+                              <label className="block text-indigo-950 font-bold mb-1">目標</label>
                               <select
                                 className="w-full bg-[#fffdf9] text-indigo-950 font-bold p-1.5 border border-indigo-300 rounded outline-none focus:border-indigo-600"
                                 value={newCustomSkill.targetType}
@@ -4913,7 +5198,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
 
                             {newCustomSkill.targetType === '至多 X 個生物' ? (
                               <div>
-                                <label className="block text-indigo-950 font-bold mb-1">目標數量 (X)</label>
+                                <label className="block text-indigo-950 font-bold mb-1">目標數量</label>
                                 <input
                                   type="number"
                                   min="1"
@@ -4947,7 +5232,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                             </div>
 
                             <div>
-                              <label className="block text-indigo-950 font-bold mb-1">持續時間 (Duration)</label>
+                              <label className="block text-indigo-950 font-bold mb-1">持續時間</label>
                               <select
                                 className="w-full bg-[#fffdf9] text-indigo-950 font-bold p-1.5 border border-indigo-300 rounded outline-none focus:border-indigo-600"
                                 value={newCustomSkill.duration}
@@ -4968,7 +5253,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                                 checked={newCustomSkill.isOffensiveSpell}
                                 onChange={(e) => setNewCustomSkill(prev => ({ ...prev, isOffensiveSpell: e.target.checked }))}
                               />
-                              <span className="text-xs font-bold text-indigo-900 group-hover:text-indigo-700 transition-colors">⚡ 攻擊性咒語 (包含魔法命中檢定)</span>
+                              <span className="text-xs font-bold text-indigo-900 group-hover:text-indigo-700 transition-colors">攻擊性咒語 (包含魔法命中檢定)</span>
                             </label>
 
                             {newCustomSkill.isOffensiveSpell && (
@@ -5095,7 +5380,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                     <div className="bg-red-50 border border-red-300 p-4 rounded-xl flex gap-3 items-start shadow-sm relative overflow-hidden">
                       <AlertTriangle className="text-red-700 shrink-0 mt-0.5 animate-pulse relative z-10" size={20} />
                       <div className="relative z-10">
-                        <h4 className="text-sm font-bold text-red-900">技能列表重複 (List Overlap)</h4>
+                        <h4 className="text-sm font-bold text-red-900">技能列表重複</h4>
                         <p className="text-xs text-[#574c43] leading-relaxed mt-1">手冊建議：應避免給予 Boss 來自同一個技能列表（子類別）的多個技能。請嘗試選擇不同類型的能力以增加戰術多樣性。</p>
                       </div>
                     </div>
@@ -5266,14 +5551,14 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm text-[#3c2415] font-bold flex items-center gap-1.5">
-                    <ImageIcon size={16} className="text-amber-700" /> NPC 頭像與肖像 (Avatar)
+                    <ImageIcon size={16} className="text-amber-700" /> NPC 頭像與肖像
                   </label>
                   {state.avatarBase64 && (
                     <button
                       type="button"
                       onClick={() => {
                         setState(p => ({ ...p, avatarBase64: null, avatarScale: 1, avatarFit: 'cover' }));
-                        showToast("🗑️ 已清除頭像圖片");
+                        showToast("已清除頭像圖片");
                       }}
                       className="text-xs text-red-700 hover:text-red-900 flex items-center gap-1 transition-colors font-bold"
                     >
@@ -5348,7 +5633,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                               type="button"
                               onClick={() => {
                                 setState(p => ({ ...p, avatarBase64: null, avatarRawBase64: null }));
-                                showToast("🗑️ 已清除頭像圖片");
+                                showToast("已清除頭像圖片");
                               }}
                               className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded transition shadow-sm"
                             >
@@ -5367,7 +5652,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                         <div className="relative flex-1">
                           <input
                             type="url"
-                            placeholder="或輸入圖片網址 (URL)... 例如: https://.../pic.png"
+                            placeholder="或輸入圖片網址... 例如: https://.../pic.png"
                             value={imageUrlInput}
                             onChange={(e) => setImageUrlInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -5398,15 +5683,15 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 </div>
               </div>
 
-              <div><label className="block text-sm text-[#3c2415] mb-2 font-bold">特質 (Traits)</label><input type="text" className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded p-3 text-[#2c221e] outline-none focus:border-amber-600 font-bold" value={state.traits} onChange={e => setState({ ...state, traits: e.target.value })} placeholder="例如: 敏捷, 致命..." /></div>
-              <div><label className="block text-sm text-[#3c2415] mb-2 font-bold">背景故事 (Story)</label><textarea className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded p-3 text-[#2c221e] outline-none h-32 resize-none focus:border-amber-600 font-medium" value={state.story || ""} onChange={e => setState({ ...state, story: e.target.value })} placeholder="簡短描述其起源或動機..." /></div>
+              <div><label className="block text-sm text-[#3c2415] mb-2 font-bold">特質</label><input type="text" className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded p-3 text-[#2c221e] outline-none focus:border-amber-600 font-bold" value={state.traits} onChange={e => setState({ ...state, traits: e.target.value })} placeholder="例如: 敏捷, 致命..." /></div>
+              <div><label className="block text-sm text-[#3c2415] mb-2 font-bold">背景故事</label><textarea className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded p-3 text-[#2c221e] outline-none h-32 resize-none focus:border-amber-600 font-medium" value={state.story || ""} onChange={e => setState({ ...state, story: e.target.value })} placeholder="簡短描述其起源或動機..." /></div>
             </div>
 
             {/* 關聯實體設置區塊 */}
             <div className="bg-[#fffdf9] p-6 rounded-lg border border-[#d6c7ab] space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-[#3c2415] font-bold tracking-widest flex items-center gap-2 uppercase">
-                  <Link size={16} className="text-amber-700" /> 關聯實體設置 (Linked Entities)
+                  <Link size={16} className="text-amber-700" /> 關聯實體設置
                 </label>
                 <span className="text-[10px] text-amber-900 font-bold bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
                   雙向自動關聯
@@ -5552,13 +5837,118 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
       {activeMainTab === 'library' && (
         <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar animate-in fade-in bg-[#fbf7ee]">
           <div className="max-w-6xl mx-auto flex flex-col min-h-full">
-            <div className="flex justify-end mb-6 border-b border-[#d6c7ab] pb-4">
-              <div className="flex gap-2 w-full sm:w-auto justify-end">
-                <button onClick={handleBackupAllNPCs} className="bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all hover:scale-105 justify-center text-sm">
-                  <Download size={16} /> 備份全庫
+            {/* Top Control Bar: Search & Filters on left, Actions on right (Matches Character Sheet hierarchy) */}
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 pb-4 mb-6 border-b border-[#d6c7ab]">
+              {/* Search Input & Filter Dropdowns */}
+              <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                <div className="relative min-w-[200px] max-w-xs flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8b5e34]/70 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={libSearchQuery}
+                    onChange={(e) => setLibSearchQuery(e.target.value)}
+                    placeholder="搜尋姓名、定位、種族、位階、技能..."
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#d6c7ab] bg-white/90 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 text-xs text-[#3c2415] placeholder:text-[#8b5e34]/50 shadow-xs transition-all"
+                  />
+                </div>
+
+                {availableLibRoles.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white border border-[#d6c7ab] px-2.5 py-1.5 rounded-lg shadow-xs">
+                    <Filter className="w-3.5 h-3.5 text-amber-800" />
+                    <select
+                      value={libRoleFilter}
+                      onChange={(e) => setLibRoleFilter(e.target.value)}
+                      className="bg-transparent text-xs font-medium text-[#3c2415] focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">全部定位（{library.length}）</option>
+                      {availableLibRoles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {availableLibRanks.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white border border-[#d6c7ab] px-2.5 py-1.5 rounded-lg shadow-xs">
+                    <Filter className="w-3.5 h-3.5 text-amber-800" />
+                    <select
+                      value={libRankFilter}
+                      onChange={(e) => setLibRankFilter(e.target.value)}
+                      className="bg-transparent text-xs font-medium text-[#3c2415] focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">全部位階</option>
+                      {availableLibRanks.map(rank => (
+                        <option key={rank} value={rank}>{rank}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {library.length > 1 && (
+                  <div className="flex items-center gap-1.5 bg-white border border-[#d6c7ab] px-2.5 py-1.5 rounded-lg shadow-xs">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-amber-800" />
+                    <select
+                      value={libSortBy}
+                      onChange={(e) => setLibSortBy(e.target.value)}
+                      className="bg-transparent text-xs font-medium text-[#3c2415] focus:outline-none cursor-pointer"
+                    >
+                      <option value="recent">最近更新</option>
+                      <option value="name_asc">NPC 名稱（筆劃/字母）</option>
+                      <option value="level_desc">等級（高至低）</option>
+                      <option value="level_asc">等級（低至高）</option>
+                    </select>
+                  </div>
+                )}
+
+                {(libSearchQuery || libRoleFilter !== 'all' || libRankFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => { setLibSearchQuery(''); setLibRoleFilter('all'); setLibRankFilter('all'); }}
+                    className="text-xs px-2.5 py-1.5 rounded-lg text-amber-900 hover:bg-[#ede4d1] transition-colors font-medium"
+                  >
+                    重設
+                  </button>
+                )}
+              </div>
+
+              {/* Actions: Count, Import, Backup, Create */}
+              <div className="flex items-center gap-2 justify-end shrink-0 flex-wrap">
+                {library.length > 0 && (
+                  <span className="text-xs font-mono font-medium text-[#7c6a58] mr-1 hidden md:inline">
+                    顯示 {filteredLibrary.length} / 共 {library.length} 隻
+                  </span>
+                )}
+
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportJSON}
+                    className="hidden"
+                  />
+                  <span
+                    className="bg-white hover:bg-[#ede4d1] text-[#3c2415] border border-[#d6c7ab] px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs cursor-pointer"
+                    title="匯入 NPC JSON 檔案"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-amber-800" />
+                    <span>匯入 NPC</span>
+                  </span>
+                </label>
+
+                <button
+                  onClick={handleBackupAllNPCs}
+                  className="bg-white hover:bg-[#ede4d1] text-[#3c2415] border border-[#d6c7ab] px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-800" />
+                  <span>備份全庫</span>
                 </button>
-                <button onClick={createNewNPC} className="bg-amber-700 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all hover:scale-105 justify-center text-sm">
-                  <PlusCircle size={18} /> 建立新 NPC
+
+                <button
+                  onClick={createNewNPC}
+                  className="bg-amber-700 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-md transition-all hover:scale-102 justify-center text-xs"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>建立新 NPC</span>
                 </button>
               </div>
             </div>
@@ -5571,10 +5961,28 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 </div>
                 <p className="text-[#3c2415] font-bold tracking-widest text-lg">檔案庫目前空空如也</p>
                 <p className="text-[#6b5a4b] text-sm mt-2">點擊右上方按鈕開始創造你的第一個 NPC 吧！</p>
+                <button
+                  onClick={createNewNPC}
+                  className="mt-6 bg-amber-700 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all hover:scale-105 text-sm"
+                >
+                  <PlusCircle size={18} /> 建立第一位 NPC
+                </button>
+              </div>
+            ) : filteredLibrary.length === 0 ? (
+              <div className="text-center py-16 bg-[#fffdf9] rounded-xl border border-[#d6c7ab] border-dashed flex flex-col items-center justify-center shadow-xs">
+                <p className="text-[#3c2415] font-bold text-base">找不到符合條件的 NPC</p>
+                <p className="text-[#6b5a4b] text-xs mt-1">請嘗試變更搜尋關鍵字、定位或位階篩選。</p>
+                <button
+                  type="button"
+                  onClick={() => { setLibSearchQuery(''); setLibRoleFilter('all'); setLibRankFilter('all'); }}
+                  className="mt-4 text-xs font-bold text-amber-800 hover:underline"
+                >
+                  清除所有篩選條件
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {library.map(npc => (
+                {filteredLibrary.map(npc => (
                   <div key={npc.id} className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl overflow-hidden shadow-md flex flex-col group hover:border-amber-600 transition-all hover:shadow-lg">
                     <div className="h-32 bg-[#f4ebd9] relative flex items-center justify-center border-b border-[#d6c7ab] overflow-hidden">
                       {npc.avatarBase64 ? (
@@ -5619,7 +6027,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                               }));
                               return newLib;
                             });
-                            showToast(`🗑️ 已刪除「${npc.name || "未知實體"}」`);
+                            showToast(`已刪除「${npc.name || "未知實體"}」`);
                           }
                         }} className="bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded transition-colors border border-red-200"><Trash2 size={16} /></button>
                       </div>
@@ -5818,7 +6226,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                 </div>
                 <div className="flex items-center justify-between px-4 pb-3 shrink-0 border-b border-[#d6c7ab]">
                   <span className="text-sm font-black tracking-widest text-[#3c2415] flex items-center gap-2"><Eye size={14} className="text-amber-700" /> 角色卡預覽</span>
-                  <button onClick={() => setIsBottomSheetOpen(false)} className="text-[#6b5a4b] hover:text-red-700 transition-colors p-1">✕</button>
+                  <button onClick={() => setIsBottomSheetOpen(false)} className="text-[#6b5a4b] hover:text-[#2c221e] transition-colors p-1 rounded-lg hover:bg-[#e4d9c0]" title="關閉預覽">
+                    <X size={18} />
+                  </button>
                 </div>
                 <div className="overflow-y-auto custom-scrollbar px-3 py-3">
                   {renderCharacterCard()}
@@ -5921,19 +6331,26 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight }) {
                         onClick={() => { handleCopyFullNpc('discord'); setCopyFormatDropdownOpen(false); }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#2c221e] hover:bg-[#f4ebd9] transition-colors text-left font-bold"
                       >
-                        💬 Discord 格式
+                        <MessageSquare size={14} className="text-indigo-600" /> Discord 格式
                       </button>
                       <button
                         onClick={() => { handleCopyFullNpc('markdown'); setCopyFormatDropdownOpen(false); }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#2c221e] hover:bg-[#f4ebd9] transition-colors text-left font-bold"
                       >
-                        📝 Markdown 格式
+                        <FileCode size={14} className="text-amber-700" /> Markdown 格式
                       </button>
                       <button
                         onClick={() => { handleCopyFullNpc('plain'); setCopyFormatDropdownOpen(false); }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#2c221e] hover:bg-[#f4ebd9] transition-colors text-left border-t border-[#d6c7ab] font-bold"
                       >
-                        📱 純文字筆記格式
+                        <FileText size={14} className="text-slate-600" /> 純文字筆記格式
+                      </button>
+                      <button
+                        onClick={() => { handleCopyFullNpc('ccfolia'); setCopyFormatDropdownOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-amber-950 bg-amber-50/70 hover:bg-[#ebdcc4] transition-colors text-left border-t border-[#d6c7ab] font-bold cursor-pointer"
+                        title="複製為 ccfolia 格式，至房間直接按 Ctrl+V 貼上即可生成棋子"
+                      >
+                        <GiRollingDices size={16} className="text-amber-800" /> ccfolia 棋子 (Ctrl+V)
                       </button>
                     </div>
                   )}

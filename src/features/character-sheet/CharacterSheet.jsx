@@ -1,45 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus,
   Download,
   Upload,
   Trash2,
   Copy,
-  CheckCircle2,
-  Swords,
-  Heart,
-  Sparkles,
   Play,
-  Edit3,
-  TrendingUp,
-  Coins,
-  Star
+  Search,
+  Filter,
+  ArrowUpDown,
+  FileCode
 } from 'lucide-react';
+import {
+  GiCrossedSwords,
+  GiHazardSign,
+  GiCheckMark,
+  GiSpellBook,
+  GiQuillInk,
+  GiScrollUnfurled,
+  GiShield
+} from 'react-icons/gi';
+import GameIcon from '../../components/ui/GameIcon';
+import FUIcon from '../../components/ui/FUIcon';
 import CharacterEditor from './components/CharacterEditor';
 import CharacterPlayHUD from './components/CharacterPlayHUD';
 import { createNewCharacter, calculateCharacterStats } from './utils/characterEngine';
+import { CHARACTER_THEMES, getCharacterTheme } from './utils/characterThemes';
+import {
+  isFultimatorCharacter,
+  convertFultimatorToFUCompanion,
+  convertFUCompanionToFultimator
+} from './utils/fultimatorConverter.js';
 import JRPGButton from '../../components/ui/JRPGButton';
 import JRPGBadge from '../../components/ui/JRPGBadge';
 
 const STORAGE_KEY = 'fu_companion_character_roster';
 
-export default function CharacterSheet({ onOpenDice = null }) {
+export default function CharacterSheet({ onOpenDice = null, onSubNavChange = null }) {
   const [roster, setRoster] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Failed to load characters:', e);
     }
-    return [createNewCharacter()];
+    return [];
   });
 
   const [activeCharId, setActiveCharId] = useState(null);
   const [viewMode, setViewMode] = useState('roster'); // 'roster' | 'play' | 'editor'
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Gallery Search, Filter & Sort State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [classFilter, setClassFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'name_asc' | 'level_desc' | 'level_asc'
 
   useEffect(() => {
     try {
@@ -69,31 +87,27 @@ export default function CharacterSheet({ onOpenDice = null }) {
     setRoster(prev => [fresh, ...prev]);
     setActiveCharId(fresh.id);
     setViewMode('editor');
-    showToast('✨ 已創建新冒險者，開啟創角導引！');
+    showToast('已創建新冒險者，開啟創角導引！');
   };
 
   const handleDeleteCharacter = (charId) => {
-    if (roster.length <= 1) {
-      showToast('⚠️ 至少需保留一張角色卡');
-      return;
-    }
     setRoster(prev => prev.filter(c => c.id !== charId));
     if (activeCharId === charId) {
       setActiveCharId(null);
       setViewMode('roster');
     }
-    showToast('🗑️ 已刪除角色卡');
+    showToast('已刪除角色卡');
   };
 
   const handleDuplicateCharacter = (char) => {
     const cloned = {
       ...JSON.parse(JSON.stringify(char)),
       id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: `${char.name || '冒險者'} (副本)`,
+      name: `${char.name || '冒險者'}【副本】`,
       updatedAt: new Date().toISOString()
     };
     setRoster(prev => [cloned, ...prev]);
-    showToast('📋 已複製角色副本！');
+    showToast('已複製角色副本！');
   };
 
   const handleUpdateActiveCharacter = (updatedChar) => {
@@ -166,14 +180,19 @@ export default function CharacterSheet({ onOpenDice = null }) {
 
       activeCombat.combatants = combatants;
       localStorage.setItem('fu_companion_active_combat', JSON.stringify(activeCombat));
-      showToast(`⚔️ 已將【${char.name}】推入戰鬥房間！`);
+      showToast(`已將【${char.name}】推入戰鬥房間！`);
     } catch (e) {
       console.error(e);
-      showToast('❌ 入戰失敗，請確認怪物數據完整。');
+      showToast('入戰失敗，請確認角色數據完整。');
     }
   };
 
+  // Full Roster Export
   const handleExportJSON = () => {
+    if (roster.length === 0) {
+      showToast('目前名冊尚無任何角色，無法匯出');
+      return;
+    }
     const blob = new Blob([JSON.stringify(roster, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -181,9 +200,27 @@ export default function CharacterSheet({ onOpenDice = null }) {
     a.download = `fu_characters_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('💾 角色名冊已匯出為 JSON！');
+    showToast('角色名冊已匯出為 JSON！');
   };
 
+  // Single Character Export (Native or Fultimator format)
+  const handleExportSingleCharacter = (char, format = 'native') => {
+    const isFult = format === 'fultimator';
+    const data = isFult ? convertFUCompanionToFultimator(char) : char;
+    const filename = isFult
+      ? `fultimator_${(char.name || 'pc').replace(/\s+/g, '_')}_${Date.now()}.json`
+      : `fu_char_${(char.name || 'pc').replace(/\s+/g, '_')}_${Date.now()}.json`;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(isFult ? `已匯出【${char.name}】為 Fultimator 相容格式！` : `已匯出【${char.name}】單卡 JSON！`);
+  };
+
+  // Import JSON with automatic Fultimator schema detection
   const handleImportJSON = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -192,215 +229,538 @@ export default function CharacterSheet({ onOpenDice = null }) {
       try {
         const parsed = JSON.parse(ev.target.result);
         if (Array.isArray(parsed)) {
+          let fultimatorCount = 0;
+          const convertedList = parsed.map(item => {
+            if (isFultimatorCharacter(item)) {
+              fultimatorCount++;
+              return convertFultimatorToFUCompanion(item);
+            }
+            return item;
+          });
           setRoster(prev => {
-            const combined = [...parsed];
+            const combined = [...convertedList];
             prev.forEach(item => {
               if (!combined.some(c => c.id === item.id)) combined.push(item);
             });
             return combined;
           });
-          showToast(`✅ 成功匯入 ${parsed.length} 張角色卡！`);
+          showToast(fultimatorCount > 0
+            ? `成功匯入 ${convertedList.length} 張卡片（含 ${fultimatorCount} 位 Fultimator 角色無縫轉換）！`
+            : `成功匯入 ${convertedList.length} 張角色卡！`);
         } else if (parsed && typeof parsed === 'object') {
-          setRoster(prev => [parsed, ...prev]);
-          showToast(`✅ 成功匯入「${parsed.name}」！`);
+          if (isFultimatorCharacter(parsed)) {
+            const converted = convertFultimatorToFUCompanion(parsed);
+            setRoster(prev => [converted, ...prev]);
+            showToast(`成功匯入 Fultimator 角色「${converted.name}」！已無縫轉換為 FU Companion 格式。`);
+          } else {
+            setRoster(prev => [parsed, ...prev]);
+            showToast(`成功匯入「${parsed.name || '冒險者'}」！`);
+          }
         }
       } catch (err) {
-        showToast('❌ JSON 解析失敗，請確認格式');
+        showToast('JSON 解析失敗，請確認檔案格式是否正確');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  const activeChar = roster.find(c => c.id === activeCharId) || roster[0];
+  const activeChar = roster.find(c => c.id === activeCharId) || roster[0] || null;
+
+  useEffect(() => {
+    if (!activeChar && viewMode !== 'roster') {
+      setViewMode('roster');
+    }
+  }, [activeChar, viewMode]);
+
+  // Available classes in existing roster for filter dropdown
+  const availableClasses = useMemo(() => {
+    const set = new Set();
+    roster.forEach(c => {
+      (c.classes || []).forEach(cl => {
+        if (cl.className) set.add(cl.className);
+      });
+    });
+    return Array.from(set).sort();
+  }, [roster]);
+
+  // Filtered and Sorted Roster for Gallery
+  const filteredRoster = useMemo(() => {
+    let list = [...roster];
+
+    // Search keyword (name, identity, theme, classes)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(c => {
+        const nameMatch = (c.name || '').toLowerCase().includes(q);
+        const identityMatch = (c.identity || '').toLowerCase().includes(q);
+        const themeMatch = (c.theme || '').toLowerCase().includes(q);
+        const classMatch = (c.classes || []).some(cl => (cl.className || '').toLowerCase().includes(q));
+        return nameMatch || identityMatch || themeMatch || classMatch;
+      });
+    }
+
+    // Filter by class
+    if (classFilter !== 'all') {
+      list = list.filter(c => (c.classes || []).some(cl => cl.className === classFilter));
+    }
+
+    // Sort
+    list.sort((a, b) => {
+      if (sortBy === 'name_asc') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (sortBy === 'level_desc') {
+        return (b.level || 5) - (a.level || 5);
+      }
+      if (sortBy === 'level_asc') {
+        return (a.level || 5) - (b.level || 5);
+      }
+      // 'recent'
+      return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+    });
+
+    return list;
+  }, [roster, searchQuery, classFilter, sortBy]);
+
+  // Persistent 6 Theme Color Circles for top right header
+  const renderThemeCircles = (char) => {
+    if (!char) return null;
+    const currentThemeId = char.themeColor || 'emerald';
+
+    const currentTheme = getCharacterTheme(currentThemeId);
+
+    return (
+      <div
+        className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/80 border shadow-2xs transition-colors"
+        style={{ borderColor: currentTheme.border }}
+      >
+        {Object.values(CHARACTER_THEMES).map(t => {
+          const isSelected = currentThemeId === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => handleUpdateActiveCharacter({ ...char, themeColor: t.id })}
+              className={`w-5 h-5 rounded-full transition-all relative flex items-center justify-center cursor-pointer ${
+                isSelected
+                  ? 'scale-120 shadow-xs'
+                  : 'opacity-70 hover:opacity-100 hover:scale-110'
+              }`}
+              style={{
+                backgroundColor: t.accent,
+                borderColor: t.accentDark,
+                boxShadow: isSelected ? `0 0 0 2px #fff, 0 0 0 4px ${t.accent}` : undefined
+              }}
+              title={`切換主題：${t.name}`}
+            >
+              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block shadow-xs" />}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (!onSubNavChange) return;
+
+    if (viewMode === 'editor') {
+      onSubNavChange({
+        label: '返回角色名冊',
+        subTitle: `構建：${activeChar?.name || '冒險者'}`,
+        onBack: () => setViewMode('roster'),
+        extraRight: renderThemeCircles(activeChar),
+        theme: getCharacterTheme(activeChar?.themeColor)
+      });
+    } else if (viewMode === 'play') {
+      onSubNavChange({
+        label: '返回角色名冊',
+        subTitle: `實戰：${activeChar?.name || '冒險者'}`,
+        onBack: () => setViewMode('roster'),
+        extraRight: renderThemeCircles(activeChar),
+        theme: getCharacterTheme(activeChar?.themeColor)
+      });
+    } else {
+      onSubNavChange(null);
+    }
+  }, [viewMode, activeChar?.id, activeChar?.name, activeChar?.themeColor, onSubNavChange]);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner (Only visible in Roster overview) */}
+      {/* Mode 1: Character Roster (Overview & Gallery) */}
       {viewMode === 'roster' && (
-        <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-[#d6c7ab]">
-          <div>
-            <h2 className="font-serif font-black text-2xl text-[#2c221e] flex items-center gap-2.5 tracking-wide">
-              <span className="text-amber-700">🧙</span> 玩家角色卡名冊 (Character Roster)
-            </h2>
-            <p className="text-xs text-[#6b5a4b] mt-0.5">
-              免翻書繁中 28 職業構築 · 跑團實戰儀表板 · 經驗升級成長 · 官方經典配置一鍵套用
-            </p>
-          </div>
+        <div className="space-y-6">
+          {/* Top Control Bar: Search & Filters on left, Actions on right (Matches NPC Workshop hierarchy) */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 pb-4 border-b border-emerald-200">
+            {/* Search Input & Filter Dropdowns */}
+            <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+              <div className="relative min-w-[200px] max-w-xs flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700/60 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="搜尋姓名、身份、職業..."
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-emerald-200 bg-white/90 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/25 text-xs text-emerald-950 placeholder:text-emerald-700/50 shadow-xs transition-all"
+                />
+              </div>
 
-          <div className="flex items-center gap-2.5">
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImportJSON}
-                className="hidden"
-              />
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#d6c7ab] bg-[#fffdf9] hover:bg-[#f5efdf] text-xs text-[#6b5a4b] hover:text-[#2c221e] transition-colors shadow-sm font-medium">
-                <Upload className="w-3.5 h-3.5 text-amber-700" /> 匯入卡片
-              </span>
-            </label>
+              {availableClasses.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-white border border-emerald-200 px-2.5 py-1.5 rounded-lg shadow-xs">
+                  <Filter className="w-3.5 h-3.5 text-emerald-700" />
+                  <select
+                    value={classFilter}
+                    onChange={(e) => setClassFilter(e.target.value)}
+                    className="bg-transparent text-xs font-medium text-emerald-950 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">全部職業（{roster.length}）</option>
+                    {availableClasses.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-            <JRPGButton
-              variant="secondary"
-              size="sm"
-              icon={Download}
-              onClick={handleExportJSON}
-            >
-              匯出名冊
-            </JRPGButton>
+              {roster.length > 1 && (
+                <div className="flex items-center gap-1.5 bg-white border border-emerald-200 px-2.5 py-1.5 rounded-lg shadow-xs">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-emerald-700" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-transparent text-xs font-medium text-emerald-950 focus:outline-none cursor-pointer"
+                  >
+                    <option value="recent">最近更新</option>
+                    <option value="name_asc">角色名稱（筆劃/字母）</option>
+                    <option value="level_desc">等級（高至低）</option>
+                    <option value="level_asc">等級（低至高）</option>
+                  </select>
+                </div>
+              )}
 
-            <JRPGButton
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={handleCreateCharacter}
-            >
-              建立新角色
-            </JRPGButton>
-          </div>
-        </div>
-      )}
-
-      {/* Main View Router */}
-      {viewMode === 'roster' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#6b5a4b] font-medium">
-            <span>現有名冊存檔: <strong className="text-amber-800">{roster.length}</strong> 位冒險者</span>
-            <span className="text-[11px] text-[#8c7b6c]">純前端持久儲存 · 即時自動同步</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {roster.map(char => {
-              const stats = calculateCharacterStats(char);
-              const curHp = char.currentHp ?? stats.maxHp;
-              const curMp = char.currentMp ?? stats.maxMp;
-              const isCrisis = curHp <= stats.crisisThreshold;
-
-              return (
-                <div
-                  key={char.id}
-                  className="bg-[#fffdf9] rounded-2xl border border-[#d6c7ab] hover:border-amber-600 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group relative"
+              {(searchQuery || classFilter !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setClassFilter('all'); }}
+                  className="text-xs px-2.5 py-1.5 rounded-lg text-emerald-800 hover:bg-emerald-100 transition-colors font-medium"
                 >
-                  <div className="h-1 bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800" />
+                  重設
+                </button>
+              )}
+            </div>
 
-                  {/* Profile Header */}
-                  <div className="p-4 flex items-start gap-3.5 border-b border-[#d6c7ab]/80 bg-[#f4ebd9]/40">
-                    <div className="w-12 h-12 rounded-xl bg-[#f5efdf] border border-[#d6c7ab] overflow-hidden shrink-0 flex items-center justify-center font-serif text-amber-800 text-xl font-bold shadow-inner">
-                      {char.avatar ? (
-                        <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
-                      ) : (
-                        char.name?.[0] || '勇'
-                      )}
-                    </div>
+            {/* Actions: Import, Backup, Create */}
+            <div className="flex items-center gap-2 justify-end shrink-0 flex-wrap">
+              {roster.length > 0 && (
+                <span className="text-xs font-mono font-medium text-emerald-800 mr-1 hidden md:inline">
+                  顯示 {filteredRoster.length} / 共 {roster.length} 位
+                </span>
+              )}
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-serif font-bold text-base text-[#2c221e] truncate group-hover:text-amber-800 transition-colors">
-                          {char.name || '冒險者'}
-                        </h4>
-                        <JRPGBadge variant="gold" size="xs">
-                          Lv {char.level || 5}
-                        </JRPGBadge>
-                        {isCrisis && (
-                          <JRPGBadge variant="rose" size="xs">
-                            ⚠️ 危機
-                          </JRPGBadge>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportJSON}
+                  className="hidden"
+                />
+                <span
+                  className="bg-white hover:bg-emerald-50 text-emerald-950 border border-emerald-200 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs cursor-pointer"
+                  title="支援匯入 FU Companion 備份或 Fultimator 導出之角色 JSON"
+                >
+                  <Upload className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>匯入卡片</span>
+                </span>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleExportJSON}
+                disabled={roster.length === 0}
+                className="bg-white hover:bg-emerald-50 text-emerald-950 border border-emerald-200 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs disabled:opacity-40 disabled:pointer-events-none"
+                title="匯出全站冒險者名冊 JSON 備份"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-700" />
+                <span>備份名冊</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateCharacter}
+                className="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-md transition-all hover:scale-102 justify-center text-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>建立新角色</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Roster Empty State (Matches NPC Workshop empty card) */}
+          {roster.length === 0 ? (
+            <div className="text-center py-20 bg-[#fffdf9] rounded-xl border border-emerald-300/70 border-dashed flex flex-col items-center justify-center shadow-xs">
+              <div className="relative mb-6 group flex items-center justify-center">
+                <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all duration-700 w-28 h-28 -translate-x-4 -translate-y-2"></div>
+                <GiScrollUnfurled className="w-20 h-20 text-emerald-700/60 group-hover:text-emerald-800/90 transition-all duration-500 relative z-10 drop-shadow" />
+              </div>
+              <p className="text-emerald-950 font-bold tracking-widest text-lg">名冊目前空空如也</p>
+              <p className="text-emerald-700/80 text-sm mt-2">點擊右上方按鈕開始創造你的第一位冒險者吧！</p>
+              <button
+                type="button"
+                onClick={handleCreateCharacter}
+                className="mt-6 bg-emerald-700 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all hover:scale-105 text-sm"
+              >
+                <Plus className="w-4 h-4" /> 建立第一位角色
+              </button>
+            </div>
+          ) : filteredRoster.length === 0 ? (
+            <div className="text-center py-16 bg-[#fffdf9] rounded-xl border border-emerald-200 border-dashed flex flex-col items-center justify-center shadow-xs">
+              <p className="text-emerald-950 font-bold text-base">找不到符合條件的冒險者</p>
+              <p className="text-emerald-700/70 text-xs mt-1">請嘗試變更搜尋關鍵字或職業篩選。</p>
+              <button
+                type="button"
+                onClick={() => { setSearchQuery(''); setClassFilter('all'); }}
+                className="mt-4 text-xs font-bold text-emerald-800 hover:underline"
+              >
+                清除所有篩選條件
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredRoster.map(char => {
+                const charTheme = getCharacterTheme(char.themeColor);
+                const stats = calculateCharacterStats(char);
+                const curHp = char.currentHp ?? stats.maxHp;
+                const curMp = char.currentMp ?? stats.maxMp;
+                const curIp = char.currentIp ?? stats.maxIp;
+                const isCrisis = curHp <= stats.crisisThreshold;
+
+                return (
+                  <div
+                    key={char.id}
+                    className="bg-[#fffdf9] rounded-xl shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group relative border-2"
+                    style={{ borderColor: isCrisis ? '#ef4444' : charTheme.border }}
+                  >
+                    <div className={`h-1.5 bg-gradient-to-r ${charTheme.gradient}`} />
+
+                    {/* Profile Header */}
+                    <div
+                      className="p-4 flex items-start gap-3.5 border-b transition-colors duration-200"
+                      style={{ backgroundColor: charTheme.headerBg, borderColor: charTheme.border }}
+                    >
+                      <div
+                        className="w-12 h-12 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-xl font-bold shadow-inner"
+                        style={{ borderColor: charTheme.border, color: charTheme.accent }}
+                      >
+                        {char.avatar ? (
+                          char.avatar.startsWith('http') || char.avatar.startsWith('data:') ? (
+                            <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <GameIcon name={char.avatar} className="w-7 h-7" style={{ color: charTheme.accent }} />
+                          )
+                        ) : (
+                          <GameIcon name={char.classes?.[0]?.className || 'GiSparkles'} className="w-7 h-7" style={{ color: charTheme.accent }} />
                         )}
                       </div>
 
-                      <p className="text-[11px] text-[#6b5a4b] mt-1 line-clamp-1">
-                        {char.identity || '未設定身份'} · <span className="text-amber-900 font-bold">{char.theme || '希望'}</span>
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4
+                            className="font-serif font-bold text-base truncate transition-colors"
+                            style={{ color: charTheme.textDark }}
+                          >
+                            {char.name || '冒險者'}
+                          </h4>
+                          <JRPGBadge variant={charTheme.badgeVariant} size="xs">
+                            Lv {char.level || 5}
+                          </JRPGBadge>
+                          {isCrisis && (
+                            <JRPGBadge variant="rose" size="xs" className="flex items-center gap-1 font-mono">
+                              <FUIcon name="crisis" className="text-xs leading-none" />
+                              <span>危機</span>
+                            </JRPGBadge>
+                          )}
+                        </div>
 
-                      {/* Classes */}
-                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                        {(char.classes || []).map((c, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[#fbf3de] text-amber-900 border border-[#d6c7ab] font-mono font-medium">
-                            {c.className} Lv{c.level}
+                        <p className="text-[11px] text-[#7c6a58] mt-0.5 line-clamp-1">
+                          {char.identity || '未設定身份'} · <span style={{ color: charTheme.accent, fontWeight: 'bold' }}>{char.theme || '希望'}</span>
+                        </p>
+
+                        {/* Classes Badges */}
+                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                          {(char.classes || []).map((c, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] px-1.5 py-0.5 rounded border font-mono font-medium"
+                              style={{ backgroundColor: '#fffdf9', borderColor: charTheme.border, color: charTheme.textDark }}
+                            >
+                              {c.className} Lv{c.level}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fultimator-Style Visual Resource Meters (HP / MP / IP) */}
+                    <div className="p-3.5 space-y-2 border-b bg-[#f5efdf]/70" style={{ borderColor: charTheme.border }}>
+                      {/* HP Gauge */}
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="font-bold flex items-center gap-1" style={{ color: isCrisis ? '#b91c1c' : '#991b1b' }}>
+                            HP
+                            {isCrisis && <FUIcon name="crisis" className="text-xs inline-block" />}
                           </span>
+                          <span className="font-bold text-[#3c2415]">{curHp} / {stats.maxHp}</span>
+                        </div>
+                        <div className="h-2 w-full bg-[#e8dec8] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${isCrisis ? 'bg-gradient-to-r from-red-600 to-rose-700' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}
+                            style={{ width: `${Math.max(0, Math.min(100, (curHp / stats.maxHp) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* MP Gauge */}
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="font-bold text-blue-800">MP</span>
+                          <span className="font-bold text-[#3c2415]">{curMp} / {stats.maxMp}</span>
+                        </div>
+                        <div className="h-2 w-full bg-[#e8dec8] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600"
+                            style={{ width: `${Math.max(0, Math.min(100, (curMp / stats.maxMp) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* IP Gauge */}
+                      <div className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="font-bold text-emerald-800">IP</span>
+                          <span className="font-bold text-[#3c2415]">{curIp} / {stats.maxIp}</span>
+                        </div>
+                        <div className="h-2 w-full bg-[#e8dec8] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-600"
+                            style={{ width: `${Math.max(0, Math.min(100, (curIp / stats.maxIp) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attributes Dice Pills & Combat Matrix */}
+                    <div className="p-3 border-b space-y-2 bg-[#fffdf9]" style={{ borderColor: charTheme.border }}>
+                      {/* Four Attributes Grid */}
+                      <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-xs">
+                        {[
+                          { key: 'dex', label: 'DEX', cur: stats.currentDex, base: stats.baseDex },
+                          { key: 'ins', label: 'INS', cur: stats.currentIns, base: stats.baseIns },
+                          { key: 'mig', label: 'MIG', cur: stats.currentMig, base: stats.baseMig },
+                          { key: 'wlp', label: 'WLP', cur: stats.currentWlp, base: stats.baseWlp }
+                        ].map(attr => (
+                          <div
+                            key={attr.key}
+                            className="p-1 rounded-lg border bg-[#f5efdf] flex flex-col items-center"
+                            style={{ borderColor: charTheme.border }}
+                          >
+                            <span className="text-[10px] font-bold text-[#7c6a58]">{attr.label}</span>
+                            <span className="font-black text-[#3c2415] flex items-center gap-0.5">
+                              <span>d{attr.cur}</span>
+                              {attr.cur < attr.base && (
+                                <span className="text-[9px] text-red-500 line-through">d{attr.base}</span>
+                              )}
+                            </span>
+                          </div>
                         ))}
+                      </div>
+
+                      {/* Defense & Initiative Row */}
+                      <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-[#f5efdf] border border-[#d6c7ab] text-[11px] font-mono">
+                        <span className="text-[#6b5a4b]">DEF <strong className="text-[#3c2415]">{stats.def}</strong></span>
+                        <span className="text-[#d6c7ab]">|</span>
+                        <span className="text-blue-900">M.DEF <strong className="text-blue-950">{stats.mdef}</strong></span>
+                        <span className="text-[#d6c7ab]">|</span>
+                        <span className="text-[#6b5a4b]">INIT <strong className="text-[#3c2415]">+{stats.init}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div
+                      className="p-3 flex items-center justify-between gap-1.5 mt-auto transition-colors duration-200 bg-[#f5efdf]/80 border-t"
+                      style={{ borderColor: charTheme.border }}
+                    >
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDuplicateCharacter(char)}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-[#3c2415] hover:bg-[#ebdcc4] transition-colors"
+                          title="複製卡片"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleSendToCombatDirect(char)}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                          title="推入戰鬥房間"
+                        >
+                          <GiCrossedSwords className="w-4 h-4 text-rose-700" />
+                        </button>
+                        <button
+                          onClick={() => handleExportSingleCharacter(char, 'native')}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-amber-800 hover:bg-amber-100/60 transition-colors"
+                          title="匯出單卡 JSON"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleExportSingleCharacter(char, 'fultimator')}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-purple-700 hover:bg-purple-50 transition-colors font-mono text-[10px] font-bold"
+                          title="匯出為 Fultimator 相容格式"
+                        >
+                          <FileCode className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCharacter(char.id)}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-rose-700 hover:bg-rose-50 transition-colors"
+                          title="刪除角色"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <button
+                          onClick={() => handleOpenEditorMode(char)}
+                          className="px-2.5 py-1 rounded-lg border bg-[#fffdf9] hover:bg-[#f4ebd9] text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
+                          style={{ borderColor: charTheme.border, color: charTheme.textDark }}
+                          title="進入創角與加點工作台"
+                        >
+                          <GiQuillInk className="w-3.5 h-3.5" style={{ color: charTheme.accent }} />
+                          <span>構建</span>
+                        </button>
+
+                        <JRPGButton
+                          variant={charTheme.buttonVariant || 'primary'}
+                          size="xs"
+                          icon={Play}
+                          onClick={() => handleOpenPlayMode(char)}
+                        >
+                          跑團卡
+                        </JRPGButton>
                       </div>
                     </div>
                   </div>
-
-                  {/* Stats snippet */}
-                  <div className="grid grid-cols-4 gap-1.5 p-3 bg-[#f5efdf]/60 border-b border-[#d6c7ab]/80 text-center font-mono text-xs">
-                    <div className="p-1 rounded bg-[#fee2e2] border border-red-200">
-                      <div className="text-[10px] text-red-700 font-sans">HP</div>
-                      <div className="font-bold text-red-900">{curHp}/{stats.maxHp}</div>
-                    </div>
-                    <div className="p-1 rounded bg-[#dbeafe] border border-blue-200">
-                      <div className="text-[10px] text-blue-700 font-sans">MP</div>
-                      <div className="font-bold text-blue-900">{curMp}/{stats.maxMp}</div>
-                    </div>
-                    <div className="p-1 rounded bg-[#fef3c7] border border-amber-200">
-                      <div className="text-[10px] text-amber-700 font-sans">金幣</div>
-                      <div className="font-bold text-amber-900">{char.zenit || 0}z</div>
-                    </div>
-                    <div className="p-1 rounded bg-[#ede9fe] border border-purple-200">
-                      <div className="text-[10px] text-purple-700 font-sans">EXP</div>
-                      <div className="font-bold text-purple-900">{char.exp || 0}/10</div>
-                    </div>
-                  </div>
-
-                  {/* Footer actions */}
-                  <div className="p-3 bg-[#f4ebd9]/30 border-t border-[#d6c7ab]/80 flex items-center justify-between gap-2 mt-auto flex-wrap">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDuplicateCharacter(char)}
-                        className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#ebdcc4] transition-colors"
-                        title="複製卡片"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleSendToCombatDirect(char)}
-                        className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-rose-700 hover:bg-rose-50 transition-colors"
-                        title="推入戰鬥房間"
-                      >
-                        <Swords className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCharacter(char.id)}
-                        className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-rose-700 hover:bg-rose-50 transition-colors"
-                        title="刪除"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      <button
-                        onClick={() => handleOpenEditorMode(char)}
-                        className="px-2.5 py-1 rounded-lg border border-[#d6c7ab] bg-[#fffdf9] hover:bg-[#f5efdf] text-xs font-bold text-[#3c2415] transition-colors shadow-sm flex items-center gap-1"
-                        title="進入創角與加點工作台"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>構建</span>
-                      </button>
-
-                      <JRPGButton
-                        variant="primary"
-                        size="xs"
-                        icon={Play}
-                        onClick={() => handleOpenPlayMode(char)}
-                      >
-                        跑團卡
-                      </JRPGButton>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* Mode 2: Live Play HUD */}
-      {viewMode === 'play' && (
+      {viewMode === 'play' && activeChar && (
         <CharacterPlayHUD
           character={activeChar}
+          themeId={activeChar.themeColor || 'emerald'}
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
           onOpenEditor={() => setViewMode('editor')}
@@ -410,9 +770,10 @@ export default function CharacterSheet({ onOpenDice = null }) {
       )}
 
       {/* Mode 3: Step-by-Step Builder Wizard */}
-      {viewMode === 'editor' && (
+      {viewMode === 'editor' && activeChar && (
         <CharacterEditor
           character={activeChar}
+          themeId={activeChar.themeColor || 'emerald'}
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
           onEnterPlayMode={() => setViewMode('play')}
@@ -421,8 +782,8 @@ export default function CharacterSheet({ onOpenDice = null }) {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#fffdf9] border-2 border-amber-600 text-[#2c221e] px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-xs animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 bg-white border-2 border-emerald-600 text-emerald-950 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 font-medium text-xs animate-fade-in">
+          <GiCheckMark className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

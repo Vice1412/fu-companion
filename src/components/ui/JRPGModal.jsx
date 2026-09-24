@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { GiCrossMark } from 'react-icons/gi';
+import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
+import { X } from 'lucide-react';
 
 export default function JRPGModal({
   isOpen,
@@ -7,42 +8,75 @@ export default function JRPGModal({
   title,
   children,
   maxWidth = 'max-w-xl',
-  actionButtons = null
+  actionButtons = null,
+  theme = null
 }) {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    // Lock body scroll while modal is active
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      {/* Clickable Backdrop */}
       <div 
-        className="fixed inset-0" 
+        className="fixed inset-0 -z-10" 
         onClick={onClose} 
       />
-      <div className={`relative w-full ${maxWidth} bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl shadow-2xl overflow-hidden z-10 my-8 flex flex-col max-h-[90vh] text-[#2c221e]`}>
-        {/* Top gold accent line */}
-        <div className="h-1 w-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700" />
+
+      {/* Modal Dialog Card */}
+      <div
+        className={`relative w-full ${maxWidth} bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh] text-[#2c221e]`}
+        style={theme ? { backgroundColor: theme.cardBg || '#ffffff', borderColor: theme.border, color: theme.textDark } : {}}
+      >
+        {/* Top accent line */}
+        <div
+          className={`h-1 w-full ${theme?.gradient ? `bg-gradient-to-r ${theme.gradient}` : 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700'}`}
+        />
 
         {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-[#d6c7ab] flex items-center justify-between bg-[#f4ebd9] shrink-0">
-          <h3 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-            <span className="text-amber-700">❖</span>
+        <div
+          className="px-5 py-3.5 border-b border-[#d6c7ab] flex items-center justify-between bg-[#f4ebd9] shrink-0"
+          style={theme ? { backgroundColor: theme.headerBg, borderColor: theme.border } : {}}
+        >
+          <h3
+            className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2"
+            style={theme ? { color: theme.textDark } : {}}
+          >
+            <span style={theme ? { color: theme.accent } : { color: '#b45309' }}>❖</span>
             {title}
           </h3>
           <button
             type="button"
             onClick={onClose}
             className="text-[#6b5a4b] hover:text-[#2c221e] p-1.5 rounded-lg hover:bg-[#e4d9c0] transition-colors"
+            style={theme ? { color: theme.textMuted } : {}}
+            title="關閉視窗"
           >
-            <GiCrossMark className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -53,11 +87,16 @@ export default function JRPGModal({
 
         {/* Action Footer */}
         {actionButtons && (
-          <div className="px-5 py-3 border-t border-[#d6c7ab] bg-[#f8f3e8] flex items-center justify-end gap-3 shrink-0">
+          <div
+            className="px-5 py-3 border-t border-[#d6c7ab] bg-[#f8f3e8] flex items-center justify-end gap-3 shrink-0"
+            style={theme ? { backgroundColor: theme.subpanelBg, borderColor: theme.border } : {}}
+          >
             {actionButtons}
           </div>
         )}
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 }

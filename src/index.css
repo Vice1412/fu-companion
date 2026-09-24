@@ -302,33 +302,31 @@ body {
 @keyframes pageDissolveIn {
   0% {
     opacity: 0;
-    transform: scale(0.98) translateZ(0);
+    transform: scale(0.98);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateZ(0);
+    transform: none;
   }
 }
 
 @keyframes pageDissolveOut {
   0% {
     opacity: 1;
-    transform: scale(1) translateZ(0);
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: scale(0.97) translateZ(0);
+    transform: scale(0.97);
   }
 }
 
 .animate-page-dissolve-in {
-  animation: pageDissolveIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
+  animation: pageDissolveIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-page-dissolve-out {
-  animation: pageDissolveOut 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
-  will-change: transform, opacity;
+  animation: pageDissolveOut 0.35s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 /* Dynamic Shadow Sweep across the turning page */
@@ -352,4 +350,5 @@ body {
 .page-shadow-overlay-open {
   animation: shadowSweepOpen 0.85s ease-in-out forwards;
 }
+
 

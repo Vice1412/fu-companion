@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import JRPGModal from '../../components/ui/JRPGModal';
 import JRPGButton from '../../components/ui/JRPGButton';
@@ -8,13 +8,27 @@ const DICE_TIERS = [6, 8, 10, 12];
 
 export default function DiceRollerModal({
   isOpen,
-  onClose
+  onClose,
+  initialConfig = null
 }) {
   const [die1Type, setDie1Type] = useState(8);
   const [die2Type, setDie2Type] = useState(8);
   const [modifier, setModifier] = useState(0);
+  const [rollLabel, setRollLabel] = useState('');
   const [rollResult, setRollResult] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && initialConfig) {
+      if (initialConfig.die1) setDie1Type(initialConfig.die1);
+      if (initialConfig.die2) setDie2Type(initialConfig.die2);
+      if (initialConfig.modifier !== undefined) setModifier(initialConfig.modifier);
+      if (initialConfig.label) setRollLabel(initialConfig.label);
+      setRollResult(null);
+    } else if (isOpen && !initialConfig) {
+      setRollLabel('');
+    }
+  }, [isOpen, initialConfig]);
 
   const handleRoll = () => {
     setIsRolling(true);
@@ -51,7 +65,7 @@ export default function DiceRollerModal({
     <JRPGModal
       isOpen={isOpen}
       onClose={onClose}
-      title="FU 雙屬性擲骰器 (Dual Dice Roller)"
+      title={rollLabel ? `FU 檢定擲骰 · ${rollLabel}` : "FU 雙屬性擲骰器"}
       maxWidth="max-w-md"
     >
       <div className="space-y-5">
@@ -100,7 +114,7 @@ export default function DiceRollerModal({
 
         {/* Modifier */}
         <div className="flex items-center justify-between bg-[#f5efdf] p-3 rounded-xl border border-[#d6c7ab] text-xs shadow-sm">
-          <span className="text-[#2c221e] font-medium">檢定固定加值 (Modifier)</span>
+          <span className="text-[#2c221e] font-medium">檢定固定加值</span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setModifier(prev => prev - 1)}
@@ -149,7 +163,7 @@ export default function DiceRollerModal({
 
             {rollResult.isFumble && (
               <div className="text-rose-800 font-bold text-sm flex items-center gap-1.5 animate-pulse">
-                <GiHazardSign className="w-5 h-5 text-rose-600" /> ☠ FUMBLE 大失敗！（獲得 1 點物語點） ☠
+                <GiHazardSign className="w-5 h-5 text-rose-600" /> [FUMBLE 大失敗]（獲得 1 點物語點）
               </div>
             )}
 
@@ -181,7 +195,7 @@ export default function DiceRollerModal({
                 <strong className="text-lg text-amber-800 font-bold">{rollResult.total}</strong>
               </div>
               <div>
-                <span className="text-[#6b5a4b]">高點 (HR): </span>
+                <span className="text-[#6b5a4b]">高點 HR: </span>
                 <strong className="text-lg text-sky-800 font-bold">{rollResult.hr}</strong>
               </div>
             </div>

@@ -1,91 +1,200 @@
 import React from 'react';
-import { Shield, Sparkles, Zap, Heart, Swords, Backpack, Star, Clock } from 'lucide-react';
+import {
+  GiHealthNormal,
+  GiLightningTear,
+  GiBackpack,
+  GiSparkles,
+  GiShield,
+  GiCrossedSwords,
+  GiQuillInk,
+  GiSpellBook,
+  GiPocketWatch,
+  GiLaurelCrown,
+  GiHeartPlus,
+  GiHazardSign
+} from 'react-icons/gi';
+import GameIcon from '../../../components/ui/GameIcon';
+import FUIcon from '../../../components/ui/FUIcon';
 import { calculateCharacterStats } from '../utils/characterEngine';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import ClockTracker from '../../../components/ui/ClockTracker';
 import rulesData from '../data/rulesData.json';
+import { getCharacterTheme } from '../utils/characterThemes';
 
 export default function CharacterCard({
   character,
+  themeId = null,
   onEdit = null,
   onUpdateClock = null,
   className = ''
 }) {
   if (!character) return null;
 
+  const theme = getCharacterTheme(character.themeColor || themeId);
   const stats = calculateCharacterStats(character);
   const curHp = character.currentHp !== null && character.currentHp !== undefined ? character.currentHp : stats.maxHp;
   const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : stats.maxMp;
   const isCrisis = curHp <= stats.crisisThreshold;
 
   return (
-    <div className={`bg-[#fffdf9] rounded-xl border-2 border-[#d6c7ab] shadow-md overflow-hidden text-[#2c221e] flex flex-col relative ${isCrisis ? 'crisis-pulse-active border-red-500' : ''} ${className}`}>
+    <div
+      className={`bg-[#fffdf9] rounded-xl border-2 shadow-md overflow-hidden text-[#2c221e] flex flex-col relative transition-colors duration-200 ${isCrisis ? 'crisis-pulse-active border-red-500' : ''} ${className}`}
+      style={{ borderColor: isCrisis ? '#ef4444' : theme.border }}
+    >
       {/* Top Banner */}
-      <div className="h-1.5 w-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700" />
+      <div className={`h-1.5 w-full bg-gradient-to-r ${theme.gradient}`} />
 
       {/* Header Profile */}
-      <div className="p-4 sm:p-5 border-b border-[#d6c7ab] bg-[#f4ebd9] flex items-start gap-4">
-        {/* Avatar */}
-        <div className="w-16 h-16 rounded-xl bg-white border border-[#d6c7ab] overflow-hidden shrink-0 flex items-center justify-center font-serif text-2xl text-amber-800 font-bold shadow-inner">
-          {character.avatar ? (
+      <div
+        className="p-4 sm:p-5 border-b flex items-start gap-4 transition-colors duration-200"
+        style={{ backgroundColor: theme.headerBg, borderColor: theme.border }}
+      >
+        {/* Avatar - Game-Icons.net */}
+        <div
+          className="w-16 h-16 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-2xl font-bold shadow-inner"
+          style={{ borderColor: theme.border, color: theme.accent }}
+        >
+          {character.avatar && (character.avatar.startsWith('http') || character.avatar.startsWith('data:')) ? (
             <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
           ) : (
-            character.name?.[0] || '勇'
+            <GameIcon
+              name={character.avatar || character.classes?.[0]?.className || 'sword'}
+              size={36}
+              className="text-inherit"
+              style={{ color: theme.accent }}
+            />
           )}
         </div>
 
         {/* Identity & Origin */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-serif font-black text-xl text-[#3c2415] tracking-wide truncate">
-              {character.name || '無名冒險者'}
+            <h3
+              className="font-serif font-black text-xl tracking-wide truncate"
+              style={{ color: theme.textDark }}
+            >
+              {character.name && character.name.trim() ? (
+                character.name
+              ) : (
+                <span className="text-[#a08f7f] italic font-mono border-b border-dashed border-[#d6c7ab] pb-0.5">
+                  【 ______ 尚未命名冒險者 】
+                </span>
+              )}
             </h3>
-            <JRPGBadge variant="gold" size="xs">
+            <JRPGBadge variant={theme.badgeVariant} size="xs">
               Lv {character.level || 5}
             </JRPGBadge>
             {isCrisis && (
-              <JRPGBadge variant="rose" size="xs">
-                ⚠️ CRISIS 危機狀態
+              <JRPGBadge variant="rose" size="xs" className="flex items-center gap-1">
+                <FUIcon name="crisis" className="text-sm leading-none" />
+                <span>CRISIS 危機狀態</span>
               </JRPGBadge>
             )}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-[#6b5a4b] mt-1 font-mono flex-wrap">
-            <span>身份: <strong className="text-[#2c221e] font-sans font-bold">{character.identity}</strong></span>
+            <span>
+              身份:{' '}
+              {character.identity && character.identity.trim() ? (
+                <strong className="font-sans font-bold" style={{ color: theme.textDark }}>
+                  {character.identity}
+                </strong>
+              ) : (
+                <span className="text-[#a08f7f] italic font-normal border-b border-dashed border-[#d6c7ab]">
+                  【 尚未設定身份 】
+                </span>
+              )}
+            </span>
             <span>·</span>
-            <span>主題: <strong className="text-amber-800 font-sans font-bold">{character.theme}</strong></span>
+            <span>
+              主題:{' '}
+              {character.theme && character.theme.trim() ? (
+                <strong className="font-sans font-bold" style={{ color: theme.accent }}>
+                  {character.theme}
+                </strong>
+              ) : (
+                <span className="text-[#a08f7f] italic font-normal border-b border-dashed border-[#d6c7ab]">
+                  【 尚未設定主題 】
+                </span>
+              )}
+            </span>
             <span>·</span>
-            <span>故鄉: <strong className="text-blue-800 font-sans font-bold">{character.origin}</strong></span>
+            <span>
+              故鄉:{' '}
+              {character.origin && character.origin.trim() ? (
+                <strong className="font-sans font-bold" style={{ color: theme.textDark }}>
+                  {character.origin}
+                </strong>
+              ) : (
+                <span className="text-[#a08f7f] italic font-normal border-b border-dashed border-[#d6c7ab]">
+                  【 尚未設定故鄉 】
+                </span>
+              )}
+            </span>
           </div>
 
-          {/* Classes pill tags */}
+          {/* Classes pill tags with Game-Icons */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            {(character.classes || []).map((cl, idx) => (
-              <span key={idx} className="text-[11px] px-2 py-0.5 rounded-md bg-[#fbf3de] border border-amber-400/60 text-amber-900 font-mono font-bold">
-                {cl.className} (Lv {cl.level})
+            {(!character.classes || character.classes.length === 0) ? (
+              <span className="text-[11px] px-2 py-0.5 rounded-md border border-dashed border-amber-400 bg-[#f5efdf] text-amber-950 font-mono italic">
+                【 尚未配置職業 (起始需配置 2~3 個職業) 】
               </span>
-            ))}
+            ) : (
+              <>
+                {character.classes.map((cl, idx) => (
+                  <span
+                    key={idx}
+                    className="text-[11px] px-2 py-0.5 rounded-md border font-mono font-bold flex items-center gap-1"
+                    style={{
+                      backgroundColor: '#fffdf9',
+                      borderColor: theme.border,
+                      color: theme.textDark
+                    }}
+                  >
+                    <GameIcon name={cl.className} size={13} style={{ color: theme.accent }} />
+                    {cl.className} (Lv {cl.level})
+                  </span>
+                ))}
+                {/* Check if total SL is below required level */}
+                {(() => {
+                  const totalSL = character.classes.reduce((sum, c) => sum + (c.skills || []).reduce((s, sk) => s + (sk.sl || 0), 0), 0);
+                  const reqSL = character.level || 5;
+                  if (totalSL < reqSL) {
+                    return (
+                      <span className="text-[10px] px-2 py-0.5 rounded-md border border-dashed border-amber-400 bg-amber-50 text-amber-900 font-mono font-bold">
+                        尚餘 {reqSL - totalSL} 點特技未分配
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </>
+            )}
           </div>
         </div>
 
         {onEdit && (
           <button
+            type="button"
             onClick={onEdit}
-            className="p-1.5 text-[#6b5a4b] hover:text-amber-800 hover:bg-[#e4d9c0] rounded-lg transition-colors shrink-0"
+            className="p-2 text-[#7c6a58] hover:bg-black/5 rounded-lg transition-colors shrink-0"
             title="編輯角色卡"
           >
-            ✏️
+            <GiQuillInk className="w-4 h-4" style={{ color: theme.accent }} />
           </button>
         )}
       </div>
 
       {/* Core Resources Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-[#fbf7ee] border-b border-[#d6c7ab]">
+      <div
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 border-b transition-colors duration-200"
+        style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+      >
         {/* HP */}
         <div className="bg-[#fee2e2] rounded-lg p-2.5 border border-[#fca5a5]">
           <div className="text-[10px] text-red-800 font-mono uppercase font-bold flex items-center gap-1">
-            <Heart className="w-3 h-3 text-red-600 fill-red-500/20" /> HP 生命值
+            <GiHealthNormal className="w-3.5 h-3.5 text-red-600" /> HP 生命值
           </div>
           <div className="text-base font-mono font-black text-red-900 mt-0.5">
             {curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span>
@@ -95,7 +204,7 @@ export default function CharacterCard({
         {/* MP */}
         <div className="bg-[#dbeafe] rounded-lg p-2.5 border border-[#93c5fd]">
           <div className="text-[10px] text-blue-800 font-mono uppercase font-bold flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-blue-600" /> MP 魔力值
+            <GiLightningTear className="w-3.5 h-3.5 text-blue-600" /> MP 魔力值
           </div>
           <div className="text-base font-mono font-black text-blue-900 mt-0.5">
             {curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span>
@@ -105,7 +214,7 @@ export default function CharacterCard({
         {/* IP */}
         <div className="bg-[#d1fae5] rounded-lg p-2.5 border border-[#6ee7b7]">
           <div className="text-[10px] text-emerald-800 font-mono uppercase font-bold flex items-center gap-1">
-            <Backpack className="w-3 h-3 text-emerald-600" /> IP 庫存點
+            <GiBackpack className="w-3.5 h-3.5 text-emerald-600" /> IP 庫存點
           </div>
           <div className="text-base font-mono font-black text-emerald-950 mt-0.5">
             {character.currentIp ?? stats.maxIp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxIp}</span>
@@ -115,7 +224,7 @@ export default function CharacterCard({
         {/* FP */}
         <div className="bg-[#fef3c7] rounded-lg p-2.5 border border-[#fcd34d]">
           <div className="text-[10px] text-amber-900 font-mono uppercase font-bold flex items-center gap-1">
-            <Star className="w-3 h-3 text-amber-700" /> 物語點 (FP)
+            <GiSparkles className="w-3.5 h-3.5 text-amber-700" /> 物語點
           </div>
           <div className="text-base font-mono font-black text-amber-950 mt-0.5">
             {character.fabulaPoints || 3}
@@ -124,7 +233,10 @@ export default function CharacterCard({
       </div>
 
       {/* Attributes & Defenses */}
-      <div className="p-3.5 border-b border-[#d6c7ab] bg-[#f8f3e8] flex flex-wrap items-center justify-between gap-4">
+      <div
+        className="p-3.5 border-b flex flex-wrap items-center justify-between gap-4 transition-colors duration-200"
+        style={{ backgroundColor: theme.appBg, borderColor: theme.border }}
+      >
         {/* Dice */}
         <div className="flex items-center gap-2 flex-wrap">
           <StatBadge stat="dex" value={stats.currentDex || stats.baseDex || 8} size="sm" />
@@ -134,42 +246,62 @@ export default function CharacterCard({
         </div>
 
         {/* Def & MDef & Init */}
-        <div className="flex items-center gap-3 font-mono text-xs text-[#2c221e]">
+        <div className="flex items-center gap-3 font-mono text-xs text-[#3c2415]">
           <div className="flex items-center gap-1">
-            <Shield className="w-3.5 h-3.5 text-amber-700" />
-            <span>物防: <strong className="text-amber-900 font-bold">{stats.def}</strong></span>
+            <GiShield className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+            <span>物防: <strong className="font-bold" style={{ color: theme.textDark }}>{stats.def}</strong></span>
           </div>
           <div className="flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5 text-blue-700" />
+            <GiShield className="w-3.5 h-3.5 text-blue-800" />
             <span>魔防: <strong className="text-blue-900 font-bold">{stats.mdef}</strong></span>
           </div>
-          <div>
+          <div className="flex items-center gap-1">
+            <GiPocketWatch className="w-3.5 h-3.5 text-[#7c6a58]" />
             <span>先攻: <strong className="text-[#3c2415]">+{stats.init}</strong></span>
           </div>
         </div>
       </div>
 
       {/* Equipment List */}
-      <div className="p-4 border-b border-[#d6c7ab] bg-[#fffdf9] text-xs">
-        <h4 className="text-[11px] font-mono font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-          <Swords className="w-3.5 h-3.5 text-amber-700" /> 裝備配置
+      <div className="p-4 border-b bg-[#fffdf9] text-xs" style={{ borderColor: theme.border }}>
+        <h4
+          className="text-[11px] font-mono font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b pb-1"
+          style={{ color: theme.textDark, borderColor: theme.border }}
+        >
+          <GiCrossedSwords className="w-3.5 h-3.5" style={{ color: theme.accent }} /> 裝備配置
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[#2c221e] font-mono">
-          <div className="bg-[#fbf7ee] p-2 rounded-lg border border-[#d6c7ab]">
-            <span className="text-[#8c7b6c]">主手: </span>
-            <span className="text-[#3c2415] font-bold font-sans">{character.equipment?.mainHand || '無'}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[#3c2415] font-mono">
+          <div className="p-2 rounded-lg border" style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}>
+            <span className="text-[#7c6a58]">主手: </span>
+            {character.equipment?.mainHand && character.equipment.mainHand !== '無' ? (
+              <span className="font-bold font-sans" style={{ color: theme.textDark }}>{character.equipment.mainHand}</span>
+            ) : (
+              <span className="text-[#a08f7f] italic font-sans font-normal border-b border-dashed border-[#d6c7ab]">[ 空格 / 未裝備 ]</span>
+            )}
           </div>
-          <div className="bg-[#fbf7ee] p-2 rounded-lg border border-[#d6c7ab]">
-            <span className="text-[#8c7b6c]">副手/盾: </span>
-            <span className="text-[#3c2415] font-bold font-sans">{character.equipment?.offHand || '無'}</span>
+          <div className="p-2 rounded-lg border" style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}>
+            <span className="text-[#7c6a58]">副手/盾: </span>
+            {character.equipment?.offHand && character.equipment.offHand !== '無' && character.equipment.offHand !== '無盾牌' ? (
+              <span className="font-bold font-sans" style={{ color: theme.textDark }}>{character.equipment.offHand}</span>
+            ) : (
+              <span className="text-[#a08f7f] italic font-sans font-normal border-b border-dashed border-[#d6c7ab]">[ 空格 / 未裝備 ]</span>
+            )}
           </div>
-          <div className="bg-[#fbf7ee] p-2 rounded-lg border border-[#d6c7ab]">
-            <span className="text-[#8c7b6c]">防具: </span>
-            <span className="text-[#3c2415] font-bold font-sans">{character.equipment?.armor || '無'}</span>
+          <div className="p-2 rounded-lg border" style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}>
+            <span className="text-[#7c6a58]">防具: </span>
+            {character.equipment?.armor && character.equipment.armor !== '無' ? (
+              <span className="font-bold font-sans" style={{ color: theme.textDark }}>{character.equipment.armor}</span>
+            ) : (
+              <span className="text-[#a08f7f] italic font-sans font-normal border-b border-dashed border-[#d6c7ab]">[ 空格 / 未裝備 ]</span>
+            )}
           </div>
-          <div className="bg-[#fbf7ee] p-2 rounded-lg border border-[#d6c7ab]">
-            <span className="text-[#8c7b6c]">飾品: </span>
-            <span className="text-[#3c2415] font-bold font-sans">{character.equipment?.accessory || '無'}</span>
+          <div className="p-2 rounded-lg border" style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}>
+            <span className="text-[#7c6a58]">飾品: </span>
+            {character.equipment?.accessory && character.equipment.accessory !== '無' ? (
+              <span className="font-bold font-sans" style={{ color: theme.textDark }}>{character.equipment.accessory}</span>
+            ) : (
+              <span className="text-[#a08f7f] italic font-sans font-normal border-b border-dashed border-[#d6c7ab]">[ 空格 / 未裝備 ]</span>
+            )}
           </div>
         </div>
       </div>
@@ -177,45 +309,71 @@ export default function CharacterCard({
       {/* Classes & Skills Details */}
       <div className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto bg-[#fffdf9]">
         <div>
-          <h4 className="text-xs font-mono font-bold text-amber-900 uppercase tracking-wider mb-2 border-b border-[#d6c7ab]/60 pb-1">
-            職業特技清單 (Class Skills)
+          <h4
+            className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b pb-1 flex items-center gap-1.5"
+            style={{ color: theme.textDark, borderColor: theme.border }}
+          >
+            <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} /> 職業特技清單
           </h4>
-          <div className="space-y-2">
-            {(character.classes || []).map((cl, cIdx) => (
-              <div key={cIdx} className="space-y-1.5">
-                {(cl.skills || []).map((sk, sIdx) => {
-                  const classDef = rulesData.classes[cl.className];
-                  const skillDef = classDef?.skills?.find(s => s.name === sk.name);
-                  return (
-                    <div key={sIdx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
-                      <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
-                        <span>✦ {sk.name}</span>
-                        <span className="font-mono text-stone-600 text-[11px]">
-                          SL {sk.sl} / {skillDef?.maxSL || 5}
-                        </span>
+          {(!character.classes || character.classes.flatMap(c => c.skills || []).length === 0) ? (
+            <div className="p-3.5 rounded-lg border border-dashed border-[#d6c7ab] bg-[#f5efdf]/60 text-[#7c6a58] text-xs text-center font-mono">
+              【 尚未配置任何職業特技 】（起始 5 級請於步驟 3 分配特技點數）
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(character.classes || []).map((cl, cIdx) => (
+                <div key={cIdx} className="space-y-1.5">
+                  {(cl.skills || []).map((sk, sIdx) => {
+                    const classDef = rulesData.classes[cl.className];
+                    const skillDef = classDef?.skills?.find(s => s.name === sk.name);
+                    return (
+                      <div
+                        key={sIdx}
+                        className="rounded-lg p-2.5 border text-xs"
+                        style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                      >
+                        <div className="flex items-center justify-between font-bold mb-1" style={{ color: theme.textDark }}>
+                          <span className="flex items-center gap-1.5">
+                            <GameIcon name={cl.className} size={14} style={{ color: theme.accent }} />
+                            {sk.name}
+                          </span>
+                          <span className="font-mono text-[#7c6a58] text-[11px]">
+                            SL {sk.sl} / {skillDef?.maxSL || 5}
+                          </span>
+                        </div>
+                        <p className="text-[#574c43] leading-relaxed font-sans text-[11px]">
+                          {skillDef?.desc || '暫無說明'}
+                        </p>
                       </div>
-                      <p className="text-[#6b5a4b] leading-relaxed font-sans text-[11px]">
-                        {skillDef?.desc || '暫無說明'}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Heroic Skills */}
         {character.heroicSkills && character.heroicSkills.length > 0 && (
           <div>
-            <h4 className="text-xs font-mono font-bold text-blue-900 uppercase tracking-wider mb-2 border-b border-[#d6c7ab]/60 pb-1">
-              英雄技能 (Heroic Skills)
+            <h4
+              className="text-xs font-mono font-bold uppercase tracking-wider mb-2 border-b pb-1 flex items-center gap-1.5"
+              style={{ color: theme.textDark, borderColor: theme.border }}
+            >
+              <GiLaurelCrown className="w-3.5 h-3.5" style={{ color: theme.accent }} /> 英雄技能
             </h4>
             <div className="space-y-2">
               {character.heroicSkills.map((hs, idx) => (
-                <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
-                  <div className="font-bold text-blue-900 mb-1">👑 {hs.name}</div>
-                  <p className="text-[#6b5a4b] leading-relaxed font-sans text-[11px]">{hs.effect}</p>
+                <div
+                  key={idx}
+                  className="rounded-lg p-2.5 border text-xs"
+                  style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                >
+                  <div className="font-bold mb-1 flex items-center gap-1.5" style={{ color: theme.textDark }}>
+                    <GiLaurelCrown className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                    {hs.name}
+                  </div>
+                  <p className="text-[#574c43] leading-relaxed font-sans text-[11px]">{hs.effect}</p>
                 </div>
               ))}
             </div>
@@ -223,37 +381,60 @@ export default function CharacterCard({
         )}
 
         {/* Bonds */}
-        {character.bonds && character.bonds.length > 0 && (
-          <div>
-            <h4 className="text-xs font-mono font-bold text-rose-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <span>💖</span> 情感羈絆 (Bonds)
-            </h4>
+        <div>
+          <h4
+            className="text-xs font-mono font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b pb-1"
+            style={{ color: theme.textDark, borderColor: theme.border }}
+          >
+            <GiHeartPlus className="w-3.5 h-3.5" style={{ color: theme.accent }} /> 情感羈絆
+          </h4>
+          {(!character.bonds || character.bonds.length === 0) ? (
+            <div className="p-3 rounded-lg border border-dashed border-[#d6c7ab] bg-[#f5efdf]/60 text-[#7c6a58] text-xs flex items-center justify-between">
+              <span>【 尚未締結任何情感羈絆 】（可建立最多 6 組羈絆）</span>
+              <span className="font-mono text-[10px] text-[#a08f7f]">0 / 6</span>
+            </div>
+          ) : (
             <div className="space-y-1.5">
               {character.bonds.map((bond, idx) => (
-                <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs flex items-center justify-between gap-2">
-                  <div className="font-bold text-[#3c2415]">{bond.target}</div>
+                <div
+                  key={idx}
+                  className="rounded-lg p-2.5 border text-xs flex items-center justify-between gap-2"
+                  style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                >
+                  <div className="font-bold" style={{ color: theme.textDark }}>{bond.target}</div>
                   <div className="flex items-center gap-1 flex-wrap">
                     {(bond.feelings || []).map(f => (
-                      <span key={f} className="px-1.5 py-0.5 rounded bg-white border border-[#d6c7ab] text-[10px] text-amber-900 font-bold">
+                      <span
+                        key={f}
+                        className="px-1.5 py-0.5 rounded border text-[10px] font-bold"
+                        style={{ backgroundColor: '#fffdf9', borderColor: theme.border, color: theme.textDark }}
+                      >
                         {f}
                       </span>
                     ))}
-                    <span className="text-[10px] font-mono text-[#8c7b6c] font-bold">
+                    <span className="text-[10px] font-mono font-bold" style={{ color: theme.accent }}>
                       (+{bond.feelings?.length || 0})
                     </span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Personal Clocks */}
-        {character.clocks && character.clocks.length > 0 && (
-          <div>
-            <h4 className="text-xs font-mono font-bold text-emerald-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <Clock className="w-3.5 h-3.5 text-emerald-700" /> 個人命刻 (Personal Clocks)
-            </h4>
+        <div>
+          <h4
+            className="text-xs font-mono font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b pb-1"
+            style={{ color: theme.textDark, borderColor: theme.border }}
+          >
+            <GiPocketWatch className="w-3.5 h-3.5" style={{ color: theme.accent }} /> 個人命刻
+          </h4>
+          {(!character.clocks || character.clocks.length === 0) ? (
+            <div className="p-3 rounded-lg border border-dashed border-[#d6c7ab] bg-[#f5efdf]/60 text-[#7c6a58] text-xs">
+              <span>【 尚未添加個人命刻 】（可在特質與命刻步驟添加時鐘推進個人目標）</span>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {character.clocks.map((clock, idx) => (
                 <ClockTracker
@@ -261,15 +442,15 @@ export default function CharacterCard({
                   title={clock.title}
                   totalSegments={clock.totalSegments || 6}
                   filledSegments={clock.filledSegments || 0}
-                  theme={clock.theme || 'amber'}
+                  theme={clock.theme || theme.id}
                   type={clock.type || 'circle'}
                   size={100}
                   onChange={onUpdateClock ? (newVal => onUpdateClock(clock.id, newVal)) : null}
                 />
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

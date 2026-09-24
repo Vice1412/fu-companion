@@ -68,8 +68,8 @@ export const ROLES_DATA = {
     getAffinityBudgets: (level, skills = []) => { let b = { vul: 2, res: 0, imm: 0, abs: 0 }; if (level >= 10) b.res += 2; if (level >= 30) b.imm += 1; return b; },
     getSystemMilestones: (level) => {
       let m = getCommonMilestones(level);
-      if (level >= 10) m.push({ id: 'sys_res_10', unlockLevel: 10, originalName: "解鎖屬性抗性額度", originalDesc: "你的抗性 (RES) 屬性配置額度增加了 2 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true });
-      if (level >= 30) m.push({ id: 'sys_imm_30', unlockLevel: 30, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 (IMM) 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true });
+      if (level >= 10) m.push({ id: 'sys_res_10', unlockLevel: 10, originalName: "解鎖屬性抗性額度", originalDesc: "你的抗性 屬性配置額度增加了 2 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true });
+      if (level >= 30) m.push({ id: 'sys_imm_30', unlockLevel: 30, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true });
       if (level >= 50) m.push({ id: 'sys_stat_50_brute', unlockLevel: 50, originalName: "被動：提升最大生命", originalDesc: "最大 HP 增加 10（系統已包含在屬性數值表中，無需額外配置）。", isSystem: true });
       return m;
     },
@@ -121,7 +121,7 @@ export const ROLES_DATA = {
       { id: "hunter_skill_9", source: "roleSkill", category: "rule", originalName: "技能：鎖定目標（特殊規則）", originalDesc: "當此 NPC 執行防禦動作時，他們會鎖定一個他們能看見的隨機敵人，直到此 NPC 的下一回合結束。當此 NPC 在鎖定敵人的情況下執行普通攻擊時，如果可以，他們必須以該敵人為目標。如果他們這樣做，攻擊造成 10 點額外傷害，且目標鎖定結束（即使攻擊未命中）。" }
     ],
     getAffinityBudgets: (level, skills = []) => { let b = { vul: 1, res: 0, imm: 0, abs: 0 }; if (level >= 50) b.res += 2; return b; },
-    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 50) m.push({ id: 'sys_res_50', unlockLevel: 50, originalName: "解鎖屬性抗性額度", originalDesc: "你的抗性 (RES) 屬性配置額度增加了 2 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
+    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 50) m.push({ id: 'sys_res_50', unlockLevel: 50, originalName: "解鎖屬性抗性額度", originalDesc: "你的抗性 屬性配置額度增加了 2 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
     onSkillIntegrate: (skills) => {
       const hasMagicStrike1 = skills.find(s => s.originalName && s.originalName.includes("魔防打擊")); const hasMagicStrike2 = skills.find(s => s.originalName && s.originalName.includes("強擊改魔防"));
       return skills.map(skill => {
@@ -160,14 +160,14 @@ export const ROLES_DATA = {
       { id: "m_skill_2", source: "roleSkill", category: "rule", originalName: "技能：額外抗性", originalDesc: "添加對兩種傷害類型（<物理>除外）的抗性。(系統已自動為你增加上方屬性面板的抗性額度)", modifiers: { extraResistance: 2 }, hideInPreview: true },
       { id: "m_skill_3", source: "roleSkill", category: "rule", originalName: "技能：普攻回魔", originalDesc: "當普通攻擊命中一個或多個目標時，此 NPC 恢復 10 點 MP，如果此 NPC 為 30 級或更高則恢復 20 點 MP。" },
       { id: "m_skill_4", source: "roleSkill", category: "rule", originalName: "技能：普攻不穩定", originalDesc: "當普通攻擊導致一個或多個敵人失去 HP 時，這些敵人變得不穩定。對不穩定生物造成的傷害無視抗性。當生物恢復任何數量的 HP 或在場景結束時，他們將不再處於不穩定狀態。" },
-      { id: "m_skill_5", source: "roleSkill", category: "rule", originalName: "能力：學習法師咒語 (定位技能)", originalDesc: "進一步研讀法師咒語書，獲得額外的 2 個咒語額度。", spellConfig: { capacity: 2, options: ["最大 MP +10", "詛咒之息⚡", "毀盪(Lv30+)", "抽取精魂⚡", "照明烈焰⚡(Lv30+)", "冰凍堡裂⚡(Lv30+)", "生命偷取⚡", "心靈偷取⚡", "歐米茄終結⚡", "雷霆⚡(Lv30+)"] }, hideInPreview: true },
+      { id: "m_skill_5", source: "roleSkill", category: "rule", originalName: "能力：學習法師咒語", originalDesc: "進一步研讀法師咒語書，獲得額外的 2 個咒語額度。", spellConfig: { capacity: 2, options: ["最大 MP +10", "詛咒之息⚡", "毀盪(Lv30+)", "抽取精魂⚡", "照明烈焰⚡(Lv30+)", "冰凍堡裂⚡(Lv30+)", "生命偷取⚡", "心靈偷取⚡", "歐米茄終結⚡", "雷霆⚡(Lv30+)"] }, hideInPreview: true },
       { id: "m_skill_6", source: "roleSkill", category: "rule", originalName: "技能：元素吸收（特殊規則）", originalDesc: "當此 NPC 受到傷害時，如果該傷害具有類型且該類型不是<物理>或<毒>，他們將恢復等於所受傷害量一半的 MP。" },
       { id: "m_skill_7", source: "roleSkill", category: "rule", originalName: "技能：元素轉換（特殊規則）", originalDesc: "當此 NPC 施放造成<風>、<電>、<暗>、<土>、<火>、<冰>或<光>屬性傷害的咒語時，他們開始吸收該傷害類型，並對直覺上對其有效的另一種類型產生弱點。這些屬性相性取代了 NPC 原本對這些傷害類型的屬性相性，並持續到場景結束或此 NPC 再次觸發此特殊規則。" },
       { id: "m_skill_8", source: "roleSkill", category: "rule", originalName: "技能：魔法精通（特殊規則）", originalDesc: "當此 NPC 在與魔法或超自然力量相關的對抗檢定中取得成功時，如果該檢定允許他們填滿或擦除命刻區塊，他們可以填滿或擦除該命刻額外 1 個區塊。" }
     ],
     // --- 法師專屬策略 Hooks ---
     getAffinityBudgets: (level, skills = []) => { let b = { vul: 1, res: 0, imm: 0, abs: 0 }; if (level >= 30) b.imm += 1; skills.forEach(s => { if (s.modifiers?.extraResistance) b.res += s.modifiers.extraResistance; if (s.modifiers?.extraImmunity) b.imm += s.modifiers.extraImmunity; }); return b; },
-    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 30) m.push({ id: 'sys_imm_30', unlockLevel: 30, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 (IMM) 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
+    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 30) m.push({ id: 'sys_imm_30', unlockLevel: 30, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
     onSkillIntegrate: (skills) => {
       const hasMagicStrike = skills.find(s => s.libId === "mag_p10" || (s.originalName && s.originalName.includes("魔法打擊"))); const hasMpRecover = skills.find(s => s.originalName && s.originalName.includes("普攻回魔")); const hasUnstable = skills.find(s => s.originalName && s.originalName.includes("普攻不穩定"));
       return skills.map(skill => {
@@ -221,7 +221,7 @@ export const ROLES_DATA = {
       skills.forEach(s => { if (s.libId === 's1' || s.id === 's1') { if (s.selections?.effect === '受到憤怒' || s.selections?.effect === '受到中毒') b.vul += 1; } });
       return b;
     },
-    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 50) m.push({ id: 'sys_imm_50', unlockLevel: 50, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 (IMM) 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
+    getSystemMilestones: (level) => { let m = getCommonMilestones(level); if (level >= 50) m.push({ id: 'sys_imm_50', unlockLevel: 50, originalName: "解鎖屬性免疫額度", originalDesc: "你的免疫 屬性配置額度增加了 1 點。請前往【步驟 3：能力】的屬性面板進行配置。", isSystem: true }); return m; },
     onSkillIntegrate: (skills) => {
       const hasMultiAttack = skills.find(s => s.originalName && s.originalName.includes("多重攻擊")); const hasMagicStrike1 = skills.find(s => s.originalName && s.originalName.includes("魔防打擊")); const hasMagicStrike2 = skills.find(s => s.originalName && s.originalName.includes("強擊改魔防")); const secretSkill = skills.find(s => s.libId === 's_skill_7' || s.id === 's_skill_7');
       const secretArtTarget = secretSkill?.selections?.secretArtTarget;

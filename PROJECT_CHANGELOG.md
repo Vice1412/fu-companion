@@ -24,6 +24,150 @@
 
 ## 📜 變更日誌 (Changelog)
 
+### [2026-09-23] - 角色卡全模組視覺與排版對齊：回歸羊皮紙暖調，消除冷綠 SaaS 割裂感
+- **章節頂部條（ChapterHeader）全面統一**：
+  - 將角色卡章節頂部導航條 ([`ChapterHeader.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/book/ChapterHeader.jsx)) 由過往的薄荷綠冷調徹底替換為與 NPC 工坊完全一致的米褐色魔導書羊皮紙橫幅（`bg-[#f4ebd9]/95`, `border-[#d6c7ab]`, `text-[#3c2415]`，黃金微光印記與皮質深褐退出按鈕）。
+  - 切換章節時，頭部視覺無縫銜接，徹底消滅進入角色卡時的色彩突兀跳變。
+- **預設風格模板回歸「琥珀棕 (Amber Parchment)」**：
+  - 將系統預設風格 ([`characterThemes.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/utils/characterThemes.js)) 由 `emerald` 全面校正為經典 `amber`（與 NPC 工坊同源調色盤：`#fbf7ee` 底色、`#fffdf9` 卡片白、`#d6c7ab` 框線、`#3c2415` 墨色文字）。
+  - 自動遷移過往暫存預設值，使新舊用戶打開角色卡即刻置身典籍世界觀。
+- **名冊大廳（Character Roster）書頁質感升級**：
+  - [`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx)：全面清除 `bg-slate-*`、`border-slate-*`、`text-slate-*` 與現代 `rounded-3xl`。
+  - 角色卡片改採硬朗典雅的雙重古銅框線（`rounded-xl border-2 border-[#d6c7ab]`）與溫潤羊皮紙底（`bg-[#fffdf9]`），四維屬性格子、防禦儀表板、空狀態卡片全面對齊古籍質感。
+  - 資源條（HP/MP/IP）背景槽由冷白灰改為暖沙米黃（`bg-[#e8dec8]`），極佳襯托血量與魔力光影。
+- **創角工坊（CharacterEditor）100+ 處硬編碼翡翠綠全面淨化**：
+  - [`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx)：全面拔除過往殘留的 100+ 處 `emerald-*` 與 `slate-*` 類名，重構為 `theme` 變數與溫暖羊皮紙背景（`bg-[#fffdf9]`, `bg-[#f5efdf]`, `border-[#d6c7ab]`, `text-[#3c2415]`）。
+  - 左側 5 大步驟邊欄、官方範本按鈕、軍用熟練度面板、加點按鈕等回歸統一的古銅皮質質感。
+- **預覽卡片與跑團 HUD（CharacterCard & CharacterPlayHUD）統一**：
+  - [`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx)：外殼、裝備配置盒、特技列表、情感羈絆與個人命刻全面對齊 [`NPCCardPreview.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/npc-workshop/components/NPCCardPreview.jsx) 的卡片質地。
+  - [`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx)：儀表板標頭、資源微調鈕、經驗升級卡、六大狀態異常開關、武器命中膠囊換上書頁暖色，操作時如同翻閱實體魔導書。
+- **官方身份對照表與屬性矩陣彈窗同步對齊**：
+  - [`IdentityTablesModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/IdentityTablesModal.jsx) 與 [`AttributeMatrixPicker.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/AttributeMatrixPicker.jsx) 換上沉穩琥珀金與羊皮紙底色，彈窗風格全站一體。
+- **規範驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零錯誤、零警告。
+  - 全站 100% 通過零 Emoji 檢測。
+
+### [2026-09-23] - 角色名冊支援 0 角色空狀態與全面清除構築頁面殘留英文括號
+- **角色名冊支援 0 角色（預設空名冊，不強制塞入範例角色）**：
+  - **初次進入為空**：[`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx) 初始化邏輯修正為預設返回空陣列 `[]`，不再自動產生預設測試角色。
+  - **移除刪除角色限制**：解除過往 `roster.length <= 1` 時「至少需保留一張角色卡」的限制，玩家可自由將所有角色全數刪除至 0。
+  - **獨立空狀態介面**：名冊為空時不顯示搜尋篩選列與計數，改為渲染專屬的空名冊引導卡片（「冒險者名冊目前為空」），並提供「建立新冒險者」按鈕與匯入入口。
+  - **安全導向與匯出防護**：當名冊為空或當前選定角色不存在時，頁面安全退回名冊總覽，避免編輯器或實戰卡崩潰；「匯出名冊」按鈕在名冊為空時自動禁用並提示。
+- **清除構築頁面與全站殘留之英文括號與標籤**：
+  - **步驟 3 標題**：[`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx) 移除 `(Classes & Skills)`，改為純粹的 `3. 職業組合與特技加點`。
+  - **步驟 5 標題與按鈕**：移除 `(Bonds & Feelings)`，改為 `5. 情感羈絆系統`；「新增羈絆」計數改為中文括號 `【X/6】`。
+  - **咒語與儀式標題**：[`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx) 移除 `(Spells & Rituals)`，改為純中文 `已掌握的咒語與儀式`。
+  - **職業與特技下拉選單**：職業選單修習標記與技能上限由 `(已修習)`、`(Max SL: X)` 優化為 `【已修習】`、`【上限 SL X】`。
+  - **英雄技能描述**：[`rulesData.json`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/rulesData.json) 清理「五行源泉之力」中的 `(INS)`、`(DEX)` 等英文縮寫括號，對齊中文【洞察】、【敏捷】等；清理「本店特色」中殘留之 `⚡` 符號。
+
+### [2026-09-23] - 全面清除全站英文括號註釋：回歸純淨、簡練與沉浸的原生中文介面
+- **標籤與介面字樣全面去括號淨化**：
+  - **創角工坊 ([`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx))**：移除 `角色姓名`、`角色等級`、`身份`、`主題`、`故鄉`、`初始持有金幣`、`初始物語點`、`四維基礎屬性骰配置`、`裝備庫與熟練度檢核`、`主手武器`、`副手裝備 / 盾牌`、`身體防具`、`佩戴飾品`、`金手指特質`、`掌握之英雄技能`、`個人誓約命刻`、`《FU》官方 20 大核心經典角色範本`、`創角完整度自檢清單` 中的雙語英文括號。
+  - **實戰跑團儀表板 ([`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx))**：資源欄位純粹化（`生命值`、`魔力值`、`道具點`、`金幣錢包`、`經驗升級`、`物語點`），四維防禦簡化（`物理防禦`、`魔法防禦`、`先攻修正`），情感三維六向選項全面改為純中文（`欽佩`、`自卑`、`忠誠`、`疑忌`、`喜愛`、`仇恨`），彈窗標題全面修飾。
+  - **名冊與預覽卡片 ([`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx), [`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx))**：`玩家角色卡名冊`、`物語點`、`職業特技清單`、`英雄技能`、`情感羈絆`、`個人命刻` 括號全數清除。
+  - **屬性矩陣選取器 ([`AttributeMatrixPicker.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/AttributeMatrixPicker.jsx))**：陣列名稱對齊純中文：`專精型`、`均衡型`、`特化型`；機制說明文字去括號。
+- **規則資料庫與預設集清理**：
+  - **基礎裝備清單 ([`rulesData.json`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/rulesData.json))**：所有 32 項武器、防具與盾牌名稱修訂為純中文（如 `巨劍`、`符文甲冑`、`青銅圓盾`、`旅行皮甲` 等）。
+  - **20 大官方經典範本 ([`starterPresets.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/starterPresets.js))**：範本職業頭銜、個人主題與武裝配置全面淨化為純中文，與規則資料庫 100% 匹配。
+  - **手冊拓展與身分對照表 ([`sourcebookConfig.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/data/sourcebookConfig.js))**：手冊名稱（`核心規則書`、`高等奇幻手冊` 等）、官方身分主題靈感池、狀態異常描述與三表標題去括號。
+  - **計算引擎向後相容 ([`characterEngine.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/utils/characterEngine.js))**：裝備比對邏輯加入自動正規化容錯，確保 localStorage 中舊有存檔仍可無縫計算防禦與先攻。
+- **NPC 工坊、戰鬥輪次與通用組件對齊**：
+  - **NPC 工坊 ([`NPCWorkshop.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/npc-workshop/NPCWorkshop.jsx), [`NPCBuilder.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/npc-workshop/components/NPCBuilder.jsx), [`NPCCardPreview.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/npc-workshop/components/NPCCardPreview.jsx), [`roles.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/npc-workshop/data/roles.js))**：動作分類標題（`基本攻擊`、`咒語`、`其餘行動`、`特殊規則`）、相性矩陣、表單標籤與導引步驟去括號，並同步清理殘留 emoji。
+  - **戰鬥輪次與時鐘 ([`CombatTracker.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/combat-tracker/CombatTracker.jsx), [`DiceRollerModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/dice-roller/DiceRollerModal.jsx), [`FateClockPage.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/clocks/FateClockPage.jsx), [`ErrorBoundary.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/ErrorBoundary.jsx), [`JRPGModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/JRPGModal.jsx))**：按鈕、彈窗標題與欄位標籤全面清爽化。
+- **建置與規範驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零錯誤。
+  - 角色卡、名冊、骰盅與時鐘體系通過零 Emoji 檢驗。
+- **移除右側常駐預覽，升級全寬專注工作台 ([`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx))**：
+  - 徹底移除創角時佔據右側螢幕一半的常駐 `CharacterCard`，解除分欄佈局限制。
+  - 車卡工作台改為全寬大器容器（`max-w-4xl mx-auto`），四維屬性分配、職業特技增減、裝備庫挑選與羈絆配置獲得極佳的視覺呼吸感，讓玩家 100% 專注於數值構築。
+- **隨選角色卡檢視彈窗 (On-Demand Card Preview Modal)**：
+  - 在編輯器頂部工具列及底部導航列新增「**查看角色卡**」按鈕（`<GiScrollUnfurled />`）。
+  - 玩家在創角過程中隨時可一鍵呼叫居中視窗彈窗（`JRPGModal`）全貌檢視當前角色卡。
+  - 彈窗底部提供「進入跑團實戰」與「返回編輯」捷徑；步驟 6 底部同步新增「完成創角，進入跑團卡」大按鈕。
+- **未填欄位空格與佔位標籤強化 ([`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx))**：
+  - 車卡填寫一半時直接查閱，尚未完成的各項欄位均以專屬的虛線下劃線、提示標記或空白框呈現，一目了然：
+    1. **角色姓名**：未命名時顯示 `【 ______ 尚未命名冒險者 】`
+    2. **核心身份**：未填寫時顯示 `【 尚未設定身份 】`
+    3. **指引主題**：未選取時顯示 `【 尚未設定主題 】`
+    4. **故鄉發源**：未填寫時顯示 `【 尚未設定故鄉 】`
+    5. **職業與特技**：未選取職業時提示 `【 尚未配置職業 (起始需選 2~3 個職業) 】`；特技總點數不足時動態標記 `尚餘 X 點特技未分配`；特技清單呈現空槽位提示。
+    6. **裝備清單**：主手、副手/盾牌、防具、飾品未穿戴時顯示 `[ 空格 / 未裝備 ]`。
+    7. **情感羈絆**：未締結時顯示 `【 尚未締結任何情感羈絆 】（可建立最多 6 組羈絆）` 與 `0 / 6`。
+    8. **個人命刻**：未建立時顯示 `【 尚未添加個人命刻 】`。
+- **合規自檢**：
+  - 全站 100% 零 Unicode Emoji 掃描合格。
+  - `npm run build` 生產構建無報錯通過。
+
+### [2026-09-21] - 角色卡換色模板系統：對齊 NPC 工坊 6 大經典配色風格與即時切換體系
+- **6 大經典主題色彩定義 ([`characterThemes.js`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/utils/characterThemes.js))**：
+  - 完美對齊 NPC 工坊的經典風格調色盤，涵蓋：
+    1. **翡翠青 (Emerald Mint)**：清爽薄荷青翠（默認風格）
+    2. **琥珀棕 (Amber Parchment)**：溫潤羊皮紙與復古黃銅
+    3. **經典藍 (Ocean Blue)**：沉穩深邃蔚藍
+    4. **硃砂紅 (Crimson Rose)**：熱血緋紅朱赤
+    5. **秘術紫 (Arcane Purple)**：神秘法師幽紫
+    6. **鐵石灰 (Iron Slate)**：堅毅冷峻鋼鐵曜黑
+  - 嚴格遵守零 Unicode Emoji 規範，純中文名稱搭配高質感色圓點與向量圖標。
+- **專屬風格切換器 ([`CharacterThemePicker.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterThemePicker.jsx))**：
+  - 採用與 NPC 工坊相同的操作邏輯：顯示當前主題色點與下拉選單，點擊展開 6 宮格風格卡片，支援點選即時預覽與選中 Check 標記。
+  - 持久化儲存於 `localStorage`（鍵名：`fu_companion_character_theme`）。
+- **全場景深度整合換色機制**：
+  - **名冊大廳 ([`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx))**：頂部工具列提供主題切換器，名冊內每張卡片皆動態套用所選或個別自訂主題的光條、邊框與頭像配色。
+  - **跑團實戰儀表板 ([`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx))**：頂部 HUD 標頭右側整合風格切換器，實時同步切換面板、經驗進度條、Tabs 標籤頁與操作按鈕主題。
+  - **角色卡卡片展示 ([`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx))**：頂部漸層條、邊框、卡頭、裝備清單、特技卡與情感羈絆面板完全自適應當前主題色。
+  - **六步創角編輯器 ([`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx))**：頂部工具列可切換風格；步驟 1「核心身分」中新增「卡片專屬風格模板」6 宮格按鈕，支援為個別冒險者自訂專屬代表色；右側即時卡片預覽隨選即變。
+- **全站按鈕樣式庫擴充 ([`JRPGButton.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/JRPGButton.jsx))**：
+  - 新增 `purple`, `slate`, `outline-blue`, `outline-crimson`, `outline-purple`, `outline-slate` 等按鈕變體，全面支援 6 色系切換。
+- **合規自檢**：
+  - 全模組源代碼 100% 零 Emoji 檢測合格。
+  - `npm run build` 生產構建無報錯通過。
+
+### [2026-09-21] - 角色卡全模組主題色彩重塑：全面對齊清爽淺青色（Emerald / Mint / Cyan）
+- **主題色彩視覺統一（對齊章節標題）**：
+  - 角色卡模組全面回歸專案原先設計的專屬代表色「**清爽淺青 / 翡翠薄荷綠（Emerald / Cyan / Mint）**」，與頂部 `ChapterHeader` 的淺青標題列（`bg-[#ecfdf5]`、`border-emerald-200`、`text-emerald-950`）完美呼應。
+  - 歷史出處驗證：確立了 Commit `093d1af` 中定義的章節主題色彩架構（NPC工坊為暖羊皮紙・琥珀金 `#f4ebd9`；角色卡助手為清爽翡翠青 `#f4fbf7`；戰鬥輪次為緋紅玫瑰 `#fff1f2`；命刻記錄為天空蔚藍 `#f0f9ff`）。
+- **按鈕與 UI 體系擴充**：
+  - [`JRPGButton.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/JRPGButton.jsx) 新增 `variant="emerald"` 與 `variant="outline-emerald"`，提供高雅質感的青翠翡翠操作按鈕。
+- **角色卡五大核心視圖全面青化**：
+  - **名冊大廳 ([`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx))**：卡片頂部裝飾光條改為 `from-emerald-500 via-teal-600 to-emerald-700`，標題列與各項按鈕改為翡翠青配色。
+  - **六步創角編輯器 ([`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx))**：步驟導航 Tab、屬性陣列卡片、職業特技增減面板、500z 開局預算追蹤條、情感羈絆按鈕等全數套用淺青色板（`bg-[#f4fbf7]`, `border-emerald-200`, `text-emerald-950`）。
+  - **預覽卡片 ([`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx))**：全卡邊框、等級標籤、四維防禦面板、職業特技卡改為翡翠青薄荷白底色。
+  - **實戰跑團儀表板 ([`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx))**：頂部 HUD 標頭、頭像外框、EXP 升級經驗條、Zenit 錢包、六大狀態異常欄位與子功能標籤全面對齊淺青色調。
+  - **官方身份對照表彈窗 ([`IdentityTablesModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/IdentityTablesModal.jsx))**：說明橫幅、擲骰結算區、分組卡片與自選選中狀態均換上清爽淺青。
+- **規則與規範雙重校驗**：
+  - 全站源碼 100% 通過 `[\uD83C-\uDBFF\uDC00-\uDFFF]` 零 Emoji 掃描。
+  - `npm run build` 生產構建無報錯通過。
+
+### [2026-09-21] - 創角微調：移除代名詞、自訂主題切換、等級默認標註與官方身份靈感對照表彈窗
+- **移除代名詞欄位 (Pronouns)**：
+  - 在創角流程步驟 1 與角色初始結構中徹底移除 `pronouns` 輸入項與預設值，使介面更加清爽俐落。
+- **角色等級額外註明默認 5 級 (Level)**：
+  - 等級欄位上方新增「起始默認 5 級」高亮標籤，下方附帶官方創角規則說明（5~50 級；單職業上限 10 級），支持玩家依跑團團務手動微調。
+- **主題自由填寫切換 (Custom Theme)**：
+  - 主題欄位新增「自行填寫」打勾選項（Checkbox）。
+  - 未打勾時維持官方 9 大經典主題下拉選單（希望、野心、歸屬、負疚、正義、慈悲、復仇、懷疑、職責）；打勾後無縫切換為自由輸入框，可手動填寫「救贖」、「追尋」等自訂主題。
+- **官方身份創建靈感完整對照表彈窗 (Official Identity Tables Modal)**：
+  - 嚴格依照官方 Core Rulebook v1.1 Errata p.158-159 完整提取並實裝全部數據：
+    - **核心概念 (Core Concept)**：共 60 種身分，分為 3 組（d6: 1-2, 3-4, 5-6），每組 20 項（d20: 1~20），均提供中英對照。
+    - **形容特質 (Adjective)**：共 40 種特質，分為 2 組（d6: 1-3, 4-6），每組 20 項（d20: 1~20），均提供中英對照。
+    - **身世細節 (Detail)**：共 20 種身世細節（d20: 1~20），提供中英對照。
+  - 新增專屬彈窗組件 [`IdentityTablesModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/IdentityTablesModal.jsx)：
+    - 在身份輸入欄旁提供按鈕「查看官方靈感對照表 (d6+d20)」。
+    - 彈窗支援分類標籤切換與中英文關鍵字搜尋。
+    - 支援「投擲官方 1d6 + 1d20」即時擲骰，顯示各組骰點結算與身分，並可一鍵套用至角色卡。
+    - 支援「自選組合身份區」：點擊表格中任意特質、身分、細節即可自由拼裝組合並一鍵套用。
+- **身分中文語法順序校正（符合中文書寫習慣）**：
+  - 角色身分在確認並填入身分欄時，嚴格遵循中文習慣順序：『**身世細節 ➔ 形容特質 ➔ 核心概念**』。
+  - 例如擲出：細節【來自遠古森林】、特質【失憶的】、身分【騎士】，最終確認輸出為「**來自遠古森林的失憶的騎士**」或「**來自風暴騎士團的破誓者騎士**」。
+  - 彈窗內的擲骰點數結算卡與自選組合選取欄同步調整為「1. 身世細節 ➔ 2. 形容特質 ➔ 3. 核心概念」之流暢視覺順序。
+- **全局彈窗視窗置中定位修復 (Modal Viewport Portal Fix)**：
+  - **根因修復**：修復了因父層頁面淡入動畫 `.animate-page-dissolve-in` 的 `transform` 與 `will-change` 屬性觸發 CSS 包含塊陷阱（Containing Block），導致 `fixed inset-0` 相對於數千像素高的頁面居中而非瀏覽器可視視窗（導致彈窗沉到頁面極下方需大幅向下滾動才能看見）的嚴重 UX 問題。
+  - **React Portal 重構**：[`JRPGModal.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/JRPGModal.jsx) 全面改用 `ReactDOM.createPortal(..., document.body)` 直掛 `<body>`，脫離一切父層變形與層疊上下文束縛，確保所有彈窗永遠死死鎖定在當前螢幕中央（`z-[9999]`），並於開啟時自動鎖定背景滾動條（`overflow: hidden`）。
+  - **彈窗統一**：將創角範本彈窗、自檢清單彈窗、角色升級彈窗、官方身份對照表彈窗、全域擲骰彈窗全面收斂至 `JRPGModal`，實現 100% 視口精確居中。
+- **圖示政策與代碼自檢**：
+  - 嚴格遵守 `GEMINI.md` 規範，零 Unicode Emoji，UI 全面採用 Game-Icons.net 向量圖標。
+  - `npm run build` 通過生產構建。
+
 ### [2026-09-20] - 倉庫初始化與 NPC 工坊戰術定位圖示升級
 - **版本控制初始化**：
   - 本地倉庫建立 Git 版本控制（`git init`），提供 IDE 完整的行級代碼追蹤與 Source Control 面板支援。
@@ -157,4 +301,54 @@
      - 軍用武器/重甲熟練度檢核警告。
 - **建置驗證**：
   - 通過 Vite Production Build (`npm run build`)，零錯誤編譯。
+
+### [2026-09-21] - 官方 Style Guide 字型全面納管、FUIcon 組件落地與 GEMINI.md 持久規則建立
+- **建立 Antigravity 官方持久規則文件 [`GEMINI.md`](file:///E:/MINGWAN/Projects/FU%20Companion/GEMINI.md)**：
+  - 為杜絕 Context Compaction（對話歷史壓縮）導致的指令遺忘，於專案根目錄正式建立 `GEMINI.md`。
+  - Antigravity 系統保證在任何 Turn、任何 Session 與上下文壓縮後，無條件自動加載 `GEMINI.md` 至最高優先級 Rules 預算中，永久維持「圖示雙軌鐵律」、「Core v1.1 Errata 官方規則」與「零 Emoji 規範」。
+- **官方專屬符號封裝組件 [`FUIcon.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/ui/FUIcon.jsx)**：
+  - 封裝 `FabulaUltimaIcons-Regular.otf` 與 `.fu-icon` 類名，全面規範化管理官方特有標誌：
+    - **屬性九相** (Canonical Affinity Order: `p a b d e f i l t`)：物理 `p`、風 `a`、電 `b`、暗 `d`、土 `e`、火 `f`、冰 `i`、光 `l`、毒 `t`。
+    - **攻擊射程**：近戰 `m` (Melee)、遠程 `r` (Ranged)。
+    - **動作與技能分類**：咒語 `c` (Spell)、攻擊性咒語 `o` (Offensive Spell)、其餘行動 `s` (Other Action)。
+    - **危機臨界指示符**：危機 `w` (Crisis Indicator - Style Guide p.11 `HP X w X`)。
+- **角色卡與名冊全面對齊官方符號**：
+  - 跑團實戰儀表板 ([`CharacterPlayHUD.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterPlayHUD.jsx))：危機徽章全面改用 `<FUIcon name="crisis" />`，武器卡片射程改用 `<FUIcon name="melee" />` / `<FUIcon name="ranged" />`。
+  - 角色卡檢視 ([`CharacterCard.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterCard.jsx)) 與名冊總覽 ([`CharacterSheet.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/CharacterSheet.jsx)) 危機標籤同步對齊官方 `w` 符號。
+- **建置驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零錯誤、零警告。
+
+### [2026-09-23] - 頂部導航層級重整、調色盤單一來源化與 NPC 工坊按鈕群極簡對齊
+- **角色卡調色盤雙重冗餘清理 (Single Source of Truth for Character Themes)**：
+  - 針對使用者回饋「顏色盤沒必要做兩個」，清理了 [`CharacterEditor.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/features/character-sheet/components/CharacterEditor.jsx) 內部桌面左側身份卡片與移動端頂部重疊的 6 色圓圈。
+  - 唯一保留全局頂部導航欄（[`ChapterHeader.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/book/ChapterHeader.jsx)）右側的 6 色主題切換器，確保不論在編輯器還是實戰模式、不論頁面滾動到何處，都能快速切換角色卡專屬色系。
+- **NPC 工坊頂部導航層級完全對齊角色卡助手 (Top Navigation Parity with Character Sheet)**：
+  - **頂部左側次級返回導航**：在 NPC 工坊進入「構築頁面」或「角色卡預覽」時，左上角的按鈕從原本突兀退回首頁的「合上書本 · 返回封面」自動動態變形為 `[ ← 返回檔案庫 ]`，並附帶 `構建：${state.name}` 徽章。點擊時自動執行靜默儲存並返回檔案庫，徹底杜絕誤點退至封面的問題。
+  - **頂部右側功能列精簡大瘦身**：
+    - 將原本凌亂的 8 個按鈕大刀闊斧簡化，引入與角色卡助手**一模一樣的 6 色主題切換圓圈**（琥珀、翡翠、經典藍、硃砂紅、秘術紫、鐵石灰），1 點即切 NPC 卡片樣式。
+    - 保留高頻操作：`[ 🔒 嚴謹模式 / 🔓 自由模式 ]` 與 `[ 儲存 (Ctrl+S) ]`。
+    - 徹底剔除右上角「回到檔案庫」（已由左上角承接）、「讀取 JSON」與「匯出 JSON」（已在檔案庫與預覽分頁中完備提供）。
+- **功能按鈕工整符號化與零 Emoji 合規優化 (Neat Functional Glyphs & Zero Emoji Enforcement)**：
+  - 返回、關閉、檔案標籤與檢視等操作全面改用標準向量圖標（`ArrowLeft`, `X`, `Tag`, `Eye`, `MessageSquare`, `FileCode`, `FileText` 等），不再混用粗糙的符號與 Unicode Emoji。
+  - 移除了 NPC 工坊存檔、複製、刪除提示字串中的 Unicode Emoji。
+- **建置驗證**：
+  - 執行 `npm run build`，編譯耗時 3.64 秒，零錯誤、零警告。
+
+### [2026-09-24] - NPC 工坊：新增 ccfolia 棋子一鍵匯出（剪貼簿即貼即用）
+- **ccfolia 剪貼簿棋子格式支援 (Ccfolia Clipboard Token Generation)**：
+  - 於 NPC 工坊的「複製文本 ▾」下拉選單中新增 **「ccfolia 棋子 (Ctrl+V)」** 選項（配備 `GiRollingDices` 圖標）。
+  - 自動將 NPC 當前數值與技能轉譯為符合 ccfolia 規範的 `kind: "character"` JSON 資料：
+    - **`status` 資源條**：自動填入當前計算後的滿值 `HP`、`MP`，以及反派階級對應的 `UP`（終極點數）。
+    - **`params` 屬性矩陣**：自動拆解並綁定 `DEX`, `INS`, `MIG`, `WLP`, `DEF`, `M.DEF`, `INIT` 參數。
+    - **`memo` 備忘資訊**：整合位階、定位、反派階級、種族、陣營、特質、全相性矩陣、異常狀態免疫與戰術慣例。
+    - **`commands` 聊天調色盤 (Chat Palette)**：
+      - 常用雙屬性檢定與先攻檢定算式（支援動態引用 `{DEX}` 與 `{INS}` 等參數）。
+      - 所有基本攻擊命中判定算式（如 `1d{DEX}+1d{MIG}+2`）、傷害計算與額外效果。
+      - 咒語魔攻判定算式、MP 消耗、目標與效果文字。
+      - 特殊規則與能力摘要。
+      - 常用狀態微調指令快捷（`:HP-`, `:HP+`, `:MP-`, `:MP+`, `:UP-1`）。
+  - 點擊後自動寫入剪貼簿並彈出友善引導 Toast：「已複製 ccfolia 棋子！請至 ccfolia 房間按 Ctrl+V 貼上」。
+- **建置驗證**：
+  - 通過 Vite Production Build (`npm run build`)，零報錯完成打包。
+
 

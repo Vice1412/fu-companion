@@ -3,12 +3,12 @@ import { clsx } from 'clsx';
 import { RotateCcw, Plus, Minus } from 'lucide-react';
 
 export const CLOCK_THEMES = {
-  amber: { id: 'amber', name: '琥珀棕', fill: '#b45309', stroke: '#8b5e34', bg: 'rgba(180, 83, 9, 0.15)' },
-  red: { id: 'red', name: '赤紅', fill: '#b91c1c', stroke: '#991b1b', bg: 'rgba(185, 28, 28, 0.15)' },
-  blue: { id: 'blue', name: '經典藍', fill: '#1d4ed8', stroke: '#1e40af', bg: 'rgba(29, 78, 216, 0.15)' },
-  green: { id: 'green', name: '翡翠綠', fill: '#15803d', stroke: '#166534', bg: 'rgba(21, 128, 61, 0.15)' },
-  purple: { id: 'purple', name: '經典紫', fill: '#7e22ce', stroke: '#6b21a8', bg: 'rgba(126, 34, 206, 0.15)' },
-  gray: { id: 'gray', name: '鐵石灰', fill: '#475569', stroke: '#334155', bg: 'rgba(71, 85, 105, 0.15)' }
+  amber: { id: 'amber', name: '琥珀棕', fill: '#9c4d16', stroke: '#693108', bg: 'rgba(156, 77, 22, 0.15)' },
+  red: { id: 'red', name: '赤紅', fill: '#8c2d36', stroke: '#58171e', bg: 'rgba(140, 45, 54, 0.15)' },
+  blue: { id: 'blue', name: '群青藍', fill: '#27527a', stroke: '#17324c', bg: 'rgba(39, 82, 122, 0.15)' },
+  green: { id: 'green', name: '翡翠綠', fill: '#245c45', stroke: '#133829', bg: 'rgba(36, 92, 69, 0.15)' },
+  purple: { id: 'purple', name: '秘術紫', fill: '#5e387c', stroke: '#3a1f4f', bg: 'rgba(94, 56, 124, 0.15)' },
+  gray: { id: 'gray', name: '鐵石灰', fill: '#404a58', stroke: '#20262f', bg: 'rgba(64, 74, 88, 0.15)' }
 };
 
 export default function ClockTracker({

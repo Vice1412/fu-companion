@@ -16,16 +16,17 @@ import FateClockPage from './features/clocks/FateClockPage';
 import DiceRollerModal from './features/dice-roller/DiceRollerModal';
 
 const CHAPTER_METAS = {
+  character: {
+    id: 'character',
+    title: '角色卡助手',
+    subtitle: '管理與檢視您創建的所有冒險者角色',
+    icon: GiVisoredHelm
+  },
   workshop: {
     id: 'workshop',
     title: 'NPC工坊',
     subtitle: '管理與檢視您創建的所有自定義 NPC',
     icon: GiDragonHead
-  },
-  character: {
-    id: 'character',
-    title: '角色卡助手',
-    icon: GiVisoredHelm
   },
   combat: {
     id: 'combat',
@@ -45,12 +46,22 @@ export default function App() {
   const [transitionState, setTransitionState] = useState(null); // 'opening' | 'closing' | null
   const [targetChapterId, setTargetChapterId] = useState(null);
   const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
+  const [diceModalConfig, setDiceModalConfig] = useState(null);
   const [headerExtraLeft, setHeaderExtraLeft] = useState(null);
   const [headerExtraRight, setHeaderExtraRight] = useState(null);
+  const [characterSubNav, setCharacterSubNav] = useState(null);
+  const [workshopSubNav, setWorkshopSubNav] = useState(null);
+
+  const handleOpenDice = (config = null) => {
+    setDiceModalConfig(config);
+    setIsDiceModalOpen(true);
+  };
 
   // Trigger opening page flip to feature
   const handleSelectChapter = (chapterId) => {
     if (transitionState) return;
+    setCharacterSubNav(null);
+    setWorkshopSubNav(null);
     setTargetChapterId(chapterId);
     setTransitionState('opening');
 
@@ -68,6 +79,8 @@ export default function App() {
   // Trigger closing page flip back to cover
   const handleExitToCover = () => {
     if (transitionState) return;
+    setCharacterSubNav(null);
+    setWorkshopSubNav(null);
     setTransitionState('closing');
 
     // Page flip timing: at 380ms switch view back to cover so it fades in smoothly under the closing book
@@ -115,10 +128,10 @@ export default function App() {
         if (parsed.activeCombat) localStorage.setItem('fu_companion_active_combat', JSON.stringify(parsed.activeCombat));
         if (parsed.fateClocks) localStorage.setItem('fu_companion_fate_clocks', JSON.stringify(parsed.fateClocks));
 
-        alert('✅ 完整資料備份還原成功！將為您刷新頁面以載入數據。');
+        alert('完整資料備份還原成功！將為您刷新頁面以載入數據。');
         window.location.reload();
       } catch (err) {
-        alert('❌ 備份檔解析失敗，請確認檔案格式正確。');
+        alert('備份檔解析失敗，請確認檔案格式正確。');
       }
     };
     reader.readAsText(file);
@@ -173,7 +186,10 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${activePageTheme} flex flex-col relative transition-colors duration-300`}>
+    <div
+      className={`min-h-screen ${activePageTheme} flex flex-col relative transition-colors duration-300`}
+      style={activeChapter === 'character' && characterSubNav?.theme ? { backgroundColor: characterSubNav.theme.appBg } : {}}
+    >
       
       {/* 3D Page Flip Transition Overlay */}
       {transitionState && (
@@ -196,7 +212,7 @@ export default function App() {
         >
           <BookCoverHub
             onSelectChapter={handleSelectChapter}
-            onOpenDice={() => setIsDiceModalOpen(true)}
+            onOpenDice={handleOpenDice}
             onBackup={handleFullBackup}
             onRestore={handleFullRestore}
             isOpening={transitionState === 'opening'}
@@ -217,7 +233,14 @@ export default function App() {
           <ChapterHeader
             chapter={currentMeta}
             onExitToCover={handleExitToCover}
-            onOpenDice={() => setIsDiceModalOpen(true)}
+            backOverride={
+              activeChapter === 'character'
+                ? characterSubNav
+                : activeChapter === 'workshop'
+                  ? workshopSubNav
+                  : null
+            }
+            onOpenDice={handleOpenDice}
             onBackup={handleFullBackup}
             onRestore={handleFullRestore}
             extraLeft={activeChapter === 'workshop' ? headerExtraLeft : null}
@@ -230,31 +253,53 @@ export default function App() {
               <NPCWorkshop
                 setHeaderExtraLeft={setHeaderExtraLeft}
                 setHeaderExtraRight={setHeaderExtraRight}
+                onSubNavChange={setWorkshopSubNav}
               />
             </main>
           ) : (
             <>
               <main className="flex-1 p-3 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
                 {activeChapter === 'character' && (
-                  <CharacterSheet onOpenDice={() => setIsDiceModalOpen(true)} />
+                  <CharacterSheet
+                    onOpenDice={handleOpenDice}
+                    onSubNavChange={setCharacterSubNav}
+                  />
                 )}
                 {activeChapter === 'combat' && <CombatTracker />}
                 {activeChapter === 'clocks' && <FateClockPage />}
               </main>
 
               {/* Dedicated Feature Footer */}
-              <footer className={`border-t ${footerTheme.border} py-4 px-4 text-center text-xs ${footerTheme.text} font-medium flex flex-col sm:flex-row items-center justify-between gap-2 ${footerTheme.bg} mt-auto max-w-7xl mx-auto w-full transition-colors duration-300`}>
+              <footer
+                className={`border-t ${footerTheme.border} py-4 px-4 text-center text-xs ${footerTheme.text} font-medium flex flex-col sm:flex-row items-center justify-between gap-2 ${footerTheme.bg} mt-auto max-w-7xl mx-auto w-full transition-colors duration-300`}
+                style={activeChapter === 'character' && characterSubNav?.theme ? {
+                  borderColor: characterSubNav.theme.border,
+                  backgroundColor: `${characterSubNav.theme.headerBg}cc`,
+                  color: characterSubNav.theme.textDark
+                } : {}}
+              >
                 <div className="flex items-center gap-2">
-                  <span className={`font-serif font-bold ${footerTheme.number}`}>{currentMeta.number}</span>
+                  <span
+                    className={`font-serif font-bold ${footerTheme.number}`}
+                    style={activeChapter === 'character' && characterSubNav?.theme ? { color: characterSubNav.theme.accent } : {}}
+                  >
+                    {currentMeta.number}
+                  </span>
                   <span>· {currentMeta.title}</span>
                 </div>
                 <button
                   onClick={handleExitToCover}
                   className={`${footerTheme.button} font-serif font-bold underline underline-offset-2 flex items-center gap-1 text-xs`}
+                  style={activeChapter === 'character' && characterSubNav?.theme ? { color: characterSubNav.theme.accentDark } : {}}
                 >
                   <span>合上本卷並返回封面目錄</span>
                 </button>
-                <p className={`text-[11px] ${footerTheme.subtext}`}>純前端零伺服器架構 · 數據即時自動保存</p>
+                <p
+                  className={`text-[11px] ${footerTheme.subtext}`}
+                  style={activeChapter === 'character' && characterSubNav?.theme ? { color: characterSubNav.theme.textMuted } : {}}
+                >
+                  純前端零伺服器架構 · 數據即時自動保存
+                </p>
               </footer>
             </>
           )}
@@ -264,7 +309,11 @@ export default function App() {
       {/* Floating Dice Roller Modal */}
       <DiceRollerModal
         isOpen={isDiceModalOpen}
-        onClose={() => setIsDiceModalOpen(false)}
+        initialConfig={diceModalConfig}
+        onClose={() => {
+          setIsDiceModalOpen(false);
+          setDiceModalConfig(null);
+        }}
       />
     </div>
   );

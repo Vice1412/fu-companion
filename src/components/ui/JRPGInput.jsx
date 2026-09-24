@@ -9,18 +9,23 @@ export function JRPGInput({
   className = '',
   wrapperClassName = '',
   icon: Icon,
+  theme = null,
+  style = {},
   ...props
 }) {
   return (
     <div className={twMerge(clsx("flex flex-col gap-1.5", wrapperClassName))}>
       {label && (
-        <label className="text-xs font-bold text-[#3c2f21] flex items-center justify-between">
+        <label
+          className="text-xs font-bold text-[#3c2f21] flex items-center justify-between"
+          style={theme ? { color: theme.textDark } : {}}
+        >
           <span>{label}</span>
         </label>
       )}
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3 text-[#8c7b6c] pointer-events-none">
+          <div className="absolute left-3 text-[#8c7b6c] pointer-events-none" style={theme ? { color: theme.accent } : {}}>
             <Icon className="w-4 h-4" />
           </div>
         )}
@@ -36,6 +41,12 @@ export function JRPGInput({
               className
             )
           )}
+          style={theme ? {
+            backgroundColor: theme.cardBg || '#ffffff',
+            borderColor: theme.border,
+            color: theme.textDark,
+            ...style
+          } : style}
           {...props}
         />
       </div>
@@ -52,12 +63,17 @@ export function JRPGSelect({
   className = '',
   wrapperClassName = '',
   placeholder = '請選擇...',
+  theme = null,
+  style = {},
   ...props
 }) {
   return (
     <div className={twMerge(clsx("flex flex-col gap-1.5", wrapperClassName))}>
       {label && (
-        <label className="text-xs font-bold text-[#3c2f21]">
+        <label
+          className="text-xs font-bold text-[#3c2f21]"
+          style={theme ? { color: theme.textDark } : {}}
+        >
           {label}
         </label>
       )}
@@ -72,6 +88,12 @@ export function JRPGSelect({
               className
             )
           )}
+          style={theme ? {
+            backgroundColor: theme.cardBg || '#ffffff',
+            borderColor: theme.border,
+            color: theme.textDark,
+            ...style
+          } : style}
           {...props}
         >
           {placeholder && <option value="" disabled className="bg-white text-stone-500">{placeholder}</option>}
@@ -79,13 +101,13 @@ export function JRPGSelect({
             const val = typeof opt === 'object' ? opt.value : opt;
             const lbl = typeof opt === 'object' ? opt.label : opt;
             return (
-              <option key={val} value={val} className="bg-white text-[#2c221e]">
+              <option key={val} value={val} className="bg-white" style={theme ? { color: theme.textDark } : { color: '#2c221e' }}>
                 {lbl}
               </option>
             );
           })}
         </select>
-        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#8c7b6c] text-xs">
+        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs" style={theme ? { color: theme.accent } : { color: '#8c7b6c' }}>
           ▼
         </div>
       </div>
