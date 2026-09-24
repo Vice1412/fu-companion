@@ -86,22 +86,69 @@ export const GAME_ICONS_MAP = {
   troubadour: GiLyre,
   valkyrie: GiWingedSword,
 
-  // Core 15 Classes
+  // Core 15 Classes (官方核心 15 職 - 15 個完全無重疊的專屬圖標)
   '秘儀師': GiCrystalBall,
+  'arcanist': GiCrystalBall,
+  '秘術師': GiCrystalBall,
+
   '嵌合師': GiMonsterGrasp,
+  'chimerist': GiMonsterGrasp,
+  '奇美拉術士': GiMonsterGrasp,
+
   '暗黑之刃': GiDrippingSword,
+  'darkblade': GiDrippingSword,
+  '黑刃': GiDrippingSword,
+
   '元素師': GiFireball,
+  'elementalist': GiFireball,
+  '元素使': GiFireball,
+
   '熵師': GiHourglass,
+  'entropist': GiHourglass,
+  '混沌術士': GiHourglass,
+  '熵術士': GiHourglass,
+
   '狂怒鬥士': GiEnrage,
+  'fury': GiEnrage,
+  '狂戰士': GiEnrage,
+
   '守護者': GiShield,
+  'guardian': GiShield,
+  '守衛者': GiShield,
+
   '博學士': GiScrollQuill,
+  'loremaster': GiScrollQuill,
+  '博學者': GiScrollQuill,
+  '傳承學者': GiScrollQuill,
+
   '吟唱者': GiPublicSpeaker,
+  'orator': GiPublicSpeaker,
+  '演說家': GiPublicSpeaker,
+  '雄辯家': GiPublicSpeaker,
+
   '遊蕩者': GiHoodedFigure,
+  'rogue': GiHoodedFigure,
+  '盜賊': GiHoodedFigure,
+  '潛行者': GiHoodedFigure,
+
   '神射手': GiCrossbow,
+  'sharpshooter': GiCrossbow,
+
   '靈師': GiHealing,
+  'spiritist': GiHealing,
+  '心靈使': GiHealing,
+  '靈魂術士': GiHealing,
+
   '修補匠': GiCog,
+  'tinkerer': GiCog,
+  '工匠': GiCog,
+
   '旅人': GiCompass,
+  'wayfarer': GiCompass,
+  '行者': GiCompass,
+
   '武器大師': GiCrossedSwords,
+  'weaponmaster': GiCrossedSwords,
 
   // Extended Classes
   '死靈術士': GiDrippingSword,

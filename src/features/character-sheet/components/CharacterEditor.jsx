@@ -37,6 +37,8 @@ import JRPGModal from '../../../components/ui/JRPGModal';
 import CharacterCard from './CharacterCard';
 import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
+import ClassSkillCard from './ClassSkillCard';
+import ClassPickerModal from './ClassPickerModal';
 import rulesData from '../data/rulesData.json';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
@@ -44,7 +46,8 @@ import {
   BOND_FEELINGS,
   CANONICAL_THEMES,
   ATTRIBUTE_STARTING_ARRAYS,
-  generateRandomIdentity
+  generateRandomIdentity,
+  getClassInfo
 } from '../data/sourcebookConfig';
 import { STARTER_PRESETS } from '../data/starterPresets';
 import {
@@ -67,7 +70,8 @@ export default function CharacterEditor({
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
   const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(character?.theme) && Boolean(character?.theme));
-  const [selectedClassToAdd, setSelectedClassToAdd] = useState('');
+  const [isClassPickerOpen, setIsClassPickerOpen] = useState(false);
+  const [newlyAddedClassName, setNewlyAddedClassName] = useState(null);
   const [selectedHeroicToAdd, setSelectedHeroicToAdd] = useState('');
 
   if (!character) return null;
@@ -113,59 +117,38 @@ export default function CharacterEditor({
     .filter(cName => rulesData.classes[cName]);
 
   // Class & Skill handlers
-  const handleAddClass = () => {
-    if (!selectedClassToAdd || !rulesData.classes[selectedClassToAdd]) return;
+  const handleSelectClassFromPicker = (cName) => {
+    if (!cName || !rulesData.classes[cName]) return;
     const curClasses = character.classes || [];
-    if (curClasses.some(c => c.className === selectedClassToAdd)) return;
+    if (curClasses.some(c => c.className === cName)) return;
 
-    const classDef = rulesData.classes[selectedClassToAdd];
+    const classDef = rulesData.classes[cName];
     const initialSkill = classDef.skills?.[0] ? [{ name: classDef.skills[0].name, sl: 1 }] : [];
 
     updateField('classes', [
       ...curClasses,
       {
-        className: selectedClassToAdd,
+        className: cName,
         level: 1,
         skills: initialSkill
       }
     ]);
-    setSelectedClassToAdd('');
+    setNewlyAddedClassName(cName);
+  };
+
+  const handleUpdateClassSkills = (classIdx, updatedSkills) => {
+    const curClasses = JSON.parse(JSON.stringify(character.classes || []));
+    if (!curClasses[classIdx]) return;
+    curClasses[classIdx].skills = updatedSkills;
+    curClasses[classIdx].level = updatedSkills.reduce((sum, s) => sum + s.sl, 0);
+    updateField('classes', curClasses);
   };
 
   const handleRemoveClass = (classNameToRemove) => {
     updateField('classes', (character.classes || []).filter(c => c.className !== classNameToRemove));
-  };
-
-  const handleAddSkillToClass = (classIdx, skillName) => {
-    const curClasses = JSON.parse(JSON.stringify(character.classes || []));
-    const targetClass = curClasses[classIdx];
-    if (targetClass.skills.some(s => s.name === skillName)) return;
-
-    targetClass.skills.push({ name: skillName, sl: 1 });
-    targetClass.level = targetClass.skills.reduce((sum, s) => sum + s.sl, 0);
-    updateField('classes', curClasses);
-  };
-
-  const handleUpdateSkillSL = (classIdx, skillIdx, delta) => {
-    const curClasses = JSON.parse(JSON.stringify(character.classes || []));
-    const targetClass = curClasses[classIdx];
-    const targetSkill = targetClass.skills[skillIdx];
-    const classDef = rulesData.classes[targetClass.className];
-    const skillDef = classDef?.skills?.find(s => s.name === targetSkill.name);
-    const maxSL = skillDef?.maxSL || 5;
-
-    const newSL = Math.max(1, Math.min(maxSL, targetSkill.sl + delta));
-    targetSkill.sl = newSL;
-    targetClass.level = targetClass.skills.reduce((sum, s) => sum + s.sl, 0);
-
-    updateField('classes', curClasses);
-  };
-
-  const handleRemoveSkillFromClass = (classIdx, skillIdx) => {
-    const curClasses = JSON.parse(JSON.stringify(character.classes || []));
-    curClasses[classIdx].skills.splice(skillIdx, 1);
-    curClasses[classIdx].level = curClasses[classIdx].skills.reduce((sum, s) => sum + s.sl, 0);
-    updateField('classes', curClasses);
+    if (newlyAddedClassName === classNameToRemove) {
+      setNewlyAddedClassName(null);
+    }
   };
 
   // Bond Handlers
@@ -844,161 +827,81 @@ export default function CharacterEditor({
                 </span>
               </div>
 
-              {/* Add Class Picker */}
+              {/* Action Bar */}
               <div
-                className="flex items-center gap-2 p-3 rounded-xl border transition-colors"
+                className="flex items-center justify-between p-3.5 rounded-xl border transition-colors flex-wrap gap-2"
                 style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
               >
-                <select
-                  value={selectedClassToAdd}
-                  onChange={e => setSelectedClassToAdd(e.target.value)}
-                  className="flex-1 rounded-lg px-3 py-2 text-xs outline-none shadow-sm border cursor-pointer"
-                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                >
-                  <option value="">-- 挑選欲修習的職業 --</option>
-                  {availableClassNames.map(cName => {
-                    const cl = rulesData.classes[cName];
-                    const isAlready = (character.classes || []).some(c => c.className === cName);
-                    return (
-                      <option key={cName} value={cName} disabled={isAlready}>
-                        {cName} {cl?.freeBonus ? `【${cl.freeBonus}】` : ''} {isAlready ? '【已修習】' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700">
+                    目前已修習 <strong className="font-mono text-sm" style={{ color: theme.accent }}>{(character.classes || []).length}</strong> 個職業
+                    {character.level <= 5 && <span className="text-[11px] text-slate-500 ml-1">（創角規定：2~3 個職業）</span>}
+                  </span>
+                </div>
 
                 <JRPGButton
                   variant={theme.buttonVariant || 'primary'}
-                  size="xs"
+                  size="sm"
                   icon={Plus}
-                  onClick={handleAddClass}
-                  disabled={!selectedClassToAdd}
+                  onClick={() => setIsClassPickerOpen(true)}
+                  disabled={(character.classes || []).length >= 3 && (character.level || 5) <= 5}
                 >
-                  修習新職業
+                  修習新職業 (中英對照與風格一覽)
                 </JRPGButton>
               </div>
 
               {/* Configured Classes & Skills */}
               <div className="space-y-4">
-                {(character.classes || []).map((cl, cIdx) => {
-                  const classDef = rulesData.classes[cl.className] || {};
-                  return (
+                {(!character.classes || character.classes.length === 0) ? (
+                  <div
+                    className="p-8 rounded-2xl border border-dashed text-center space-y-3"
+                    style={{ borderColor: theme.border, backgroundColor: theme.panelBg }}
+                  >
                     <div
-                      key={cl.className}
-                      className="rounded-xl p-4 border space-y-3 shadow-sm transition-colors"
-                      style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                      className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center border shadow-xs"
+                      style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.accent }}
                     >
-                      <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: theme.border }}>
-                        <div className="flex items-center gap-2">
-                          <h5 className="font-serif font-black text-base" style={{ color: theme.textDark }}>
-                            {cl.className}
-                          </h5>
-                          <JRPGBadge variant={theme.badgeVariant} size="xs">
-                            Lv {cl.level}
-                          </JRPGBadge>
-                          {classDef.freeBonus && (
-                            <span className="text-[11px] font-mono font-bold" style={{ color: theme.accent }}>
-                              {classDef.freeBonus}
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveClass(cl.className)}
-                          className="text-slate-400 hover:text-red-700 p-1 transition-colors cursor-pointer"
-                          title="移除職業"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Skills in Class */}
-                      <div className="space-y-2">
-                        {(cl.skills || []).map((sk, sIdx) => {
-                          const skillDef = classDef.skills?.find(s => s.name === sk.name);
-                          const maxSL = skillDef?.maxSL || 5;
-
-                          return (
-                            <div
-                              key={sk.name}
-                              className="rounded-lg p-3 border text-xs flex flex-col gap-1.5 shadow-sm transition-colors"
-                              style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
-                                  <span style={{ color: theme.accent }}>✦</span> {sk.name}
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-slate-600 font-bold">
-                                    SL {sk.sl} / {maxSL}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateSkillSL(cIdx, sIdx, -1)}
-                                      disabled={sk.sl <= 1}
-                                      className="px-1.5 py-0.5 rounded border disabled:opacity-30 font-bold transition-colors cursor-pointer"
-                                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                                    >
-                                      -
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateSkillSL(cIdx, sIdx, 1)}
-                                      disabled={sk.sl >= maxSL}
-                                      className="px-1.5 py-0.5 rounded border disabled:opacity-30 font-bold transition-colors cursor-pointer"
-                                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveSkillFromClass(cIdx, sIdx)}
-                                    className="text-slate-400 hover:text-red-700 ml-1 font-bold cursor-pointer"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              </div>
-
-                              <p className="text-[11px] text-slate-600 leading-relaxed">
-                                {skillDef?.desc || ''}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Add another skill from class */}
-                      {classDef.skills && (
-                        <div className="pt-1">
-                          <select
-                            onChange={e => {
-                              if (e.target.value) {
-                                handleAddSkillToClass(cIdx, e.target.value);
-                                e.target.value = '';
-                              }
-                            }}
-                            defaultValue=""
-                            className="w-full rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm border cursor-pointer"
-                            style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                          >
-                            <option value="" disabled>+ 添加此職業的其他技能...</option>
-                            {classDef.skills.map(sk => (
-                              <option key={sk.name} value={sk.name} disabled={(cl.skills || []).some(s => s.name === sk.name)}>
-                                {sk.name} 【上限 SL {sk.maxSL}】
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                      <GiBroadsword size={24} />
                     </div>
-                  );
-                })}
+                    <div className="space-y-1">
+                      <h4 className="font-serif font-black text-sm text-slate-800">尚未修習任何職業</h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                        《Fabula Ultima》開局角色需要在 2~3 個職業中探索分配起始 5 級。點擊下方按鈕瀏覽中英文對照與風格一覽。
+                      </p>
+                    </div>
+                    <JRPGButton
+                      variant={theme.buttonVariant || 'primary'}
+                      size="sm"
+                      icon={Plus}
+                      onClick={() => setIsClassPickerOpen(true)}
+                    >
+                      瀏覽並修習新職業
+                    </JRPGButton>
+                  </div>
+                ) : (
+                  (character.classes || []).map((cl, cIdx) => (
+                    <ClassSkillCard
+                      key={cl.className}
+                      classItem={cl}
+                      classIndex={cIdx}
+                      theme={theme}
+                      isInitialEdit={newlyAddedClassName === cl.className}
+                      onUpdateSkills={handleUpdateClassSkills}
+                      onRemoveClass={handleRemoveClass}
+                    />
+                  ))
+                )}
               </div>
+
+              {/* 職業選擇器彈窗 */}
+              <ClassPickerModal
+                isOpen={isClassPickerOpen}
+                onClose={() => setIsClassPickerOpen(false)}
+                theme={theme}
+                enabledBooks={enabledBooks}
+                existingClassNames={(character.classes || []).map(c => c.className)}
+                onSelectClass={handleSelectClassFromPicker}
+              />
             </div>
           )}
 
@@ -1585,14 +1488,8 @@ export default function CharacterEditor({
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-serif font-black text-base flex items-center gap-2" style={{ color: theme.textDark }}>
-                        <div
-                          className="w-8 h-8 rounded-lg border flex items-center justify-center shadow-xs shrink-0"
-                          style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.accent }}
-                        >
-                          <GameIcon name={preset.avatar} size={20} />
-                        </div>
-                        <span>{preset.title}</span>
+                      <span className="font-serif font-black text-base" style={{ color: theme.textDark }}>
+                        {preset.title}
                       </span>
                       <span
                         className="text-[11px] font-bold px-2 py-0.5 rounded border font-mono shadow-2xs"
@@ -1626,8 +1523,7 @@ export default function CharacterEditor({
                       className="text-[11px] text-slate-700 bg-white/90 rounded-lg p-2.5 border space-y-1 shadow-2xs"
                       style={{ borderColor: theme.border }}
                     >
-                      <div className="font-bold text-[10px] uppercase tracking-wider flex items-center gap-1" style={{ color: theme.accent }}>
-                        <GiSpellBook className="w-3 h-3" />
+                      <div className="font-bold text-[10px] uppercase tracking-wider" style={{ color: theme.accent }}>
                         習得技能
                       </div>
                       {preset.classes.map((c, i) => (
@@ -1643,7 +1539,6 @@ export default function CharacterEditor({
                       className="text-[11px] text-slate-600 bg-white/70 rounded-lg px-2.5 py-1.5 border flex items-center gap-1.5 shadow-2xs"
                       style={{ borderColor: theme.border }}
                     >
-                      <GiShield className="w-3 h-3 shrink-0" style={{ color: theme.accent }} />
                       <span className="font-bold text-slate-700">裝備:</span>{' '}
                       {[
                         preset.equipment.mainHand,
