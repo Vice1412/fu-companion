@@ -77,6 +77,279 @@ export const SOURCEBOOKS = {
 };
 
 /**
+ * 官方職業中英文名稱、專屬圖標與一言風格速覽 (Class Metadata & Taglines)
+ * 滿足創角時中英雙語對照與一目了然的職業戰鬥畫風
+ */
+export const CLASS_METADATA = {
+  // 核心 15 職 (Core 15 Classes)
+  '秘儀師': {
+    name: '秘儀師',
+    en: 'Arcanist',
+    icon: 'GiCrystalBall',
+    source: 'core',
+    tagline: '與古老阿爾卡納守護靈綁定，在戰場召喚化身展開領域偉力的召喚者。'
+  },
+  '嵌合師': {
+    name: '嵌合師',
+    en: 'Chimerist',
+    icon: 'GiMonsterGrasp',
+    source: 'core',
+    tagline: '觀察並掌握魔物與野獸生態，將凶獸本能魔法化為己用的青魔道士。'
+  },
+  '暗黑之刃': {
+    name: '暗黑之刃',
+    en: 'Darkblade',
+    icon: 'GiDrippingSword',
+    source: 'core',
+    tagline: '以自損生命為代價釋放詛咒之刃，在危機瀕死時刻爆發毀滅威能的重裝戰士。'
+  },
+  '元素師': {
+    name: '元素師',
+    en: 'Elementalist',
+    icon: 'GiFireball',
+    source: 'core',
+    tagline: '掌控地、火、冰、風、雷原初要素，擅長弱點轟炸與廣域破壞的魔法大師。'
+  },
+  '熵師': {
+    name: '熵師',
+    en: 'Entropist',
+    icon: 'GiHourglass',
+    source: 'core',
+    tagline: '操弄時間流速、引力空間與宇宙機率，以混沌擾亂敵方攻防節奏的時空術士。'
+  },
+  '狂怒鬥士': {
+    name: '狂怒鬥士',
+    en: 'Fury',
+    icon: 'GiEnrage',
+    source: 'core',
+    tagline: '以熾烈怒火引爆狂暴潛能，生命值越危急時戰力越發洶湧兇悍的近戰狂人。'
+  },
+  '守護者': {
+    name: '守護者',
+    en: 'Guardian',
+    icon: 'GiShield',
+    source: 'core',
+    tagline: '身披重甲持堅盾的鋼鐵防線，專注於為身後隊友格擋吸收一切毀滅衝擊。'
+  },
+  '博學士': {
+    name: '博學士',
+    en: 'Loremaster',
+    icon: 'GiScrollQuill',
+    source: 'core',
+    tagline: '洞悉萬物古老傳承與魔物生理弱點的智者，為隊伍提供即時戰術洞察與弱點指引。'
+  },
+  '吟唱者': {
+    name: '吟唱者',
+    en: 'Orator',
+    icon: 'GiPublicSpeaker',
+    source: 'core',
+    tagline: '以雄辯演說凝聚士氣並瓦解敵意的領袖，能安撫凶暴魔物並激勵全體盟友。'
+  },
+  '遊蕩者': {
+    name: '遊蕩者',
+    en: 'Rogue',
+    icon: 'GiHoodedFigure',
+    source: 'core',
+    tagline: '穿梭於陰影與破綻的靈動刺客，專精身法走位、偷取戰場物資與致命偷襲。'
+  },
+  '神射手': {
+    name: '神射手',
+    en: 'Sharpshooter',
+    icon: 'GiCrossbow',
+    source: 'core',
+    tagline: '精通弓弩與槍械的狙擊專家，擅長遠距掩護射擊、壓制彈幕與部位精準破壞。'
+  },
+  '靈師': {
+    name: '靈師',
+    en: 'Spiritist',
+    icon: 'GiHealing',
+    source: 'core',
+    tagline: '溝通神聖與靈魂光芒的白魔道士，以治癒術、異常淨化與守護屏障庇護隊友。'
+  },
+  '修補匠': {
+    name: '修補匠',
+    en: 'Tinkerer',
+    icon: 'GiCog',
+    source: 'core',
+    tagline: '配備奇妙發明小工具與化學試劑的工匠，能即時配製道具與調校魔導武裝。'
+  },
+  '旅人': {
+    name: '旅人',
+    en: 'Wayfarer',
+    icon: 'GiCompass',
+    source: 'core',
+    tagline: '經驗豐富的荒野求生專家與嚮導，熟諳地形探索導航並有忠誠魔寵相伴。'
+  },
+  '武器大師': {
+    name: '武器大師',
+    en: 'Weaponmaster',
+    icon: 'GiCrossedSwords',
+    source: 'core',
+    tagline: '精通天下各類近戰兵刃的武技巔峰者，以無懈可擊的武器架式施展連擊與反擊。'
+  },
+
+  // 高等奇幻 (High Fantasy)
+  '指揮官': {
+    name: '指揮官',
+    en: 'Commander',
+    icon: 'GiSpartanHelmet',
+    source: 'highFantasy',
+    tagline: '制定前線戰術陣形的將領，協同調度全隊行動節奏並激發隊友潛在戰力。'
+  },
+  '舞者': {
+    name: '舞者',
+    en: 'Dancer',
+    icon: 'GiFencer',
+    source: 'highFantasy',
+    tagline: '在刀光劍影中翩然起舞的優雅戰士，以靈動步伐施展戰鬥舞步與群體干擾。'
+  },
+  '魔奏者': {
+    name: '魔奏者',
+    en: 'Chanter',
+    icon: 'GiLyre',
+    source: 'highFantasy',
+    tagline: '將動人音律編織為魔力音符的吟遊者，以悠揚旋律主宰戰場攻防節奏。'
+  },
+  '徽記師': {
+    name: '徽記師',
+    en: 'Symbolist',
+    icon: 'GiScrollQuill',
+    source: 'highFantasy',
+    tagline: '將魔力銘刻為神秘符文印記的刻印大師，創造持久戰鬥結界與全場強化。'
+  },
+  '死靈術士': {
+    name: '死靈術士',
+    en: 'Necromancer',
+    icon: 'GiDrippingSword',
+    source: 'highFantasy',
+    tagline: '操弄生死邊界與怨靈暗影的冥界學者，支配亡靈力量並汲取倒下敵人的生命。'
+  },
+
+  // 科技奇幻 (Techno Fantasy)
+  '機師': {
+    name: '機師',
+    en: 'Pilot',
+    icon: 'GiGears',
+    source: 'technoFantasy',
+    tagline: '駕馭魔導裝甲與科技載具的高速駕駛員，兼具頂尖機動力與厚重機械火力。'
+  },
+  '靈能者': {
+    name: '靈能者',
+    en: 'Psychic',
+    icon: 'GiCrystalBall',
+    source: 'technoFantasy',
+    tagline: '覺醒超心靈感應與念動力的超能者，以無形精神衝擊與思維屏障壓制敵手。'
+  },
+  '突變體': {
+    name: '突變體',
+    en: 'Mutant',
+    icon: 'GiMonsterGrasp',
+    source: 'technoFantasy',
+    tagline: '能自如異化改造自身肉體與器官的變異戰士，適應任何殘酷極限戰鬥環境。'
+  },
+
+  // 自然奇幻 (Natural Fantasy)
+  '美食家': {
+    name: '美食家',
+    en: 'Gourmet',
+    icon: 'GiRoundBottomFlask',
+    source: 'naturalFantasy',
+    tagline: '採集野獸食材烹調珍饈美味的大廚，以魔導料理為全體隊友提供神奇增益。'
+  },
+  '祈喚者': {
+    name: '祈喚者',
+    en: 'Invoker',
+    icon: 'GiWizardStaff',
+    source: 'naturalFantasy',
+    tagline: '導引大地四時靈脈之氣的通靈祭司，呼喚自然萬象生靈之力灌注全場。'
+  },
+  '商人': {
+    name: '商人',
+    en: 'Merchant',
+    icon: 'GiCoins',
+    source: 'naturalFantasy',
+    tagline: '深諳金錢與商道萬能法則的精明商賈，以雄厚財力投資戰場道具與特殊支援。'
+  },
+  '植物學家': {
+    name: '植物學家',
+    en: 'Flora',
+    icon: 'GiCompass',
+    source: 'naturalFantasy',
+    tagline: '培育奇花異草與藥用孢子的園藝師，藉由植物種子、藤蔓與毒素掌控戰局。'
+  },
+
+  // 公測修訂 (Playtest Variants)
+  '秘儀師【Playtest】': {
+    name: '秘儀師【Playtest】',
+    en: 'Arcanist (Playtest)',
+    icon: 'GiCrystalBall',
+    source: 'playtest',
+    tagline: '官方公測重製版秘儀師，優化阿爾卡納脈衝爆發與召喚靈活性。'
+  },
+  '守護者【Playtest】': {
+    name: '守護者【Playtest】',
+    en: 'Guardian (Playtest)',
+    icon: 'GiShield',
+    source: 'playtest',
+    tagline: '官方公測重製版守護者，新增盾牌格擋反震與更具主動性的防衛機制。'
+  },
+  '武器大師【Playtest】': {
+    name: '武器大師【Playtest】',
+    en: 'Weaponmaster (Playtest)',
+    icon: 'GiCrossedSwords',
+    source: 'playtest',
+    tagline: '官方公測重製版武器大師，調整破甲連擊與多武器切換流暢度。'
+  },
+  '博學士【Playtest】': {
+    name: '博學士【Playtest】',
+    en: 'Loremaster (Playtest)',
+    icon: 'GiScrollQuill',
+    source: 'playtest',
+    tagline: '官方公測重製版博學士，強化魔物調查與弱點洞悉的戰術反饋。'
+  },
+  '暗黑之刃【Playtest】': {
+    name: '暗黑之刃【Playtest】',
+    en: 'Darkblade (Playtest)',
+    icon: 'GiDrippingSword',
+    source: 'playtest',
+    tagline: '官方公測重製版暗黑之刃，提升血量代價與暗夜威能的爆發收益。'
+  },
+  '神射手【Playtest】': {
+    name: '神射手【Playtest】',
+    en: 'Sharpshooter (Playtest)',
+    icon: 'GiCrossbow',
+    source: 'playtest',
+    tagline: '官方公測重製版神射手，強化警告射擊控場與複合彈幕配置。'
+  },
+  '吟唱者【Playtest】': {
+    name: '吟唱者【Playtest】',
+    en: 'Orator (Playtest)',
+    icon: 'GiPublicSpeaker',
+    source: 'playtest',
+    tagline: '官方公測重製版吟唱者，優化演說激勵與敵意瓦解的數值連動。'
+  }
+};
+
+/**
+ * 取得職業完整設定元資料（中文、英文、圖標與一句話風格）
+ */
+export function getClassInfo(className) {
+  if (!className) return null;
+  const clean = String(className).trim();
+  const baseName = clean.replace(/【.*?】/g, '');
+  const match = CLASS_METADATA[clean] || CLASS_METADATA[baseName];
+  if (match) return match;
+
+  return {
+    name: clean,
+    en: baseName,
+    icon: clean,
+    source: 'core',
+    tagline: '踏上傳奇冒險征程的勇者。'
+  };
+}
+
+/**
  * 官方標準推薦情感選項（三維六向）
  */
 export const BOND_FEELINGS = [

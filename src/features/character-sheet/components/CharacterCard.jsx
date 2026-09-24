@@ -19,6 +19,7 @@ import { calculateCharacterStats } from '../utils/characterEngine';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import ClockTracker from '../../../components/ui/ClockTracker';
+import SkillDescription from '../utils/skillFormulaEvaluator';
 import rulesData from '../data/rulesData.json';
 import { getCharacterTheme } from '../utils/characterThemes';
 
@@ -341,9 +342,9 @@ export default function CharacterCard({
                             SL {sk.sl} / {skillDef?.maxSL || 5}
                           </span>
                         </div>
-                        <p className="text-[#574c43] leading-relaxed font-sans text-[11px]">
-                          {skillDef?.desc || '暫無說明'}
-                        </p>
+                        <div className="text-[#574c43] leading-relaxed font-sans text-[11px]">
+                          <SkillDescription desc={skillDef?.desc || '暫無說明'} sl={sk.sl} />
+                        </div>
                       </div>
                     );
                   })}

@@ -1,0 +1,73 @@
+import React from 'react';
+
+/**
+ * 技能等級星芒指示器 (Skill Star Pips)
+ * 滿足需求 2：Max SL 視覺化為星星，每點選一次填滿一顆星，直觀呈現投入的點數。
+ * 遵循零 Emoji 規範，採用純向量 SVG 繪製。
+ */
+export default function SkillStarPips({
+  maxSL = 5,
+  currentSL = 0,
+  onChange = null,
+  disabled = false,
+  size = 18,
+  className = ''
+}) {
+  const safeMax = Math.max(1, maxSL);
+  const safeCurrent = Math.max(0, Math.min(safeMax, currentSL));
+
+  return (
+    <div className={`inline-flex items-center gap-1 select-none ${className}`}>
+      {Array.from({ length: safeMax }).map((_, idx) => {
+        const starLevel = idx + 1;
+        const isFilled = starLevel <= safeCurrent;
+
+        return (
+          <button
+            key={idx}
+            type="button"
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (disabled || !onChange) return;
+              // 點選當前已滿星星時，將等級降一階（如點擊 SL 1 降為 0）
+              const nextSL = safeCurrent === starLevel ? starLevel - 1 : starLevel;
+              onChange(nextSL);
+            }}
+            className={`transition-all duration-150 transform ${
+              disabled
+                ? 'cursor-default'
+                : 'cursor-pointer hover:scale-120 active:scale-95 focus:outline-none'
+            }`}
+            title={
+              disabled
+                ? `技能等級：SL ${safeCurrent} / ${safeMax}`
+                : `點擊設定為 SL ${starLevel} / ${safeMax}（再點一次可扣減）`
+            }
+          >
+            <svg
+              width={size}
+              height={size}
+              viewBox="0 0 24 24"
+              className={`transition-colors duration-200 ${
+                isFilled
+                  ? 'text-amber-500 fill-amber-400 drop-shadow-[0_1px_3px_rgba(245,158,11,0.4)]'
+                  : 'text-slate-300 fill-transparent stroke-slate-300 stroke-2 hover:stroke-amber-400'
+              }`}
+            >
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        );
+      })}
+
+      <span className="font-mono text-xs font-bold text-slate-500 ml-1">
+        SL {safeCurrent}/{safeMax}
+      </span>
+    </div>
+  );
+}
