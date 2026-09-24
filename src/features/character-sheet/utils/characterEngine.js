@@ -19,7 +19,7 @@ export const createNewCharacter = (overrides = {}) => {
     id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     name: "新冒險者",
     identity: "",
-    theme: "希望 (Hope)",
+    theme: "希望",
     origin: "",
     avatar: null,
 
@@ -81,9 +81,9 @@ export const createNewCharacter = (overrides = {}) => {
 
     // 武裝配置
     equipment: {
-      mainHand: "青銅劍 (Bronze Sword)",
-      offHand: "青銅圓盾 (Bronze Shield)",
-      armor: "旅行皮甲 (Travel Garb)",
+      mainHand: "青銅劍",
+      offHand: "青銅圓盾",
+      armor: "旅行皮甲",
       accessory: "守護護符"
     },
 
@@ -120,11 +120,14 @@ export const getProficiencies = (char) => {
   };
 
   (char.classes || []).forEach(cl => {
-    const cName = cl.className;
-    if (['武器大師', '暗黑之刃', '狂怒鬥士', '指揮官'].includes(cName)) profs.martialMelee = true;
-    if (['神射手'].includes(cName)) profs.martialRanged = true;
-    if (['守護者', '暗黑之刃', '狂怒鬥士'].includes(cName)) profs.martialArmor = true;
-    if (['守護者', '武器大師', '神射手', '指揮官'].includes(cName)) profs.martialShields = true;
+    const cName = cl.className || '';
+    const classDef = rulesData.classes[cName];
+    const fb = classDef?.freeBenefits || '';
+
+    if (fb.includes('近戰') || ['武器大師', '暗黑之刃', '狂怒鬥士', '指揮官'].some(n => cName.includes(n))) profs.martialMelee = true;
+    if (fb.includes('遠程') || ['神射手'].some(n => cName.includes(n))) profs.martialRanged = true;
+    if (fb.includes('防具') || ['守護者', '暗黑之刃', '狂怒鬥士'].some(n => cName.includes(n))) profs.martialArmor = true;
+    if (fb.includes('盾牌') || ['守護者', '武器大師', '神射手', '指揮官'].some(n => cName.includes(n))) profs.martialShields = true;
   });
 
   return profs;
@@ -161,18 +164,29 @@ export const calculateCharacterStats = (char) => {
   const currentMig = reduceDieStep(baseMig, migPenalty);
   const currentWlp = reduceDieStep(baseWlp, wlpPenalty);
 
-  // 2. 計算職業免費加成 (HP +5, MP +5, IP +2)
+  // 2. 計算職業免費加成與技能常駐加成 (HP +5, MP +5, IP +2, 不動要塞, 集中)
   let bonusHp = 0;
   let bonusMp = 0;
   let bonusIp = 0;
 
   (char.classes || []).forEach(cl => {
     const classDef = rulesData.classes[cl.className];
-    if (classDef && classDef.freeBonus) {
-      if (classDef.freeBonus.includes('HP +5')) bonusHp += 5;
-      if (classDef.freeBonus.includes('MP +5')) bonusMp += 5;
-      if (classDef.freeBonus.includes('IP +2')) bonusIp += 2;
-    }
+    const fb = classDef?.freeBenefits || '';
+    if (fb.includes('HP') && fb.includes('5')) bonusHp += 5;
+    if (fb.includes('MP') && fb.includes('5')) bonusMp += 5;
+    if (fb.includes('IP') && fb.includes('2')) bonusIp += 2;
+
+    // 特技技能常駐衍生加成
+    (cl.skills || []).forEach(sk => {
+      if (sk.name === '不動要塞') {
+        const isPlaytest = (cl.className || '').includes('Playtest');
+        bonusHp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
+      }
+      if (sk.name === '集中') {
+        const isPlaytest = (cl.className || '').includes('Playtest');
+        bonusMp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
+      }
+    });
   });
 
   // 飾品特殊加成
@@ -187,8 +201,9 @@ export const calculateCharacterStats = (char) => {
   const crisisThreshold = Math.floor(maxHp / 2);
 
   // 3. 裝備防禦與先攻計算
-  const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor) || rulesData.equipment.armors[0];
-  const shieldDef = rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand) || rulesData.equipment.shields[0];
+  const normName = (n) => (n || '').replace(/\s*\([^)]*\)/g, '').trim();
+  const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor || a.name === normName(char.equipment?.armor)) || rulesData.equipment.armors[0];
+  const shieldDef = rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand || s.name === normName(char.equipment?.offHand)) || rulesData.equipment.shields[0];
 
   let def = currentDex;
   let mdef = currentIns;
@@ -321,13 +336,13 @@ export const validateCharacter = (char) => {
     warnings.push({ step: 1, field: 'name', type: 'warning', message: '角色尚未填寫姓名' });
   }
   if (!char.identity || !char.identity.trim()) {
-    warnings.push({ step: 1, field: 'identity', type: 'info', message: '尚未設定身份 (Identity)' });
+    warnings.push({ step: 1, field: 'identity', type: 'info', message: '尚未設定身份' });
   }
   if (!char.theme) {
-    warnings.push({ step: 1, field: 'theme', type: 'info', message: '尚未選擇個人主題 (Theme)' });
+    warnings.push({ step: 1, field: 'theme', type: 'info', message: '尚未選擇個人主題' });
   }
   if (!char.origin || !char.origin.trim()) {
-    warnings.push({ step: 1, field: 'origin', type: 'info', message: '尚未填寫故鄉 (Origin)' });
+    warnings.push({ step: 1, field: 'origin', type: 'info', message: '尚未填寫故鄉' });
   }
 
   // 步驟 2: 四維屬性 (起始總點數應為 32)
@@ -341,17 +356,13 @@ export const validateCharacter = (char) => {
     });
   }
 
-  // 步驟 3: 職業與特技 (5 級起始限制)
+  // 步驟 3: 職業與特技 (5 級起始限制: 2~3 個職業)
   const classCount = (char.classes || []).length;
   if (char.level === 5) {
     if (classCount < 2) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級必須選擇 2~3 個職業 (目前僅選 1 個)' });
+      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級必須選擇至少 2 個職業 (規則書規定：最少 2 個職業，不可純單職)' });
     } else if (classCount > 3) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級不可選擇超過 3 個職業' });
-    }
-    const hasSingleClassMax = (char.classes || []).some(c => c.level >= 5);
-    if (hasSingleClassMax) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級單一職業最高不可達到 5 級' });
+      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級不可選擇超過 3 個職業 (規則書規定：最多 3 個職業)' });
     }
   }
 
@@ -369,7 +380,7 @@ export const validateCharacter = (char) => {
     warnings.push({ step: 4, field: 'mainHand', type: 'info', message: '尚未裝備主手武器' });
   }
   if (stats.armorWarning) {
-    warnings.push({ step: 4, field: 'armor', type: 'warning', message: '目前穿戴軍用防具 (重甲)，但所選職業缺乏熟練度' });
+    warnings.push({ step: 4, field: 'armor', type: 'warning', message: '目前穿戴軍用重甲防具，但所選職業缺乏熟練度' });
   }
   if (stats.shieldWarning) {
     warnings.push({ step: 4, field: 'offHand', type: 'warning', message: '目前裝備軍用盾牌，但所選職業缺乏熟練度' });
@@ -377,7 +388,7 @@ export const validateCharacter = (char) => {
 
   // 步驟 5: 羈絆 (官方強烈建議起始至少 1 個)
   if (!char.bonds || char.bonds.length === 0) {
-    warnings.push({ step: 5, field: 'bonds', type: 'warning', message: '尚未建立任何情感羈絆 (建議至少建立 1 個)' });
+    warnings.push({ step: 5, field: 'bonds', type: 'warning', message: '尚未建立任何情感羈絆，建議至少建立 1 個' });
   }
 
   const errors = warnings.filter(w => w.type === 'error');

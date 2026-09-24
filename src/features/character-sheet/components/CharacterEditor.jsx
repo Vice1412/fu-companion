@@ -3,32 +3,48 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  AlertTriangle,
-  CheckCircle2,
-  Sparkles,
-  Shield,
-  Heart,
-  Swords,
-  Clock,
-  BookOpen,
   Info,
   ChevronRight,
   ChevronLeft,
-  Check,
-  Zap,
-  Play
+  ChevronDown,
+  SlidersHorizontal,
+  Play,
+  Check
 } from 'lucide-react';
+import {
+  GiSparkles,
+  GiCrossedSwords,
+  GiShield,
+  GiHeartPlus,
+  GiPocketWatch,
+  GiSpellBook,
+  GiHazardSign,
+  GiCheckMark,
+  GiMagnifyingGlass,
+  GiQuillInk,
+  GiCoins,
+  GiRollingDices,
+  GiLaurelCrown,
+  GiScrollUnfurled,
+  GiPalette
+} from 'react-icons/gi';
+import GameIcon from '../../../components/ui/GameIcon';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
 import StatBadge from '../../../components/ui/StatBadge';
+import JRPGModal from '../../../components/ui/JRPGModal';
 import CharacterCard from './CharacterCard';
+import IdentityTablesModal from './IdentityTablesModal';
+import AttributeMatrixPicker from './AttributeMatrixPicker';
 import rulesData from '../data/rulesData.json';
+import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
   SOURCEBOOKS,
   BOND_FEELINGS,
   CANONICAL_THEMES,
-  ATTRIBUTE_STARTING_ARRAYS
+  ATTRIBUTE_STARTING_ARRAYS,
+  generateRandomIdentity
 } from '../data/sourcebookConfig';
 import { STARTER_PRESETS } from '../data/starterPresets';
 import {
@@ -38,17 +54,25 @@ import {
 
 export default function CharacterEditor({
   character,
+  themeId = null,
+  onSelectGlobalTheme = null,
   onChange,
   onBackToRoster,
   onEnterPlayMode = null
 }) {
   const [activeTab, setActiveTab] = useState(1);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
+  const [presetSearch, setPresetSearch] = useState('');
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
+  const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
+  const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
+  const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(character?.theme) && Boolean(character?.theme));
   const [selectedClassToAdd, setSelectedClassToAdd] = useState('');
   const [selectedHeroicToAdd, setSelectedHeroicToAdd] = useState('');
 
   if (!character) return null;
+
+  const theme = getCharacterTheme(character.themeColor || themeId);
 
   // Validation checklist
   const validation = validateCharacter(character);
@@ -223,259 +247,492 @@ export default function CharacterEditor({
   };
 
   const TABS = [
-    { id: 1, label: '基礎身世' },
-    { id: 2, label: '四維屬性' },
-    { id: 3, label: '職業與特技' },
-    { id: 4, label: '裝備配置' },
-    { id: 5, label: '情感羈絆' },
-    { id: 6, label: '特質與命刻' }
+    { id: 1, label: '基礎身世', en: 'IDENTITY', icon: 'edit' },
+    { id: 2, label: '四維屬性', en: 'ATTRIBUTES', icon: 'dice' },
+    { id: 3, label: '職業與特技', en: 'CLASSES', icon: 'swords' },
+    { id: 4, label: '裝備配置', en: 'EQUIPMENT', icon: 'shield' },
+    { id: 5, label: '情感羈絆', en: 'BONDS', icon: 'hp' },
+    { id: 6, label: '特質與命刻', en: 'HEROIC & CLOCKS', icon: 'clock' }
   ];
 
   // Attribute sum
   const attrSum = (character.attributes?.dex || 0) + (character.attributes?.ins || 0) + (character.attributes?.mig || 0) + (character.attributes?.wlp || 0);
 
+  // Equipment costs & 500 Zenit Starting Budget (Rulebook p. 166)
+  const curMainHand = rulesData.equipment.weapons.find(w => w.name === character.equipment?.mainHand);
+  const curOffHand = rulesData.equipment.shields.find(s => s.name === character.equipment?.offHand)
+    || rulesData.equipment.weapons.find(w => w.name === character.equipment?.offHand);
+  const curArmor = rulesData.equipment.armors.find(a => a.name === character.equipment?.armor);
+  const curAcc = rulesData.equipment.accessories.find(acc => acc.name === character.equipment?.accessory);
+  const totalEquipCost = (curMainHand?.cost || 0) + (curOffHand?.cost || 0) + (curArmor?.cost || 0) + (curAcc?.cost || 0);
+  const remainingBudget = 500 - totalEquipCost;
+
+  const handleRollStartingZenit = () => {
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const rollSum = (d1 + d2) * 10;
+    const finalZenit = Math.max(0, remainingBudget) + rollSum;
+    updateField('zenit', finalZenit);
+    alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Top Header & Wizard Controls */}
-      <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl px-4 py-3 flex items-center justify-between shadow-sm flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <JRPGButton
-            variant="ghost"
-            size="sm"
-            icon={ArrowLeft}
-            onClick={onBackToRoster}
+      {/* 桌面與手機自適應架構：仿 NPC 工坊的左側導航清單 */}
+      <div className="flex flex-col md:flex-row gap-5 items-start">
+        
+        {/* ==================== 桌面端左側邊欄 (Left Sidebar - md+ 顯示) ==================== */}
+        <div className="hidden md:flex w-60 shrink-0 flex-col gap-3 sticky top-4">
+          {/* 角色卡身分小卡 */}
+          <div
+            className="rounded-xl p-3.5 border shadow-xs transition-colors"
+            style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
           >
-            返回名冊
-          </JRPGButton>
-
-          <div className="h-4 w-[1px] bg-[#d6c7ab]" />
-
-          <div className="flex items-center gap-2">
-            <h3 className="font-serif font-black text-base text-[#3c2415] truncate max-w-[160px] sm:max-w-xs">
-              {character.name || '新冒險者'}
-            </h3>
-            <JRPGBadge variant="gold" size="xs">
-              Lv {character.level || 5}
-            </JRPGBadge>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="font-serif font-black text-sm truncate" style={{ color: theme.textDark }}>
+                {character.name || '新冒險者'}
+              </h3>
+              <JRPGBadge variant={theme.badgeVariant} size="xs">
+                Lv {character.level || 5}
+              </JRPGBadge>
+            </div>
+            <p className="text-[11px] truncate" style={{ color: theme.textMuted }}>
+              {character.identity || '未設定身份'}
+            </p>
           </div>
 
-          {/* Preset Starter Button */}
+          {/* 經典職業搭配快捷入口 */}
           <button
+            type="button"
             onClick={() => setIsPresetsModalOpen(true)}
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-all shadow-sm"
-            title="查看或套用官方 8 大起始經典配置"
+            className="w-full inline-flex items-center justify-between px-3.5 py-2.5 rounded-xl border font-bold transition-all shadow-xs hover:scale-102 group text-left cursor-pointer"
+            style={{
+              borderColor: theme.border,
+              backgroundColor: theme.subpanelBg,
+              color: theme.textDark
+            }}
+            title="一鍵套用官方經典職業搭配（職業、特技、屬性骰、裝備配置）"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-            <span>官方經典配置</span>
+            <div className="flex items-center gap-2">
+              <GiSparkles className="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" style={{ color: theme.accent }} />
+              <span className="text-xs font-black">經典職業搭配</span>
+            </div>
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 transition-colors"
+              style={{ borderColor: theme.border, color: theme.accent, backgroundColor: theme.cardBg }}
+            >
+              一鍵套用
+            </span>
           </button>
-        </div>
 
-        {/* Right Tools: Validation checklist badge + Play mode + Prev/Next */}
-        <div className="flex items-center gap-2">
-          {/* Validation Checklist Trigger */}
+          {/* 5 大步驟縱向清單 */}
+          <div
+            className="rounded-xl border shadow-xs p-2 flex flex-col gap-1 transition-colors"
+            style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+          >
+            <div className="px-2 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+              創角流程
+            </div>
+
+            {TABS.map(t => {
+              const tabWarnings = validation.warnings.filter(w => w.step === t.id);
+              const hasError = tabWarnings.some(w => w.type === 'error');
+              const hasWarn = tabWarnings.some(w => w.type !== 'error');
+              const isTabActive = activeTab === t.id;
+
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTab(t.id)}
+                  className={`w-full text-left px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer ${
+                    isTabActive
+                      ? 'text-white shadow-sm'
+                      : 'hover:bg-slate-50 text-slate-700'
+                  }`}
+                  style={isTabActive ? { backgroundColor: theme.accent, color: '#ffffff' } : {}}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-mono font-black shrink-0 transition-colors ${
+                        isTabActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
+                      }`}
+                    >
+                      {t.id}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-xs font-bold leading-tight">
+                        {t.label}
+                      </div>
+                      <div className={`text-[10px] font-mono leading-tight mt-0.5 truncate ${
+                        isTabActive ? 'text-white/80' : 'text-slate-400'
+                      }`}>
+                        {t.en}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 狀態徽章 */}
+                  {hasError ? (
+                    <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-200 shrink-0" />
+                  ) : hasWarn ? (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 創角完整度自檢：常駐即時狀態卡 */}
           <button
+            type="button"
             onClick={() => setIsValidationModalOpen(true)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all shadow-sm ${
+            className={`w-full text-left p-3 rounded-xl border transition-all shadow-xs flex flex-col gap-1.5 hover:scale-101 cursor-pointer ${
               validation.errors.length > 0
-                ? 'border-red-300 bg-red-50 text-red-800 hover:bg-red-100'
+                ? 'bg-rose-50/90 border-rose-300 hover:border-rose-400'
                 : validation.hasWarnings
-                ? 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
-                : 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100'
+                  ? 'bg-amber-50/90 border-amber-300 hover:border-amber-400'
+                  : 'bg-emerald-50/90 border-emerald-300 hover:border-emerald-400'
             }`}
-            title="點擊查看完整創角提醒清單"
+            title="點擊查看完整官方創角規則驗證報告"
           >
-            {validation.errors.length > 0 ? (
-              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-            ) : validation.hasWarnings ? (
-              <Info className="w-3.5 h-3.5 text-amber-600" />
-            ) : (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            )}
-            <span className="hidden sm:inline">
-              {validation.errors.length > 0
-                ? `${validation.errors.length} 項錯誤待修正`
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-bold text-xs">
+                {validation.errors.length > 0 ? (
+                  <GiHazardSign className="w-4 h-4 text-rose-600 shrink-0" />
+                ) : validation.hasWarnings ? (
+                  <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                ) : (
+                  <GiCheckMark className="w-4 h-4 text-emerald-700 shrink-0" />
+                )}
+                <span className={
+                  validation.errors.length > 0
+                    ? 'text-rose-950'
+                    : validation.hasWarnings
+                      ? 'text-amber-950'
+                      : 'text-emerald-950'
+                }>
+                  規則自檢
+                </span>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                validation.errors.length > 0
+                  ? 'bg-rose-200 text-rose-900'
+                  : validation.hasWarnings
+                    ? 'bg-amber-200 text-amber-900'
+                    : 'bg-emerald-200 text-emerald-900'
+              }`}>
+                {validation.errors.length > 0
+                  ? `${validation.errors.length} 項待修正`
+                  : validation.hasWarnings
+                    ? `${validation.warnings.length} 項提醒`
+                    : '100% 合規'}
+              </span>
+            </div>
+            <p className={`text-[11px] leading-tight ${
+              validation.errors.length > 0
+                ? 'text-rose-700'
                 : validation.hasWarnings
-                ? `${validation.warnings.length} 項提醒`
-                : '配置完整合規'}
-            </span>
+                  ? 'text-amber-700'
+                  : 'text-emerald-700'
+            }`}>
+              {validation.errors.length > 0
+                ? '尚有未符規則項目，點擊查看詳情'
+                : validation.hasWarnings
+                  ? '基本合規，有可優化提醒'
+                  : '已符合官方標準創角規範'}
+            </p>
           </button>
 
-          {/* Quick Enter Play Mode button */}
-          {onEnterPlayMode && (
-            <JRPGButton
-              variant="primary"
-              size="xs"
-              icon={Play}
-              onClick={onEnterPlayMode}
-            >
-              進入跑團卡
-            </JRPGButton>
-          )}
+          {/* 快捷操作區 (預覽、跑團) */}
+          <div
+            className="rounded-xl border shadow-xs p-2.5 flex flex-col gap-2 transition-colors"
+            style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+          >
 
-          <div className="h-4 w-[1px] bg-[#d6c7ab]" />
+            {/* 查看角色卡按鈕 */}
+            <button
+              type="button"
+              onClick={() => setIsCardPreviewModalOpen(true)}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-2xs hover:opacity-90 cursor-pointer"
+              style={{ borderColor: theme.border, color: theme.textDark, backgroundColor: theme.cardBg }}
+              title="隨時預覽或檢查角色卡目前填寫狀態"
+            >
+              <GiScrollUnfurled className="w-3.5 h-3.5 shrink-0" style={{ color: theme.accent }} />
+              <span>查看角色卡</span>
+            </button>
 
-          {/* Step Prev / Next */}
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={activeTab <= 1}
-              onClick={() => setActiveTab(prev => Math.max(1, prev - 1))}
-              className="p-1.5 rounded-lg border border-[#d6c7ab] bg-[#fffdf9] hover:bg-[#f5efdf] text-[#3c2415] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-              title="上一步"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="font-mono text-xs text-[#6b5a4b] font-bold px-1">
-              {activeTab} / {TABS.length}
-            </span>
-            <button
-              disabled={activeTab >= TABS.length}
-              onClick={() => setActiveTab(prev => Math.min(TABS.length, prev + 1))}
-              className="p-1.5 rounded-lg border border-[#d6c7ab] bg-[#fffdf9] hover:bg-[#f5efdf] text-[#3c2415] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-              title="下一步"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* 進入跑團卡按鈕 */}
+            {onEnterPlayMode && (
+              <JRPGButton
+                variant={theme.buttonVariant || 'primary'}
+                size="sm"
+                icon={Play}
+                onClick={onEnterPlayMode}
+                className="w-full justify-center"
+              >
+                進入跑團卡
+              </JRPGButton>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#d6c7ab]">
-        {TABS.map(t => {
-          const tabWarnings = validation.warnings.filter(w => w.step === t.id);
-          const hasError = tabWarnings.some(w => w.type === 'error');
-          const hasWarn = tabWarnings.some(w => w.type !== 'error');
+        {/* ==================== 手機端頂部步驟條 (Mobile Header - md 以下顯示) ==================== */}
+        <div
+          className="md:hidden w-full flex flex-col gap-2 rounded-xl p-3 border shadow-xs transition-colors"
+          style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="font-serif font-black text-xs truncate" style={{ color: theme.textDark }}>
+                {character.name || '新冒險者'}
+              </span>
+              <JRPGBadge variant={theme.badgeVariant} size="xs">
+                Lv {character.level || 5}
+              </JRPGBadge>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <button
+                type="button"
+                onClick={() => setIsPresetsModalOpen(true)}
+                className="px-2 py-1 rounded-md border text-[11px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
+                style={{ borderColor: theme.border, color: theme.textDark, backgroundColor: theme.cardBg }}
+                title="經典職業搭配"
+              >
+                <GiSparkles className="w-3 h-3" style={{ color: theme.accent }} />
+                <span>職業搭配</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsValidationModalOpen(true)}
+                className={`px-2 py-1 rounded-md border text-[11px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer ${
+                  validation.errors.length > 0
+                    ? 'bg-rose-50 text-rose-700 border-rose-300'
+                    : validation.hasWarnings
+                      ? 'bg-amber-50 text-amber-800 border-amber-300'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                }`}
+                title="創角規則自檢"
+              >
+                {validation.errors.length > 0 ? (
+                  <GiHazardSign className="w-3 h-3 text-rose-600" />
+                ) : validation.hasWarnings ? (
+                  <Info className="w-3 h-3 text-amber-600" />
+                ) : (
+                  <GiCheckMark className="w-3 h-3 text-emerald-700" />
+                )}
+                <span>
+                  {validation.errors.length > 0
+                    ? `${validation.errors.length}待修正`
+                    : validation.hasWarnings
+                      ? `${validation.warnings.length}提醒`
+                      : '合規'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCardPreviewModalOpen(true)}
+                className="px-2 py-1 rounded-md border text-[11px] font-bold shadow-2xs cursor-pointer"
+                style={{ borderColor: theme.border, color: theme.textDark, backgroundColor: theme.cardBg }}
+              >
+                查看卡片
+              </button>
+              {onEnterPlayMode && (
+                <button
+                  type="button"
+                  onClick={onEnterPlayMode}
+                  className="px-2 py-1 rounded-md text-white text-[11px] font-bold shadow-2xs cursor-pointer"
+                  style={{ backgroundColor: theme.accent }}
+                >
+                  跑團卡
+                </button>
+              )}
+            </div>
+          </div>
 
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                activeTab === t.id
-                  ? 'bg-amber-700 text-white shadow-sm'
-                  : 'bg-[#eee6d3] text-[#3c2f21] hover:bg-[#e4d9c0] border border-[#d6c7ab]'
-              }`}
+          <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: theme.border }}>
+            <span className="text-[11px] font-bold text-slate-500 shrink-0">步驟 {activeTab}/{TABS.length}:</span>
+            <select
+              value={activeTab}
+              onChange={e => setActiveTab(Number(e.target.value))}
+              className="flex-1 text-xs font-bold border rounded-lg px-2.5 py-1 outline-none"
+              style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
             >
-              <span className="font-mono text-[10px] opacity-75">{t.id}.</span>
-              <span>{t.label}</span>
-              {hasError ? (
-                <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-200 shrink-0" />
-              ) : hasWarn ? (
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+              {TABS.map(t => (
+                <option key={t.id} value={t.id}>{t.id}. {t.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      {/* Split Screen Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Editor Form Wizard */}
-        <div className="lg:col-span-7 bg-[#fffdf9] rounded-xl border border-[#d6c7ab] p-5 sm:p-6 shadow-sm space-y-6 text-[#2c221e]">
+        {/* ==================== 主編輯區域 (Right Main Canvas) ==================== */}
+        <div
+          className="flex-1 w-full min-w-0 rounded-xl border p-4 sm:p-7 shadow-xs space-y-6 transition-colors"
+          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+        >
 
           {/* ==================== TAB 1: 基礎身世 ==================== */}
           {activeTab === 1 && (
             <div className="space-y-5 animate-fade-in">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                    <span className="text-amber-800">1.</span> 角色核心身份 (Identity, Theme & Origin)
-                  </h4>
-                  <p className="text-xs text-[#6b5a4b] mt-1 leading-relaxed">
-                    在《FU》中，身份、主題與故鄉不僅是敘事背景，玩家更可在關鍵擲骰中消耗物語點（FP）將其轉化為骰子加值！
-                  </p>
-                </div>
-
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>1.</span> 角色核心身份
+                </h4>
                 <button
+                  type="button"
                   onClick={() => setIsPresetsModalOpen(true)}
-                  className="sm:hidden px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-xs font-bold shrink-0"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 shadow-2xs hover:scale-102 cursor-pointer"
+                  style={{
+                    backgroundColor: theme.subpanelBg,
+                    borderColor: theme.border,
+                    color: theme.textDark
+                  }}
+                  title="一鍵套用官方經典職業搭配（職業、特技、屬性骰、裝備配置）"
                 >
-                  ✨ 範本
+                  <GiSparkles className="w-3.5 h-3.5 shrink-0" style={{ color: theme.accent }} />
+                  <span>套用經典職業搭配</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <JRPGInput
-                  label="角色姓名 (Name)"
+                  label="角色姓名"
                   value={character.name || ''}
                   onChange={e => updateField('name', e.target.value)}
-                  placeholder="例：雷恩 (Rain)"
+                  placeholder="例：雷恩"
+                  theme={theme}
                 />
-                <JRPGInput
-                  label="角色等級 (Level: 起始為 5 級，最高 50 級)"
-                  type="number"
-                  min={5}
-                  max={50}
-                  value={character.level || 5}
-                  onChange={e => updateField('level', parseInt(e.target.value, 10) || 5)}
-                />
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                      角色等級
+                    </label>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                    >
+                      起始 5 級
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min={5}
+                    max={50}
+                    value={character.level || 5}
+                    onChange={e => updateField('level', parseInt(e.target.value, 10) || 5)}
+                    className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                    身份
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsIdentityModalOpen(true)}
+                      className="text-[11px] px-2.5 py-1 rounded border font-bold transition-colors flex items-center gap-1.5 shadow-2xs hover:opacity-90 cursor-pointer"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                      title="點開查看官方 60 種身分、40 種特質與 20 種細節對照表 (d6+d20)"
+                    >
+                      <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                      <span>靈感對照表</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = generateRandomIdentity();
+                        updateField('identity', newId);
+                      }}
+                      className="text-[11px] px-2 py-1 rounded border font-bold transition-colors flex items-center gap-1 shadow-2xs hover:opacity-90 cursor-pointer"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                      title="投擲 1d6+1d20 隨機生成身份"
+                    >
+                      <GiRollingDices className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                      <span>隨機</span>
+                    </button>
+                  </div>
+                </div>
                 <JRPGInput
-                  label="身份 (Identity - 誰是你？包含頭銜、職業或宿命)"
                   value={character.identity || ''}
                   onChange={e => updateField('identity', e.target.value)}
                   placeholder="例：失去記憶的原帝國魔導兵、被神明驅逐的聖樂使"
+                  theme={theme}
                 />
-
-                {/* Identity quick pills */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-[#8c7b6c] font-medium">範例靈感:</span>
-                  {[
-                    '前帝國退役魔導兵',
-                    '古代遺跡流浪學者',
-                    '追尋真理的聖殿騎士',
-                    '邊陲古林通靈獵手',
-                    '行商公會天才發明家'
-                  ].map(sug => (
-                    <button
-                      key={sug}
-                      type="button"
-                      onClick={() => updateField('identity', sug)}
-                      className="text-[10px] px-2 py-0.5 rounded bg-[#f5efdf] hover:bg-[#ebdcc4] text-[#3c2415] border border-[#d6c7ab]"
-                    >
-                      + {sug}
-                    </button>
-                  ))}
-                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                   <div>
-                    <label className="text-xs font-bold text-[#3c2f21] block mb-1">
-                      主題 (Theme - 指引你前行的信念)
-                    </label>
-                    <select
-                      value={character.theme || '希望 (Hope)'}
-                      onChange={e => updateField('theme', e.target.value)}
-                      className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-2 text-xs text-[#2c221e] outline-none focus:border-amber-700 shadow-sm"
-                    >
-                      {CANONICAL_THEMES.map(theme => (
-                        <option key={theme} value={theme}>{theme}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                        主題
+                      </label>
+                      <label className="flex items-center gap-1 text-[11px] cursor-pointer font-medium select-none" style={{ color: theme.textMuted }}>
+                        <input
+                          type="checkbox"
+                          checked={isCustomTheme}
+                          onChange={e => {
+                            const checked = e.target.checked;
+                            setIsCustomTheme(checked);
+                            if (!checked && !CANONICAL_THEMES.includes(character.theme)) {
+                              updateField('theme', CANONICAL_THEMES[0]);
+                            }
+                          }}
+                          className="w-3.5 h-3.5 rounded cursor-pointer"
+                          style={{ accentColor: theme.accent }}
+                        />
+                        <span>自訂</span>
+                      </label>
+                    </div>
+                    {isCustomTheme ? (
+                      <JRPGInput
+                        value={character.theme || ''}
+                        onChange={e => updateField('theme', e.target.value)}
+                        placeholder="例：救贖、追尋..."
+                        theme={theme}
+                      />
+                    ) : (
+                      <select
+                        value={character.theme || '希望'}
+                        onChange={e => updateField('theme', e.target.value)}
+                        className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border cursor-pointer"
+                        style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                      >
+                        {CANONICAL_THEMES.map(tName => (
+                          <option key={tName} value={tName}>{tName}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <JRPGInput
-                    label="故鄉 (Origin - 你的發源地)"
+                    label="故鄉"
                     value={character.origin || ''}
                     onChange={e => updateField('origin', e.target.value)}
                     placeholder="例：浮空島王國、千年翡翠古林"
+                    theme={theme}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                   <JRPGInput
-                    label="初始持有金幣 (Zenit)"
+                    label="初始持有金幣"
                     type="number"
                     value={character.zenit !== undefined ? character.zenit : 500}
                     onChange={e => updateField('zenit', parseInt(e.target.value, 10) || 0)}
+                    theme={theme}
                   />
                   <JRPGInput
-                    label="初始物語點 (Fabula Points)"
+                    label="初始物語點"
                     type="number"
                     value={character.fabulaPoints !== undefined ? character.fabulaPoints : 3}
                     onChange={e => updateField('fabulaPoints', parseInt(e.target.value, 10) || 3)}
+                    theme={theme}
                   />
                 </div>
               </div>
@@ -486,72 +743,26 @@ export default function CharacterEditor({
           {activeTab === 2 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">2.</span> 四維基礎屬性骰 (Attribute Dice)
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>2.</span> 四維基礎屬性骰配置
                 </h4>
-                <p className="text-xs text-[#6b5a4b] mt-1">
-                  《FU》的四項基礎屬性直接代表你所投擲的骰子面數（d6、d8、d10、d12）。起始總骰階點數應為 <strong className="text-amber-900 font-mono">32</strong>。
+                <p className="text-xs text-slate-500 mt-0.5">
+                  四維屬性代表骰子面數（d6~d12），將骰子分配至各項體質。
                 </p>
               </div>
 
-              {/* Canonical Array Selector */}
-              <div className="p-3.5 bg-[#f5efdf] rounded-xl border border-[#d6c7ab] space-y-2">
-                <span className="text-xs font-bold text-[#3c2415] block">
-                  官方三大起始陣列（點擊一鍵套用）:
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {ATTRIBUTE_STARTING_ARRAYS.map(arr => (
-                    <button
-                      key={arr.id}
-                      type="button"
-                      onClick={() => updateField('attributes', { ...arr.dice })}
-                      className="text-left p-2.5 rounded-lg bg-[#fffdf9] hover:bg-[#fbf7ee] border border-[#d6c7ab] transition-all hover:scale-[1.01] shadow-sm flex flex-col justify-between"
-                    >
-                      <div className="font-bold text-xs text-[#3c2415]">{arr.name}</div>
-                      <div className="font-mono text-[11px] text-amber-900 font-bold mt-1">
-                        d{arr.dice.dex}, d{arr.dice.ins}, d{arr.dice.mig}, d{arr.dice.wlp}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Attributes Stepper */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                {[
-                  { key: 'dex', name: '敏捷 (DEX)', desc: '精確、速度、物理迴避' },
-                  { key: 'ins', name: '洞察 (INS)', desc: '感知、法力、魔法防禦' },
-                  { key: 'mig', name: '體魄 (MIG)', desc: '強韌、生命值 (HP)' },
-                  { key: 'wlp', name: '意志 (WLP)', desc: '毅力、法力值 (MP)' }
-                ].map(stat => (
-                  <div key={stat.key} className="bg-[#fbf7ee] border border-[#d6c7ab] rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm text-center">
-                    <span className="font-bold text-xs text-[#3c2415]">{stat.name}</span>
-                    <StatBadge
-                      stat={stat.key}
-                      value={character.attributes?.[stat.key] || 8}
-                      onChange={newVal => updateAttribute(stat.key, newVal)}
-                      size="lg"
-                    />
-                    <span className="text-[10px] text-[#6b5a4b] leading-tight mt-1">{stat.desc}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Point Balance Alert */}
-              <div className={`p-3 rounded-lg border text-xs font-mono flex items-center justify-between ${
-                attrSum === 32
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  : 'border-amber-300 bg-amber-50 text-amber-900'
-              }`}>
-                <span>當前骰面總點數: <strong>{attrSum}</strong> / 32</span>
-                <span>
-                  {attrSum === 32
-                    ? '✅ 點數完全平衡'
-                    : attrSum < 32
-                    ? `⚠️ 尚有 ${32 - attrSum} 點未分配`
-                    : `⚠️ 超出 ${attrSum - 32} 點，請適當降低`}
-                </span>
-              </div>
+              {/* 2x2 四宮格拖曳分配矩陣 */}
+              <AttributeMatrixPicker
+                attributes={character.attributes || { dex: 8, ins: 8, mig: 8, wlp: 8 }}
+                onChange={(newAttrs) => {
+                  onChange({
+                    ...character,
+                    attributes: newAttrs,
+                    updatedAt: new Date().toISOString()
+                  });
+                }}
+                theme={theme}
+              />
             </div>
           )}
 
@@ -559,19 +770,22 @@ export default function CharacterEditor({
           {activeTab === 3 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">3.</span> 職業組合與特技加點 (Classes & Skills)
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>3.</span> 職業組合與特技加點
                 </h4>
-                <p className="text-xs text-[#6b5a4b] mt-1">
-                  起始 5 級必須在 <strong className="text-amber-900 font-bold">2~3 個職業</strong> 中分配等級（單職最高 4 級）。每升 1 級職業獲得 1 點特技等級 (SL)。
+                <p className="text-xs text-slate-500 mt-0.5">
+                  起始 5 級分配於 2~3 個職業（單職最高 4 級），每級獲得 1 點特技。
                 </p>
               </div>
 
               {/* Sourcebook Expansion Toggles */}
-              <div className="p-3.5 bg-[#f5efdf] rounded-xl border border-[#d6c7ab] space-y-2">
-                <span className="text-xs font-bold text-[#3c2415] flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-amber-800" />
-                  啟用官方拓展手冊（勾選以解鎖該拓展專屬職業）:
+              <div
+                className="p-3 rounded-xl border flex items-center justify-between flex-wrap gap-2 transition-colors"
+                style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+              >
+                <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
+                  <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                  官方拓展職業:
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(SOURCEBOOKS).map(sbKey => {
@@ -584,13 +798,14 @@ export default function CharacterEditor({
                         type="button"
                         onClick={() => toggleSourcebook(sbKey)}
                         disabled={sb.locked}
-                        className={`text-xs px-2.5 py-1.5 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-xs ${sb.locked ? 'cursor-default' : 'cursor-pointer'}`}
+                        style={
                           isEnabled
-                            ? 'bg-amber-700 text-white border-amber-800'
-                            : 'bg-white text-stone-600 border-[#d6c7ab] hover:bg-stone-50'
-                        } ${sb.locked ? 'cursor-default' : 'cursor-pointer'}`}
+                            ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
+                            : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
+                        }
                       >
-                        {isEnabled ? <Check className="w-3.5 h-3.5" /> : null}
+                        {isEnabled ? <GiCheckMark className="w-3 h-3" /> : null}
                         <span>{sb.shortName}</span>
                       </button>
                     );
@@ -599,29 +814,46 @@ export default function CharacterEditor({
               </div>
 
               {/* Level Budget Guard Bar */}
-              <div className={`p-3 rounded-lg border text-xs font-mono flex items-center justify-between ${
-                stats.isLevelMatched
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  : 'border-amber-300 bg-amber-50 text-amber-900'
-              }`}>
+              <div
+                className="p-2.5 rounded-lg border text-xs font-mono flex items-center justify-between transition-colors"
+                style={
+                  stats.isLevelMatched
+                    ? { backgroundColor: theme.panelBg, borderColor: theme.border, color: theme.textDark }
+                    : { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }
+                }
+              >
                 <span>
-                  已分配特技點數: <strong>{stats.totalSkillLevels}</strong> / {character.level || 5} 級
+                  已分配特技: <strong>{stats.totalSkillLevels}</strong> / {character.level || 5} 級
                 </span>
-                <span>
-                  {stats.isLevelMatched
-                    ? '✅ 職業特技分配完整'
-                    : stats.totalSkillLevels < (character.level || 5)
-                    ? `⚠️ 尚有 ${(character.level || 5) - stats.totalSkillLevels} 點特技未分配`
-                    : `⚠️ 超出 ${stats.totalSkillLevels - (character.level || 5)} 點`}
+                <span className="flex items-center gap-1">
+                  {stats.isLevelMatched ? (
+                    <>
+                      <GiCheckMark className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                      <span>分配完整</span>
+                    </>
+                  ) : (
+                    <>
+                      <GiHazardSign className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                      <span>
+                        {stats.totalSkillLevels < (character.level || 5)
+                          ? `尚缺 ${(character.level || 5) - stats.totalSkillLevels} 點`
+                          : `超出 ${stats.totalSkillLevels - (character.level || 5)} 點`}
+                      </span>
+                    </>
+                  )}
                 </span>
               </div>
 
               {/* Add Class Picker */}
-              <div className="flex items-center gap-2 p-3 bg-[#fffdf9] rounded-xl border border-[#d6c7ab]">
+              <div
+                className="flex items-center gap-2 p-3 rounded-xl border transition-colors"
+                style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+              >
                 <select
                   value={selectedClassToAdd}
                   onChange={e => setSelectedClassToAdd(e.target.value)}
-                  className="flex-1 bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-2 text-xs text-[#2c221e] outline-none focus:border-amber-700 shadow-sm"
+                  className="flex-1 rounded-lg px-3 py-2 text-xs outline-none shadow-sm border cursor-pointer"
+                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                 >
                   <option value="">-- 挑選欲修習的職業 --</option>
                   {availableClassNames.map(cName => {
@@ -629,14 +861,14 @@ export default function CharacterEditor({
                     const isAlready = (character.classes || []).some(c => c.className === cName);
                     return (
                       <option key={cName} value={cName} disabled={isAlready}>
-                        {cName} {cl?.freeBonus ? `(${cl.freeBonus})` : ''} {isAlready ? '(已修習)' : ''}
+                        {cName} {cl?.freeBonus ? `【${cl.freeBonus}】` : ''} {isAlready ? '【已修習】' : ''}
                       </option>
                     );
                   })}
                 </select>
 
                 <JRPGButton
-                  variant="primary"
+                  variant={theme.buttonVariant || 'primary'}
                   size="xs"
                   icon={Plus}
                   onClick={handleAddClass}
@@ -651,17 +883,21 @@ export default function CharacterEditor({
                 {(character.classes || []).map((cl, cIdx) => {
                   const classDef = rulesData.classes[cl.className] || {};
                   return (
-                    <div key={cl.className} className="bg-[#fbf7ee] rounded-xl p-4 border border-[#d6c7ab] space-y-3 shadow-sm">
-                      <div className="flex items-center justify-between border-b border-[#d6c7ab] pb-2">
+                    <div
+                      key={cl.className}
+                      className="rounded-xl p-4 border space-y-3 shadow-sm transition-colors"
+                      style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                    >
+                      <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: theme.border }}>
                         <div className="flex items-center gap-2">
-                          <h5 className="font-serif font-black text-base text-[#3c2415]">
+                          <h5 className="font-serif font-black text-base" style={{ color: theme.textDark }}>
                             {cl.className}
                           </h5>
-                          <JRPGBadge variant="gold" size="xs">
+                          <JRPGBadge variant={theme.badgeVariant} size="xs">
                             Lv {cl.level}
                           </JRPGBadge>
                           {classDef.freeBonus && (
-                            <span className="text-[11px] text-emerald-800 font-mono font-bold">
+                            <span className="text-[11px] font-mono font-bold" style={{ color: theme.accent }}>
                               {classDef.freeBonus}
                             </span>
                           )}
@@ -670,7 +906,7 @@ export default function CharacterEditor({
                         <button
                           type="button"
                           onClick={() => handleRemoveClass(cl.className)}
-                          className="text-[#8c7b6c] hover:text-red-700 p-1 transition-colors"
+                          className="text-slate-400 hover:text-red-700 p-1 transition-colors cursor-pointer"
                           title="移除職業"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -684,14 +920,18 @@ export default function CharacterEditor({
                           const maxSL = skillDef?.maxSL || 5;
 
                           return (
-                            <div key={sk.name} className="bg-[#fffdf9] rounded-lg p-3 border border-[#d6c7ab] text-xs flex flex-col gap-1.5 shadow-sm">
+                            <div
+                              key={sk.name}
+                              className="rounded-lg p-3 border text-xs flex flex-col gap-1.5 shadow-sm transition-colors"
+                              style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+                            >
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-[#3c2415] flex items-center gap-1.5">
-                                  <span className="text-amber-700">✦</span> {sk.name}
+                                <span className="font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
+                                  <span style={{ color: theme.accent }}>✦</span> {sk.name}
                                 </span>
 
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono text-[#6b5a4b] font-bold">
+                                  <span className="font-mono text-slate-600 font-bold">
                                     SL {sk.sl} / {maxSL}
                                   </span>
                                   <div className="flex items-center gap-1">
@@ -699,7 +939,8 @@ export default function CharacterEditor({
                                       type="button"
                                       onClick={() => handleUpdateSkillSL(cIdx, sIdx, -1)}
                                       disabled={sk.sl <= 1}
-                                      className="px-1.5 py-0.5 rounded bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] disabled:opacity-30"
+                                      className="px-1.5 py-0.5 rounded border disabled:opacity-30 font-bold transition-colors cursor-pointer"
+                                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                                     >
                                       -
                                     </button>
@@ -707,7 +948,8 @@ export default function CharacterEditor({
                                       type="button"
                                       onClick={() => handleUpdateSkillSL(cIdx, sIdx, 1)}
                                       disabled={sk.sl >= maxSL}
-                                      className="px-1.5 py-0.5 rounded bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] disabled:opacity-30"
+                                      className="px-1.5 py-0.5 rounded border disabled:opacity-30 font-bold transition-colors cursor-pointer"
+                                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                                     >
                                       +
                                     </button>
@@ -715,14 +957,14 @@ export default function CharacterEditor({
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveSkillFromClass(cIdx, sIdx)}
-                                    className="text-[#8c7b6c] hover:text-red-700 ml-1 font-bold"
+                                    className="text-slate-400 hover:text-red-700 ml-1 font-bold cursor-pointer"
                                   >
                                     ×
                                   </button>
                                 </div>
                               </div>
 
-                              <p className="text-[11px] text-[#6b5a4b] leading-relaxed">
+                              <p className="text-[11px] text-slate-600 leading-relaxed">
                                 {skillDef?.desc || ''}
                               </p>
                             </div>
@@ -741,12 +983,13 @@ export default function CharacterEditor({
                               }
                             }}
                             defaultValue=""
-                            className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-1.5 text-xs text-[#6b5a4b] focus:outline-none shadow-sm"
+                            className="w-full rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm border cursor-pointer"
+                            style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                           >
                             <option value="" disabled>+ 添加此職業的其他技能...</option>
                             {classDef.skills.map(sk => (
                               <option key={sk.name} value={sk.name} disabled={(cl.skills || []).some(s => s.name === sk.name)}>
-                                {sk.name} (Max SL: {sk.maxSL})
+                                {sk.name} 【上限 SL {sk.maxSL}】
                               </option>
                             ))}
                           </select>
@@ -763,30 +1006,79 @@ export default function CharacterEditor({
           {activeTab === 4 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">4.</span> 裝備庫與熟練度檢核 (Equipment)
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>4.</span> 裝備庫與熟練度檢核
                 </h4>
-                <p className="text-xs text-[#6b5a4b] mt-1">
-                  裝備會即時自動計算物理防禦（DEF）、魔法防禦（M.DEF）與先攻修正。若穿戴缺乏熟練度的軍用防具或盾牌，下方將給予提示。
+                <p className="text-xs text-slate-500 mt-0.5">
+                  即時計算物理防禦、魔法防禦與先攻修正。
                 </p>
               </div>
 
               {/* Proficiencies Indicator */}
-              <div className="p-3 bg-[#f5efdf] rounded-xl border border-[#d6c7ab] flex items-center justify-between text-xs flex-wrap gap-2">
-                <span className="font-bold text-[#3c2415]">當前角色軍用熟練度:</span>
+              <div
+                className="p-3 rounded-xl border flex items-center justify-between text-xs flex-wrap gap-2"
+                style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+              >
+                <span className="font-bold" style={{ color: theme.textDark }}>軍用熟練度:</span>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${stats.profs.martialMelee ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-500'}`}>
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] font-bold border"
+                    style={stats.profs.martialMelee ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
+                  >
                     軍用近戰 {stats.profs.martialMelee ? '✓' : '✗'}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${stats.profs.martialRanged ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-500'}`}>
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] font-bold border"
+                    style={stats.profs.martialRanged ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
+                  >
                     軍用遠程 {stats.profs.martialRanged ? '✓' : '✗'}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${stats.profs.martialArmor ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-500'}`}>
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] font-bold border"
+                    style={stats.profs.martialArmor ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
+                  >
                     軍用重甲 {stats.profs.martialArmor ? '✓' : '✗'}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${stats.profs.martialShields ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-500'}`}>
+                  <span
+                    className="px-2 py-0.5 rounded text-[11px] font-bold border"
+                    style={stats.profs.martialShields ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
+                  >
                     軍用盾牌 {stats.profs.martialShields ? '✓' : '✗'}
                   </span>
+                </div>
+              </div>
+
+              {/* 500 Zenit Starting Budget Tracker */}
+              <div
+                className="p-3 rounded-xl border space-y-2 shadow-2xs"
+                style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+              >
+                <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 font-bold" style={{ color: theme.textDark }}>
+                    <GiCoins className="w-4 h-4" style={{ color: theme.accent }} />
+                    <span>起始裝備預算 500z</span>
+                  </div>
+                  <div className="flex items-center gap-3 font-mono text-xs">
+                    <span>已花費: <strong style={{ color: theme.accent }}>{totalEquipCost}z</strong> / 500z</span>
+                    <span className={remainingBudget < 0 ? 'text-red-700 font-bold' : 'font-bold'} style={remainingBudget >= 0 ? { color: theme.accent } : undefined}>
+                      剩餘: {remainingBudget}z
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1.5 border-t flex-wrap gap-2 text-xs" style={{ borderColor: `${theme.border}80` }}>
+                  <span className="text-xs text-slate-500">
+                    剩餘預算 + 2d6 × 10 結算為開局金幣
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRollStartingZenit}
+                    className="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                  >
+                    <GiRollingDices className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                    <span>擲 2d6 × 10 結算</span>
+                  </button>
                 </div>
               </div>
 
@@ -795,13 +1087,13 @@ export default function CharacterEditor({
                 <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-xs space-y-1">
                   {stats.armorWarning && (
                     <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <GiHazardSign className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                       <span>目前穿戴軍用防具 (重甲)，但當前職業組合並無重甲熟練度。</span>
                     </div>
                   )}
                   {stats.shieldWarning && (
                     <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <GiHazardSign className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                       <span>目前裝備軍用盾牌，但當前職業組合並無軍用盾熟練度。</span>
                     </div>
                   )}
@@ -810,7 +1102,8 @@ export default function CharacterEditor({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <JRPGSelect
-                  label="主手武器 (Main Hand)"
+                  label="主手武器"
+                  theme={theme}
                   value={character.equipment?.mainHand || ''}
                   onChange={e => updateField('equipment', { ...character.equipment, mainHand: e.target.value })}
                   options={rulesData.equipment.weapons.map(w => ({
@@ -820,17 +1113,25 @@ export default function CharacterEditor({
                 />
 
                 <JRPGSelect
-                  label="副手裝備 / 盾牌 (Off Hand)"
+                  label="副手裝備 / 盾牌"
+                  theme={theme}
                   value={character.equipment?.offHand || ''}
                   onChange={e => updateField('equipment', { ...character.equipment, offHand: e.target.value })}
-                  options={rulesData.equipment.shields.map(s => ({
-                    value: s.name,
-                    label: `${s.name} ${s.desc ? `(${s.desc})` : ''} - ${s.cost}z`
-                  }))}
+                  options={[
+                    ...rulesData.equipment.shields.map(s => ({
+                      value: s.name,
+                      label: `【盾牌】${s.name} ${s.desc ? `(${s.desc})` : ''} - ${s.cost}z`
+                    })),
+                    ...rulesData.equipment.weapons.filter(w => w.hands === 1 && w.name !== '無手空拳').map(w => ({
+                      value: w.name,
+                      label: `【副手武器】${w.name} (${w.damage}) - ${w.cost}z`
+                    }))
+                  ]}
                 />
 
                 <JRPGSelect
-                  label="身體防具 (Armor)"
+                  label="身體防具"
+                  theme={theme}
                   value={character.equipment?.armor || ''}
                   onChange={e => updateField('equipment', { ...character.equipment, armor: e.target.value })}
                   options={rulesData.equipment.armors.map(a => ({
@@ -840,7 +1141,8 @@ export default function CharacterEditor({
                 />
 
                 <JRPGSelect
-                  label="佩戴飾品 (Accessory)"
+                  label="佩戴飾品"
+                  theme={theme}
                   value={character.equipment?.accessory || ''}
                   onChange={e => updateField('equipment', { ...character.equipment, accessory: e.target.value })}
                   options={rulesData.equipment.accessories.map(acc => ({
@@ -857,29 +1159,33 @@ export default function CharacterEditor({
             <div className="space-y-5 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                    <span className="text-amber-800">5.</span> 情感羈絆系統 (Bonds & Feelings)
+                  <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                    <span style={{ color: theme.accent }}>5.</span> 情感羈絆系統
                   </h4>
-                  <p className="text-xs text-[#6b5a4b] mt-1">
-                    每位角色最多可維繫 6 個羈絆，每個羈絆包含 1~3 種情感維度。在跑團擲骰時，可消耗 1 FP 將羈絆強度加入檢定！
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    起始最多 3 條羈絆（上限 6 條），每條包含 1~3 種情感維度。
                   </p>
                 </div>
 
                 <JRPGButton
-                  variant="primary"
+                  variant={theme.buttonVariant || 'primary'}
                   size="xs"
                   icon={Plus}
                   onClick={handleAddBond}
                   disabled={(character.bonds || []).length >= 6}
                 >
-                  新增羈絆 ({(character.bonds || []).length}/6)
+                  新增羈絆 【{(character.bonds || []).length}/6】
                 </JRPGButton>
               </div>
 
               {/* Bonds List */}
               <div className="space-y-3">
                 {(character.bonds || []).map((bond, bIdx) => (
-                  <div key={bond.id || bIdx} className="bg-[#fbf7ee] rounded-xl p-3.5 border border-[#d6c7ab] space-y-3 shadow-sm">
+                  <div
+                    key={bond.id || bIdx}
+                    className="rounded-xl p-3.5 border space-y-3 shadow-sm"
+                    style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1">
                         <input
@@ -887,18 +1193,19 @@ export default function CharacterEditor({
                           value={bond.target || ''}
                           onChange={e => handleUpdateBondTarget(bIdx, e.target.value)}
                           placeholder="羈絆對象 (例：同行法師、王國舊友、死敵首領)..."
-                          className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-1.5 text-xs text-[#2c221e] font-bold outline-none focus:border-amber-700 shadow-sm"
+                          className="w-full border rounded-lg px-3 py-1.5 text-xs font-bold outline-none shadow-sm"
+                          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                         />
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <JRPGBadge variant="gold" size="xs">
+                        <JRPGBadge variant={theme.badgeVariant || 'green'} size="xs">
                           強度 +{bond.feelings?.length || 0}
                         </JRPGBadge>
                         <button
                           type="button"
                           onClick={() => handleRemoveBond(bIdx)}
-                          className="p-1 text-[#8c7b6c] hover:text-red-700 font-bold"
+                          className="p-1 text-slate-400 hover:text-red-700 font-bold cursor-pointer"
                           title="移除羈絆"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -907,7 +1214,7 @@ export default function CharacterEditor({
                     </div>
 
                     {/* Feelings Toggle Buttons */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-[#d6c7ab]/60">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t" style={{ borderColor: `${theme.border}80` }}>
                       {BOND_FEELINGS.map(pair => (
                         <div key={pair.category} className="flex items-center gap-1">
                           {pair.options.map(opt => {
@@ -917,13 +1224,14 @@ export default function CharacterEditor({
                                 key={opt.id}
                                 type="button"
                                 onClick={() => handleToggleBondFeeling(bIdx, opt.id, pair.category)}
-                                className={`flex-1 text-[11px] py-1 px-1.5 rounded border transition-all text-center flex items-center justify-center gap-1 ${
+                                className="flex-1 text-[11px] py-1 px-1.5 rounded border transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                                style={
                                   isSelected
-                                    ? 'bg-amber-700 text-white border-amber-800 font-bold shadow-sm'
-                                    : 'bg-[#fffdf9] text-[#6b5a4b] border-[#d6c7ab] hover:bg-[#f5efdf]'
-                                }`}
+                                    ? { backgroundColor: theme.accent, color: '#ffffff', borderColor: theme.accent, fontWeight: 700 }
+                                    : { backgroundColor: theme.cardBg, color: theme.textDark, borderColor: theme.border }
+                                }
                               >
-                                <span>{opt.icon}</span>
+                                <GameIcon name={opt.iconName} className="w-3.5 h-3.5 shrink-0" />
                                 <span>{opt.label.split(' ')[0]}</span>
                               </button>
                             );
@@ -935,8 +1243,11 @@ export default function CharacterEditor({
                 ))}
 
                 {(character.bonds || []).length === 0 && (
-                  <div className="text-center py-6 border-2 border-dashed border-[#d6c7ab] rounded-xl text-xs text-[#8c7b6c]">
-                    尚未建立任何羈絆。官方規則強烈建議起始至少建立 1 個羈絆。
+                  <div
+                    className="text-center py-6 border-2 border-dashed rounded-xl text-xs"
+                    style={{ borderColor: theme.border, color: '#94a3b8' }}
+                  >
+                    尚未建立羈絆（點擊右上角「新增羈絆」）
                   </div>
                 )}
               </div>
@@ -947,23 +1258,24 @@ export default function CharacterEditor({
           {activeTab === 6 && (
             <div className="space-y-5 animate-fade-in">
               <div>
-                <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">6.</span> 英雄技能、特質與個人命刻
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>6.</span> 英雄技能、特質與個人命刻
                 </h4>
-                <p className="text-xs text-[#6b5a4b] mt-1">
-                  當職業完全精通（達到 10 級）或特殊劇情節點時，可在此解鎖英雄技能（Heroic Skills）。
+                <p className="text-xs text-slate-500 mt-0.5">
+                  精通職業後解鎖英雄技能，並可設定特質與個人誓約命刻。
                 </p>
               </div>
 
               {/* Quirk Selection */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#3c2f21]">
-                  金手指特質 (Quirk)
+                <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                  金手指特質
                 </label>
                 <select
                   value={character.quirk || '無'}
                   onChange={e => updateField('quirk', e.target.value)}
-                  className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3.5 py-2 text-xs text-[#2c221e] outline-none shadow-sm"
+                  className="w-full border rounded-lg px-3.5 py-2 text-xs outline-none shadow-sm cursor-pointer"
+                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                 >
                   <option value="無">無特殊金手指</option>
                   {rulesData.quirks.map(q => (
@@ -971,7 +1283,10 @@ export default function CharacterEditor({
                   ))}
                 </select>
                 {character.quirk && character.quirk !== '無' && (
-                  <p className="text-[11px] text-[#6b5a4b] italic p-2.5 bg-[#f5efdf] rounded-lg border border-[#d6c7ab]">
+                  <p
+                    className="text-[11px] italic p-2.5 rounded-lg border"
+                    style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                  >
                     {rulesData.quirks.find(q => q.name === character.quirk)?.desc}
                   </p>
                 )}
@@ -980,12 +1295,12 @@ export default function CharacterEditor({
               {/* Heroic Skills */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#3c2f21]">
-                    掌握之英雄技能 (Heroic Skills)
+                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                    掌握之英雄技能
                   </label>
                   {stats.masteredClasses.length > 0 && (
-                    <span className="text-xs font-bold text-amber-900 font-mono">
-                      已精通職業: {stats.masteredClasses.join(', ')} (具備英雄技能資格)
+                    <span className="text-xs font-bold font-mono" style={{ color: theme.textDark }}>
+                      已精通職業: {stats.masteredClasses.join('、')} 【具備英雄技能資格】
                     </span>
                   )}
                 </div>
@@ -994,7 +1309,8 @@ export default function CharacterEditor({
                   <select
                     value={selectedHeroicToAdd}
                     onChange={e => setSelectedHeroicToAdd(e.target.value)}
-                    className="flex-1 bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-1.5 text-xs text-[#2c221e] outline-none shadow-sm"
+                    className="flex-1 border rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm cursor-pointer"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   >
                     <option value="">-- 選擇英雄技能 --</option>
                     {rulesData.heroicSkills.map(h => (
@@ -1004,7 +1320,7 @@ export default function CharacterEditor({
                     ))}
                   </select>
                   <JRPGButton
-                    variant="primary"
+                    variant={theme.buttonVariant || 'primary'}
                     size="xs"
                     onClick={() => {
                       if (!selectedHeroicToAdd) return;
@@ -1022,17 +1338,24 @@ export default function CharacterEditor({
 
                 <div className="space-y-2">
                   {(character.heroicSkills || []).map((hs, idx) => (
-                    <div key={idx} className="bg-[#fbf7ee] rounded-lg p-3 border border-[#d6c7ab] text-xs flex items-start justify-between gap-3 shadow-sm">
+                    <div
+                      key={idx}
+                      className="rounded-lg p-3 border text-xs flex items-start justify-between gap-3 shadow-sm"
+                      style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                    >
                       <div>
-                        <div className="font-bold text-blue-900">👑 {hs.name}</div>
-                        <p className="text-[11px] text-[#6b5a4b] mt-0.5">{hs.effect}</p>
+                        <div className="font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
+                          <GiLaurelCrown className="w-4 h-4 shrink-0" style={{ color: theme.accent }} />
+                          <span>{hs.name}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-0.5">{hs.effect}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
                           updateField('heroicSkills', character.heroicSkills.filter((_, i) => i !== idx));
                         }}
-                        className="text-[#8c7b6c] hover:text-red-700 font-bold"
+                        className="text-slate-400 hover:text-red-700 font-bold cursor-pointer"
                       >
                         ×
                       </button>
@@ -1044,11 +1367,11 @@ export default function CharacterEditor({
               {/* Personal Clocks */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#3c2f21]">
-                    個人誓約命刻 (Personal Clocks)
+                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                    個人誓約命刻
                   </label>
                   <JRPGButton
-                    variant="secondary"
+                    variant={theme.outlineButtonVariant || 'outline'}
                     size="xs"
                     icon={Plus}
                     onClick={handleAddClock}
@@ -1059,7 +1382,11 @@ export default function CharacterEditor({
 
                 <div className="space-y-2">
                   {(character.clocks || []).map(clk => (
-                    <div key={clk.id} className="bg-[#fbf7ee] rounded-xl p-3 border border-[#d6c7ab] flex items-center justify-between gap-3 shadow-sm">
+                    <div
+                      key={clk.id}
+                      className="rounded-xl p-3 border flex items-center justify-between gap-3 shadow-sm"
+                      style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                    >
                       <div className="flex-1">
                         <input
                           type="text"
@@ -1069,7 +1396,8 @@ export default function CharacterEditor({
                             updateField('clocks', updated);
                           }}
                           placeholder="命刻目標..."
-                          className="bg-transparent font-bold text-xs text-[#2c221e] outline-none w-full border-b border-transparent focus:border-amber-700"
+                          className="bg-transparent font-bold text-xs outline-none w-full border-b border-transparent focus:border-current"
+                          style={{ color: theme.textDark }}
                         />
                       </div>
 
@@ -1080,7 +1408,8 @@ export default function CharacterEditor({
                             const updated = character.clocks.map(c => c.id === clk.id ? { ...c, totalSegments: parseInt(e.target.value, 10) } : c);
                             updateField('clocks', updated);
                           }}
-                          className="bg-[#fffdf9] border border-[#d6c7ab] rounded px-2 py-1 text-xs text-[#2c221e]"
+                          className="border rounded px-2 py-1 text-xs cursor-pointer"
+                          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                         >
                           <option value={4}>4 格</option>
                           <option value={6}>6 格</option>
@@ -1090,7 +1419,7 @@ export default function CharacterEditor({
                         <button
                           type="button"
                           onClick={() => handleRemoveClock(clk.id)}
-                          className="p-1 text-[#8c7b6c] hover:text-red-700"
+                          className="p-1 text-slate-400 hover:text-red-700 cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1102,152 +1431,311 @@ export default function CharacterEditor({
             </div>
           )}
 
-        </div>
+          {/* Wizard Footer Navigation Bar */}
+          <div className="pt-5 border-t flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: theme.border }}>
+            <button
+              type="button"
+              disabled={activeTab <= 1}
+              onClick={() => setActiveTab(prev => Math.max(1, prev - 1))}
+              className="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              style={{ borderColor: theme.border, color: theme.textDark }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>上一步</span>
+            </button>
 
-        {/* Right: Sticky Live Card Preview */}
-        <div className="lg:col-span-5 sticky top-24 space-y-3">
-          <div className="text-xs font-mono text-[#6b5a4b] flex items-center justify-between font-bold px-1">
-            <span>即時角色卡預覽 (Live Card Preview)</span>
-            <span className="text-amber-800 font-serif">實時雙向同步</span>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsCardPreviewModalOpen(true)}
+                className="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                style={{ borderColor: theme.border, color: theme.textDark }}
+                title="隨時預覽目前填寫之角色卡狀態"
+              >
+                <GiScrollUnfurled className="w-4 h-4" style={{ color: theme.accent }} />
+                <span>查看當前角色卡</span>
+              </button>
+
+              {activeTab < TABS.length ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(prev => Math.min(TABS.length, prev + 1))}
+                  className="px-5 py-2 rounded-lg text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                  style={{ backgroundColor: theme.accent }}
+                >
+                  <span>下一步</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                onEnterPlayMode && (
+                  <JRPGButton
+                    variant={theme.buttonVariant || 'primary'}
+                    size="md"
+                    icon={Play}
+                    onClick={onEnterPlayMode}
+                  >
+                    完成創角，進入跑團卡
+                  </JRPGButton>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Character Card View Modal (On-demand inspection) */}
+      <JRPGModal
+        isOpen={isCardPreviewModalOpen}
+        onClose={() => setIsCardPreviewModalOpen(false)}
+        title="冒險者角色卡檢視"
+        maxWidth="max-w-2xl"
+        theme={theme}
+        actionButtons={
+          <div className="flex items-center gap-2">
+            {onEnterPlayMode && (
+              <JRPGButton
+                variant={theme.buttonVariant || 'primary'}
+                size="sm"
+                icon={Play}
+                onClick={() => {
+                  setIsCardPreviewModalOpen(false);
+                  onEnterPlayMode();
+                }}
+              >
+                進入跑團實戰
+              </JRPGButton>
+            )}
+            <JRPGButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCardPreviewModalOpen(false)}
+            >
+              返回編輯
+            </JRPGButton>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="text-xs text-slate-500 flex items-center justify-between px-1">
+            <span>隨時檢視角色卡排版與構築進度</span>
+            <span className="font-mono text-[11px]" style={{ color: theme.accent }}>（填寫中未完成欄位均以空格標註）</span>
           </div>
 
           <CharacterCard
             character={character}
+            themeId={character.themeColor || themeId}
           />
         </div>
-      </div>
+      </JRPGModal>
 
       {/* Starter Presets Modal */}
-      {isPresetsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-2xl p-5 sm:p-6 max-w-3xl w-full max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#d6c7ab] pb-3">
-              <div>
-                <h3 className="font-serif font-black text-xl text-[#3c2415] flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-700" />
-                  《FU》官方 8 大起始經典配置範本
-                </h3>
-                <p className="text-xs text-[#6b5a4b] mt-0.5">
-                  精選官方核心規則書推薦之經典職業、屬性與特技組合，一鍵套用即可即刻啟程！
-                </p>
-              </div>
-              <button
-                onClick={() => setIsPresetsModalOpen(false)}
-                className="text-stone-400 hover:text-stone-700 font-bold text-lg p-1"
-              >
-                ✕
-              </button>
-            </div>
+      <JRPGModal
+        isOpen={isPresetsModalOpen}
+        onClose={() => setIsPresetsModalOpen(false)}
+        title="《FU》官方經典職業搭配"
+        maxWidth="max-w-4xl"
+        theme={theme}
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600 leading-relaxed -mt-1">
+            嚴格遵循官方核心規則書 (v1.1 Errata 校正版 p.172-175) 實裝。包含全套 20 組經典職業搭配、特技分配、起始裝備與資金。
+          </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-              {STARTER_PRESETS.map(preset => (
+          {/* Search filter */}
+          <div className="relative">
+            <input
+              type="text"
+              value={presetSearch}
+              onChange={e => setPresetSearch(e.target.value)}
+              placeholder="搜尋經典搭配名稱、職業或特技（例如：黑騎士、神射手、修補匠、暗影突襲）..."
+              className="w-full px-3.5 py-2 pl-9 text-xs rounded-xl bg-white border text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 shadow-2xs"
+              style={{ borderColor: theme.border }}
+            />
+            <GiMagnifyingGlass className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            {presetSearch && (
+              <button
+                type="button"
+                onClick={() => setPresetSearch('')}
+                className="absolute right-3 top-2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                清除
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            {STARTER_PRESETS
+              .filter(preset => {
+                if (!presetSearch.trim()) return true;
+                const q = presetSearch.toLowerCase();
+                const matchTitle = preset.title.toLowerCase().includes(q);
+                const matchSubtitle = preset.subtitle.toLowerCase().includes(q);
+                const matchIdentity = preset.identity.toLowerCase().includes(q);
+                const matchClasses = preset.classes.some(c => 
+                  c.className.toLowerCase().includes(q) || 
+                  c.skills.some(s => s.name.toLowerCase().includes(q))
+                );
+                return matchTitle || matchSubtitle || matchIdentity || matchClasses;
+              })
+              .map(preset => (
                 <div
                   key={preset.id}
-                  className="bg-[#fbf7ee] rounded-xl border border-[#d6c7ab] p-4 flex flex-col justify-between gap-3 hover:border-amber-600 transition-all shadow-sm"
+                  className="rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all shadow-xs hover:shadow-md"
+                  style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-serif font-black text-base text-[#3c2415]">
-                        {preset.avatar} {preset.title}
+                      <span className="font-serif font-black text-base flex items-center gap-2" style={{ color: theme.textDark }}>
+                        <div
+                          className="w-8 h-8 rounded-lg border flex items-center justify-center shadow-xs shrink-0"
+                          style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.accent }}
+                        >
+                          <GameIcon name={preset.avatar} size={20} />
+                        </div>
+                        <span>{preset.title}</span>
+                      </span>
+                      <span
+                        className="text-[11px] font-bold px-2 py-0.5 rounded border font-mono shadow-2xs"
+                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                      >
+                        {preset.zenit}z
                       </span>
                     </div>
-                    <div className="text-xs font-bold text-amber-900">{preset.subtitle}</div>
-                    <p className="text-[11px] text-[#6b5a4b] italic leading-relaxed">{preset.tagline}</p>
+                    <div className="text-xs font-bold" style={{ color: theme.accent }}>{preset.subtitle}</div>
+                    <p className="text-[11px] text-slate-600 italic leading-relaxed">{preset.tagline}</p>
+
+                    {/* Class badges & Attribute array */}
                     <div className="flex items-center gap-1.5 flex-wrap pt-1 font-mono text-[11px]">
                       {preset.classes.map((c, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-[#f5efdf] border border-amber-300 text-amber-950 font-bold">
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded border font-bold flex items-center gap-1"
+                          style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                        >
+                          <GameIcon name={c.className} size={12} style={{ color: theme.accent }} />
                           {c.className} Lv{c.level}
                         </span>
                       ))}
-                      <span className="text-[#8c7b6c]">
-                        [d{preset.attributes.dex}, d{preset.attributes.ins}, d{preset.attributes.mig}, d{preset.attributes.wlp}]
+                      <span className="text-slate-400 text-[10px]">
+                        [DEX d{preset.attributes.dex}, INS d{preset.attributes.ins}, MIG d{preset.attributes.mig}, WLP d{preset.attributes.wlp}]
                       </span>
+                    </div>
+
+                    {/* Skills detail */}
+                    <div
+                      className="text-[11px] text-slate-700 bg-white/90 rounded-lg p-2.5 border space-y-1 shadow-2xs"
+                      style={{ borderColor: theme.border }}
+                    >
+                      <div className="font-bold text-[10px] uppercase tracking-wider flex items-center gap-1" style={{ color: theme.accent }}>
+                        <GiSpellBook className="w-3 h-3" />
+                        習得技能
+                      </div>
+                      {preset.classes.map((c, i) => (
+                        <div key={i} className="text-[11px] leading-tight">
+                          <span className="font-bold" style={{ color: theme.textDark }}>{c.className}:</span>{' '}
+                          {c.skills.map(s => `${s.name}${s.sl > 1 ? ` SL${s.sl}` : ''}`).join('、')}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Starting Equipment */}
+                    <div
+                      className="text-[11px] text-slate-600 bg-white/70 rounded-lg px-2.5 py-1.5 border flex items-center gap-1.5 shadow-2xs"
+                      style={{ borderColor: theme.border }}
+                    >
+                      <GiShield className="w-3 h-3 shrink-0" style={{ color: theme.accent }} />
+                      <span className="font-bold text-slate-700">裝備:</span>{' '}
+                      {[
+                        preset.equipment.mainHand,
+                        preset.equipment.offHand && preset.equipment.offHand !== '無盾牌' ? preset.equipment.offHand : null,
+                        preset.equipment.armor
+                      ].filter(Boolean).join('、')}
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className="w-full py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs shadow-sm transition-transform active:scale-95"
+                    className="w-full py-2 rounded-lg text-white font-bold text-xs shadow-xs transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                    style={{ backgroundColor: theme.accent }}
                   >
                     套用此經典配置
                   </button>
                 </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
-      )}
+      </JRPGModal>
 
       {/* Validation Checklist Drawer / Modal */}
-      {isValidationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-2xl p-5 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#d6c7ab] pb-3">
-              <div className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-amber-700" />
-                <h3 className="font-serif font-black text-lg text-[#3c2415]">
-                  創角完整度自檢清單 (Checklist)
-                </h3>
+      <JRPGModal
+        isOpen={isValidationModalOpen}
+        onClose={() => setIsValidationModalOpen(false)}
+        title="創角完整度自檢清單"
+        maxWidth="max-w-lg"
+        theme={theme}
+        actionButtons={
+          <JRPGButton
+            variant={theme.buttonVariant || 'primary'}
+            size="sm"
+            onClick={() => setIsValidationModalOpen(false)}
+          >
+            我知道了，關閉
+          </JRPGButton>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600 leading-relaxed -mt-1">
+            本清單為輔助提醒，未填寫項<strong>不會強制阻擋</strong>您的儲存或跑團，您可以隨時返回修改。
+          </p>
+
+          <div className="space-y-2">
+            {validation.warnings.map((w, idx) => (
+              <div
+                key={idx}
+                onClick={() => {
+                  setActiveTab(w.step);
+                  setIsValidationModalOpen(false);
+                }}
+                className={`p-3 rounded-lg border text-xs flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm ${
+                  w.type === 'error'
+                    ? 'border-red-300 bg-red-50 text-red-900'
+                    : 'border-amber-300 bg-amber-50 text-amber-900'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {w.type === 'error' ? (
+                    <GiHazardSign className="w-4 h-4 text-red-600 shrink-0" />
+                  ) : (
+                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                  )}
+                  <span>{w.message}</span>
+                </div>
+                <span className="font-bold underline shrink-0 text-[11px]">跳轉至步驟 {w.step} ➔</span>
               </div>
-              <button
-                onClick={() => setIsValidationModalOpen(false)}
-                className="text-stone-400 hover:text-stone-700 font-bold text-lg p-1"
+            ))}
+
+            {validation.warnings.length === 0 && (
+              <div
+                className="p-4 rounded-xl border text-center text-xs font-bold flex items-center justify-center gap-2"
+                style={{ backgroundColor: theme.panelBg, borderColor: theme.border, color: theme.textDark }}
               >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-[#6b5a4b] leading-relaxed">
-              本清單為輔助提醒，未填寫項<strong>不會強制阻擋</strong>您的儲存或跑團，您可以隨時返回修改。
-            </p>
-
-            <div className="space-y-2">
-              {validation.warnings.map((w, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setActiveTab(w.step);
-                    setIsValidationModalOpen(false);
-                  }}
-                  className={`p-3 rounded-lg border text-xs flex items-center justify-between gap-3 cursor-pointer transition-all hover:scale-[1.01] shadow-sm ${
-                    w.type === 'error'
-                      ? 'border-red-300 bg-red-50 text-red-900'
-                      : 'border-amber-300 bg-amber-50 text-amber-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {w.type === 'error' ? (
-                      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                    ) : (
-                      <Info className="w-4 h-4 text-amber-600 shrink-0" />
-                    )}
-                    <span>{w.message}</span>
-                  </div>
-                  <span className="font-bold underline shrink-0 text-[11px]">跳轉至步驟 {w.step} ➔</span>
-                </div>
-              ))}
-
-              {validation.warnings.length === 0 && (
-                <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-center text-xs font-bold flex items-center justify-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <span>恭喜！角色卡所有核心規則與內容完全合規！</span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <JRPGButton
-                variant="primary"
-                size="sm"
-                onClick={() => setIsValidationModalOpen(false)}
-              >
-                我知道了，關閉
-              </JRPGButton>
-            </div>
+                <GiCheckMark className="w-5 h-5" style={{ color: theme.accent }} />
+                <span>恭喜！角色卡所有核心規則與內容完全合規！</span>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </JRPGModal>
+
+      {/* Official Identity Tables Inspiration Modal */}
+      <IdentityTablesModal
+        isOpen={isIdentityModalOpen}
+        onClose={() => setIsIdentityModalOpen(false)}
+        onSelectIdentity={(idStr) => updateField('identity', idStr)}
+        currentIdentity={character.identity || ''}
+        theme={theme}
+      />
     </div>
   );
 }

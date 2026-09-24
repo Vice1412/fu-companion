@@ -270,7 +270,7 @@ export default function CombatantCard({
       {/* 6 Status Effects Toggles */}
       <div className="p-3 border-b border-[#d6c7ab]/80 bg-[#f5efdf]/40">
         <div className="text-[10px] font-mono text-[#8c7b6c] uppercase tracking-wider mb-1.5 font-bold">
-          狀態異常 (Status Effects)
+          狀態異常
         </div>
         <div className="grid grid-cols-3 gap-1">
           {STATUS_EFFECTS.map(st => {
@@ -299,7 +299,9 @@ export default function CombatantCard({
       {!isPlayer && combatant.skills && combatant.skills.length > 0 && (
         <div className="p-3 border-b border-[#d6c7ab]/80 bg-[#f5efdf]/60 space-y-1.5">
           <div className="text-[10px] font-mono text-[#6b5a4b] flex items-center justify-between font-bold">
-            <span>技能組 (點擊 👁️ 向全員揭露)</span>
+            <span className="inline-flex items-center gap-1">
+              技能組 (點擊 <Eye className="w-3 h-3 text-amber-700" /> 向全員揭露)
+            </span>
             <span className="text-amber-800 text-[10px]">
               已揭露: {combatant.skills.filter(s => s.isRevealed).length} / {combatant.skills.length}
             </span>

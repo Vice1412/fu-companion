@@ -181,7 +181,7 @@ export default function NPCCardPreview({
       {/* Affinities Matrix */}
       <div className="p-3.5 border-b border-[#d6c7ab] bg-[#fffdf9]">
         <div className="text-xs font-bold text-[#3c2f21] mb-2 flex items-center justify-between">
-          <span>屬性抗性矩陣 (Affinities)</span>
+          <span>屬性抗性矩陣</span>
           {stats.statusImmunities?.length > 0 && (
             <span className="text-[11px] text-emerald-800 font-medium">
               免疫: {stats.statusImmunities.join(', ')}
@@ -219,7 +219,7 @@ export default function NPCCardPreview({
         {attacks.length > 0 && (
           <div>
             <h4 className="text-xs font-mono font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <span className="fu-icon text-sm">m</span> 基本攻擊 (BASIC ATTACKS)
+              <span className="fu-icon text-sm">m</span> 基本攻擊
             </h4>
             <div className="space-y-2">
               {attacks.map((att, idx) => {
@@ -228,7 +228,7 @@ export default function NPCCardPreview({
                 return (
                   <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                     <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
-                      <span>⚔️ {att.name || att.skillName || '普通攻擊'}</span>
+                      <span>{att.name || att.skillName || '普通攻擊'}</span>
                       <span className="inline-flex items-center gap-1.5 font-mono text-stone-600">
                         <span className="inline-flex items-center gap-1 text-[#3c2f21] bg-[#e8dec8] px-1.5 py-0.5 rounded text-[11px] font-bold leading-none shrink-0 shadow-2xs">
                           <span className="fu-icon text-xs leading-none translate-y-[0.5px]">{(att.selections?.distance || '').includes('遠程') ? 'r' : 'm'}</span>
@@ -257,13 +257,13 @@ export default function NPCCardPreview({
         {spells.length > 0 && (
           <div>
             <h4 className="text-xs font-mono font-bold text-blue-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <span className="fu-icon text-sm">c</span> 咒語 (SPELLS)
+              <span className="fu-icon text-sm">c</span> 咒語
             </h4>
             <div className="space-y-2">
               {spells.map((sp, idx) => (
                 <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                   <div className="flex items-center justify-between font-bold text-blue-900 mb-1">
-                    <span>🔮 {sp.name || sp.spellName || '法術'}</span>
+                    <span>{sp.name || sp.spellName || '法術'}</span>
                     <span className="text-[11px] font-mono text-stone-600">
                       MP {sp.selections?.mpCost || 10} · {sp.selections?.target || '單體'}
                     </span>
@@ -281,7 +281,7 @@ export default function NPCCardPreview({
         {otherActions.length > 0 && (
           <div>
             <h4 className="text-xs font-mono font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <span className="fu-icon text-sm">s</span> 其餘行動 (OTHER ACTIONS)
+              <span className="fu-icon text-sm">s</span> 其餘行動
             </h4>
             <div className="space-y-2">
               {otherActions.filter(sk => !sk.hideInPreview).map((sk, idx) => {
@@ -290,7 +290,7 @@ export default function NPCCardPreview({
                 return (
                   <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                     <div className="flex items-center justify-between font-bold text-[#3c2415] mb-1">
-                      <span>⚡ {nameText}</span>
+                      <span>{nameText}</span>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-[#eee6d3] text-[#3c2f21] border-[#d6c7ab]">
                         行動
                       </span>
@@ -309,13 +309,13 @@ export default function NPCCardPreview({
         {(bossSkills.length > 0 || rules.length > 0) && (
           <div>
             <h4 className="text-xs font-mono font-bold text-red-900 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-[#d6c7ab]/60 pb-1">
-              <span>📜</span> 特殊規則 (SPECIAL RULES)
+              特殊規則
             </h4>
             <div className="space-y-2">
               {[...bossSkills, ...rules].filter(sk => !sk.hideInPreview).map((sk, idx) => {
                 let badgeLabel = '特殊規則';
                 let badgeClass = 'bg-[#eee6d3] text-[#3c2f21] border-[#d6c7ab]';
-                let icon = '📜';
+                let icon = '';
 
                 if (sk.source === 'customization') {
                   badgeLabel = '客製化';

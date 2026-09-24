@@ -4,8 +4,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { exportNpcToCombatant } from '../../npc-workshop/utils/npcEngine';
-import { exportCharacterToCombatant } from '../../character-sheet/utils/characterEngine';
-import { Search, Plus, Swords, User, Shield, Folder } from 'lucide-react';
+import { Search, Plus, Swords, User, Shield, Folder, Tag } from 'lucide-react';
 
 export default function AddCombatantModal({
   isOpen,
@@ -107,7 +106,7 @@ export default function AddCombatantModal({
     <JRPGModal
       isOpen={isOpen}
       onClose={onClose}
-      title="加入參戰者 (Add Combatant)"
+      title="加入參戰者"
       maxWidth="max-w-2xl"
     >
       <div className="space-y-4">
@@ -192,7 +191,12 @@ export default function AddCombatantModal({
                         </div>
                         <div className="text-[11px] text-[#6b5a4b] font-mono mt-0.5">
                           <span>{npc.role}</span>
-                          {npc.faction && <span className="ml-2 text-amber-800 font-sans font-bold">🏷️ {npc.faction}</span>}
+                          {npc.faction && (
+                            <span className="ml-2 text-amber-800 font-sans font-bold inline-flex items-center gap-0.5">
+                              <Tag className="w-2.5 h-2.5" />
+                              {npc.faction}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -294,7 +298,7 @@ export default function AddCombatantModal({
                 onChange={e => setQuickMp(e.target.value)}
               />
               <JRPGInput
-                label="等級 (Lv)"
+                label="等級"
                 type="number"
                 value={quickLevel}
                 onChange={e => setQuickLevel(e.target.value)}

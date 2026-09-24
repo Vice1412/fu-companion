@@ -6,7 +6,7 @@
 export const SOURCEBOOKS = {
   core: {
     id: 'core',
-    name: '核心規則書 (Core Rulebook)',
+    name: '核心規則書',
     shortName: '核心 15 職',
     badgeColor: 'amber',
     desc: '《Fabula Ultima》核心 15 大經典職業，TRPG 冒險與創角基石。',
@@ -32,8 +32,8 @@ export const SOURCEBOOKS = {
   },
   highFantasy: {
     id: 'highFantasy',
-    name: '高等奇幻手冊 (High Fantasy Atlas)',
-    shortName: '🏰 高等奇幻',
+    name: '高等奇幻手冊',
+    shortName: '高等奇幻',
     badgeColor: 'purple',
     desc: '史詩般的英雄宿命、誓約與魔法，包含指揮官、舞者、死靈術士等職業。',
     defaultEnabled: false,
@@ -41,8 +41,8 @@ export const SOURCEBOOKS = {
   },
   technoFantasy: {
     id: 'technoFantasy',
-    name: '科技奇幻手冊 (Techno Fantasy Atlas)',
-    shortName: '⚙️ 科技奇幻',
+    name: '科技奇幻手冊',
+    shortName: '科技奇幻',
     badgeColor: 'cyan',
     desc: '魔導機械載具、超能心靈感應與基因突變，包含機師、靈能者、突變體。',
     defaultEnabled: false,
@@ -50,8 +50,8 @@ export const SOURCEBOOKS = {
   },
   naturalFantasy: {
     id: 'naturalFantasy',
-    name: '自然奇幻手冊 (Natural Fantasy Atlas)',
-    shortName: '🌿 自然奇幻',
+    name: '自然奇幻手冊',
+    shortName: '自然奇幻',
     badgeColor: 'emerald',
     desc: '大地生態共生、野味烹飪料理與行商契約，包含美食家、祈喚者、商人、植物學家。',
     defaultEnabled: false,
@@ -59,12 +59,20 @@ export const SOURCEBOOKS = {
   },
   playtest: {
     id: 'playtest',
-    name: '官方公測修訂 (Playtest Materials)',
-    shortName: '🧪 公測修訂',
+    name: '官方公測修訂',
+    shortName: '公測修訂',
     badgeColor: 'rose',
-    desc: '官方 Patreon 釋出之實驗性規則與最新重製版技能。',
+    desc: '官方 Patreon 釋出之實驗性規則與最新重製版職業技能（包含守護者盾反、武器大師破甲變體、秘儀師脈衝重製等）。',
     defaultEnabled: false,
-    classes: ['秘儀師【Playtest】']
+    classes: [
+      '秘儀師【Playtest】',
+      '守護者【Playtest】',
+      '武器大師【Playtest】',
+      '博學士【Playtest】',
+      '暗黑之刃【Playtest】',
+      '神射手【Playtest】',
+      '吟唱者【Playtest】'
+    ]
   }
 };
 
@@ -76,24 +84,24 @@ export const BOND_FEELINGS = [
     category: 'pair1',
     label: '欽佩 vs 自卑',
     options: [
-      { id: 'admiration', label: '欽佩 (Admiration)', icon: '✨' },
-      { id: 'inferiority', label: '自卑 (Inferiority)', icon: '🥀' }
+      { id: 'admiration', label: '欽佩', iconName: 'admiration' },
+      { id: 'inferiority', label: '自卑', iconName: 'inferiority' }
     ]
   },
   {
     category: 'pair2',
     label: '忠誠 vs 疑忌',
     options: [
-      { id: 'loyalty', label: '忠誠 (Loyalty)', icon: '🛡️' },
-      { id: 'mistrust', label: '疑忌 (Mistrust)', icon: '👁️' }
+      { id: 'loyalty', label: '忠誠', iconName: 'loyalty' },
+      { id: 'mistrust', label: '疑忌', iconName: 'mistrust' }
     ]
   },
   {
     category: 'pair3',
     label: '眷愛 vs 憎恨',
     options: [
-      { id: 'affection', label: '眷愛 (Affection)', icon: '💖' },
-      { id: 'hatred', label: '憎恨 (Hatred)', icon: '⚡' }
+      { id: 'affection', label: '眷愛', iconName: 'affection' },
+      { id: 'hatred', label: '憎恨', iconName: 'hatred' }
     ]
   }
 ];
@@ -104,45 +112,45 @@ export const BOND_FEELINGS = [
 export const STATUS_AFFLICTIONS = {
   dazed: {
     id: 'dazed',
-    name: '眩暈 (Dazed)',
+    name: '眩暈',
     short: '眩暈',
     affectedStats: ['ins'],
-    desc: '洞察 (INS) 骰階下降 1 級 (最低降至 d6)'
+    desc: '洞察 骰階下降 1 級 (最低降至 d6)'
   },
   enraged: {
     id: 'enraged',
-    name: '憤怒 (Enraged)',
+    name: '憤怒',
     short: '憤怒',
     affectedStats: ['dex', 'ins'],
-    desc: '敏捷 (DEX) 與 洞察 (INS) 骰階下降 1 級 (最低降至 d6)'
+    desc: '敏捷 與 洞察 骰階下降 1 級 (最低降至 d6)'
   },
   poisoned: {
     id: 'poisoned',
-    name: '中毒 (Poisoned)',
+    name: '中毒',
     short: '中毒',
     affectedStats: ['mig', 'wlp'],
-    desc: '體魄 (MIG) 與 意志 (WLP) 骰階下降 1 級 (最低降至 d6)'
+    desc: '體魄 與 意志 骰階下降 1 級 (最低降至 d6)'
   },
   shaken: {
     id: 'shaken',
-    name: '動搖 (Shaken)',
+    name: '動搖',
     short: '動搖',
     affectedStats: ['wlp'],
-    desc: '意志 (WLP) 骰階下降 1 級 (最低降至 d6)'
+    desc: '意志 骰階下降 1 級 (最低降至 d6)'
   },
   slow: {
     id: 'slow',
-    name: '緩速 (Slow)',
+    name: '緩速',
     short: '緩速',
     affectedStats: ['dex'],
-    desc: '敏捷 (DEX) 骰階下降 1 級 (最低降至 d6)'
+    desc: '敏捷 骰階下降 1 級 (最低降至 d6)'
   },
   weak: {
     id: 'weak',
-    name: '虛弱 (Weak)',
+    name: '虛弱',
     short: '虛弱',
     affectedStats: ['mig'],
-    desc: '體魄 (MIG) 骰階下降 1 級 (最低降至 d6)'
+    desc: '體魄 骰階下降 1 級 (最低降至 d6)'
   }
 };
 
@@ -150,15 +158,15 @@ export const STATUS_AFFLICTIONS = {
  * 官方身份主題靈感池 (Canonical Themes)
  */
 export const CANONICAL_THEMES = [
-  '希望 (Hope)',
-  '野心 (Ambition)',
-  '歸屬 (Belonging)',
-  '負疚 (Guilt)',
-  '正義 (Justice)',
-  '慈悲 (Mercy)',
-  '復仇 (Vengeance)',
-  '懷疑 (Doubt)',
-  '職責 (Duty)'
+  '希望',
+  '野心',
+  '歸屬',
+  '負疚',
+  '正義',
+  '慈悲',
+  '復仇',
+  '懷疑',
+  '職責'
 ];
 
 /**
@@ -167,20 +175,276 @@ export const CANONICAL_THEMES = [
 export const ATTRIBUTE_STARTING_ARRAYS = [
   {
     id: 'specialized',
-    name: '專精型 (Specialized)',
+    name: '專精型',
     dice: { dex: 10, ins: 8, mig: 8, wlp: 6 },
     desc: 'd10, d8, d8, d6 —— 官方最推薦！一項主專精、兩項均等、一項略低。'
   },
   {
     id: 'standard',
-    name: '均衡型 (Standard)',
+    name: '均衡型',
     dice: { dex: 8, ins: 8, mig: 8, wlp: 8 },
     desc: 'd8, d8, d8, d8 —— 四項全能，無論面對任何檢定都能穩定應對。'
   },
   {
     id: 'focused',
-    name: '特化型 (Focused)',
+    name: '特化型',
     dice: { dex: 10, ins: 10, mig: 6, wlp: 6 },
     desc: 'd10, d10, d6, d6 —— 極端特化，雙主屬性極強，但在短板領域需要隊友支援。'
   }
 ];
+
+/**
+ * 官方身份創建完整靈感對照表 (Core Rulebook p. 158-159)
+ * 嚴格遵循官方手冊三表骰階映射：
+ * 1. 核心概念 (Core Concept): 1d6 [1-2, 3-4, 5-6] 決定組別 + 1d20 (共 60 種身分)
+ * 2. 形容特質 (Adjective): 1d6 [1-3, 4-6] 決定組別 + 1d20 (共 40 種特質)
+ * 3. 身世細節 (Detail): 1d20 (共 20 種細節)
+ */
+export const OFFICIAL_IDENTITY_TABLES = {
+  coreConcepts: {
+    title: '核心概念',
+    rollDesc: '先投 1d6 決定組別，再投 1d20 決定身分 (共 60 種)',
+    groups: [
+      {
+        d6Range: '1-2',
+        title: '第一組 (d6: 1-2)',
+        items: [
+          { id: 1, zh: '騎士', en: 'Knight' },
+          { id: 2, zh: '賞金獵人', en: 'Bounty Hunter' },
+          { id: 3, zh: '武術家', en: 'Martial Artist' },
+          { id: 4, zh: '尋寶獵人', en: 'Treasure Hunter' },
+          { id: 5, zh: '異星來客', en: 'Alien' },
+          { id: 6, zh: '祭司/神職者', en: 'Priest/ess' },
+          { id: 7, zh: '學者/教授', en: 'Professor' },
+          { id: 8, zh: '武士', en: 'Samurai' },
+          { id: 9, zh: '吟遊詩人', en: 'Bard' },
+          { id: 10, zh: '士兵', en: 'Soldier' },
+          { id: 11, zh: '發明家', en: 'Inventor' },
+          { id: 12, zh: '走私者', en: 'Smuggler' },
+          { id: 13, zh: '自動人偶', en: 'Automaton' },
+          { id: 14, zh: '忍者', en: 'Ninja' },
+          { id: 15, zh: '外交官', en: 'Diplomat' },
+          { id: 16, zh: '盜賊', en: 'Thief' },
+          { id: 17, zh: '國王/女王', en: 'King/Queen' },
+          { id: 18, zh: '法師', en: 'Mage' },
+          { id: 19, zh: '角鬥士', en: 'Gladiator' },
+          { id: 20, zh: '王子/公主', en: 'Prince/ss' }
+        ]
+      },
+      {
+        d6Range: '3-4',
+        title: '第二組 (d6: 3-4)',
+        items: [
+          { id: 1, zh: '保鑣', en: 'Bodyguard' },
+          { id: 2, zh: '強盜', en: 'Bandit' },
+          { id: 3, zh: '工廠工人', en: 'Factory Worker' },
+          { id: 4, zh: '學生', en: 'Student' },
+          { id: 5, zh: '畫家', en: 'Painter' },
+          { id: 6, zh: '魔導工程師', en: 'Magitech Engineer' },
+          { id: 7, zh: '弓手', en: 'Archer' },
+          { id: 8, zh: '秘術學者', en: 'Occultist' },
+          { id: 9, zh: '聖武士', en: 'Paladin' },
+          { id: 10, zh: '武僧', en: 'Monk' },
+          { id: 11, zh: '槍手', en: 'Gunslinger' },
+          { id: 12, zh: '黑騎士', en: 'Black Knight' },
+          { id: 13, zh: '鍊金術士', en: 'Alchemist' },
+          { id: 14, zh: '飛空艇駕駛員', en: 'Airship Pilot' },
+          { id: 15, zh: '間諜', en: 'Spy' },
+          { id: 16, zh: '聖殿騎士', en: 'Templar' },
+          { id: 17, zh: '機械師', en: 'Mechanic' },
+          { id: 18, zh: '舞者', en: 'Dancer' },
+          { id: 19, zh: '砲手', en: 'Cannoneer' },
+          { id: 20, zh: '商人', en: 'Merchant' }
+        ]
+      },
+      {
+        d6Range: '5-6',
+        title: '第三組 (d6: 5-6)',
+        items: [
+          { id: 1, zh: '活動傀儡', en: 'Animated Puppet' },
+          { id: 2, zh: '拾荒者', en: 'Scavenger' },
+          { id: 3, zh: '反抗軍特工', en: 'Rebel Agent' },
+          { id: 4, zh: '戰魔導士', en: 'Warrior Mage' },
+          { id: 5, zh: '貴族', en: 'Noble' },
+          { id: 6, zh: '決鬥者', en: 'Duelist' },
+          { id: 7, zh: '怪物獵人', en: 'Monster Hunter' },
+          { id: 8, zh: '軍醫', en: 'Medic' },
+          { id: 9, zh: '變形者', en: 'Shapeshifter' },
+          { id: 10, zh: '海盜', en: 'Pirate' },
+          { id: 11, zh: '賭徒', en: 'Gambler' },
+          { id: 12, zh: '浪人', en: 'Ronin' },
+          { id: 13, zh: '雇傭兵', en: 'Mercenary' },
+          { id: 14, zh: '廚師', en: 'Cook' },
+          { id: 15, zh: '指揮官', en: 'Commander' },
+          { id: 16, zh: '狙擊手', en: 'Sniper' },
+          { id: 17, zh: '運動家', en: 'Athlete' },
+          { id: 18, zh: '醫者', en: 'Healer' },
+          { id: 19, zh: '惡魔獵人', en: 'Demon Hunter' },
+          { id: 20, zh: '異形造物', en: 'Abomination' }
+        ]
+      }
+    ]
+  },
+  adjectives: {
+    title: '形容特質',
+    rollDesc: '先投 1d6 決定組別，再投 1d20 決定特質 (共 40 種)',
+    groups: [
+      {
+        d6Range: '1-3',
+        title: '第一組 (d6: 1-3)',
+        items: [
+          { id: 1, zh: '迷人的', en: 'Charming' },
+          { id: 2, zh: '破誓者', en: 'Oathbreaker' },
+          { id: 3, zh: '被選中的', en: 'Chosen' },
+          { id: 4, zh: '前帝國的', en: 'Former Imperial' },
+          { id: 5, zh: '多災多難的', en: 'Troubled' },
+          { id: 6, zh: '勇敢的', en: 'Brave' },
+          { id: 7, zh: '熱愛動物的', en: 'Animal-loving' },
+          { id: 8, zh: '失憶的', en: 'Amnesiac' },
+          { id: 9, zh: '瀟灑的', en: 'Dashing' },
+          { id: 10, zh: '帝國的', en: 'Imperial' },
+          { id: 11, zh: '崇尚自由的', en: 'Free-spirited' },
+          { id: 12, zh: '忠誠的', en: 'Loyal' },
+          { id: 13, zh: '年邁的', en: 'Elderly' },
+          { id: 14, zh: '恪守騎士道的', en: 'Chivalrous' },
+          { id: 15, zh: '面帶微笑的', en: 'Smiling' },
+          { id: 16, zh: '務實不苟的', en: 'No-nonsense' },
+          { id: 17, zh: '見習學徒', en: 'Apprentice' },
+          { id: 18, zh: '有影響力的', en: 'Influent' },
+          { id: 19, zh: '脾氣暴躁的', en: 'Ill-tempered' },
+          { id: 20, zh: '堅韌頑強的', en: 'Tough' }
+        ]
+      },
+      {
+        d6Range: '4-6',
+        title: '第二組 (d6: 4-6)',
+        items: [
+          { id: 1, zh: '虔誠的', en: 'Devout' },
+          { id: 2, zh: '最後的', en: 'Last' },
+          { id: 3, zh: '遙遠的', en: 'Distant' },
+          { id: 4, zh: '驕傲的', en: 'Proud' },
+          { id: 5, zh: '被通緝的', en: 'Wanted' },
+          { id: 6, zh: '膽怯多懼的', en: 'Fearful' },
+          { id: 7, zh: '善良仁慈的', en: 'Kind' },
+          { id: 8, zh: '受人敬重的', en: 'Respectable' },
+          { id: 9, zh: '被污穢玷污的', en: 'Tainted' },
+          { id: 10, zh: '年輕的', en: 'Young' },
+          { id: 11, zh: '古怪奇特的', en: 'Eccentric' },
+          { id: 12, zh: '人脈廣闊的', en: 'Well-connected' },
+          { id: 13, zh: '天真純樸的', en: 'Naive' },
+          { id: 14, zh: '被寵壞的', en: 'Spoiled' },
+          { id: 15, zh: '天賦異稟的', en: 'Gifted' },
+          { id: 16, zh: '王室貴胄的', en: 'Royal' },
+          { id: 17, zh: '魯莽不羈的', en: 'Reckless' },
+          { id: 18, zh: '隱秘潛行的', en: 'Furtive' },
+          { id: 19, zh: '赫赫有名的', en: 'Famous' },
+          { id: 20, zh: '非人類種族的', en: 'Non-human' }
+        ]
+      }
+    ]
+  },
+  details: {
+    title: '身世細節',
+    rollDesc: '投 1d20 決定身世細節 (共 20 種)',
+    items: [
+      { id: 1, zh: '擁有遠古血脈', en: 'from an Ancient Bloodline' },
+      { id: 2, zh: '逃亡中', en: 'on the Run' },
+      { id: 3, zh: '古老信仰的信奉者', en: 'of the Old Faith' },
+      { id: 4, zh: '尋求正義', en: 'Seeking Justice' },
+      { id: 5, zh: '身陷恥辱/失寵蒙羞', en: 'in Disgrace' },
+      { id: 6, zh: '來自深紅之翼艦隊', en: 'of the Crimson Wings' },
+      { id: 7, zh: '來自最高學府', en: 'from the High Academy' },
+      { id: 8, zh: '來自月球', en: 'from the Moon' },
+      { id: 9, zh: '縱橫七海', en: 'of the Seven Seas' },
+      { id: 10, zh: '來自未來', en: 'from the Future' },
+      { id: 11, zh: '尋找答案', en: 'looking for Answers' },
+      { id: 12, zh: '沒有故鄉', en: 'without a Homeland' },
+      { id: 13, zh: '來自王家近衛軍', en: 'of the Royal Army' },
+      { id: 14, zh: '來自異度次元', en: 'from Another Dimension' },
+      { id: 15, zh: '來自沙漠氏族', en: 'of the Desert Clans' },
+      { id: 16, zh: '來自風暴騎士團', en: 'of the Storm Knights' },
+      { id: 17, zh: '擁有一顆金子般的心', en: 'with a Heart of Gold' },
+      { id: 18, zh: '來自遠古森林', en: 'from the Ancient Forest' },
+      { id: 19, zh: '來自過去歷史', en: 'from the Past' },
+      { id: 20, zh: '聖火的信徒', en: 'of the Sacred Flame' }
+    ]
+  }
+};
+
+/**
+ * 舊版相容靈感陣列
+ */
+export const CANONICAL_IDENTITY_TABLES = {
+  adjectives: OFFICIAL_IDENTITY_TABLES.adjectives.groups.flatMap(g => g.items.map(i => `${i.zh} (${i.en})`)),
+  roles: OFFICIAL_IDENTITY_TABLES.coreConcepts.groups.flatMap(g => g.items.map(i => `${i.zh} (${i.en})`)),
+  details: OFFICIAL_IDENTITY_TABLES.details.items.map(i => `${i.zh} (${i.en})`)
+};
+
+/**
+ * 格式化中文身分字串，嚴格遵循中文書寫習慣『細節 - 特質 - 核心概念』
+ */
+export const formatChineseIdentity = (detail, adjective, concept) => {
+  const detZh = typeof detail === 'string' ? detail : detail?.zh || '';
+  const adjZh = typeof adjective === 'string' ? adjective : adjective?.zh || '';
+  const conZh = typeof concept === 'string' ? concept : concept?.zh || '';
+
+  if (!detZh && !adjZh && !conZh) return '';
+
+  let detailPart = detZh.trim();
+  let adjPart = adjZh.trim();
+  let conceptPart = conZh.trim();
+
+  // 若有細節，且後面有接特質或核心概念，則細節結尾補上「的」（若尚未有「的」或「之」）
+  if (detailPart && (adjPart || conceptPart)) {
+    if (!detailPart.endsWith('的') && !detailPart.endsWith('之')) {
+      detailPart = `${detailPart}的`;
+    }
+  }
+
+  return `${detailPart}${adjPart}${conceptPart}`;
+};
+
+/**
+ * 官方手冊 1d6+1d20 擲骰身份生成器
+ */
+export const rollOfficialIdentity = () => {
+  // 1. 核心概念 (Core Concept) - 1d6 + 1d20
+  const d6Concept = Math.floor(Math.random() * 6) + 1;
+  const conceptGroupIdx = d6Concept <= 2 ? 0 : d6Concept <= 4 ? 1 : 2;
+  const conceptGroup = OFFICIAL_IDENTITY_TABLES.coreConcepts.groups[conceptGroupIdx];
+  const d20Concept = Math.floor(Math.random() * 20) + 1;
+  const conceptItem = conceptGroup.items[d20Concept - 1];
+
+  // 2. 形容特質 (Adjective) - 1d6 + 1d20
+  const d6Adj = Math.floor(Math.random() * 6) + 1;
+  const adjGroupIdx = d6Adj <= 3 ? 0 : 1;
+  const adjGroup = OFFICIAL_IDENTITY_TABLES.adjectives.groups[adjGroupIdx];
+  const d20Adj = Math.floor(Math.random() * 20) + 1;
+  const adjItem = adjGroup.items[d20Adj - 1];
+
+  // 3. 身世細節 (Detail) - 1d20
+  const d20Detail = Math.floor(Math.random() * 20) + 1;
+  const detailItem = OFFICIAL_IDENTITY_TABLES.details.items[d20Detail - 1];
+
+  // 中文順序：細節 - 特質 - 核心概念（例如：來自遠古森林的失憶的騎士）
+  const fullZh = formatChineseIdentity(detailItem, adjItem, conceptItem);
+  // 英文維持官方格式：Adjective + Core Concept (Detail)
+  const fullEn = `${adjItem.en} ${conceptItem.en} (${detailItem.en})`;
+
+  return {
+    fullZh,
+    fullEn,
+    rolls: {
+      concept: { d6: d6Concept, d20: d20Concept, item: conceptItem, group: conceptGroup.title },
+      adjective: { d6: d6Adj, d20: d20Adj, item: adjItem, group: adjGroup.title },
+      detail: { d20: d20Detail, item: detailItem }
+    }
+  };
+};
+
+export const generateRandomIdentity = () => {
+  const result = rollOfficialIdentity();
+  return result.fullZh;
+};
+
+

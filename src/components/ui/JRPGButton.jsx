@@ -17,11 +17,19 @@ export default function JRPGButton({
 
   const variantStyles = {
     primary: "bg-amber-700 hover:bg-amber-600 text-white shadow-sm border border-amber-800/40 hover:shadow-md",
+    emerald: "bg-emerald-700 hover:bg-emerald-600 text-white shadow-sm border border-emerald-800/40 hover:shadow-md",
+    purple: "bg-purple-700 hover:bg-purple-600 text-white shadow-sm border border-purple-800/40 hover:shadow-md",
+    slate: "bg-slate-700 hover:bg-slate-600 text-white shadow-sm border border-slate-800/40 hover:shadow-md",
     secondary: "bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] border border-[#d6c7ab] shadow-sm",
     danger: "bg-red-700 hover:bg-red-600 text-white shadow-sm border border-red-800/40",
     cyan: "bg-blue-700 hover:bg-blue-600 text-white shadow-sm border border-blue-800/40",
-    ghost: "bg-transparent hover:bg-[#f4ebd9] text-[#6b5a4b] hover:text-[#2c221e]",
-    outline: "bg-[#fffdf9] hover:bg-[#f4ebd9] text-amber-800 border border-[#d6c7ab] hover:border-amber-700 shadow-sm"
+    ghost: "bg-transparent hover:bg-black/5 text-slate-800 hover:text-slate-900",
+    outline: "bg-[#fffdf9] hover:bg-[#f4ebd9] text-amber-800 border border-[#d6c7ab] hover:border-amber-700 shadow-sm",
+    'outline-emerald': "bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-300 hover:border-emerald-600 shadow-sm",
+    'outline-blue': "bg-white hover:bg-blue-50 text-blue-900 border border-blue-300 hover:border-blue-600 shadow-sm",
+    'outline-crimson': "bg-white hover:bg-red-50 text-red-900 border border-red-300 hover:border-red-600 shadow-sm",
+    'outline-purple': "bg-white hover:bg-purple-50 text-purple-900 border border-purple-300 hover:border-purple-600 shadow-sm",
+    'outline-slate': "bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 hover:border-slate-600 shadow-sm"
   };
 
   const sizeStyles = {

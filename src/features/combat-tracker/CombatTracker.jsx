@@ -233,7 +233,7 @@ export default function CombatTracker() {
             icon={ChevronRight}
             onClick={handleNextRound}
           >
-            推進至下一輪 (Next Round)
+            推進至下一輪
           </JRPGButton>
 
           <JRPGButton
@@ -286,7 +286,7 @@ export default function CombatTracker() {
                 onClick={handleCreateRoom}
                 className="px-3 py-1.5 rounded-lg bg-amber-700 text-white font-bold hover:bg-amber-800 transition-colors shadow-sm"
               >
-                + 開創連線房間 (GM)
+                + 開創連線房間
               </button>
               <div className="flex items-center gap-1">
                 <input
@@ -371,7 +371,7 @@ export default function CombatTracker() {
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-sky-700" />
               <h3 className="font-serif font-bold text-base text-sky-900">
-                玩家小隊 (Player Party)
+                玩家小隊
               </h3>
               <JRPGBadge variant="cyan" size="xs">
                 {playerCombatants.length} 人

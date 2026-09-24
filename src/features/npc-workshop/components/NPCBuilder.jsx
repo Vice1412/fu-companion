@@ -370,7 +370,7 @@ export default function NPCBuilder({
       <div className="bg-[#f4ebd9] border border-[#d6c7ab] rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 text-xs flex-wrap shadow-sm">
         <div className="font-serif font-bold text-[#3c2415] flex items-center gap-1.5 shrink-0">
           <GiSparkles className="w-4 h-4 text-amber-800" />
-          <span>配額儀表板 (Budget Tracker)</span>
+          <span>配額儀表板</span>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap font-mono">
@@ -471,10 +471,10 @@ export default function NPCBuilder({
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">1.</span> 選擇戰術定位 (Choose Role)
+                  <span className="text-amber-800">1.</span> 選擇戰術定位
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
-                  《Fabula Ultima》官方規範強調「定位優先 (Role First)」。定位決定 NPC 的戰術天職、四維屬性成長與可學習之專屬技能庫。
+                  《Fabula Ultima》官方規範強調「定位優先」。定位決定 NPC 的戰術天職、四維屬性成長與可學習之專屬技能庫。
                 </p>
               </div>
 
@@ -547,7 +547,7 @@ export default function NPCBuilder({
                 />
 
                 <JRPGSelect
-                  label="階級 (Rank)"
+                  label="階級"
                   value={npc.rank || '士兵'}
                   onChange={e => updateField('rank', e.target.value)}
                   options={RANKS.map(r => ({ value: r, label: r }))}
@@ -622,7 +622,7 @@ export default function NPCBuilder({
               <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#f5efdf] border border-[#d6c7ab]">
                 <div>
                   <div className="text-sm font-bold text-[#3c2415] flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-amber-800" /> 自由調骰模式 (Free Dice Mode)
+                    <Sliders className="w-4 h-4 text-amber-800" /> 自由調骰模式
                   </div>
                   <div className="text-xs text-[#6b5a4b] mt-0.5">解鎖標準成長限制，允許自訂 DEX/INS/MIG/WLP 骰階 (d6 ~ d12)</div>
                 </div>
@@ -721,7 +721,7 @@ export default function NPCBuilder({
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-[#3c2f21]">
-                    基礎攻擊列表 (Basic Attacks)
+                    基礎攻擊列表
                   </label>
                   <JRPGButton
                     variant="secondary"
@@ -798,7 +798,7 @@ export default function NPCBuilder({
                   <span className="text-amber-800">4.</span> 屬性弱點與抗性矩陣
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
-                  點擊屬性方塊依序切換：一般 ➔ 弱點 (VUL) ➔ 抗性 (RES) ➔ 免疫 (IMM) ➔ 吸收 (ABS)。
+                  點擊屬性方塊依序切換：一般 ➔ 弱點 ➔ 抗性 ➔ 免疫 ➔ 吸收。
                 </p>
               </div>
 
@@ -928,7 +928,7 @@ export default function NPCBuilder({
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-xs text-amber-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-                    <span>通用與專屬咒語書 (Spells Picker)</span>
+                    <span>通用與專屬咒語書</span>
                   </h5>
                 </div>
 
@@ -1125,12 +1125,12 @@ export default function NPCBuilder({
             </div>
           )}
 
-          {/* STEP 7: 生物物種 (Choose Species) */}
+          {/* STEP 7: 生物物種 */}
           {activeStep === 7 && (
             <div className="space-y-6 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">7.</span> 選擇生物物種 (Choose Species)
+                  <span className="text-amber-800">7.</span> 選擇生物物種
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
                   物種提供怪物的先天抗性、狀態免疫與專屬特性加成（例如類人生物享有 +1 額外定位技能）。
@@ -1276,7 +1276,7 @@ export default function NPCBuilder({
                   <span className="text-amber-800">8.</span> 命名、特質與戰術行動慣例
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
-                  完成 NPC 命名、設定分類標籤、特質描述與清晰的回合戰術慣例 (Action Routine)。
+                  完成 NPC 命名、設定分類標籤、特質描述與清晰的回合戰術慣例。
                 </p>
               </div>
 
@@ -1289,7 +1289,7 @@ export default function NPCBuilder({
                 />
 
                 <JRPGInput
-                  label="陣營 / 分類文件夾 (Faction)"
+                  label="陣營 / 分類文件夾"
                   value={npc.faction || ''}
                   onChange={e => updateField('faction', e.target.value)}
                   placeholder="例：帝國軍、古老遺跡、Boss"
@@ -1299,7 +1299,7 @@ export default function NPCBuilder({
               {/* Tags Input */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-[#3c2f21]">
-                  分類標籤 (Tags)
+                  分類標籤
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -1332,14 +1332,14 @@ export default function NPCBuilder({
 
               <div className="space-y-3">
                 <JRPGInput
-                  label="核心特徵短評 (Traits)"
+                  label="核心特徵短評"
                   value={npc.traits || ''}
                   onChange={e => updateField('traits', e.target.value)}
                   placeholder="例：沉著、身披重甲、對龍族懷有恨意"
                 />
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#3c2f21]">戰術慣例與回合循環 (Action Routine)</label>
+                  <label className="text-xs font-bold text-[#3c2f21]">戰術慣例與回合循環</label>
                   <textarea
                     rows={4}
                     value={npc.tactics || ''}
@@ -1356,7 +1356,7 @@ export default function NPCBuilder({
         {/* Live Card Preview (5 cols on lg, sticky) */}
         <div className="lg:col-span-5 sticky top-24">
           <div className="text-xs font-mono text-[#6b5a4b] mb-2 flex items-center justify-between font-bold">
-            <span>即時角色卡預覽 (Live Sheet)</span>
+            <span>即時角色卡預覽</span>
             <span className="text-amber-800">同步響應中</span>
           </div>
           <NPCCardPreview npc={npc} />
