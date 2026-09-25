@@ -323,6 +323,18 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
     return list;
   }, [roster, searchQuery, classFilter, sortBy]);
 
+  // Update only themeColor to prevent overwriting modified character data with stale closures
+  const handleUpdateActiveCharacterTheme = (themeId) => {
+    const targetId = activeChar?.id || activeCharId;
+    if (!targetId) return;
+    setRoster(prev => prev.map(c => {
+      if (c.id === targetId) {
+        return { ...c, themeColor: themeId, updatedAt: new Date().toISOString() };
+      }
+      return c;
+    }));
+  };
+
   // Persistent 6 Theme Color Circles for top right header
   const renderThemeCircles = (char) => {
     if (!char) return null;
@@ -341,7 +353,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
             <button
               key={t.id}
               type="button"
-              onClick={() => handleUpdateActiveCharacter({ ...char, themeColor: t.id })}
+              onClick={() => handleUpdateActiveCharacterTheme(t.id)}
               className={`w-5 h-5 rounded-full transition-all relative flex items-center justify-center cursor-pointer ${
                 isSelected
                   ? 'scale-120 shadow-xs'
@@ -384,7 +396,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
     } else {
       onSubNavChange(null);
     }
-  }, [viewMode, activeChar?.id, activeChar?.name, activeChar?.themeColor, onSubNavChange]);
+  }, [viewMode, activeChar?.id, activeChar?.name, activeChar?.themeColor, activeChar?.updatedAt, onSubNavChange]);
 
   return (
     <div className="space-y-6">
