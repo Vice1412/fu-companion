@@ -1,4 +1,5 @@
 import React from 'react';
+import { GiSparkles } from 'react-icons/gi';
 import appIcon from '../../assets/app-icon.png';
 
 const CHAPTER_OVERLAY_THEMES = {
@@ -145,7 +146,7 @@ export default function BookPageFlipOverlay({ direction, targetChapter, onAnimat
           >
             <div className="text-center my-auto">
               <div className={`w-12 h-12 rounded-full border ${theme.backIconBorder} mx-auto mb-3 flex items-center justify-center bg-white shadow-sm`}>
-                <span className="text-xl">✨</span>
+                <GiSparkles className="w-6 h-6 text-amber-500 animate-pulse" />
               </div>
               <p className={`font-serif text-sm ${theme.backText} font-bold`}>
                 翻動篇章中...
