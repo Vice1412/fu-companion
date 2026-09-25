@@ -548,8 +548,10 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                       style={{ backgroundColor: charTheme.headerBg, borderColor: charTheme.border }}
                     >
                       <div
-                        className="w-12 h-12 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-xl font-bold shadow-inner"
+                        onClick={() => handleOpenEditor(char)}
+                        className="w-12 h-12 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-xl font-bold shadow-inner cursor-pointer hover:scale-105 hover:ring-2 hover:ring-emerald-500/50 transition-all group relative"
                         style={{ borderColor: charTheme.border, color: charTheme.accent }}
+                        title="點擊前往編輯此角色與肖像"
                       >
                         {char.avatar ? (
                           char.avatar.startsWith('http') || char.avatar.startsWith('data:') ? (
@@ -560,6 +562,9 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                         ) : (
                           <GameIcon name={char.classes?.[0]?.className || 'GiSparkles'} className="w-7 h-7" style={{ color: charTheme.accent }} />
                         )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[8px] font-bold">
+                          編輯
+                        </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -777,6 +782,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
           onEnterPlayMode={() => setViewMode('play')}
+          showToast={showToast}
         />
       )}
 

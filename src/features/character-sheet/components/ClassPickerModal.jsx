@@ -77,7 +77,7 @@ export default function ClassPickerModal({
     <JRPGModal
       isOpen={isOpen}
       onClose={onClose}
-      title="修習新職業 (Choose Class)"
+      title="選擇職業"
       maxWidth="max-w-3xl"
     >
       <div className="space-y-4">
@@ -161,7 +161,7 @@ export default function ClassPickerModal({
 
                 <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-100 font-mono">
                   <span className="text-slate-500 truncate" title={item.def.freeBonus}>
-                    {item.def.freeBonus || '5 個專屬特技'}
+                    {item.def.freeBonus || ''}
                   </span>
                   {isAlreadyAdded ? (
                     <span className="text-slate-400 font-bold">已修習</span>
@@ -204,9 +204,11 @@ export default function ClassPickerModal({
                   <span className="font-mono text-xs font-bold text-slate-500 uppercase">
                     / {activeClassItem.info.en}
                   </span>
-                  <span className="text-[11px] font-mono font-bold text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded">
-                    {activeClassItem.def.freeBonus}
-                  </span>
+                  {activeClassItem.def.freeBonus && (
+                    <span className="text-[11px] font-mono font-bold text-amber-900 bg-amber-200/80 px-1.5 py-0.2 rounded">
+                      {activeClassItem.def.freeBonus}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-600 italic mt-0.5 leading-relaxed">
                   {activeClassItem.info.tagline}
@@ -221,7 +223,7 @@ export default function ClassPickerModal({
                 icon={GiSparkles}
                 onClick={handleConfirmAdd}
               >
-                修習【{activeClassItem.className}】並配置技能
+                選擇【{activeClassItem.className}】
               </JRPGButton>
             </div>
           </div>

@@ -493,8 +493,10 @@ export default function CharacterPlayHUD({
         <div className="flex items-center justify-between flex-wrap gap-3 border-b pb-3" style={{ borderColor: theme.border }}>
           <div className="flex items-center gap-3">
             <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center font-serif text-lg font-bold overflow-hidden shadow-inner shrink-0 bg-white"
+              onClick={onOpenEditor}
+              className="w-11 h-11 rounded-xl border flex items-center justify-center font-serif text-lg font-bold overflow-hidden shadow-inner shrink-0 bg-white cursor-pointer hover:ring-2 hover:scale-105 transition-all group relative"
               style={{ borderColor: theme.border, color: theme.accent }}
+              title="點擊前往構建工作台更換或調整頭像"
             >
               {character.avatar ? (
                 character.avatar.startsWith('http') || character.avatar.startsWith('data:') ? (
@@ -505,6 +507,9 @@ export default function CharacterPlayHUD({
               ) : (
                 <GameIcon name={character.classes?.[0]?.className || 'GiSparkles'} className="w-7 h-7" style={{ color: theme.accent }} />
               )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[8px] font-bold">
+                更換
+              </div>
             </div>
 
             <div>
