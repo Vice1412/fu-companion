@@ -165,6 +165,32 @@ function evaluateFormulaString(formulaStr, sl) {
 }
 
 /**
+ * 渲染文字中的攻擊性咒語官方圖標（將（o）、(o)、（⚡）、(⚡) 轉為官方紅閃電圖標，嚴格使用（）括號）
+ */
+export function renderTextWithOffensiveIcons(text) {
+  if (!text || typeof text !== 'string') return text;
+  // 匹配 （o）、(o)、（⚡）、(⚡)
+  const regex = /(（[oO⚡]）|\([oO⚡]\))/g;
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, pIdx) => {
+    if (regex.test(part)) {
+      return (
+        <span key={pIdx} className="inline-flex items-center text-red-600 font-bold select-none mx-0.5">
+          <span>（</span>
+          <span className="fu-icon text-sm leading-none inline-block drop-shadow-2xs translate-y-[-0.5px]" title="攻擊性咒語">
+            o
+          </span>
+          <span>）</span>
+        </span>
+      );
+    }
+    return part;
+  });
+}
+
+/**
  * 技能動態敘述渲染組件
  */
 export default function SkillDescription({ desc, sl = 0, className = '' }) {
@@ -176,7 +202,7 @@ export default function SkillDescription({ desc, sl = 0, className = '' }) {
     <span className={`inline leading-relaxed ${className}`}>
       {segments.map((seg, idx) => {
         if (seg.type === 'text') {
-          return <span key={idx}>{seg.content}</span>;
+          return <React.Fragment key={idx}>{renderTextWithOffensiveIcons(seg.content)}</React.Fragment>;
         }
 
         if (seg.isCalculated) {

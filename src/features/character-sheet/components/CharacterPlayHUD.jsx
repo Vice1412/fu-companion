@@ -41,6 +41,7 @@ import {
 import rulesData from '../data/rulesData.json';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
+import SkillDescription from '../utils/skillFormulaEvaluator';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -381,7 +382,7 @@ export default function CharacterPlayHUD({
       mp: spell.mp || '10',
       target: spell.target || '單體',
       duration: spell.duration || '瞬發',
-      isOffensive: spell.name.includes('⚡') || spell.effect?.includes('受到') || !!spell.isOffensive,
+      isOffensive: !!spell.isOffensive || spell.name?.includes('⚡') || spell.effect?.includes('（o）') || spell.effect?.includes('受到'),
       effect: spell.effect || ''
     }];
 
@@ -704,7 +705,10 @@ export default function CharacterPlayHUD({
                 </span>
               )}
             </div>
-            <div className="font-mono font-black text-base text-red-950">
+            <div
+              className="font-mono font-black text-base text-red-950 cursor-help"
+              title={`最大 HP: 基礎 MIG(${stats.baseMig})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusHp}) = ${stats.maxHp}`}
+            >
               {curHp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxHp}</span>
             </div>
           </div>
@@ -739,7 +743,10 @@ export default function CharacterPlayHUD({
               <GiLightningTear className="w-4 h-4 text-blue-600" />
               <span>魔力值</span>
             </div>
-            <div className="font-mono font-black text-base text-blue-950">
+            <div
+              className="font-mono font-black text-base text-blue-950 cursor-help"
+              title={`最大 MP: 基礎 WLP(${stats.baseWlp})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusMp}) = ${stats.maxMp}`}
+            >
               {curMp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxMp}</span>
             </div>
           </div>
@@ -775,7 +782,10 @@ export default function CharacterPlayHUD({
                 <GiBackpack className="w-4 h-4 text-emerald-600" />
                 <span>道具點</span>
               </div>
-              <div className="font-mono font-black text-base text-emerald-950">
+              <div
+                className="font-mono font-black text-base text-emerald-950 cursor-help"
+                title={`最大 IP: 基礎(6) + 職業/裝備被動加成(+${stats.bonusIp}) = ${stats.maxIp}`}
+              >
                 {curIp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxIp}</span>
               </div>
             </div>
@@ -1166,7 +1176,7 @@ export default function CharacterPlayHUD({
                 <div className="space-y-2.5">
                   {(character.spells || []).map((sp, idx) => {
                     const isExpanded = !!expandedSpells[sp.name];
-                    const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.effect?.includes('傷害');
+                    const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）');
                     const spellCheck = parseCheckFormula('INS + WLP', stats);
                     const spellDamage = parseDamageFormula(sp.effect || '');
 
@@ -1316,9 +1326,9 @@ export default function CharacterPlayHUD({
                           </div>
 
                           <div className="text-[11px] text-slate-600 leading-relaxed">
-                            <p className={isExpanded ? '' : 'line-clamp-2'}>
-                              {skillDef?.desc || '暫無描述'}
-                            </p>
+                            <div className={isExpanded ? '' : 'line-clamp-2'}>
+                              <SkillDescription desc={skillDef?.desc || '暫無描述'} sl={sk.sl} />
+                            </div>
                             {skillDef?.desc && skillDef.desc.length > 80 && (
                               <button
                                 type="button"
@@ -1522,7 +1532,7 @@ export default function CharacterPlayHUD({
           <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1">
             {availableRulesSpells.map((sp, idx) => {
               const isLearned = (character.spells || []).some(s => s.name === sp.name);
-              const isOffensive = sp.name?.includes('⚡') || sp.effect?.includes('傷害');
+              const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）');
 
               return (
                 <div

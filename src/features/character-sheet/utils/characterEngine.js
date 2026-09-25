@@ -148,35 +148,77 @@ export const calculateCharacterStats = (char) => {
   const currentMig = reduceDieStep(baseMig, migPenalty);
   const currentWlp = reduceDieStep(baseWlp, wlpPenalty);
 
-  // 2. 計算職業免費加成與技能常駐加成 (HP +5, MP +5, IP +2, 不動要塞, 集中)
+  // 2. 計算職業免費加成、技能常駐加成、飾品、英雄技能與金手指 (HP, MP, IP)
   let bonusHp = 0;
   let bonusMp = 0;
   let bonusIp = 0;
 
+  // (1) 職業免費增益 (Free Benefits) 與職業常駐被動技能
   (char.classes || []).forEach(cl => {
     const classDef = rulesData.classes[cl.className];
     const fb = (classDef?.freeBenefits || '') + ' ' + (classDef?.freeBonus || '');
-    if (fb.includes('HP') && fb.includes('5')) bonusHp += 5;
-    if (fb.includes('MP') && fb.includes('5')) bonusMp += 5;
+
+    // 二選一職業判定 (如 秘儀師Playtest、死靈術士、舞者、祈喚者、卡牌大師)
+    const isChoiceClass = fb.includes('或') || fb.toLowerCase().includes('or');
+    if (isChoiceClass) {
+      if (cl.chosenBenefit === 'MP') {
+        bonusMp += 5;
+      } else if (cl.chosenBenefit === 'HP') {
+        bonusHp += 5;
+      } else {
+        // 未指定時預設以 HP+5 為主（避免兩者同時加 5 點導致多送點數）
+        bonusHp += 5;
+      }
+    } else {
+      if (fb.includes('HP') && fb.includes('5')) bonusHp += 5;
+      if (fb.includes('MP') && fb.includes('5')) bonusMp += 5;
+    }
     if (fb.includes('IP') && fb.includes('2')) bonusIp += 2;
 
-    // 特技技能常駐衍生加成
+    // 職業常駐被動技能衍生加成 (不動要塞, 集中)
     (cl.skills || []).forEach(sk => {
-      if (sk.name === '不動要塞') {
+      const skName = sk.name || '';
+      if (skName.includes('不動要塞') || skName.toLowerCase().includes('fortress')) {
         const isPlaytest = (cl.className || '').includes('Playtest');
         bonusHp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
       }
-      if (sk.name === '集中') {
+      if (skName.includes('集中') || skName.toLowerCase().includes('concentration')) {
         const isPlaytest = (cl.className || '').includes('Playtest');
         bonusMp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
       }
     });
   });
 
-  // 飾品特殊加成
-  if (char.equipment?.accessory === '守護護符') bonusHp += 5;
-  if (char.equipment?.accessory === '魔力寶戒') bonusMp += 5;
-  if (char.equipment?.accessory === '工匠工具帶') bonusIp += 2;
+  // (2) 飾品特殊加成 (支援自訂或括號名稱鬆散匹配)
+  const accName = char.equipment?.accessory || '';
+  if (accName.includes('守護護符')) bonusHp += 5;
+  if (accName.includes('魔力寶戒')) bonusMp += 5;
+  if (accName.includes('工匠工具帶')) bonusIp += 2;
+
+  // (3) 英雄技能常駐加成 (額外HP, 額外MP, 額外IP)
+  (char.heroicSkills || []).forEach(hs => {
+    const hName = typeof hs === 'string' ? hs : (hs?.name || '');
+    if (hName.includes('額外HP') || hName.toLowerCase().includes('extra hp')) {
+      bonusHp += level >= 40 ? 20 : 10;
+    }
+    if (hName.includes('額外MP') || hName.toLowerCase().includes('extra mp')) {
+      bonusMp += level >= 40 ? 20 : 10;
+    }
+    if (hName.includes('額外IP') || hName.toLowerCase().includes('extra ip')) {
+      bonusIp += 4;
+    }
+  });
+
+  // (4) 金手指特定加成 (倖存者, 束縛你的約定)
+  const quirkName = char.quirk || '';
+  if (quirkName.includes('倖存者')) {
+    bonusHp += 5;
+    bonusMp += 5;
+  }
+  if (quirkName.includes('束縛你的約定')) {
+    bonusHp += 5;
+    bonusMp += 5;
+  }
 
   // 官方規則：最大 HP / MP 基礎計算採用 BASE 體魄與意志（不受異常狀態減骰影響）
   const maxHp = baseMig * 5 + level + bonusHp;
