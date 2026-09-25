@@ -353,7 +353,7 @@ export default function ClassSkillCard({
           {/* 底部儲存確認列 */}
           <div className="pt-2 border-t flex items-center justify-between gap-3" style={{ borderColor: theme.border }}>
             <div className="text-xs text-slate-500 font-mono">
-              已選特技：<strong className="text-slate-800">{Object.values(draftSkills).filter(sl => sl > 0).length}</strong> / {allAvailableSkills.length} 個
+              已選技能：<strong className="text-slate-800">{Object.values(draftSkills).filter(sl => sl > 0).length}</strong> / {allAvailableSkills.length} 個
             </div>
 
             <div className="flex items-center gap-2">

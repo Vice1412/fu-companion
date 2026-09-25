@@ -235,7 +235,7 @@ export default function CharacterEditor({
   const TABS = [
     { id: 1, label: '基礎身世', en: 'IDENTITY', icon: 'edit' },
     { id: 2, label: '四維屬性', en: 'ATTRIBUTES', icon: 'dice' },
-    { id: 3, label: '職業與特技', en: 'CLASSES', icon: 'swords' },
+    { id: 3, label: '職業與技能', en: 'CLASSES', icon: 'swords' },
     { id: 4, label: '裝備配置', en: 'EQUIPMENT', icon: 'shield' },
     { id: 5, label: '情感羈絆', en: 'BONDS', icon: 'hp' },
     { id: 6, label: '特質與命刻', en: 'HEROIC & CLOCKS', icon: 'clock' }
@@ -784,15 +784,15 @@ export default function CharacterEditor({
             </div>
           )}
 
-          {/* ==================== TAB 3: 職業與特技 ==================== */}
+          {/* ==================== TAB 3: 職業與技能 ==================== */}
           {activeTab === 3 && (
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>3.</span> 職業組合與特技加點
+                  <span style={{ color: theme.accent }}>3.</span> 職業組合與技能加點
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  起始 5 級分配於 2~3 個職業（單職最高 4 級），每級獲得 1 點特技。
+                  起始 5 級必須分配在 2~3 個不同職業中，每級獲得 1 點技能。
                 </p>
               </div>
 
@@ -841,7 +841,7 @@ export default function CharacterEditor({
                 }
               >
                 <span>
-                  已分配特技: <strong>{stats.totalSkillLevels}</strong> / {character.level || 5} 級
+                  已分配技能: <strong>{stats.totalSkillLevels}</strong> / {character.level || 5} 級
                 </span>
                 <span className="flex items-center gap-1">
                   {stats.isLevelMatched ? (

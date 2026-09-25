@@ -59,11 +59,11 @@ export default function JRPGModal({
 
         {/* Modal Header */}
         <div
-          className="px-5 py-3.5 border-b border-[#d6c7ab] flex items-center justify-between bg-[#f4ebd9] shrink-0"
+          className="px-3.5 sm:px-5 py-2.5 sm:py-3.5 border-b border-[#d6c7ab] flex items-center justify-between bg-[#f4ebd9] shrink-0"
           style={theme ? { backgroundColor: theme.headerBg, borderColor: theme.border } : {}}
         >
           <h3
-            className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2"
+            className="font-serif font-black text-base sm:text-lg text-[#3c2415] flex items-center gap-2 truncate"
             style={theme ? { color: theme.textDark } : {}}
           >
             <span style={theme ? { color: theme.accent } : { color: '#b45309' }}>❖</span>
@@ -72,7 +72,7 @@ export default function JRPGModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-[#6b5a4b] hover:text-[#2c221e] p-1.5 rounded-lg hover:bg-[#e4d9c0] transition-colors"
+            className="text-[#6b5a4b] hover:text-[#2c221e] p-1.5 rounded-lg hover:bg-[#e4d9c0] transition-colors shrink-0"
             style={theme ? { color: theme.textMuted } : {}}
             title="關閉視窗"
           >
@@ -81,7 +81,7 @@ export default function JRPGModal({
         </div>
 
         {/* Modal Content */}
-        <div className="p-5 overflow-y-auto flex-1">
+        <div className="p-2.5 sm:p-5 overflow-y-auto flex-1 flex flex-col min-h-0">
           {children}
         </div>
 

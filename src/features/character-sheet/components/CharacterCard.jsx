@@ -202,7 +202,10 @@ export default function CharacterCard({
           <div className="text-[10px] text-red-800 font-mono uppercase font-bold flex items-center gap-1">
             <GiHealthNormal className="w-3.5 h-3.5 text-red-600" /> HP 生命值
           </div>
-          <div className="text-base font-mono font-black text-red-900 mt-0.5">
+          <div
+            className="text-base font-mono font-black text-red-900 mt-0.5 cursor-help"
+            title={`最大 HP: 基礎 MIG(${stats.baseMig})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusHp}) = ${stats.maxHp}`}
+          >
             {curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span>
           </div>
         </div>
@@ -212,7 +215,10 @@ export default function CharacterCard({
           <div className="text-[10px] text-blue-800 font-mono uppercase font-bold flex items-center gap-1">
             <GiLightningTear className="w-3.5 h-3.5 text-blue-600" /> MP 魔力值
           </div>
-          <div className="text-base font-mono font-black text-blue-900 mt-0.5">
+          <div
+            className="text-base font-mono font-black text-blue-900 mt-0.5 cursor-help"
+            title={`最大 MP: 基礎 WLP(${stats.baseWlp})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusMp}) = ${stats.maxMp}`}
+          >
             {curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span>
           </div>
         </div>
@@ -222,7 +228,10 @@ export default function CharacterCard({
           <div className="text-[10px] text-emerald-800 font-mono uppercase font-bold flex items-center gap-1">
             <GiBackpack className="w-3.5 h-3.5 text-emerald-600" /> IP 庫存點
           </div>
-          <div className="text-base font-mono font-black text-emerald-950 mt-0.5">
+          <div
+            className="text-base font-mono font-black text-emerald-950 mt-0.5 cursor-help"
+            title={`最大 IP: 基礎(6) + 職業/裝備被動加成(+${stats.bonusIp}) = ${stats.maxIp}`}
+          >
             {character.currentIp ?? stats.maxIp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxIp}</span>
           </div>
         </div>
