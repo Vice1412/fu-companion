@@ -106,10 +106,10 @@ export const getProficiencies = (char) => {
   (char.classes || []).forEach(cl => {
     const cName = cl.className || '';
     const classDef = rulesData.classes[cName];
-    const fb = classDef?.freeBenefits || '';
+    const fb = (classDef?.freeBenefits || '') + ' ' + (classDef?.freeBonus || '');
 
     if (fb.includes('近戰') || ['武器大師', '暗黑之刃', '狂怒鬥士', '指揮官'].some(n => cName.includes(n))) profs.martialMelee = true;
-    if (fb.includes('遠程') || ['神射手'].some(n => cName.includes(n))) profs.martialRanged = true;
+    if (fb.includes('遠程') || ['神射手', '指揮官', '機師'].some(n => cName.includes(n))) profs.martialRanged = true;
     if (fb.includes('防具') || ['守護者', '暗黑之刃', '狂怒鬥士'].some(n => cName.includes(n))) profs.martialArmor = true;
     if (fb.includes('盾牌') || ['守護者', '武器大師', '神射手', '指揮官'].some(n => cName.includes(n))) profs.martialShields = true;
   });
@@ -155,7 +155,7 @@ export const calculateCharacterStats = (char) => {
 
   (char.classes || []).forEach(cl => {
     const classDef = rulesData.classes[cl.className];
-    const fb = classDef?.freeBenefits || '';
+    const fb = (classDef?.freeBenefits || '') + ' ' + (classDef?.freeBonus || '');
     if (fb.includes('HP') && fb.includes('5')) bonusHp += 5;
     if (fb.includes('MP') && fb.includes('5')) bonusMp += 5;
     if (fb.includes('IP') && fb.includes('2')) bonusIp += 2;
