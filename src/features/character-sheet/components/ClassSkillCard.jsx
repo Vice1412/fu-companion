@@ -137,8 +137,15 @@ export default function ClassSkillCard({
 
               {/* 免費職業福利 */}
               {classDef.freeBonus && (
-                <div className="text-[11px] font-mono text-slate-600 truncate mt-0.5" title={classDef.freeBonus}>
-                  {classDef.freeBonus}
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  <span className="text-xs font-mono font-bold text-amber-900 bg-amber-200/90 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+                    {classDef.freeBonus}
+                  </span>
+                  {classDef.freeBenefits && (
+                    <span className="text-xs text-slate-600 line-clamp-1" title={classDef.freeBenefits}>
+                      {classDef.freeBenefits}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -218,7 +225,7 @@ export default function ClassSkillCard({
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold flex items-center gap-1.5 text-sm" style={{ color: theme.textDark }}>
+                      <span className="font-bold flex items-center gap-1.5 text-sm sm:text-base" style={{ color: theme.textDark }}>
                         <span style={{ color: theme.accent }}>✦</span>
                         {sk.name}
                       </span>
@@ -228,12 +235,12 @@ export default function ClassSkillCard({
                         maxSL={maxSL}
                         currentSL={sk.sl}
                         disabled={true}
-                        size={16}
+                        size={18}
                       />
                     </div>
 
                     {/* 需求 3：自動算好數值的動態公式 */}
-                    <div className="text-[11px] text-slate-700 leading-relaxed font-sans pt-0.5">
+                    <div className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans pt-0.5">
                       <SkillDescription desc={skillDef?.desc || ''} sl={sk.sl} />
                     </div>
                   </div>
@@ -289,7 +296,7 @@ export default function ClassSkillCard({
                         }`}
                       />
                       <span
-                        className={`text-sm tracking-wide font-black ${
+                        className={`text-sm sm:text-base tracking-wide font-black ${
                           isLearned ? 'text-amber-950 font-serif' : 'text-slate-700'
                         }`}
                       >
@@ -335,7 +342,7 @@ export default function ClassSkillCard({
                   </div>
 
                   {/* 需求 3：動態公式求值 (未點時展示公式，點亮後展示精算結果) */}
-                  <div className="text-[11px] text-slate-700 leading-relaxed font-sans pl-4 border-l border-slate-200">
+                  <div className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans pl-4 border-l border-slate-200">
                     <SkillDescription desc={sk.desc} sl={currentSL} />
                   </div>
                 </div>

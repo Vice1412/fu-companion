@@ -120,23 +120,23 @@ export default function CharacterEditor({
     .filter(cName => rulesData.classes[cName]);
 
   // Class & Skill handlers
-  const handleSelectClassFromPicker = (cName) => {
+  const handleSelectClassFromPicker = (cName, selectedSkills = []) => {
     if (!cName || !rulesData.classes[cName]) return;
     const curClasses = character.classes || [];
     if (curClasses.some(c => c.className === cName)) return;
 
-    const classDef = rulesData.classes[cName];
-    const initialSkill = classDef.skills?.[0] ? [{ name: classDef.skills[0].name, sl: 1 }] : [];
+    const activeSkills = (selectedSkills || []).filter(s => s.sl > 0);
+    const totalLevel = activeSkills.reduce((sum, s) => sum + s.sl, 0);
 
     updateField('classes', [
       ...curClasses,
       {
         className: cName,
-        level: 1,
-        skills: initialSkill
+        level: totalLevel,
+        skills: activeSkills
       }
     ]);
-    setNewlyAddedClassName(cName);
+    setNewlyAddedClassName(null);
   };
 
   const handleUpdateClassSkills = (classIdx, updatedSkills) => {
@@ -957,31 +957,31 @@ export default function CharacterEditor({
                 className="p-3 rounded-xl border flex items-center justify-between text-xs flex-wrap gap-2"
                 style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
               >
-                <span className="font-bold" style={{ color: theme.textDark }}>軍用熟練度:</span>
+                <span className="font-bold" style={{ color: theme.textDark }}>職業裝備熟練度:</span>
                 <div className="flex items-center gap-2">
                   <span
                     className="px-2 py-0.5 rounded text-[11px] font-bold border"
                     style={stats.profs.martialMelee ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
                   >
-                    軍用近戰 {stats.profs.martialMelee ? '✓' : '✗'}
+                    職業近戰 {stats.profs.martialMelee ? '✓' : '✗'}
                   </span>
                   <span
                     className="px-2 py-0.5 rounded text-[11px] font-bold border"
                     style={stats.profs.martialRanged ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
                   >
-                    軍用遠程 {stats.profs.martialRanged ? '✓' : '✗'}
+                    職業遠程 {stats.profs.martialRanged ? '✓' : '✗'}
                   </span>
                   <span
                     className="px-2 py-0.5 rounded text-[11px] font-bold border"
                     style={stats.profs.martialArmor ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
                   >
-                    軍用重甲 {stats.profs.martialArmor ? '✓' : '✗'}
+                    職業防具 {stats.profs.martialArmor ? '✓' : '✗'}
                   </span>
                   <span
                     className="px-2 py-0.5 rounded text-[11px] font-bold border"
                     style={stats.profs.martialShields ? { backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark } : { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', color: '#64748b' }}
                   >
-                    軍用盾牌 {stats.profs.martialShields ? '✓' : '✗'}
+                    職業盾牌 {stats.profs.martialShields ? '✓' : '✗'}
                   </span>
                 </div>
               </div>

@@ -45,22 +45,16 @@ export default function SkillStarPips({
                 : `點擊設定為 SL ${starLevel} / ${safeMax}（再點一次可扣減）`
             }
           >
-            <svg
-              width={size}
-              height={size}
-              viewBox="0 0 24 24"
-              className={`transition-colors duration-200 ${
+            <span
+              className={`fu-icon inline-flex items-center justify-center leading-none transition-all duration-150 ${
                 isFilled
-                  ? 'text-amber-500 fill-amber-400 drop-shadow-[0_1px_3px_rgba(245,158,11,0.4)]'
-                  : 'text-slate-300 fill-transparent stroke-slate-300 stroke-2 hover:stroke-amber-400'
+                  ? 'text-amber-500 drop-shadow-[0_1px_3px_rgba(245,158,11,0.45)] scale-110'
+                  : 'text-slate-300 opacity-40 hover:opacity-90 hover:text-amber-400'
               }`}
+              style={{ fontSize: `${size}px`, width: `${size}px`, height: `${size}px` }}
             >
-              <polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </svg>
+              w
+            </span>
           </button>
         );
       })}
