@@ -13,6 +13,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
+import GameIcon from '../../../components/ui/GameIcon';
 
 const STATUS_EFFECTS = [
   { key: 'slow', name: '遲緩', en: 'Slow', desc: '敏捷降階', color: 'border-amber-400 text-amber-800 bg-amber-50' },
@@ -106,7 +107,11 @@ export default function CombatantCard({
         {/* Avatar */}
         <div className="w-11 h-11 rounded-lg bg-[#f5efdf] border border-[#d6c7ab] overflow-hidden shrink-0 flex items-center justify-center font-serif text-base text-amber-800 font-bold shadow-inner">
           {combatant.avatar ? (
-            <img src={combatant.avatar} alt={combatant.name} className="w-full h-full object-cover" />
+            combatant.avatar.startsWith('http') || combatant.avatar.startsWith('data:') ? (
+              <img src={combatant.avatar} alt={combatant.name} className="w-full h-full object-cover" />
+            ) : (
+              <GameIcon name={combatant.avatar} size={24} className="text-amber-800" />
+            )
           ) : (
             combatant.name?.[0] || '戰'
           )}

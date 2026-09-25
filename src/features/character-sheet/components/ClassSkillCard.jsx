@@ -154,7 +154,7 @@ export default function ClassSkillCard({
                 onClick={handleStartEdit}
                 title="點擊展開此職業的所有技能進行加點或調整"
               >
-                配置 / 升級特技
+                配置技能
               </JRPGButton>
             ) : (
               <button
@@ -191,9 +191,9 @@ export default function ClassSkillCard({
               className="p-4 rounded-xl border border-dashed text-center text-xs space-y-1.5"
               style={{ borderColor: theme.border, backgroundColor: theme.cardBg }}
             >
-              <div className="font-bold text-slate-700">尚未分配特技點數</div>
+              <div className="font-bold text-slate-700">尚未分配技能點數</div>
               <p className="text-slate-500 text-[11px]">
-                點擊「配置 / 升級特技」展開查看全部技能，投入點數。
+                點擊「配置技能」展開查看全部特技，投入點數。
               </p>
               <JRPGButton
                 variant={theme.buttonVariant || 'primary'}
@@ -202,7 +202,7 @@ export default function ClassSkillCard({
                 onClick={handleStartEdit}
                 className="mt-1"
               >
-                立即配置技能
+                配置技能
               </JRPGButton>
             </div>
           ) : (
@@ -366,7 +366,7 @@ export default function ClassSkillCard({
                 onClick={handleSave}
                 title="儲存配置並恢復簡潔顯示"
               >
-                儲存技能配置 (恢復簡潔)
+                儲存技能配置
               </JRPGButton>
             </div>
           </div>

@@ -11,7 +11,8 @@ import {
   GiSoundOff,
   GiSpellBook,
   GiSparkles,
-  GiPlainArrow
+  GiPlainArrow,
+  GiHazardSign
 } from 'react-icons/gi';
 import appIcon from '../../assets/app-icon.png';
 import modLogo from '../../assets/Fabula Ultima Mod Logo - White Background.png';
@@ -30,6 +31,8 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
     {
       id: 'character',
       title: '角色卡助手',
+      status: 'wip',
+      statusLabel: '開發中',
       icon: GiVisoredHelm,
       color: 'emerald',
       borderGlow: 'hover:border-emerald-400 hover:shadow-emerald-500/20',
@@ -40,6 +43,8 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
     {
       id: 'workshop',
       title: 'NPC工坊',
+      status: 'complete',
+      statusLabel: '完整功能',
       icon: GiDragonHead,
       color: 'amber',
       borderGlow: 'hover:border-amber-400 hover:shadow-amber-500/20',
@@ -50,6 +55,8 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
     {
       id: 'combat',
       title: '戰鬥輪次',
+      status: 'wip',
+      statusLabel: '開發中',
       icon: GiSwordClash,
       color: 'rose',
       borderGlow: 'hover:border-rose-400 hover:shadow-rose-500/20',
@@ -60,6 +67,8 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
     {
       id: 'clocks',
       title: '命刻記錄',
+      status: 'wip',
+      statusLabel: '開發中',
       icon: GiPocketWatch,
       color: 'cyan',
       borderGlow: 'hover:border-cyan-400 hover:shadow-cyan-500/20',
@@ -209,7 +218,6 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
                 <div
                   key={chap.id}
                   onClick={() => {
-                    playPageFlipSound();
                     onSelectChapter(chap.id);
                   }}
                   className={`group relative rounded-2xl border border-sky-200/90 bg-white/95 p-6 sm:p-7 min-h-[135px] flex flex-col justify-between cursor-pointer transition-all duration-300 transform hover:-translate-y-1.5 hover:shadow-xl ${chap.borderGlow} overflow-hidden shadow-sm`}
@@ -229,16 +237,30 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
                     <div className={`w-14 h-14 rounded-xl border flex items-center justify-center shadow-sm group-hover:scale-105 shrink-0 transition-transform ${chap.iconBg}`}>
                       <Icon className="w-8 h-8" />
                     </div>
-                    <h3 className={`font-serif font-black text-xl sm:text-2xl tracking-wider text-slate-800 transition-colors ${chap.textColor}`}>
-                      {chap.title}
-                    </h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <h3 className={`font-serif font-black text-xl sm:text-2xl tracking-wider text-slate-800 transition-colors ${chap.textColor}`}>
+                          {chap.title}
+                        </h3>
+                        {chap.status === 'complete' ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100/90 text-emerald-800 border border-emerald-300 shadow-2xs font-mono">
+                            完整功能
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100/90 text-amber-900 border border-amber-300/80 shadow-2xs flex items-center gap-1 font-mono">
+                            <GiHazardSign className="w-3 h-3 text-amber-700" />
+                            <span>開發中</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Action Link Footer with Status Dot & Arrow Button */}
                   <div className="flex items-center justify-between pt-3 border-t border-sky-100/80 text-xs relative z-10 mt-3">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 group-hover:text-sky-600 transition-colors font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-sky-400 group-hover:bg-cyan-500 animate-pulse" />
-                      <span>CLICK TO OPEN</span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${chap.status === 'complete' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+                      <span>{chap.status === 'complete' ? 'CLICK TO OPEN' : 'WIP · 點擊確認'}</span>
                     </span>
                     
                     <div className="w-7 h-7 rounded-full bg-sky-50 group-hover:bg-sky-600 border border-sky-200 group-hover:border-sky-600 flex items-center justify-center transition-all group-hover:shadow-md group-hover:scale-105">

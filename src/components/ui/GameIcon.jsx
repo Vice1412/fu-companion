@@ -35,6 +35,16 @@ import {
   GiCog,
   GiCompass,
   GiCrossedSwords,
+  GiScythe,
+  GiRuneStone,
+  GiThirdEye,
+  GiDna2,
+  GiSprout,
+  GiCookingPot,
+  GiPsychicWaves,
+  GiFireRay,
+  GiCrownCoin,
+  GiTwoCoins,
 
   // Bond Feelings
   GiBrokenHeart,
@@ -99,9 +109,9 @@ export const GAME_ICONS_MAP = {
   'darkblade': GiDrippingSword,
   '黑刃': GiDrippingSword,
 
-  '元素師': GiFireball,
-  'elementalist': GiFireball,
-  '元素使': GiFireball,
+  '元素師': GiFireRay,
+  'elementalist': GiFireRay,
+  '元素使': GiFireRay,
 
   '熵師': GiHourglass,
   'entropist': GiHourglass,
@@ -150,19 +160,86 @@ export const GAME_ICONS_MAP = {
   '武器大師': GiCrossedSwords,
   'weaponmaster': GiCrossedSwords,
 
-  // Extended Classes
-  '死靈術士': GiDrippingSword,
-  '徽記師': GiScrollQuill,
+  // Extended Classes (拓展職業專屬圖標 - 與核心 15 職 100% 互不重疊)
+  '死靈術士': GiScythe,
+  'necromancer': GiScythe,
+
+  '徽記師': GiRuneStone,
+  'symbolist': GiRuneStone,
+
   '魔奏者': GiLyre,
+  'chanter': GiLyre,
+
   '舞者': GiFencer,
+  'dancer': GiFencer,
+
   '指揮官': GiSpartanHelmet,
+  'commander': GiSpartanHelmet,
+
   '機師': GiGears,
-  '靈能者': GiCrystalBall,
-  '突變體': GiMonsterGrasp,
-  '美食家': GiRoundBottomFlask,
+  'pilot': GiGears,
+
+  '靈能者': GiPsychicWaves,
+  'psychic': GiPsychicWaves,
+
+  '突變體': GiDna2,
+  'mutant': GiDna2,
+
+  '美食家': GiCookingPot,
+  'gourmet': GiCookingPot,
+
   '祈喚者': GiWizardStaff,
-  '商人': GiCoins,
-  '植物學家': GiCompass,
+  'invoker': GiWizardStaff,
+
+  '商人': GiTwoCoins,
+  'merchant': GiTwoCoins,
+
+  '植物學家': GiSprout,
+  'flora': GiSprout,
+
+  // Direct Game-Icons.net component names support
+  GiTwoCoins,
+  GiPsychicWaves,
+  GiFireRay,
+  GiCrownCoin,
+  GiCookingPot,
+  GiRoundBottomFlask,
+  GiBlackKnightHelm,
+  GiCardDraw,
+  GiPistolGun,
+  GiHealing,
+  GiGears,
+  GiWolfHead,
+  GiNinjaHead,
+  GiPirateCaptain,
+  GiPunchBlast,
+  GiBowman,
+  GiWizardStaff,
+  GiWhiteBook,
+  GiKatana,
+  GiSpartanHelmet,
+  GiFencer,
+  GiCrystalBall,
+  GiHoodedFigure,
+  GiLyre,
+  GiWingedSword,
+  GiMonsterGrasp,
+  GiDrippingSword,
+  GiFireball,
+  GiHourglass,
+  GiEnrage,
+  GiShield,
+  GiScrollQuill,
+  GiPublicSpeaker,
+  GiCrossbow,
+  GiCog,
+  GiCompass,
+  GiCrossedSwords,
+  GiScythe,
+  GiRuneStone,
+  GiThirdEye,
+  GiDna2,
+  GiSprout,
 
   // Bond Feelings
   admiration: GiSparkles,

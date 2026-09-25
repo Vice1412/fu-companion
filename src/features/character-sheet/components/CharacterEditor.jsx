@@ -14,6 +14,7 @@ import {
 import {
   GiSparkles,
   GiCrossedSwords,
+  GiBroadsword,
   GiShield,
   GiHeartPlus,
   GiPocketWatch,
@@ -40,6 +41,7 @@ import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
 import ClassPickerModal from './ClassPickerModal';
 import rulesData from '../data/rulesData.json';
+import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
   SOURCEBOOKS,
@@ -61,7 +63,8 @@ export default function CharacterEditor({
   onSelectGlobalTheme = null,
   onChange,
   onBackToRoster,
-  onEnterPlayMode = null
+  onEnterPlayMode = null,
+  showToast = null
 }) {
   const [activeTab, setActiveTab] = useState(1);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
@@ -271,17 +274,41 @@ export default function CharacterEditor({
             className="rounded-xl p-3.5 border shadow-xs transition-colors"
             style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
           >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="font-serif font-black text-sm truncate" style={{ color: theme.textDark }}>
-                {character.name || '新冒險者'}
-              </h3>
-              <JRPGBadge variant={theme.badgeVariant} size="xs">
-                Lv {character.level || 5}
-              </JRPGBadge>
+            <div className="flex items-center gap-3">
+              <div
+                onClick={() => setActiveTab(1)}
+                className="w-11 h-11 rounded-xl bg-white border overflow-hidden shrink-0 flex items-center justify-center font-serif shadow-inner cursor-pointer group relative"
+                style={{ borderColor: theme.border }}
+                title="點擊前往基礎身世設定更換或調整頭像"
+              >
+                {character.avatar && (character.avatar.startsWith('http') || character.avatar.startsWith('data:')) ? (
+                  <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+                ) : (
+                  <GameIcon
+                    name={character.avatar || character.classes?.[0]?.className || 'sword'}
+                    size={26}
+                    style={{ color: theme.accent }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-bold">
+                  更換
+                </div>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                  <h3 className="font-serif font-black text-sm truncate" style={{ color: theme.textDark }}>
+                    {character.name || '新冒險者'}
+                  </h3>
+                  <JRPGBadge variant={theme.badgeVariant} size="xs">
+                    Lv {character.level || 5}
+                  </JRPGBadge>
+                </div>
+                <p className="text-[11px] truncate" style={{ color: theme.textMuted }}>
+                  {character.identity || '未設定身份'}
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] truncate" style={{ color: theme.textMuted }}>
-              {character.identity || '未設定身份'}
-            </p>
           </div>
 
           {/* 經典職業搭配快捷入口 */}
@@ -579,6 +606,14 @@ export default function CharacterEditor({
                 </button>
               </div>
 
+              {/* 角色肖像與頭像上傳 (參照 NPC 工坊規格) */}
+              <CharacterAvatarUploader
+                character={character}
+                onChange={onChange}
+                theme={theme}
+                onToast={showToast}
+              />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <JRPGInput
                   label="角色姓名"
@@ -834,7 +869,7 @@ export default function CharacterEditor({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-700">
-                    目前已修習 <strong className="font-mono text-sm" style={{ color: theme.accent }}>{(character.classes || []).length}</strong> 個職業
+                    目前已選擇 <strong className="font-mono text-sm" style={{ color: theme.accent }}>{(character.classes || []).length}</strong> 個職業
                     {character.level <= 5 && <span className="text-[11px] text-slate-500 ml-1">（創角規定：2~3 個職業）</span>}
                   </span>
                 </div>
@@ -846,7 +881,7 @@ export default function CharacterEditor({
                   onClick={() => setIsClassPickerOpen(true)}
                   disabled={(character.classes || []).length >= 3 && (character.level || 5) <= 5}
                 >
-                  修習新職業 (中英對照與風格一覽)
+                  選擇職業
                 </JRPGButton>
               </div>
 
@@ -864,9 +899,9 @@ export default function CharacterEditor({
                       <GiBroadsword size={24} />
                     </div>
                     <div className="space-y-1">
-                      <h4 className="font-serif font-black text-sm text-slate-800">尚未修習任何職業</h4>
+                      <h4 className="font-serif font-black text-sm text-slate-800">尚未選擇任何職業</h4>
                       <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                        《Fabula Ultima》開局角色需要在 2~3 個職業中探索分配起始 5 級。點擊下方按鈕瀏覽中英文對照與風格一覽。
+                        《Fabula Ultima》開局角色需要在 2~3 個職業中探索分配起始 5 級。
                       </p>
                     </div>
                     <JRPGButton
@@ -875,7 +910,7 @@ export default function CharacterEditor({
                       icon={Plus}
                       onClick={() => setIsClassPickerOpen(true)}
                     >
-                      瀏覽並修習新職業
+                      選擇職業
                     </JRPGButton>
                   </div>
                 ) : (
@@ -1427,6 +1462,10 @@ export default function CharacterEditor({
           <CharacterCard
             character={character}
             themeId={character.themeColor || themeId}
+            onAvatarClick={() => {
+              setIsCardPreviewModalOpen(false);
+              setActiveTab(1);
+            }}
           />
         </div>
       </JRPGModal>

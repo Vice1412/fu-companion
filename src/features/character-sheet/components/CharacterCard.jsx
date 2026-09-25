@@ -28,6 +28,7 @@ export default function CharacterCard({
   themeId = null,
   onEdit = null,
   onUpdateClock = null,
+  onAvatarClick = null,
   className = ''
 }) {
   if (!character) return null;
@@ -51,10 +52,14 @@ export default function CharacterCard({
         className="p-4 sm:p-5 border-b flex items-start gap-4 transition-colors duration-200"
         style={{ backgroundColor: theme.headerBg, borderColor: theme.border }}
       >
-        {/* Avatar - Game-Icons.net */}
+        {/* Avatar - Game-Icons.net or Custom Photo */}
         <div
-          className="w-16 h-16 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-2xl font-bold shadow-inner"
+          onClick={onAvatarClick || undefined}
+          className={`w-16 h-16 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-2xl font-bold shadow-inner ${
+            onAvatarClick ? 'cursor-pointer hover:ring-2 hover:ring-amber-500/50 hover:scale-105 transition-all' : ''
+          }`}
           style={{ borderColor: theme.border, color: theme.accent }}
+          title={onAvatarClick ? "點擊更換或調整頭像肖像" : character.name}
         >
           {character.avatar && (character.avatar.startsWith('http') || character.avatar.startsWith('data:')) ? (
             <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />

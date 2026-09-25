@@ -22,6 +22,7 @@ export const createNewCharacter = (overrides = {}) => {
     theme: "希望",
     origin: "",
     avatar: null,
+    avatarRaw: null,
 
     // 冒險等級與成長
     level: 5,
@@ -50,25 +51,8 @@ export const createNewCharacter = (overrides = {}) => {
       weak: false      // 虛弱: MIG 降一階
     },
 
-    // 職業與特技配置 (5 級起始分配至 2~3 個職業)
-    classes: [
-      {
-        className: "守護者",
-        level: 3,
-        skills: [
-          { name: "保護", sl: 2 },
-          { name: "不動要塞", sl: 1 }
-        ]
-      },
-      {
-        className: "武器大師",
-        level: 2,
-        skills: [
-          { name: "近戰武器掌握", sl: 1 },
-          { name: "劍刃風暴", sl: 1 }
-        ]
-      }
-    ],
+    // 職業與特技配置 (預設為空，起始需配置 2~3 個職業)
+    classes: [],
 
     // 三維六向情感羈絆 (最多 6 個)
     bonds: [
@@ -359,7 +343,9 @@ export const validateCharacter = (char) => {
   // 步驟 3: 職業與特技 (5 級起始限制: 2~3 個職業)
   const classCount = (char.classes || []).length;
   if (char.level === 5) {
-    if (classCount < 2) {
+    if (classCount === 0) {
+      warnings.push({ step: 3, field: 'classes', type: 'error', message: '尚未選擇任何職業 (規則書規定：起始 5 級需配置 2~3 個職業)' });
+    } else if (classCount === 1) {
       warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級必須選擇至少 2 個職業 (規則書規定：最少 2 個職業，不可純單職)' });
     } else if (classCount > 3) {
       warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級不可選擇超過 3 個職業 (規則書規定：最多 3 個職業)' });

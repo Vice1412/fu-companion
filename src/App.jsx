@@ -14,29 +14,37 @@ import CharacterSheet from './features/character-sheet/CharacterSheet';
 import CombatTracker from './features/combat-tracker/CombatTracker';
 import FateClockPage from './features/clocks/FateClockPage';
 import DiceRollerModal from './features/dice-roller/DiceRollerModal';
+import ChapterDevWarningModal from './components/book/ChapterDevWarningModal';
+import { playPageFlipSound } from './utils/soundEffects';
 
 const CHAPTER_METAS = {
   character: {
     id: 'character',
     title: '角色卡助手',
     subtitle: '管理與檢視您創建的所有冒險者角色',
-    icon: GiVisoredHelm
+    icon: GiVisoredHelm,
+    color: 'emerald'
   },
   workshop: {
     id: 'workshop',
     title: 'NPC工坊',
     subtitle: '管理與檢視您創建的所有自定義 NPC',
-    icon: GiDragonHead
+    icon: GiDragonHead,
+    color: 'amber'
   },
   combat: {
     id: 'combat',
     title: '戰鬥輪次',
-    icon: GiSwordClash
+    subtitle: '管理遭遇戰動態輪次與各參戰者狀態',
+    icon: GiSwordClash,
+    color: 'rose'
   },
   clocks: {
     id: 'clocks',
     title: '命刻記錄',
-    icon: GiPocketWatch
+    subtitle: '管理情勢命刻、進度時鐘與場景危機',
+    icon: GiPocketWatch,
+    color: 'cyan'
   }
 };
 
@@ -45,6 +53,7 @@ export default function App() {
   const [activeChapter, setActiveChapter] = useState(null);
   const [transitionState, setTransitionState] = useState(null); // 'opening' | 'closing' | null
   const [targetChapterId, setTargetChapterId] = useState(null);
+  const [pendingDevChapterId, setPendingDevChapterId] = useState(null);
   const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
   const [diceModalConfig, setDiceModalConfig] = useState(null);
   const [headerExtraLeft, setHeaderExtraLeft] = useState(null);
@@ -57,9 +66,10 @@ export default function App() {
     setIsDiceModalOpen(true);
   };
 
-  // Trigger opening page flip to feature
-  const handleSelectChapter = (chapterId) => {
+  // 實際執行章節翻書切換動作
+  const proceedToChapter = (chapterId) => {
     if (transitionState) return;
+    playPageFlipSound();
     setCharacterSubNav(null);
     setWorkshopSubNav(null);
     setTargetChapterId(chapterId);
@@ -74,6 +84,32 @@ export default function App() {
       setTransitionState(null);
       setTargetChapterId(null);
     }, 850);
+  };
+
+  // Trigger opening page flip to feature
+  const handleSelectChapter = (chapterId) => {
+    if (transitionState) return;
+
+    // 目前完成的只有NPC工坊的功能完全完整。
+    // 在剩下的那三個功能裡（角色卡助手、戰鬥輪次、命刻記錄），
+    // 點進章節時跳出提醒視窗，說明此功能仍在開發中、未完善使用，按確定後才可進入。
+    if (chapterId !== 'workshop') {
+      setPendingDevChapterId(chapterId);
+      return;
+    }
+
+    proceedToChapter(chapterId);
+  };
+
+  const handleConfirmDevWarning = () => {
+    if (!pendingDevChapterId) return;
+    const target = pendingDevChapterId;
+    setPendingDevChapterId(null);
+    proceedToChapter(target);
+  };
+
+  const handleCancelDevWarning = () => {
+    setPendingDevChapterId(null);
   };
 
   // Trigger closing page flip back to cover
@@ -314,6 +350,14 @@ export default function App() {
           setIsDiceModalOpen(false);
           setDiceModalConfig(null);
         }}
+      />
+
+      {/* Chapter Development Warning Confirmation Modal (未完成章節提醒彈窗) */}
+      <ChapterDevWarningModal
+        isOpen={Boolean(pendingDevChapterId)}
+        chapter={pendingDevChapterId ? CHAPTER_METAS[pendingDevChapterId] : null}
+        onConfirm={handleConfirmDevWarning}
+        onClose={handleCancelDevWarning}
       />
     </div>
   );
