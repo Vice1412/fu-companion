@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { GiSpellBook, GiCancel, GiSparkles, GiAnvilImpact, GiCauldron, GiGearHammer, GiPawPrint, GiScrollQuill } from 'react-icons/gi';
+import ReactDOM from 'react-dom';
+import {
+  GiSpellBook,
+  GiSparkles,
+  GiCauldron,
+  GiGearHammer,
+  GiPawPrint,
+  GiScrollQuill,
+  GiCoins,
+  GiShield,
+  GiBroadsword
+} from 'react-icons/gi';
+import { X, Search } from 'lucide-react';
 import { RULE_CODEX, findCodexRule } from '../data/ruleCodexData';
 
 export default function RuleCodexDrawer({
@@ -7,9 +19,14 @@ export default function RuleCodexDrawer({
   onClose: propOnClose,
   initialRuleId = null
 }) {
+  const [mounted, setMounted] = useState(false);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [activeRuleId, setActiveRuleId] = useState('arcana');
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 支援全域事件 fu:open-rule-codex
   useEffect(() => {
@@ -43,23 +60,34 @@ export default function RuleCodexDrawer({
     }
   }, [initialRuleId]);
 
-  // ESC 鍵關閉
+  // ESC 鍵關閉與鎖定背景滾動
   useEffect(() => {
+    if (!internalIsOpen) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && internalIsOpen) {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
         handleClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = originalOverflow;
+    };
   }, [internalIsOpen]);
 
   const handleClose = () => {
     setInternalIsOpen(false);
+    setSearchTerm('');
     if (propOnClose) propOnClose();
   };
 
-  if (!internalIsOpen) return null;
+  if (!internalIsOpen || !mounted || typeof document === 'undefined') return null;
 
   const currentRule = RULE_CODEX[activeRuleId] || RULE_CODEX.arcana;
 
@@ -72,40 +100,47 @@ export default function RuleCodexDrawer({
     { id: 'spellbooks', label: '核心法術書', icon: GiSpellBook }
   ];
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end animate-fadeIn">
-      {/* 遮罩背景 */}
+  const modalContent = (
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      {/* 點擊遮罩背景 */}
       <div
-        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs animate-backdrop-fade"
         onClick={handleClose}
       />
 
-      {/* 側邊滑出面板 */}
-      <div className="relative w-full max-w-xl bg-[#fdfbf7] dark:bg-slate-900 shadow-2xl h-full flex flex-col z-10 border-l border-[#d6c7ab] dark:border-slate-800 animate-slideLeft">
-        {/* 頂部 Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 text-amber-50 flex items-center justify-between shadow-md shrink-0">
+      {/* 居中焦點典籍卡片 */}
+      <div
+        className="relative w-full max-w-3xl bg-[#fffdf9] dark:bg-slate-900 border-2 border-[#d6c7ab] dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[88vh] text-[#2c221e] dark:text-stone-200 animate-modal-pop z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 頂部裝飾條 */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 shrink-0" />
+
+        {/* 典籍標題 Header */}
+        <div className="px-5 py-3.5 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 text-amber-50 flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center space-x-2.5">
             <GiSpellBook className="text-2xl text-amber-200" />
             <div>
               <h2 className="text-base font-black tracking-wide flex items-center gap-2">
-                <span>規則概念速查手冊</span>
+                <span>規則概念速查典籍</span>
                 <span className="text-xs font-normal text-amber-200/90 font-mono bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/30">
                   {currentRule.page}
                 </span>
               </h2>
-              <p className="text-[11px] text-amber-200/80">官方核心規則特殊章節與非通用子系統</p>
+              <p className="text-[11px] text-amber-200/80">官方核心規則特殊章節與非通用子系統速查</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             className="p-1.5 rounded-lg text-amber-200 hover:text-white hover:bg-amber-800/80 transition-colors"
-            title="關閉速查手冊 (ESC)"
+            title="關閉速查 (ESC)"
           >
-            <GiCancel className="text-xl" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 類別切換標籤頁 */}
+        {/* 類別切換標籤頁 (Tabs) */}
         <div className="flex items-center space-x-1 p-2 bg-[#f4ece1] dark:bg-slate-950 border-b border-[#e2d5c3] dark:border-slate-800 overflow-x-auto scrollbar-none shrink-0">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -113,8 +148,12 @@ export default function RuleCodexDrawer({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveRuleId(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                type="button"
+                onClick={() => {
+                  setActiveRuleId(item.id);
+                  setSearchTerm('');
+                }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                   isActive
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'text-stone-700 dark:text-stone-300 hover:bg-[#eae0d2] dark:hover:bg-slate-800'
@@ -128,7 +167,7 @@ export default function RuleCodexDrawer({
         </div>
 
         {/* 內容主滾動容器 */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 text-[#2c221e] dark:text-stone-200 text-sm leading-relaxed">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-[#2c221e] dark:text-stone-200 text-xs sm:text-sm leading-relaxed">
           {/* 當前概念頭銜 */}
           <div className="border-b border-[#e6dbc9] dark:border-slate-800 pb-3">
             <div className="flex items-center justify-between">
@@ -148,155 +187,237 @@ export default function RuleCodexDrawer({
           {/* 條列規則 */}
           {currentRule.rules && currentRule.rules.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-                核心機制要點
-              </h3>
-              <ul className="space-y-2 bg-white dark:bg-slate-800/60 p-3.5 rounded-lg border border-[#ded2be] dark:border-slate-700/80 shadow-2xs">
-                {currentRule.rules.map((rule, idx) => (
-                  <li key={idx} className="flex items-start text-xs text-stone-800 dark:text-stone-200">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 mr-2.5 shrink-0" />
-                    <span>{rule}</span>
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">核心運作規則：</h3>
+              <ul className="list-disc list-inside space-y-1.5 text-xs text-stone-700 dark:text-stone-300 pl-1">
+                {currentRule.rules.map((r, rIdx) => (
+                  <li key={rIdx} className="leading-relaxed">
+                    <span>{r}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* 1. 阿爾卡納圖鑑展示 */}
-          {activeRuleId === 'arcana' && currentRule.catalog && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-                  官方核心阿爾卡納圖鑑 ({currentRule.catalog.length} 種)
+          {/* 1. 阿爾卡納專屬目錄展示 */}
+          {activeRuleId === 'arcana' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  12 大官方阿爾卡納圖鑑目錄
                 </h3>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="搜尋阿爾卡納或領域..."
+                    className="px-2.5 py-1 text-xs rounded-lg border border-[#d6c7ab] dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-800 dark:text-stone-200 pr-7 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
+                  />
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute right-2 top-2 pointer-events-none" />
+                </div>
               </div>
-              <div className="space-y-3">
-                {currentRule.catalog.map((arcana) => (
-                  <div
-                    key={arcana.id}
-                    className="p-3.5 rounded-lg bg-white dark:bg-slate-800/80 border border-[#e2d7c5] dark:border-slate-700 shadow-2xs hover:border-amber-400 transition-colors"
-                  >
-                    <div className="flex items-center justify-between border-b border-[#eee5d8] dark:border-slate-700 pb-1.5 mb-2">
-                      <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm">
-                        {arcana.name}
-                      </h4>
-                      <span className="text-[11px] text-stone-500 font-medium">
-                        領域：{arcana.domains}
-                      </span>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div>
-                        <span className="font-bold text-blue-800 dark:text-blue-300">連攜增益：</span>
-                        <span className="text-stone-700 dark:text-stone-300">{arcana.merge}</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRule.catalog
+                  .filter(a => !searchTerm || a.name.includes(searchTerm) || a.domains.includes(searchTerm))
+                  .map((arcana) => (
+                    <div
+                      key={arcana.id}
+                      className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2"
+                    >
+                      <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1.5">
+                        <span className="font-bold text-sm text-amber-950 dark:text-amber-200">
+                          {arcana.name}
+                        </span>
+                        <span className="text-[11px] font-mono text-stone-500">{arcana.domains}</span>
                       </div>
-                      <div>
-                        <span className="font-bold text-red-800 dark:text-red-300">解除效果：</span>
-                        <span className="text-stone-700 dark:text-stone-300">{arcana.dismiss}</span>
+                      <div className="space-y-1 text-xs">
+                        <div>
+                          <strong className="text-amber-800 dark:text-amber-400 font-bold">合體 (Merge)：</strong>
+                          <span className="text-stone-700 dark:text-stone-300">{arcana.merge}</span>
+                        </div>
+                        <div>
+                          <strong className="text-rose-800 dark:text-rose-400 font-bold">降臨 (Dismiss)：</strong>
+                          <span className="text-stone-700 dark:text-stone-300">{arcana.dismiss}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
 
           {/* 2. 儀式學派展示 */}
           {activeRuleId === 'rituals' && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
-                  五大學派與施法檢定
-                </h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {currentRule.disciplines.map((d, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 flex flex-col space-y-1 text-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-900 dark:text-amber-300">{d.name}</span>
-                        <span className="font-mono font-bold text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">
-                          {d.formula}
-                        </span>
-                      </div>
-                      <p className="text-stone-600 dark:text-stone-400 text-[11px]">{d.domains}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
-                  儀式階級與 MP 消耗對照表
-                </h3>
-                <div className="overflow-x-auto rounded border border-[#ded2be] dark:border-slate-700">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-[#f0e6d6] dark:bg-slate-800 text-stone-700 dark:text-stone-300">
-                      <tr>
-                        <th className="p-2">階級</th>
-                        <th className="p-2">MP</th>
-                        <th className="p-2">難度</th>
-                        <th className="p-2">預估時間</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#eee5d8] dark:divide-slate-700 bg-white dark:bg-slate-900/60">
-                      {currentRule.costTable.map((row, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2 font-bold text-amber-900 dark:text-amber-200">{row.tier}</td>
-                          <td className="p-2 font-mono font-bold text-blue-700 dark:text-blue-400">{row.mp}</td>
-                          <td className="p-2 font-mono">{row.dl}</td>
-                          <td className="p-2 text-stone-600 dark:text-stone-400">{row.time}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 3. 小工具展示 */}
-          {activeRuleId === 'gadgets' && (
             <div className="space-y-4">
-              {currentRule.branches.map((b, bIdx) => (
-                <div key={bIdx} className="p-3.5 rounded-lg bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-2">
-                  <div className="flex items-center justify-between border-b border-[#eee5d8] dark:border-slate-700 pb-1.5">
-                    <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm">{b.name}</h4>
-                    <span className="text-xs text-stone-500">{b.desc}</span>
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    {b.tiers.map((t, tIdx) => (
-                      <div key={tIdx} className="flex items-start space-x-2 bg-[#fdfbf7] dark:bg-slate-900/60 p-2 rounded border border-[#eee5d8] dark:border-slate-800">
-                        <span className="px-1.5 py-0.5 rounded font-bold text-[11px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">
-                          {t.level} ({t.cost})
-                        </span>
-                        <span className="text-stone-700 dark:text-stone-300">{t.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 4. 造物專案展示 */}
-          {activeRuleId === 'projects' && (
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-                研發階級與成本基準表
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                五大儀式學派與檢定公式
               </h3>
-              <div className="space-y-2.5">
-                {currentRule.tiers.map((t, idx) => (
-                  <div key={idx} className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-amber-900 dark:text-amber-300">{t.tier}</span>
-                      <span className="font-mono font-bold text-amber-600 bg-amber-50 dark:bg-slate-900 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                        材料：{t.cost} | 命刻：{t.clock}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {currentRule.disciplines.map((d, dIdx) => (
+                  <div key={dIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-1">
+                    <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1">
+                      <span className="font-bold text-sm text-amber-900 dark:text-amber-300">{d.name}</span>
+                      <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded">
+                        {d.formula}
                       </span>
                     </div>
-                    <p className="text-stone-600 dark:text-stone-400 text-[11px]">範例：{t.example}</p>
+                    <p className="text-stone-600 dark:text-stone-400 text-xs leading-relaxed pt-0.5">
+                      {d.domains}
+                    </p>
                   </div>
                 ))}
+              </div>
+
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm pt-2">
+                儀式階級、消耗與難度對照表
+              </h3>
+              <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                  <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                    <tr>
+                      <th className="p-2.5">儀式階級</th>
+                      <th className="p-2.5">MP 消耗</th>
+                      <th className="p-2.5">難度 (DL)</th>
+                      <th className="p-2.5">施法時間</th>
+                      <th className="p-2.5">範例效果</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                    {currentRule.costTable.map((c, cIdx) => (
+                      <tr key={cIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
+                        <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{c.tier}</td>
+                        <td className="p-2.5 font-mono text-amber-800 dark:text-amber-400 font-bold">{c.mp}</td>
+                        <td className="p-2.5 font-mono font-bold">{c.dl}</td>
+                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{c.time}</td>
+                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{c.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3. 小工具類別與益處展示 */}
+          {activeRuleId === 'gadgets' && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                三大工藝類型與增益目錄
+              </h3>
+              <div className="space-y-3">
+                {currentRule.branches.map((branch, bIdx) => (
+                  <div key={bIdx} className="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-2.5 shadow-2xs">
+                    <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-800 dark:text-amber-400">{branch.name}</span>
+                        <span className="text-xs text-stone-400 font-mono font-normal">({branch.english})</span>
+                      </div>
+                      <span className="text-xs text-stone-600 dark:text-stone-400 font-normal">{branch.desc}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      {(branch.tiers || []).map((tier, tIdx) => (
+                        <div
+                          key={tIdx}
+                          className={`p-2.5 rounded-lg border ${
+                            tIdx === 0
+                              ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50'
+                              : tIdx === 1
+                              ? 'bg-teal-50/70 dark:bg-teal-950/30 border-teal-200 dark:border-teal-900/50'
+                              : 'bg-purple-50/70 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <strong
+                              className={`font-bold ${
+                                tIdx === 0
+                                  ? 'text-amber-900 dark:text-amber-300'
+                                  : tIdx === 1
+                                  ? 'text-teal-900 dark:text-teal-300'
+                                  : 'text-purple-900 dark:text-purple-300'
+                              }`}
+                            >
+                              {tier.level}
+                            </strong>
+                            <span className="font-mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-700 dark:text-stone-300">
+                              {tier.cost}
+                            </span>
+                          </div>
+                          <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">
+                            {tier.desc}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3. 造物專案規模與成本 */}
+          {activeRuleId === 'projects' && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                發明規模、資金成本與時鐘格數對照表
+              </h3>
+              <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                  <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                    <tr>
+                      <th className="p-2.5">專案規模</th>
+                      <th className="p-2.5">基礎材料費</th>
+                      <th className="p-2.5">時鐘格數</th>
+                      <th className="p-2.5">範例</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                    {currentRule.tiers.map((t, tIdx) => (
+                      <tr key={tIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
+                        <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{t.tier}</td>
+                        <td className="p-2.5 font-mono text-amber-800 dark:text-amber-400 font-bold">{t.cost}</td>
+                        <td className="p-2.5 font-mono">{t.clock}</td>
+                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{t.example}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-xs space-y-1">
+                <strong className="text-amber-900 dark:text-amber-300 block">發明進度推進檢定：</strong>
+                <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                  在休整或旅途中，花費一天全心進行專案發明，執行一次【Dex + Ins】發明檢定。
+                  成功推進 1 格時鐘；檢定總值達 10 推進 2 格；總值達 13 推進 3 格！修補匠《高瞻遠矚》可額外獲得進度與材料費折扣。
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 4. 忠實夥伴詳細規格 */}
+          {activeRuleId === 'companion' && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                忠實夥伴面板規格與戰鬥機制
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2">
+                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b pb-1">
+                    基礎屬性分配 (起始 d8/d8/d6/d6)
+                  </span>
+                  <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
+                    在 DEX、INS、MIG、WLP 中自選兩項分配為 <strong>d8</strong>，其餘兩項分配為 <strong>d6</strong>。
+                    旅人每升級時，夥伴也隨同提升其生命力。
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2">
+                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b pb-1">
+                    最大 HP 動態公式
+                  </span>
+                  <div className="font-mono text-amber-800 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded">
+                    Max HP = (SL × 夥伴基礎 MIG) + ⌊旅人等級 / 2⌋
+                  </div>
+                  <p className="text-stone-500 text-[11px]">HP 低於一半時自動進入危機狀態，旅人可用技能或道具為其急救。</p>
+                </div>
               </div>
             </div>
           )}
@@ -337,15 +458,20 @@ export default function RuleCodexDrawer({
 
         {/* 底部 Footer */}
         <div className="p-3 bg-[#f5ecdf] dark:bg-slate-950 border-t border-[#ded2be] dark:border-slate-800 flex justify-between items-center text-xs text-stone-500 shrink-0">
-          <span>Fabula Ultima 官方規則速查</span>
+          <span className="text-[11px] text-stone-600 dark:text-stone-400">
+            提示：按 ESC 或點擊視窗外空白處即可關閉並返回
+          </span>
           <button
+            type="button"
             onClick={handleClose}
-            className="px-4 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded font-bold transition-colors shadow-2xs"
+            className="px-4 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-bold transition-colors shadow-2xs flex items-center gap-1"
           >
-            返回角色卡
+            <span>關閉並返回</span>
           </button>
         </div>
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 }
