@@ -15,6 +15,7 @@ import CombatTracker from './features/combat-tracker/CombatTracker';
 import FateClockPage from './features/clocks/FateClockPage';
 import DiceRollerModal from './features/dice-roller/DiceRollerModal';
 import ChapterDevWarningModal from './components/book/ChapterDevWarningModal';
+import RuleCodexDrawer from './features/character-sheet/components/RuleCodexDrawer';
 import { playPageFlipSound } from './utils/soundEffects';
 
 const CHAPTER_METAS = {
@@ -359,6 +360,9 @@ export default function App() {
         onConfirm={handleConfirmDevWarning}
         onClose={handleCancelDevWarning}
       />
+
+      {/* Global Rule Codex Drawer (規則概念速查手冊) */}
+      <RuleCodexDrawer />
     </div>
   );
 }

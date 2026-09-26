@@ -26,7 +26,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans TC"', 'sans-serif'],
+        sans: ['"Noto Sans TC"', '"PingFang TC"', '"Microsoft JhengHei"', '"微軟正黑體"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
         serif: ['"Cinzel"', '"Noto Serif TC"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
         fu: ['"Fabula Ultima Icons"', 'sans-serif']

@@ -42,6 +42,10 @@ import rulesData from '../data/rulesData.json';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
 import SkillDescription from '../utils/skillFormulaEvaluator';
+import ArcanistManager from './companions/ArcanistManager';
+import ChimeristManager from './companions/ChimeristManager';
+import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
+import TinkererProjectTracker from './companions/TinkererProjectTracker';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -1150,6 +1154,18 @@ export default function CharacterPlayHUD({
                   <strong className="text-slate-800">{character.equipment?.accessory || '無'}</strong>
                 </div>
               </div>
+
+              {/* Wayfarer Companion in Combat (if active) */}
+              {(character.classes || []).some(c => c.className === '旅人' && (c.skills || []).some(s => s.name === '忠實夥伴' && s.sl > 0)) && (
+                <div className="pt-2 border-t">
+                  <WayfarerCompanionSheet
+                    character={character}
+                    onChange={onChange}
+                    onOpenDice={onOpenDice}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1294,6 +1310,18 @@ export default function CharacterPlayHUD({
                   </button>
                 </div>
               )}
+
+              {/* Chimerist Spells in Magic Tab (if active) */}
+              {(character.classes || []).some(c => c.className === '嵌合師' && (c.skills || []).some(s => s.name === '咒語模仿' && s.sl > 0)) && (
+                <div className="pt-2 border-t">
+                  <ChimeristManager
+                    character={character}
+                    onChange={onChange}
+                    onOpenDice={onOpenDice}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1344,6 +1372,50 @@ export default function CharacterPlayHUD({
                       );
                     })}
                   </div>
+
+                  {/* 職業專屬機制互動工具 (Subsystem Companions) */}
+                  {cl.className === '秘儀師' && (cl.skills || []).some(s => s.name === '綁定和召喚' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <ArcanistManager
+                        character={character}
+                        onChange={onChange}
+                        onOpenDice={onOpenDice}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '嵌合師' && (cl.skills || []).some(s => s.name === '咒語模仿' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <ChimeristManager
+                        character={character}
+                        onChange={onChange}
+                        onOpenDice={onOpenDice}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '旅人' && (cl.skills || []).some(s => s.name === '忠實夥伴' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <WayfarerCompanionSheet
+                        character={character}
+                        onChange={onChange}
+                        onOpenDice={onOpenDice}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '修補匠' && (cl.skills || []).some(s => ['高瞻遠矚', '造物', '小工具'].includes(s.name) && s.sl > 0) && (
+                    <div className="mt-3">
+                      <TinkererProjectTracker
+                        character={character}
+                        onChange={onChange}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
