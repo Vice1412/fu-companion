@@ -46,8 +46,10 @@
 
 ## 📌 核心規則二：規則手冊依據標準 (Official Rules Baseline)
 
-1. **核心規則唯一權威版本**：
-   - 嚴格以官方英文最新勘誤版 `Fabula_Ultima_Core.pdf` (Core Rulebook v1.1 Errata) 為準。中文社群舊譯本與官方公測（Playtest）修訂若有出入，以 Core v1.1 為基礎標準。
+1. **官方英文與民間漢化雙軌權威基準 (Dual-Standard Rule Baseline)**：
+   - **官方英文最新勘誤版 (`Fabula_Ultima_Core.pdf` Core Rulebook v1.1 Errata)**：代表最新官方平衡調整與絕對權威機制標準。所有職業技能機制、數值公式、技能等級上限 (maxSL)、觸發時點與判定限制，**一律嚴格以此為準**。
+   - **民間漢化版**：代表繁簡在地化中文翻譯標準。所有中文技能名稱、機制術語、身世背景與名詞翻譯體系，**一律依據民間漢化規範**。
+   - **衝突裁決原則**：一旦民間漢化版與官方英文最新勘誤版存在機制差異、數值遺漏、舊版殘留或條款衝突，**無條件以官方英文為最高優先**，並在保持民間漢化譯名風格的前提下補全校準。
 2. **手冊與拓展開關控制 (Sourcebook Toggle System)**：
    - 核心 15 職永遠啟用。
    - 高等奇幻 (High Fantasy)、科技奇幻 (Techno Fantasy)、自然奇幻 (Natural Fantasy) 與公測修訂 (Playtest) 必須保留打勾開關，讓玩家依跑團團務需求自由解鎖。

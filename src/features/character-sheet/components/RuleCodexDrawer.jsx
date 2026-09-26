@@ -122,12 +122,11 @@ export default function RuleCodexDrawer({
             <GiSpellBook className="text-2xl text-amber-200" />
             <div>
               <h2 className="text-base font-black tracking-wide flex items-center gap-2">
-                <span>規則概念速查典籍</span>
+                <span>規則概念速查</span>
                 <span className="text-xs font-normal text-amber-200/90 font-mono bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/30">
                   {currentRule.page}
                 </span>
               </h2>
-              <p className="text-[11px] text-amber-200/80">官方核心規則特殊章節與非通用子系統速查</p>
             </div>
           </div>
           <button
