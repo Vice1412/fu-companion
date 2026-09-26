@@ -612,41 +612,165 @@ export default function RuleCodexDrawer({
             </div>
           )}
 
-          {/* 4. 造物專案規模與成本 */}
+          {/* 4. 造物專案官方體系 */}
           {activeRuleId === 'projects' && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                發明規模、資金成本與時鐘格數對照表
-              </h3>
-              <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
-                <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
-                  <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
-                    <tr>
-                      <th className="p-2.5">專案規模</th>
-                      <th className="p-2.5">基礎材料費</th>
-                      <th className="p-2.5">時鐘格數</th>
-                      <th className="p-2.5">預估時間</th>
-                      <th className="p-2.5">範例</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
-                    {currentRule.tiers.map((t, tIdx) => (
-                      <tr key={tIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
-                        <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{t.tier}</td>
-                        <td className="p-2.5 font-mono text-amber-800 dark:text-amber-400 font-bold">{t.cost}</td>
-                        <td className="p-2.5 font-mono">{t.clock}</td>
-                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{t.time}</td>
-                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{t.example}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="space-y-6">
+              {/* 六大造物流程步驟 */}
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-3 shadow-2xs">
+                <div className="border-b border-stone-100 dark:border-slate-700 pb-2">
+                  <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm">
+                    造物流程六大步驟（核心手冊 134~137 頁）
+                  </h4>
+                  <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">
+                    修補匠的自訂發明體系。任何發明皆依據以下六個標準步驟推進研發。
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                  {currentRule.steps.map((st, stIdx) => (
+                    <div key={stIdx} className="p-2.5 rounded-lg bg-stone-50 dark:bg-slate-900/60 border border-stone-200 dark:border-slate-700 space-y-1">
+                      <span className="font-bold text-amber-900 dark:text-amber-300 block">{st.step}</span>
+                      <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{st.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-xs space-y-1">
-                <strong className="text-amber-900 dark:text-amber-300 block">發明進度推進檢定：</strong>
-                <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
-                  日常推進每天自動累積 1 點進度。修補匠《高瞻遠矚》每日額外推進 +SL 點，並自動抵扣【SL × 100】z 材料成本。
-                </p>
+
+              {/* 成本計算公式與三大乘數表 */}
+              <div className="space-y-3">
+                <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 space-y-1 text-xs">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span className="font-bold text-amber-950 dark:text-amber-200">材料總成本計算公式：</span>
+                    <span className="font-mono font-bold text-amber-800 dark:text-amber-400">總成本 = 基礎效力 × 範圍倍率 × 使用次數倍率</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">
+                    若為發明協商加入一項致命缺陷（如定時充電、極不可靠、笨重或巨大噪音等），總成本直接減免 25%（× 0.75）。中等以上效力必須包含一項跑團冒險焦點的特殊材料。
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs">
+                  {/* 效力表 */}
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">1. 效力表（基礎成本）：</span>
+                    <div className="rounded-lg border border-[#ded2be] dark:border-slate-700 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-[#f5ecdf] dark:bg-slate-950 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                          <tr>
+                            <th className="p-2 w-12 text-center">效力</th>
+                            <th className="p-2 w-16 text-center">基礎</th>
+                            <th className="p-2">效果範例</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-[11px]">
+                          {currentRule.potencyTable.map((p, pIdx) => (
+                            <tr key={pIdx}>
+                              <td className="p-1.5 text-center font-bold text-stone-900 dark:text-stone-100">{p.tier}</td>
+                              <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{p.cost}</td>
+                              <td className="p-1.5 text-stone-600 dark:text-stone-400 leading-tight">{p.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* 範圍表 */}
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">2. 範圍表（成本倍率）：</span>
+                    <div className="rounded-lg border border-[#ded2be] dark:border-slate-700 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-[#f5ecdf] dark:bg-slate-950 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                          <tr>
+                            <th className="p-2 w-12 text-center">範圍</th>
+                            <th className="p-2 w-14 text-center">倍率</th>
+                            <th className="p-2">影響範例</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-[11px]">
+                          {currentRule.areaTable.map((a, aIdx) => (
+                            <tr key={aIdx}>
+                              <td className="p-1.5 text-center font-bold text-stone-900 dark:text-stone-100">{a.area}</td>
+                              <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{a.multiplier}</td>
+                              <td className="p-1.5 text-stone-600 dark:text-stone-400 leading-tight">{a.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* 使用次數表 */}
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">3. 使用次數表（成本倍率）：</span>
+                    <div className="rounded-lg border border-[#ded2be] dark:border-slate-700 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-[#f5ecdf] dark:bg-slate-950 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                          <tr>
+                            <th className="p-2 w-16 text-center">類型</th>
+                            <th className="p-2 w-14 text-center">倍率</th>
+                            <th className="p-2">持續性說明</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-[11px]">
+                          {currentRule.usesTable.map((u, uIdx) => (
+                            <tr key={uIdx}>
+                              <td className="p-1.5 text-center font-bold text-stone-900 dark:text-stone-100">{u.use}</td>
+                              <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{u.multiplier}</td>
+                              <td className="p-1.5 text-stone-600 dark:text-stone-400 leading-tight">{u.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 進度與推進機制 */}
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-2 shadow-2xs text-xs">
+                <h4 className="font-bold text-amber-900 dark:text-amber-300 border-b border-stone-100 dark:border-slate-700 pb-1 flex items-center justify-between">
+                  <span>進度計算與每日自動累積</span>
+                  <span className="font-mono text-xs text-stone-500 font-normal">所需進度 = 最終總成本 / 100z</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-[11px]">
+                  <div className="p-2 rounded bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                    <strong className="text-stone-900 dark:text-stone-100 block mb-0.5">每位參與 PC</strong>
+                    <span className="text-stone-600 dark:text-stone-400">每日結束時自動 +1 進度</span>
+                  </div>
+                  <div className="p-2 rounded bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                    <strong className="text-stone-900 dark:text-stone-100 block mb-0.5">每位修補匠 (1級+)</strong>
+                    <span className="text-stone-600 dark:text-stone-400">額外 +1 進度（基礎一人 2 點）</span>
+                  </div>
+                  <div className="p-2 rounded bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                    <strong className="text-stone-900 dark:text-stone-100 block mb-0.5">特技《高瞻遠矚》</strong>
+                    <span className="text-stone-600 dark:text-stone-400">每日額外 +SL 進度並抵扣【SL × 100】z</span>
+                  </div>
+                  <div className="p-2 rounded bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                    <strong className="text-stone-900 dark:text-stone-100 block mb-0.5">招聘幫手 (半價薪酬)</strong>
+                    <span className="text-stone-600 dark:text-stone-400">每名幫手每日額外 +1 進度</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 官方經典範例名錄 */}
+              <div className="space-y-2.5">
+                <h4 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  官方經典造物範例名錄（核心手冊 138~139 頁）
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                  {currentRule.samples.map((sm, smIdx) => (
+                    <div key={smIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1.5 shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1">
+                        <strong className="text-stone-900 dark:text-stone-100">{sm.name}</strong>
+                        <span className="text-[10px] font-mono text-amber-800 dark:text-amber-400 font-bold">{sm.cost} (進度: {sm.progress})</span>
+                      </div>
+                      <div className="text-[10px] font-mono text-stone-500">
+                        <span>規格：{sm.formula}</span>
+                        {sm.flaw !== '無' && <span className="ml-1.5 text-rose-600 font-bold">[{sm.flaw}]</span>}
+                      </div>
+                      <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{sm.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
