@@ -7,7 +7,27 @@ import React from 'react';
  * 體驗保證：
  * 1. 在點亮特技前 (SL = 0)：明確標註公式本身（例如【SL × 5】），讓玩家瞭解點數成長率與計算方式。
  * 2. 在點亮特技後 (SL >= 1)：自動計算精確數值（例如【10】），並附帶懸浮公式提示 (SL 2 × 5 = 10)。
+ * 3. 支援 Markdown **粗體** 樣式高亮渲染，1:1 對照官方規則書重點。
+ * 4. 支援點擊非通用專屬規則關鍵詞（阿爾卡納、儀式學派、小工具、造物專案、忠實夥伴等），平滑開啟規則速查手冊。
  */
+
+// 支援的專有規則速查關鍵詞（依字元長度降序排列，避免短詞覆蓋長詞）
+const CODEX_KEYWORDS = [
+  '造物專案',
+  '秘儀學派儀式',
+  '嵌合學派儀式',
+  '元素學派儀式',
+  '熵系學派儀式',
+  '靈魂學派儀式',
+  '阿爾卡納',
+  '儀式學派',
+  '小工具',
+  '造物',
+  '忠實夥伴',
+  '元素魔法',
+  '熵系魔法',
+  '靈魂魔法'
+];
 
 export function parseSkillFormulaSegments(text, sl = 0) {
   if (!text) return [];
@@ -27,7 +47,7 @@ export function parseSkillFormulaSegments(text, sl = 0) {
       });
     }
 
-    const rawFormula = match[1];
+    const rawFormula = match[1].replace(/\*\*/g, '');
     const evaluated = evaluateFormulaString(rawFormula, sl);
 
     segments.push({
@@ -165,19 +185,35 @@ function evaluateFormulaString(formulaStr, sl) {
 }
 
 /**
- * 渲染文字中的攻擊性咒語官方圖標（將（o）、(o)、（⚡）、(⚡) 轉為官方紅閃電圖標，嚴格使用（）括號）
+ * 觸發開啟規則速查手冊全域事件
  */
-export function renderTextWithOffensiveIcons(text) {
+export function openRuleCodex(keyword) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('fu:open-rule-codex', { detail: { keyword } }));
+  }
+}
+
+/**
+ * 渲染單一純字串片段中的關鍵詞與攻擊性咒語圖標
+ */
+function renderWordsAndKeywords(text, keyPrefix = '') {
   if (!text || typeof text !== 'string') return text;
-  // 匹配 （o）、(o)、（⚡）、(⚡)
-  const regex = /(（[oO⚡]）|\([oO⚡]\))/g;
-  const parts = text.split(regex);
+
+  // 組合正則：攻擊性咒語 (（o）/ (o) / (⚡)) 以及非通用規則關鍵字
+  const escapedKeywords = CODEX_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const combinedRegex = new RegExp(`(（[oO⚡]）|\\([oO⚡]\\)|${escapedKeywords})`, 'g');
+
+  const parts = text.split(combinedRegex);
   if (parts.length === 1) return text;
 
   return parts.map((part, pIdx) => {
-    if (regex.test(part)) {
+    if (!part) return null;
+    const k = `${keyPrefix}-${pIdx}`;
+
+    // 1. 攻擊性咒語官方紅色閃電圖標
+    if (/^(（[oO⚡]）|\([oO⚡]\))$/.test(part)) {
       return (
-        <span key={pIdx} className="inline-flex items-center text-red-600 font-bold select-none mx-0.5">
+        <span key={k} className="inline-flex items-center text-red-600 font-bold select-none mx-0.5">
           <span>（</span>
           <span className="fu-icon text-sm leading-none inline-block drop-shadow-2xs translate-y-[-0.5px]" title="攻擊性咒語">
             o
@@ -186,8 +222,76 @@ export function renderTextWithOffensiveIcons(text) {
         </span>
       );
     }
+
+    // 2. 規則速查關鍵詞
+    if (CODEX_KEYWORDS.includes(part)) {
+      return (
+        <span
+          key={k}
+          onClick={(e) => {
+            e.stopPropagation();
+            openRuleCodex(part);
+          }}
+          className="inline cursor-pointer border-b border-dashed border-amber-600/70 text-amber-900 dark:text-amber-300 font-bold hover:text-amber-600 hover:border-amber-500 transition-colors mx-0.5"
+          title={`點擊速查「${part}」官方規則`}
+        >
+          {part}
+        </span>
+      );
+    }
+
     return part;
   });
+}
+
+/**
+ * 渲染行內富文字（解析 **粗體** 與其中的關鍵詞）
+ */
+function renderInlineRichText(line, linePrefix = '') {
+  if (!line) return null;
+
+  // 匹配 **粗體內容**
+  const boldRegex = /(\*\*.*?\*\*)/g;
+  const parts = line.split(boldRegex);
+
+  return parts.map((chunk, cIdx) => {
+    if (!chunk) return null;
+    const k = `${linePrefix}-chunk-${cIdx}`;
+
+    if (chunk.startsWith('**') && chunk.endsWith('**')) {
+      const innerText = chunk.slice(2, -2);
+      return (
+        <strong key={k} className="font-bold text-stone-900 dark:text-amber-100">
+          {renderWordsAndKeywords(innerText, `${k}-bold`)}
+        </strong>
+      );
+    }
+
+    return (
+      <React.Fragment key={k}>
+        {renderWordsAndKeywords(chunk, `${k}-plain`)}
+      </React.Fragment>
+    );
+  });
+}
+
+/**
+ * 完整渲染富文本區塊（解析 \n 換行、**粗體**、關鍵詞、公式）
+ */
+export function renderRichTextContent(content, prefix = '') {
+  if (!content || typeof content !== 'string') return content;
+
+  const lines = content.split('\n');
+  if (lines.length === 1) {
+    return renderInlineRichText(content, prefix);
+  }
+
+  return lines.map((line, lIdx) => (
+    <React.Fragment key={`${prefix}-line-${lIdx}`}>
+      {renderInlineRichText(line, `${prefix}-line-${lIdx}`)}
+      {lIdx < lines.length - 1 && <br className="my-1" />}
+    </React.Fragment>
+  ));
 }
 
 /**
@@ -202,7 +306,11 @@ export default function SkillDescription({ desc, sl = 0, className = '' }) {
     <span className={`inline leading-relaxed ${className}`}>
       {segments.map((seg, idx) => {
         if (seg.type === 'text') {
-          return <React.Fragment key={idx}>{renderTextWithOffensiveIcons(seg.content)}</React.Fragment>;
+          return (
+            <React.Fragment key={idx}>
+              {renderRichTextContent(seg.content, `seg-${idx}`)}
+            </React.Fragment>
+          );
         }
 
         if (seg.isCalculated) {

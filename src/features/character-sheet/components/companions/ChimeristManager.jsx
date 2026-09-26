@@ -1,0 +1,518 @@
+import React, { useState } from 'react';
+import { GiSpellBook, GiCancel, GiRollingDices, GiBiohazard } from 'react-icons/gi';
+import { Plus, ClipboardPaste } from 'lucide-react';
+
+export default function ChimeristManager({
+  character,
+  onChange,
+  onOpenDice = null,
+  showToast = () => {}
+}) {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [pasteContent, setPasteContent] = useState('');
+
+  // 取得嵌合師相關特技 SL
+  const chimeristClass = (character.classes || []).find(c => c.className === '嵌合師');
+  const mimicSkill = (chimeristClass?.skills || []).find(s => s.name === '咒語模仿');
+  const mimicSL = mimicSkill?.sl || 1;
+  const maxSlots = mimicSL + 2;
+
+  const cycleSkill = (chimeristClass?.skills || []).find(s => s.name === '惡性循環');
+  const hasViciousCycle = (cycleSkill?.sl || 0) >= 1;
+
+  // 取得角色專屬 chimeristData
+  const chimeristData = character.chimeristData || {
+    spellFormula: 'INS + WLP', // 預設或自選公式
+    spells: []
+  };
+
+  const currentFormula = chimeristData.spellFormula || 'INS + WLP';
+  const spells = chimeristData.spells || [];
+
+  const updateChimeristData = (newData) => {
+    onChange({
+      ...character,
+      chimeristData: {
+        ...chimeristData,
+        ...newData
+      },
+      updatedAt: new Date().toISOString()
+    });
+  };
+
+  // 手動新增咒語表單 State
+  const [newSpellName, setNewSpellName] = useState('');
+  const [newSpecies, setNewSpecies] = useState('魔獸');
+  const [newMp, setNewMp] = useState('10');
+  const [newTarget, setNewTarget] = useState('一個生物');
+  const [newDuration, setNewDuration] = useState('瞬發');
+  const [newIsOffensive, setNewIsOffensive] = useState(true);
+  const [newEffect, setNewEffect] = useState('');
+
+  const handleSelectFormula = (formula) => {
+    updateChimeristData({ spellFormula: formula });
+    showToast(`攻擊性嵌合咒語施法公式已設定為【${formula}】！`, 'success');
+  };
+
+  const handleAddSpell = (e) => {
+    e?.preventDefault();
+    if (!newSpellName.trim()) {
+      showToast('請輸入咒語名稱', 'warning');
+      return;
+    }
+    if (spells.length >= maxSlots) {
+      showToast(`記憶槽位已滿（上限 ${maxSlots} 個），請先遺忘舊咒語！`, 'warning');
+      return;
+    }
+
+    const created = {
+      id: `chim_${Date.now()}`,
+      name: newSpellName.trim(),
+      species: newSpecies,
+      mp: newMp.trim() || '10',
+      target: newTarget.trim() || '一個生物',
+      duration: newDuration.trim() || '瞬發',
+      isOffensive: newIsOffensive,
+      effect: newEffect.trim() || '無詳細效果說明'
+    };
+
+    updateChimeristData({ spells: [...spells, created] });
+    resetForm();
+    setIsAddModalOpen(false);
+    showToast(`成功記錄嵌合師咒語【${created.name}】（源頭：${created.species}）！`, 'success');
+  };
+
+  const resetForm = () => {
+    setNewSpellName('');
+    setNewSpecies('魔獸');
+    setNewMp('10');
+    setNewTarget('一個生物');
+    setNewDuration('瞬發');
+    setNewIsOffensive(true);
+    setNewEffect('');
+  };
+
+  const handleDeleteSpell = (id) => {
+    const next = spells.filter(s => s.id !== id);
+    updateChimeristData({ spells: next });
+    showToast('已遺忘該嵌合師咒語');
+  };
+
+  // 一鍵解析 NPC 工坊複製文本
+  const handleParsePastedText = () => {
+    if (!pasteContent.trim()) {
+      showToast('請先貼入 NPC 工坊文字', 'warning');
+      return;
+    }
+
+    // 範例格式：
+    // > **⚡ 劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)
+    // > 對目標造成【HR + 15】毒屬性傷害。
+    const text = pasteContent.trim();
+    let name = '';
+    let isOffensive = text.includes('⚡') || text.includes('（o）') || text.includes('(o)');
+    let mp = '10';
+    let target = '一個生物';
+    let duration = '瞬發';
+    let effect = '';
+    let detectedSpecies = '魔獸';
+
+    // 嘗試辨識物種
+    if (text.includes('野獸') || text.toLowerCase().includes('beast')) detectedSpecies = '野獸';
+    else if (text.includes('植物') || text.toLowerCase().includes('plant')) detectedSpecies = '植物';
+    else if (text.includes('魔獸') || text.toLowerCase().includes('monster')) detectedSpecies = '魔獸';
+
+    // 匹配咒語名稱：如 **⚡ 劇毒吐息** 或 **劇毒吐息**
+    const nameMatch = text.match(/\*\*([^*]+)\*\*/);
+    if (nameMatch) {
+      name = nameMatch[1].replace(/[⚡✨(o)（o）]/g, '').trim();
+    }
+
+    // 匹配 MP、目標、持續
+    const mpMatch = text.match(/MP:\s*([^|\n)]+)/i);
+    if (mpMatch) mp = mpMatch[1].trim();
+
+    const targetMatch = text.match(/目標:\s*([^|\n)]+)/i);
+    if (targetMatch) target = targetMatch[1].trim();
+
+    const durMatch = text.match(/持續:\s*([^|\n)]+)/i);
+    if (durMatch) duration = durMatch[1].trim();
+
+    // 提取效果（通常在第二行或去除標題後）
+    const lines = text.split('\n').map(l => l.replace(/^>\s*/, '').trim()).filter(Boolean);
+    if (lines.length > 1) {
+      effect = lines.slice(1).join('\n');
+    } else {
+      effect = text;
+    }
+
+    setNewSpellName(name || '未命名怪物咒語');
+    setNewSpecies(detectedSpecies);
+    setNewMp(mp);
+    setNewTarget(target);
+    setNewDuration(duration);
+    setNewIsOffensive(isOffensive);
+    setNewEffect(effect);
+
+    setIsPasteModalOpen(false);
+    setIsAddModalOpen(true);
+    setPasteContent('');
+    showToast('已自動解析文本！請確認各欄位後點擊儲存', 'success');
+  };
+
+  const handleCastSpell = (spell) => {
+    // 扣除 MP
+    const mpCost = parseInt(spell.mp.replace(/\D/g, ''), 10) || 0;
+    if (mpCost > 0) {
+      const currentMp = character.currentMp !== null ? character.currentMp : (character.stats?.maxMp || 40);
+      const nextMp = Math.max(0, currentMp - mpCost);
+      onChange({
+        ...character,
+        currentMp: nextMp,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    if (spell.isOffensive && onOpenDice) {
+      const isInsWlp = currentFormula.includes('INS');
+      const attr1 = isInsWlp ? 'INS' : 'MIG';
+      const attr2 = 'WLP';
+      const die1 = character.attributes?.[attr1.toLowerCase()] || 8;
+      const die2 = character.attributes?.[attr2.toLowerCase()] || 8;
+
+      onOpenDice({
+        die1,
+        die2,
+        modifier: 0,
+        label: `施放嵌合師咒語【${spell.name}】[${attr1} + ${attr2}]`
+      });
+    }
+
+    showToast(`施放【${spell.name}】！消耗 ${mpCost} MP`, 'success');
+  };
+
+  return (
+    <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-950/20 border border-emerald-300/80 dark:border-emerald-700/60 shadow-sm space-y-4">
+      {/* 頂部標題與施法公式設定 */}
+      <div className="flex items-center justify-between border-b border-emerald-200 dark:border-slate-700 pb-2 flex-wrap gap-2">
+        <div className="flex items-center space-x-2">
+          <GiSpellBook className="text-xl text-emerald-600 dark:text-emerald-400" />
+          <div>
+            <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+              <span>嵌合魔典與怪物咒語記憶本</span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                spells.length >= maxSlots
+                  ? 'bg-red-100 text-red-800 border-red-300'
+                  : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+              }`}>
+                記憶容量: {spells.length} / {maxSlots} 格
+              </span>
+            </h3>
+          </div>
+        </div>
+
+        {/* 施法公式切換器 */}
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-stone-500 font-bold">施法檢定:</span>
+          <button
+            type="button"
+            onClick={() => handleSelectFormula('INS + WLP')}
+            className={`px-2 py-0.5 rounded font-mono font-bold transition-all ${
+              currentFormula === 'INS + WLP'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-stone-100 dark:bg-slate-800 text-stone-600 dark:text-stone-400 hover:bg-emerald-100'
+            }`}
+          >
+            【INS + WLP】
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSelectFormula('MIG + WLP')}
+            className={`px-2 py-0.5 rounded font-mono font-bold transition-all ${
+              currentFormula === 'MIG + WLP'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-stone-100 dark:bg-slate-800 text-stone-600 dark:text-stone-400 hover:bg-emerald-100'
+            }`}
+          >
+            【MIG + WLP】
+          </button>
+        </div>
+      </div>
+
+      {/* 惡性循環連攜提示 */}
+      {hasViciousCycle && (
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200">
+          <GiBiohazard className="text-base text-emerald-600 shrink-0" />
+          <span>已點亮《惡性循環》特技：當你的咒語對同源物種生物造成傷害時，將必定使其陷入中毒狀態！</span>
+        </div>
+      )}
+
+      {/* 動作按鈕：貼上導入 / 手動新增 */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="text-xs font-bold text-stone-600 dark:text-stone-400">已記憶怪物咒語清單</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsPasteModalOpen(true)}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs flex items-center gap-1 transition-colors"
+            title="貼上從 NPC 工坊複製的文字一鍵導入"
+          >
+            <ClipboardPaste className="w-3.5 h-3.5" />
+            <span>NPC工坊文本導入</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { resetForm(); setIsAddModalOpen(true); }}
+            disabled={spells.length >= maxSlots}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${
+              spells.length >= maxSlots
+                ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>手動記錄咒語</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 咒語列表 */}
+      <div className="space-y-2.5">
+        {spells.map((sp) => (
+          <div
+            key={sp.id}
+            className="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2"
+          >
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[#eee5d8] dark:border-slate-700 pb-1.5">
+              <div className="flex items-center gap-2">
+                {sp.isOffensive ? (
+                  <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">
+                    o
+                  </span>
+                ) : (
+                  <span className="text-blue-600 font-bold">✦</span>
+                )}
+                <strong className="text-sm text-stone-900 dark:text-stone-100">{sp.name}</strong>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                  源頭: {sp.species}
+                </span>
+                <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-400">
+                  MP: {sp.mp}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleCastSpell(sp)}
+                  className="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1 transition-transform hover:scale-105"
+                >
+                  <GiRollingDices className="text-sm" />
+                  <span>施放</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteSpell(sp.id)}
+                  className="p-1 rounded text-stone-400 hover:text-red-600 transition-colors"
+                  title="遺忘咒語"
+                >
+                  <GiCancel className="text-sm" />
+                </button>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-stone-500 font-mono flex items-center gap-3">
+              <span>目標: {sp.target}</span>
+              <span>持續: {sp.duration}</span>
+              {sp.isOffensive && <span>檢定公式: 【{currentFormula}】</span>}
+            </div>
+
+            <div className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed bg-[#fdfbf7] dark:bg-slate-900/60 p-2 rounded border border-[#eee5d8] dark:border-slate-800">
+              <p>{sp.effect}</p>
+              {hasViciousCycle && (
+                <p className="mt-1 font-bold text-emerald-700 dark:text-emerald-400 text-[11px] flex items-center gap-1 border-t border-emerald-200/60 dark:border-emerald-800/60 pt-1">
+                  <GiBiohazard className="text-xs" />
+                  <span>若目標是**{sp.species}**，目標同時陷入**中毒**狀態。</span>
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {spells.length === 0 && (
+          <div className="p-6 text-center bg-white/60 dark:bg-slate-900/40 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-800 text-stone-400 text-xs space-y-1">
+            <GiSpellBook className="w-8 h-8 mx-auto text-emerald-400/80" />
+            <p className="font-bold text-stone-600 dark:text-stone-300">尚未記錄任何嵌合師咒語</p>
+            <p className="text-[11px]">可貼上 GM 或 NPC 工坊複製之文字一鍵匯入，或點擊「手動記錄咒語」！</p>
+          </div>
+        )}
+      </div>
+
+      {/* 貼上 NPC 工坊文本 Modal */}
+      {isPasteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-[#fdfbf7] dark:bg-slate-900 border border-teal-400 rounded-2xl p-5 w-full max-w-lg shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-teal-200 dark:border-slate-800 pb-2">
+              <h3 className="text-sm font-bold text-teal-950 dark:text-teal-100 flex items-center gap-2">
+                <GiClipboard className="text-teal-600" />
+                <span>NPC工坊文本一鍵導入</span>
+              </h3>
+              <button onClick={() => setIsPasteModalOpen(false)} className="text-stone-400 hover:text-stone-600">
+                <GiCancel className="text-lg" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-600 dark:text-stone-400">
+              請直接在此貼上從 NPC 工坊導出的咒語區段文字或整份 NPC 卡片，系統將自動解析出名稱、MP、目標與效果：
+            </p>
+
+            <textarea
+              rows={6}
+              value={pasteContent}
+              onChange={e => setPasteContent(e.target.value)}
+              placeholder="例如：&#10;> **⚡ 劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)&#10;> 對目標造成【HR + 15】毒屬性傷害，並使其陷入中毒狀態。"
+              className="w-full p-2.5 rounded-lg border border-teal-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 text-xs font-mono outline-none focus:border-teal-500"
+            />
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-teal-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsPasteModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg border border-stone-300 dark:border-slate-700 text-stone-600 dark:text-stone-400 text-xs font-bold"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleParsePastedText}
+                className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm"
+              >
+                自動解析並導入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 手動新增/確認咒語 Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-[#fdfbf7] dark:bg-slate-900 border border-emerald-400 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-emerald-200 dark:border-slate-800 pb-2">
+              <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-emerald-600" />
+                <span>記錄嵌合師咒語</span>
+              </h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-stone-400 hover:text-stone-600">
+                <GiCancel className="text-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSpell} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">咒語名稱</label>
+                <input
+                  type="text"
+                  value={newSpellName}
+                  onChange={e => setNewSpellName(e.target.value)}
+                  placeholder="例如：劇毒吐息、音波咆哮..."
+                  className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">源頭物種</label>
+                  <select
+                    value={newSpecies}
+                    onChange={e => setNewSpecies(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                  >
+                    <option value="野獸">野獸 (Beast)</option>
+                    <option value="魔獸">魔獸 (Monster)</option>
+                    <option value="植物">植物 (Plant)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">MP 消耗</label>
+                  <input
+                    type="text"
+                    value={newMp}
+                    onChange={e => setNewMp(e.target.value)}
+                    placeholder="10 或 10 × T"
+                    className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">目標</label>
+                  <input
+                    type="text"
+                    value={newTarget}
+                    onChange={e => setNewTarget(e.target.value)}
+                    placeholder="一個生物 / 至多 3 個生物"
+                    className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">持續時間</label>
+                  <input
+                    type="text"
+                    value={newDuration}
+                    onChange={e => setNewDuration(e.target.value)}
+                    placeholder="瞬發 / 場景"
+                    className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="chk-offensive"
+                  checked={newIsOffensive}
+                  onChange={e => setNewIsOffensive(e.target.checked)}
+                  className="rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="chk-offensive" className="font-bold text-stone-700 dark:text-stone-300 cursor-pointer flex items-center gap-1">
+                  <span>這是一個攻擊性咒語（o）</span>
+                  <span className="text-[11px] text-stone-400 font-normal">（將使用【{currentFormula}】檢定）</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">效果說明</label>
+                <textarea
+                  rows={3}
+                  value={newEffect}
+                  onChange={e => setNewEffect(e.target.value)}
+                  placeholder="詳細效果說明..."
+                  className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-emerald-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-3 py-1.5 rounded-lg border border-stone-300 dark:border-slate-700 text-stone-600 dark:text-stone-400 font-bold"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
+                >
+                  記錄並保存
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
