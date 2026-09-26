@@ -139,11 +139,11 @@ export default function ClassSkillCard({
               {classDef.freeBonus && (
                 <div className="flex items-center gap-2 flex-wrap mt-1">
                   <span className="text-xs font-mono font-bold text-amber-900 bg-amber-200/90 px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
-                    {classDef.freeBonus}
+                    <SkillDescription desc={classDef.freeBonus} />
                   </span>
                   {classDef.freeBenefits && (
                     <span className="text-xs text-slate-600 line-clamp-1" title={classDef.freeBenefits}>
-                      {classDef.freeBenefits}
+                      <SkillDescription desc={classDef.freeBenefits} />
                     </span>
                   )}
                 </div>

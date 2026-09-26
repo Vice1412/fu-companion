@@ -24,6 +24,19 @@
 
 ## 📜 變更日誌 (Changelog)
 
+### [2026-09-26] - 核心 15 職業技能校準：確立官方英文 Core v1.1 機制與民間漢化譯名雙軌鐵律
+- **最高持久原則寫入 GEMINI.md**：
+  - 確立「**官方英文最新勘誤版 (`Fabula_Ultima_Core.pdf` Core v1.1 Errata) 為機制與數值基準**」、「**民間漢化版為中文名詞翻譯標準**」、「**衝突時無條件以官方英文為最高優先**」。
+- **角色卡數據庫 (`rulesData.json`) 7 大關鍵偏離校準**：
+  - **守護者 (Guardian)**：將誤植之公測【盾反】替換回官方核心【保鏢 (Bodyguard, maxSL: 1)】；【不動要塞】maxSL 修正為 5（HP 增加 `SL × 3`）。
+  - **武器大師 (Weaponmaster)**：【破甲擊】回歸官方核心 Core 1.1 標準（maxSL: 3，花費 5 MP，不造成傷害，可破壞盾牌/護甲或增傷 `SL × 2`）；【近戰武器掌握】maxSL 修正為 4。
+  - **博學士 (Loremaster)**：【靈光一閃】修正為官方 Core 1.1 條款（檢定結果 13+ 觸發提問，maxSL: 3）；【集中】maxSL 修正為 5。
+  - **狂怒鬥士 (Fury)**：【忍耐】補回官方原文漏譯之基礎固定值 `5 +`（HP 恢復修正為 `5 + 【SL × 最高羈絆強度】`）。
+  - **元素師 (Elementalist)**：【咒語之刃】對齊 Core 1.1 勘誤版（單體目標、MP 門檻放寬至 `SL × 20`、非奧術武器、DEX 檢定加成），移除混入之公測增傷。
+  - **神射手 (Sharpshooter)**：【鷹眼】移除公測 10 MP 規則，回歸官方 Core 1.1 的 `SL × 3` 增傷；【交叉火力】移除多餘 Playtest 標記。
+  - **靈師 (Spiritist)**：【活力魔法】更新為 Core 1.1 之 `10 + 該咒語總 MP` 生命消耗；【療癒能力】移除 Playtest 標記。
+  - **暗黑之刃 & 熵師**：【痛苦的教訓】maxSL 修正為 3；修復【熵系儀式】錯字，移除多餘 Playtest 標註。
+
 ### [2026-09-23] - 角色卡全模組視覺與排版對齊：回歸羊皮紙暖調，消除冷綠 SaaS 割裂感
 - **章節頂部條（ChapterHeader）全面統一**：
   - 將角色卡章節頂部導航條 ([`ChapterHeader.jsx`](file:///E:/MINGWAN/Projects/FU%20Companion/src/components/book/ChapterHeader.jsx)) 由過往的薄荷綠冷調徹底替換為與 NPC 工坊完全一致的米褐色魔導書羊皮紙橫幅（`bg-[#f4ebd9]/95`, `border-[#d6c7ab]`, `text-[#3c2415]`，黃金微光印記與皮質深褐退出按鈕）。

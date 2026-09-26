@@ -329,13 +329,13 @@ export default function ClassPickerModal({
                     </span>
                     {activeClassItem.def.freeBonus && (
                       <span className="text-xs font-mono font-bold text-amber-950 bg-amber-200/90 border border-amber-300 px-2 py-0.5 rounded shadow-2xs">
-                        {activeClassItem.def.freeBonus}
+                        <SkillDescription desc={activeClassItem.def.freeBonus} />
                       </span>
                     )}
                   </div>
                   {activeClassItem.def.freeBenefits && (
                     <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans">
-                      {activeClassItem.def.freeBenefits}
+                      <SkillDescription desc={activeClassItem.def.freeBenefits} />
                     </p>
                   )}
                 </div>
