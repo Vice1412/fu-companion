@@ -93,7 +93,7 @@ export default function RuleCodexDrawer({
 
   const navItems = [
     { id: 'arcana', label: '阿爾卡納', icon: GiSparkles },
-    { id: 'rituals', label: '儀式學派', icon: GiScrollQuill },
+    { id: 'rituals', label: '儀式', icon: GiScrollQuill },
     { id: 'gadgets', label: '小工具', icon: GiCauldron },
     { id: 'projects', label: '造物專案', icon: GiGearHammer },
     { id: 'companion', label: '忠實夥伴', icon: GiPawPrint },
@@ -171,14 +171,11 @@ export default function RuleCodexDrawer({
           {/* 當前概念頭銜 */}
           <div className="border-b border-[#e6dbc9] dark:border-slate-800 pb-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
-                {currentRule.category}
-              </span>
-              <span className="text-xs font-mono text-stone-500">{currentRule.englishTitle}</span>
+              <h1 className="text-xl font-black text-[#1a1412] dark:text-amber-100">
+                {currentRule.title}
+              </h1>
+              <span className="text-xs font-mono font-bold text-stone-500">{currentRule.englishTitle}</span>
             </div>
-            <h1 className="text-xl font-black text-[#1a1412] dark:text-amber-100 mt-1">
-              {currentRule.title}
-            </h1>
             <p className="mt-2 text-stone-700 dark:text-stone-300 text-xs leading-relaxed bg-[#fbf7ee] dark:bg-slate-950/60 p-3 rounded-lg border border-[#e8ddcc] dark:border-slate-800">
               {currentRule.summary}
             </p>
@@ -233,11 +230,11 @@ export default function RuleCodexDrawer({
                       </div>
                       <div className="space-y-1 text-xs">
                         <div>
-                          <strong className="text-amber-800 dark:text-amber-400 font-bold">合體 (Merge)：</strong>
+                          <strong className="text-amber-800 dark:text-amber-400 font-bold">【合體】：</strong>
                           <span className="text-stone-700 dark:text-stone-300">{arcana.merge}</span>
                         </div>
                         <div>
-                          <strong className="text-rose-800 dark:text-rose-400 font-bold">降臨 (Dismiss)：</strong>
+                          <strong className="text-rose-800 dark:text-rose-400 font-bold">【解除】：</strong>
                           <span className="text-stone-700 dark:text-stone-300">{arcana.dismiss}</span>
                         </div>
                       </div>
@@ -247,54 +244,173 @@ export default function RuleCodexDrawer({
             </div>
           )}
 
-          {/* 2. 儀式學派展示 */}
+          {/* 2. 儀式展示 */}
           {activeRuleId === 'rituals' && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                五大儀式學派與檢定公式
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {currentRule.disciplines.map((d, dIdx) => (
-                  <div key={dIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-1">
-                    <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1">
-                      <span className="font-bold text-sm text-amber-900 dark:text-amber-300">{d.name}</span>
-                      <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded">
-                        {d.formula}
-                      </span>
-                    </div>
-                    <p className="text-stone-600 dark:text-stone-400 text-xs leading-relaxed pt-0.5">
-                      {d.domains}
-                    </p>
-                  </div>
-                ))}
+            <div className="space-y-5">
+              {/* 六大學派表格 */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  六大學派與施法檢定
+                </h3>
+                <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                  <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                    <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                      <tr>
+                        <th className="p-2.5 w-20">學派</th>
+                        <th className="p-2.5 w-52">施法檢定</th>
+                        <th className="p-2.5">你可以...</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                      {currentRule.disciplines.map((d, dIdx) => (
+                        <tr key={dIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
+                          <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100 whitespace-nowrap">{d.name}</td>
+                          <td className="p-2.5 font-mono font-bold text-amber-800 dark:text-amber-400 whitespace-nowrap">{d.formula}</td>
+                          <td className="p-2.5 text-stone-600 dark:text-stone-400 leading-relaxed">{d.desc}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm pt-2">
-                儀式階級、消耗與難度對照表
-              </h3>
-              <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
-                <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
-                  <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
-                    <tr>
-                      <th className="p-2.5">儀式階級</th>
-                      <th className="p-2.5">MP 消耗</th>
-                      <th className="p-2.5">難度 (DL)</th>
-                      <th className="p-2.5">施法時間</th>
-                      <th className="p-2.5">範例效果</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
-                    {currentRule.costTable.map((c, cIdx) => (
-                      <tr key={cIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
-                        <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{c.tier}</td>
-                        <td className="p-2.5 font-mono text-amber-800 dark:text-amber-400 font-bold">{c.mp}</td>
-                        <td className="p-2.5 font-mono font-bold">{c.dl}</td>
-                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{c.time}</td>
-                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{c.desc}</td>
-                      </tr>
+              {/* 儀式五大禁忌 */}
+              <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 space-y-2 shadow-2xs">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  記住，儀式魔法永遠不能完成以下任何一項：
+                </h3>
+                <ul className="list-disc list-inside space-y-1.5 text-xs text-stone-700 dark:text-stone-300 pl-1 leading-relaxed">
+                  {currentRule.restrictions.map((r, rIdx) => (
+                    <li key={rIdx}>{r}</li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-stone-500 italic pt-1 border-t border-amber-200 dark:border-amber-900/50">
+                  除此之外，大多數儀式都是公平的——但你追求的效果越強，如果你的儀式出錯，後果就越悲慘。
+                </p>
+              </div>
+
+              {/* 施法三步驟與計算表 */}
+              <div className="space-y-3">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  施法流程與費用計算
+                </h3>
+                <ol className="list-decimal list-inside space-y-1.5 text-xs text-stone-700 dark:text-stone-300 pl-1 leading-relaxed">
+                  {currentRule.steps.map((s, sIdx) => (
+                    <li key={sIdx}>{s}</li>
+                  ))}
+                </ol>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                  {/* 效力表 */}
+                  <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                    <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                      <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                        <tr>
+                          <th className="p-2 w-12 text-center">效力</th>
+                          <th className="p-2 w-12 text-center">MP</th>
+                          <th className="p-2 w-12 text-center">DL</th>
+                          <th className="p-2">例子</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                        {currentRule.potencyTable.map((p, pIdx) => (
+                          <tr key={pIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
+                            <td className="p-2 font-bold text-stone-900 dark:text-stone-100 text-center">{p.tier}</td>
+                            <td className="p-2 font-mono text-amber-800 dark:text-amber-400 font-bold text-center">{p.mp}</td>
+                            <td className="p-2 font-mono font-bold text-center">{p.dl}</td>
+                            <td className="p-2 text-stone-600 dark:text-stone-400">{p.example}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 範圍表 */}
+                  <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                    <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                      <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                        <tr>
+                          <th className="p-2 w-14 text-center">範圍</th>
+                          <th className="p-2 w-16 text-center">MP 倍率</th>
+                          <th className="p-2">例子</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                        {currentRule.areaTable.map((a, aIdx) => (
+                          <tr key={aIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
+                            <td className="p-2 font-bold text-stone-900 dark:text-stone-100 text-center">{a.area}</td>
+                            <td className="p-2 font-mono text-amber-800 dark:text-amber-400 font-bold text-center">{a.multiplier}</td>
+                            <td className="p-2 text-stone-600 dark:text-stone-400">{a.example}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* 團隊檢定與減少成本 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1.5 shadow-2xs">
+                  <h4 className="font-bold text-amber-900 dark:text-amber-300 border-b border-stone-100 dark:border-slate-700 pb-1">
+                    團隊檢定下的儀式魔法
+                  </h4>
+                  <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
+                    {currentRule.groupCheck}
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1.5 shadow-2xs">
+                  <h4 className="font-bold text-amber-900 dark:text-amber-300 border-b border-stone-100 dark:border-slate-700 pb-1">
+                    減少儀式的成本
+                  </h4>
+                  <ul className="list-disc list-inside space-y-1 text-stone-600 dark:text-stone-400 leading-relaxed pl-1">
+                    {currentRule.costReduction.map((c, cIdx) => (
+                      <li key={cIdx}>{c}</li>
                     ))}
-                  </tbody>
-                </table>
+                  </ul>
+                </div>
+              </div>
+
+              {/* 衝突期間的儀式 */}
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1.5">
+                  <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                    衝突期間的儀式
+                  </h3>
+                  <span className="text-xs text-stone-500 font-normal">{currentRule.conflict.intro}</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {currentRule.conflict.clocks.map((c, cIdx) => (
+                    <div key={cIdx} className="p-2 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-center">
+                      <span className="text-stone-700 dark:text-stone-300 font-bold block">{c.tier}效力</span>
+                      <span className="text-amber-900 dark:text-amber-300 font-mono font-bold text-sm">{c.clock}</span>
+                    </div>
+                  ))}
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-xs text-stone-600 dark:text-stone-400 leading-relaxed pl-1">
+                  {currentRule.conflict.steps.map((s, sIdx) => (
+                    <li key={sIdx}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* 官方範例 */}
+              <div className="space-y-2">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  儀式的例子（官方裁定指導）
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  {currentRule.examples.map((ex, exIdx) => (
+                    <div key={exIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1 shadow-2xs">
+                      <span className="font-bold text-amber-800 dark:text-amber-400 block border-b border-stone-100 dark:border-slate-700 pb-0.5">
+                        {ex.school}學派範例
+                      </span>
+                      <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-[11px] pt-0.5">
+                        {ex.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

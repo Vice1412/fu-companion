@@ -19,14 +19,16 @@ const CODEX_KEYWORDS = [
   '元素學派儀式',
   '熵系學派儀式',
   '靈魂學派儀式',
-  '阿爾卡納',
   '儀式學派',
+  '純粹儀式',
+  '阿爾卡納',
   '小工具',
   '造物',
   '忠實夥伴',
   '元素魔法',
   '熵系魔法',
-  '靈魂魔法'
+  '靈魂魔法',
+  '儀式'
 ];
 
 export function parseSkillFormulaSegments(text, sl = 0) {
