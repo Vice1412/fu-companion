@@ -173,7 +173,6 @@ export default function RuleCodexDrawer({
               <h1 className="text-xl font-black text-[#1a1412] dark:text-amber-100">
                 {currentRule.title}
               </h1>
-              <span className="text-xs font-mono font-bold text-stone-500">{currentRule.englishTitle}</span>
             </div>
             <p className="mt-2 text-stone-700 dark:text-stone-300 text-xs leading-relaxed bg-[#fbf7ee] dark:bg-slate-950/60 p-3 rounded-lg border border-[#e8ddcc] dark:border-slate-800">
               {currentRule.summary}
@@ -199,7 +198,7 @@ export default function RuleCodexDrawer({
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                  12 大官方阿爾卡納圖鑑目錄
+                  9 大官方阿爾卡納圖鑑目錄
                 </h3>
                 <div className="relative">
                   <input
@@ -229,7 +228,7 @@ export default function RuleCodexDrawer({
                       </div>
                       <div className="space-y-1 text-xs">
                         <div>
-                          <strong className="text-amber-800 dark:text-amber-400 font-bold">【合體】：</strong>
+                          <strong className="text-amber-800 dark:text-amber-400 font-bold">【連結】：</strong>
                           <span className="text-stone-700 dark:text-stone-300">{arcana.merge}</span>
                         </div>
                         <div>
@@ -414,63 +413,206 @@ export default function RuleCodexDrawer({
             </div>
           )}
 
-          {/* 3. 小工具類別與益處展示 */}
+          {/* 3. 小工具發明展示 */}
           {activeRuleId === 'gadgets' && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                三大工藝類型與增益目錄
-              </h3>
-              <div className="space-y-3">
-                {currentRule.branches.map((branch, bIdx) => (
-                  <div key={bIdx} className="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-2.5 shadow-2xs">
-                    <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-amber-800 dark:text-amber-400">{branch.name}</span>
-                        <span className="text-xs text-stone-400 font-mono font-normal">({branch.english})</span>
-                      </div>
-                      <span className="text-xs text-stone-600 dark:text-stone-400 font-normal">{branch.desc}</span>
-                    </div>
+            <div className="space-y-5">
+              {/* 煉金術 */}
+              {currentRule.alchemy && (
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-3.5 shadow-2xs">
+                  <div className="border-b border-stone-100 dark:border-slate-700 pb-2">
+                    <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm flex items-center justify-between">
+                      <span>{currentRule.alchemy.title}</span>
+                      <span className="text-xs font-normal text-stone-500">使用庫存動作調配</span>
+                    </h4>
+                    <p className="text-xs text-stone-600 dark:text-stone-400 mt-1">{currentRule.alchemy.desc}</p>
+                  </div>
+
+                  {/* 混合藥劑規格表 */}
+                  <div className="space-y-1.5">
+                    <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">混合藥劑規格與消耗：</span>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                      {(branch.tiers || []).map((tier, tIdx) => (
-                        <div
-                          key={tIdx}
-                          className={`p-2.5 rounded-lg border ${
-                            tIdx === 0
-                              ? 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50'
-                              : tIdx === 1
-                              ? 'bg-teal-50/70 dark:bg-teal-950/30 border-teal-200 dark:border-teal-900/50'
-                              : 'bg-purple-50/70 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <strong
-                              className={`font-bold ${
-                                tIdx === 0
-                                  ? 'text-amber-900 dark:text-amber-300'
-                                  : tIdx === 1
-                                  ? 'text-teal-900 dark:text-teal-300'
-                                  : 'text-purple-900 dark:text-purple-300'
-                              }`}
-                            >
-                              {tier.level}
-                            </strong>
-                            <span className="font-mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-700 dark:text-stone-300">
-                              {tier.cost}
-                            </span>
+                      {currentRule.alchemy.mixes.map((m, mIdx) => (
+                        <div key={mIdx} className="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
+                          <div className="flex justify-between font-bold mb-1">
+                            <span className="text-amber-950 dark:text-amber-200">{m.tier}</span>
+                            <span className="font-mono text-amber-800 dark:text-amber-400">{m.cost}</span>
                           </div>
-                          <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">
-                            {tier.desc}
-                          </p>
+                          <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{m.desc}</p>
                         </div>
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* 目標表與效果表 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs pt-1">
+                    {/* 目標表 */}
+                    <div className="space-y-1.5">
+                      <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">目標表（分配 1 個 d20）：</span>
+                      <div className="rounded-lg border border-[#ded2be] dark:border-slate-700 overflow-hidden">
+                        <table className="w-full text-left">
+                          <thead className="bg-[#f5ecdf] dark:bg-slate-950 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                            <tr>
+                              <th className="p-2 w-16 text-center">骰值</th>
+                              <th className="p-2">影響目標</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-[11px]">
+                            {currentRule.alchemy.targets.map((t, tIdx) => (
+                              <tr key={tIdx}>
+                                <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{t.roll}</td>
+                                <td className="p-1.5 text-stone-700 dark:text-stone-300">{t.target}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* 效果表 */}
+                    <div className="lg:col-span-2 space-y-1.5">
+                      <span className="font-bold text-xs text-stone-800 dark:text-stone-200 block">效果表（分配 1 個 d20）：</span>
+                      <div className="rounded-lg border border-[#ded2be] dark:border-slate-700 overflow-hidden max-h-60 overflow-y-auto">
+                        <table className="w-full text-left">
+                          <thead className="bg-[#f5ecdf] dark:bg-slate-950 font-bold border-b border-[#ded2be] dark:border-slate-700 sticky top-0">
+                            <tr>
+                              <th className="p-2 w-24 text-center">骰值</th>
+                              <th className="p-2">藥劑效果</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-[11px]">
+                            {currentRule.alchemy.effects.map((e, eIdx) => (
+                              <tr key={eIdx}>
+                                <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{e.roll}</td>
+                                <td className="p-1.5 text-stone-700 dark:text-stone-300">{e.effect}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 灌注術 */}
+              {currentRule.infusions && (
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-3.5 shadow-2xs">
+                  <div className="border-b border-stone-100 dark:border-slate-700 pb-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm">
+                        {currentRule.infusions.title}
+                      </h4>
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-amber-300/40">
+                        技能對象：{currentRule.infusions.target}
+                      </span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-1 text-xs text-stone-600 dark:text-stone-400 mt-2 pl-1">
+                      {currentRule.infusions.rules.map((ir, irIdx) => (
+                        <li key={irIdx}>{ir}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <span className="font-bold text-stone-800 dark:text-stone-200 block mb-1">基礎灌注 (2 IP)：</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {currentRule.infusions.basic.map((item, idx) => (
+                          <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                            <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{item.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="font-bold text-stone-800 dark:text-stone-200 block mb-1">高級灌注 (2 IP)：</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {currentRule.infusions.advanced.map((item, idx) => (
+                          <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                            <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{item.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="font-bold text-stone-800 dark:text-stone-200 block mb-1">最高灌注 (2 IP)：</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {currentRule.infusions.superior.map((item, idx) => (
+                          <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
+                            <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{item.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 魔科技 */}
+              {currentRule.magitech && (
+                <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-3.5 shadow-2xs">
+                  <div className="border-b border-stone-100 dark:border-slate-700 pb-2">
+                    <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm flex items-center justify-between">
+                      <span>{currentRule.magitech.title}</span>
+                      <span className="text-xs font-normal text-stone-500">官方最新勘誤版機制</span>
+                    </h4>
+                    <p className="text-xs text-stone-600 dark:text-stone-400 mt-1">{currentRule.magitech.desc}</p>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    {/* 基礎：魔科技篡奪 */}
+                    <div className="p-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-1">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-amber-950 dark:text-amber-200">{currentRule.magitech.basic.name}</span>
+                        <span className="font-mono text-amber-800 dark:text-amber-400">{currentRule.magitech.basic.cost}</span>
+                      </div>
+                      <p className="text-stone-700 dark:text-stone-300 leading-relaxed text-[11px]">
+                        {currentRule.magitech.basic.desc}
+                      </p>
+                    </div>
+
+                    {/* 高級：魔加農 */}
+                    <div className="p-3 rounded-lg bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-900/50 space-y-2">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-teal-950 dark:text-teal-200">{currentRule.magitech.advanced.name}</span>
+                        <span className="font-mono text-teal-800 dark:text-teal-400">{currentRule.magitech.advanced.cost}</span>
+                      </div>
+                      <p className="text-stone-700 dark:text-stone-300 leading-relaxed text-[11px]">
+                        {currentRule.magitech.advanced.desc}
+                      </p>
+                      {/* 武器數據表 */}
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-2 bg-white/80 dark:bg-slate-900/80 rounded border border-teal-200/60 dark:border-teal-900/60 text-[11px]">
+                        <div><span className="text-stone-500 block">類別</span><span className="font-bold text-stone-800 dark:text-stone-200">{currentRule.magitech.advanced.weaponStats.category}</span></div>
+                        <div><span className="text-stone-500 block">持握</span><span className="font-bold text-stone-800 dark:text-stone-200">{currentRule.magitech.advanced.weaponStats.hands}</span></div>
+                        <div><span className="text-stone-500 block">射程</span><span className="font-bold text-stone-800 dark:text-stone-200">{currentRule.magitech.advanced.weaponStats.range}</span></div>
+                        <div><span className="text-stone-500 block">命中檢定</span><span className="font-bold text-stone-800 dark:text-stone-200 font-mono">{currentRule.magitech.advanced.weaponStats.accuracy}</span></div>
+                        <div><span className="text-stone-500 block">傷害</span><span className="font-bold text-stone-800 dark:text-stone-200 font-mono">{currentRule.magitech.advanced.weaponStats.damage}</span></div>
+                        <div><span className="text-stone-500 block">特性</span><span className="font-bold text-stone-800 dark:text-stone-200">{currentRule.magitech.advanced.weaponStats.quality}</span></div>
+                      </div>
+                    </div>
+
+                    {/* 最高：魔法球 */}
+                    <div className="p-3 rounded-lg bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 space-y-1">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-purple-950 dark:text-purple-200">{currentRule.magitech.superior.name}</span>
+                        <span className="font-mono text-purple-800 dark:text-purple-400">{currentRule.magitech.superior.cost}</span>
+                      </div>
+                      <p className="text-stone-700 dark:text-stone-300 leading-relaxed text-[11px]">
+                        {currentRule.magitech.superior.desc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* 3. 造物專案規模與成本 */}
+          {/* 4. 造物專案規模與成本 */}
           {activeRuleId === 'projects' && (
             <div className="space-y-4">
               <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
@@ -483,6 +625,7 @@ export default function RuleCodexDrawer({
                       <th className="p-2.5">專案規模</th>
                       <th className="p-2.5">基礎材料費</th>
                       <th className="p-2.5">時鐘格數</th>
+                      <th className="p-2.5">預估時間</th>
                       <th className="p-2.5">範例</th>
                     </tr>
                   </thead>
@@ -492,6 +635,7 @@ export default function RuleCodexDrawer({
                         <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100">{t.tier}</td>
                         <td className="p-2.5 font-mono text-amber-800 dark:text-amber-400 font-bold">{t.cost}</td>
                         <td className="p-2.5 font-mono">{t.clock}</td>
+                        <td className="p-2.5 text-stone-600 dark:text-stone-400">{t.time}</td>
                         <td className="p-2.5 text-stone-600 dark:text-stone-400">{t.example}</td>
                       </tr>
                     ))}
@@ -501,14 +645,13 @@ export default function RuleCodexDrawer({
               <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-xs space-y-1">
                 <strong className="text-amber-900 dark:text-amber-300 block">發明進度推進檢定：</strong>
                 <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
-                  在休整或旅途中，花費一天全心進行專案發明，執行一次【Dex + Ins】發明檢定。
-                  成功推進 1 格時鐘；檢定總值達 10 推進 2 格；總值達 13 推進 3 格！修補匠《高瞻遠矚》可額外獲得進度與材料費折扣。
+                  日常推進每天自動累積 1 點進度。修補匠《高瞻遠矚》每日額外推進 +SL 點，並自動抵扣【SL × 100】z 材料成本。
                 </p>
               </div>
             </div>
           )}
 
-          {/* 4. 忠實夥伴詳細規格 */}
+          {/* 5. 忠實夥伴詳細規格 */}
           {activeRuleId === 'companion' && (
             <div className="space-y-4">
               <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
@@ -516,57 +659,95 @@ export default function RuleCodexDrawer({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2">
-                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b pb-1">
-                    基礎屬性分配 (起始 d8/d8/d6/d6)
+                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b border-stone-100 dark:border-slate-700 pb-1">
+                    基礎屬性配置方案
                   </span>
-                  <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                    在 DEX、INS、MIG、WLP 中自選兩項分配為 <strong>d8</strong>，其餘兩項分配為 <strong>d6</strong>。
-                    旅人每升級時，夥伴也隨同提升其生命力。
+                  <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-[11px]">
+                    從【d8, d8, d8, d8】、【d10, d8, d8, d6】、【d10, d10, d6, d6】或【d12, d8, d6, d6】中任選一組分配至 DEX, INS, MIG, WLP。固定為 5 級，物種可選野獸、構裝體、元素或植物。
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2">
-                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b pb-1">
+                  <span className="font-bold text-stone-900 dark:text-stone-100 block border-b border-stone-100 dark:border-slate-700 pb-1">
                     最大 HP 動態公式
                   </span>
                   <div className="font-mono text-amber-800 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 p-1.5 rounded">
-                    Max HP = (SL × 夥伴基礎 MIG) + ⌊旅人等級 / 2⌋
+                    最大 HP = (SL × 夥伴基礎 MIG) + ⌊旅人等級 / 2⌋
                   </div>
-                  <p className="text-stone-500 text-[11px]">HP 低於一半時自動進入危機狀態，旅人可用技能或道具為其急救。</p>
+                  <p className="text-stone-500 text-[11px]">危機值為最大 HP / 2。物防等於當前 DEX 骰，魔防等於當前 INS 骰。</p>
                 </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2 text-xs">
+                <span className="font-bold text-amber-900 dark:text-amber-300 block border-b border-stone-100 dark:border-slate-700 pb-1">
+                  行動指揮與基礎攻擊
+                </span>
+                <ul className="list-disc list-inside space-y-1.5 text-stone-700 dark:text-stone-300 text-[11px] leading-relaxed pl-1">
+                  <li>夥伴最多擁有 2 種基礎攻擊（傷害為【HR + 5】），其命中檢定與魔法檢定獲得等於【SL】的加值。</li>
+                  <li>夥伴在衝突中沒有獨立回合；在旅人回合中，旅人可花費一個動作讓夥伴執行動作（每回合限一次）。</li>
+                  <li>當 HP 降至 0 時夥伴逃離戰場；在旅人登場的下一場景以危機 HP 重新歸隊。</li>
+                </ul>
               </div>
             </div>
           )}
 
-          {/* 5. 核心法術書展示 */}
+          {/* 6. 核心法術書展示 */}
           {activeRuleId === 'spellbooks' && (
-            <div className="space-y-5">
-              {currentRule.schools.map((school, sIdx) => (
-                <div key={sIdx} className="space-y-2">
-                  <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm border-b border-[#e2d7c5] dark:border-slate-700 pb-1">
-                    {school.name}
-                  </h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    {school.spells.map((sp, spIdx) => (
-                      <div key={spIdx} className="p-2.5 rounded bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 text-xs space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            {sp.offensive && (
-                              <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">
-                                o
-                              </span>
-                            )}
-                            <span>{sp.name}</span>
-                          </span>
-                          <span className="text-[11px] font-mono text-stone-500">
-                            MP: {sp.mp} | 目標: {sp.target} | 持續: {sp.duration}
-                          </span>
-                        </div>
-                        <p className="text-stone-600 dark:text-stone-400 text-[11px]">{sp.desc}</p>
-                      </div>
-                    ))}
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                  三大核心法術書（共 38 門咒語）
+                </h3>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="搜尋咒語名稱或效果..."
+                    className="px-2.5 py-1 text-xs rounded-lg border border-[#d6c7ab] dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-800 dark:text-stone-200 pr-7 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
+                  />
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute right-2 top-2 pointer-events-none" />
                 </div>
-              ))}
+              </div>
+
+              <div className="space-y-5">
+                {currentRule.schools.map((school, sIdx) => {
+                  const filteredSpells = school.spells.filter(
+                    sp => !searchTerm || sp.name.includes(searchTerm) || sp.desc.includes(searchTerm)
+                  );
+                  if (filteredSpells.length === 0) return null;
+                  return (
+                    <div key={sIdx} className="space-y-2">
+                      <div className="flex items-center justify-between border-b border-[#e2d7c5] dark:border-slate-700 pb-1">
+                        <h4 className="font-bold text-amber-900 dark:text-amber-300 text-sm">
+                          {school.name}
+                        </h4>
+                        <span className="text-xs font-mono font-bold text-stone-500">
+                          施法檢定：{school.check}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {filteredSpells.map((sp, spIdx) => (
+                          <div key={spIdx} className="p-2.5 rounded bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 text-xs space-y-1 shadow-2xs">
+                            <div className="flex items-center justify-between flex-wrap gap-1">
+                              <span className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                                {sp.offensive && (
+                                  <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">
+                                    o
+                                  </span>
+                                )}
+                                <span>{sp.name}</span>
+                              </span>
+                              <span className="text-[11px] font-mono text-stone-500">
+                                MP: {sp.mp} | 目標: {sp.target} | 持續: {sp.duration}
+                              </span>
+                            </div>
+                            <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">{sp.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
