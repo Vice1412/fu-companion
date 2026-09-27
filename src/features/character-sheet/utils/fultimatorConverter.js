@@ -226,7 +226,7 @@ export const convertFultimatorToFUCompanion = (fChar) => {
   // 9. 啟用的手冊拓展配置
   const enabledSourcebooks = ['core'];
   classes.forEach(c => {
-    if (['指揮官', '舞者', '魔奏者', '徽記師', '死靈術士'].includes(c.className)) {
+    if (['指揮官', '舞者', '魔奏者', '徽記師'].includes(c.className)) {
       if (!enabledSourcebooks.includes('highFantasy')) enabledSourcebooks.push('highFantasy');
     }
     if (['機師', '靈能者', '突變體'].includes(c.className)) {
@@ -234,6 +234,9 @@ export const convertFultimatorToFUCompanion = (fChar) => {
     }
     if (['美食家', '祈喚者', '商人', '植物學家'].includes(c.className)) {
       if (!enabledSourcebooks.includes('naturalFantasy')) enabledSourcebooks.push('naturalFantasy');
+    }
+    if (['卡牌大師', '死靈術士'].includes(c.className)) {
+      if (!enabledSourcebooks.includes('bonus')) enabledSourcebooks.push('bonus');
     }
     if (c.className.includes('Playtest')) {
       if (!enabledSourcebooks.includes('playtest')) enabledSourcebooks.push('playtest');

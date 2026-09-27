@@ -11,7 +11,7 @@ export const SOURCEBOOKS = {
     badgeColor: 'amber',
     desc: '《Fabula Ultima》核心 15 大經典職業，TRPG 冒險與創角基石。',
     defaultEnabled: true,
-    locked: true, // 核心職業永遠啟用
+    locked: false,
     classes: [
       '秘儀師',
       '嵌合師',
@@ -35,9 +35,9 @@ export const SOURCEBOOKS = {
     name: '高等奇幻手冊',
     shortName: '高等奇幻',
     badgeColor: 'purple',
-    desc: '史詩般的英雄宿命、誓約與魔法，包含指揮官、舞者、死靈術士等職業。',
+    desc: '史詩般的英雄宿命、誓約與魔法，包含指揮官、舞者、魔奏者、徽記師。',
     defaultEnabled: false,
-    classes: ['指揮官', '舞者', '魔奏者', '徽記師', '死靈術士']
+    classes: ['指揮官', '舞者', '魔奏者', '徽記師']
   },
   technoFantasy: {
     id: 'technoFantasy',
@@ -56,6 +56,15 @@ export const SOURCEBOOKS = {
     desc: '大地生態共生、野味烹飪料理與行商契約，包含美食家、祈喚者、商人、植物學家。',
     defaultEnabled: false,
     classes: ['美食家', '祈喚者', '商人', '植物學家']
+  },
+  bonus: {
+    id: 'bonus',
+    name: '官方特典合輯',
+    shortName: '特典合輯',
+    badgeColor: 'indigo',
+    desc: '官方特典合輯 Bonus Collection，包含卡牌大師與死靈術士。',
+    defaultEnabled: false,
+    classes: ['卡牌大師', '死靈術士']
   },
   playtest: {
     id: 'playtest',
@@ -217,13 +226,6 @@ export const CLASS_METADATA = {
     source: 'highFantasy',
     tagline: '將魔力銘刻為持久戰鬥結界的刻印者。'
   },
-  '死靈術士': {
-    name: '死靈術士',
-    en: 'Necromancer',
-    icon: 'GiScythe',
-    source: 'highFantasy',
-    tagline: '支配亡者怨念並操弄生死的通冥學者。'
-  },
 
   // 科技奇幻 (Techno Fantasy)
   '機師': {
@@ -235,7 +237,7 @@ export const CLASS_METADATA = {
   },
   '靈能者': {
     name: '靈能者',
-    en: 'Psychic',
+    en: 'Esper',
     icon: 'GiPsychicWaves',
     source: 'technoFantasy',
     tagline: '運用精神念動力與思維屏障的超能者。'
@@ -272,10 +274,26 @@ export const CLASS_METADATA = {
   },
   '植物學家': {
     name: '植物學家',
-    en: 'Flora',
+    en: 'Floralist',
     icon: 'GiSprout',
     source: 'naturalFantasy',
     tagline: '培育奇花異草與藥用孢子的園藝專家。'
+  },
+
+  // 特典合輯 (Bonus Collection)
+  '卡牌大師': {
+    name: '卡牌大師',
+    en: 'Ace of Cards',
+    icon: 'GiCardPlay',
+    source: 'bonus',
+    tagline: '運用實體套牌操縱機率與超自然運氣的牌靈師。'
+  },
+  '死靈術士': {
+    name: '死靈術士',
+    en: 'Necromancer',
+    icon: 'GiScythe',
+    source: 'bonus',
+    tagline: '支配亡者怨念並操弄生死的通冥學者。'
   },
 
   // 公測修訂 (Playtest Variants)
