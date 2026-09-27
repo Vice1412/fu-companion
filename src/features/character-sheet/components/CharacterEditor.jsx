@@ -105,19 +105,22 @@ export default function CharacterEditor({
   };
 
   const toggleSourcebook = (sbKey) => {
-    if (sbKey === 'core') return; // core is locked
-    const cur = character.enabledSourcebooks || ['core'];
+    const cur = character.enabledSourcebooks ?? ['core'];
     const exists = cur.includes(sbKey);
     const updated = exists ? cur.filter(k => k !== sbKey) : [...cur, sbKey];
     updateField('enabledSourcebooks', updated);
   };
 
   // Filter available classes according to enabled sourcebooks
-  const enabledBooks = character.enabledSourcebooks || ['core'];
-  const availableClassNames = Object.keys(SOURCEBOOKS)
-    .filter(sbKey => enabledBooks.includes(sbKey))
-    .flatMap(sbKey => SOURCEBOOKS[sbKey].classes)
-    .filter(cName => rulesData.classes[cName]);
+  const enabledBooks = character.enabledSourcebooks ?? ['core'];
+  const availableClassNames = [
+    ...new Set(
+      Object.keys(SOURCEBOOKS)
+        .filter(sbKey => enabledBooks.includes(sbKey))
+        .flatMap(sbKey => SOURCEBOOKS[sbKey].classes)
+        .filter(cName => rulesData.classes[cName])
+    )
+  ];
 
   // Class & Skill handlers
   const handleSelectClassFromPicker = (cName, selectedSkills = []) => {
@@ -808,15 +811,14 @@ export default function CharacterEditor({
                 <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(SOURCEBOOKS).map(sbKey => {
                     const sb = SOURCEBOOKS[sbKey];
-                    const isEnabled = (character.enabledSourcebooks || ['core']).includes(sbKey);
+                    const isEnabled = (character.enabledSourcebooks ?? ['core']).includes(sbKey);
 
                     return (
                       <button
                         key={sbKey}
                         type="button"
                         onClick={() => toggleSourcebook(sbKey)}
-                        disabled={sb.locked}
-                        className={`text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-xs ${sb.locked ? 'cursor-default' : 'cursor-pointer'}`}
+                        className="text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
                         style={
                           isEnabled
                             ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
@@ -934,6 +936,7 @@ export default function CharacterEditor({
                 onClose={() => setIsClassPickerOpen(false)}
                 theme={theme}
                 enabledBooks={enabledBooks}
+                onToggleSourcebook={toggleSourcebook}
                 existingClassNames={(character.classes || []).map(c => c.className)}
                 onSelectClass={handleSelectClassFromPicker}
               />

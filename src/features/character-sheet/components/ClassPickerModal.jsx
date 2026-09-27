@@ -3,7 +3,8 @@ import {
   GiSparkles,
   GiCheckMark,
   GiMagnifyingGlass,
-  GiHazardSign
+  GiHazardSign,
+  GiSpellBook
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGModal from '../../../components/ui/JRPGModal';
@@ -28,6 +29,7 @@ export default function ClassPickerModal({
   onClose,
   theme,
   enabledBooks = ['core'],
+  onToggleSourcebook,
   existingClassNames = [],
   onSelectClass
 }) {
@@ -39,7 +41,7 @@ export default function ClassPickerModal({
 
   // 取得所有可用職業清單
   const availableClasses = useMemo(() => {
-    return Object.keys(SOURCEBOOKS)
+    const list = Object.keys(SOURCEBOOKS)
       .filter(sbKey => enabledBooks.includes(sbKey))
       .flatMap(sbKey => {
         const book = SOURCEBOOKS[sbKey];
@@ -53,6 +55,13 @@ export default function ClassPickerModal({
         }));
       })
       .filter(item => item.def && (item.def.skills || item.def.source));
+
+    const seen = new Set();
+    return list.filter(item => {
+      if (seen.has(item.className)) return false;
+      seen.add(item.className);
+      return true;
+    });
   }, [enabledBooks]);
 
   // 搜尋過濾
@@ -85,6 +94,19 @@ export default function ClassPickerModal({
       setMobileStep('list');
     }
   }, [isOpen]);
+
+  // 拓展切換時若當前選取職業被停用，自動平滑切換至下一個可用職業
+  useEffect(() => {
+    if (isOpen && selectedClassName && !availableClasses.some(c => c.className === selectedClassName)) {
+      const firstAvailable = availableClasses.find(c => !existingClassNames.includes(c.className));
+      if (firstAvailable) {
+        handleInitClassDraft(firstAvailable.className);
+      } else {
+        setSelectedClassName(null);
+        setDraftSkills({});
+      }
+    }
+  }, [availableClasses, isOpen, selectedClassName, existingClassNames]);
 
   const activeClassItem = useMemo(() => {
     if (!selectedClassName) return null;
@@ -151,14 +173,50 @@ export default function ClassPickerModal({
       title="選擇職業與技能分配"
       maxWidth="max-w-5xl"
     >
-      <div className="flex flex-col md:flex-row gap-3 md:gap-4 h-[80vh] md:h-[75vh] max-h-[720px] overflow-hidden -m-1">
-        {/* ================= 左側欄：職業名冊與搜尋 (手機端步驟 1) ================= */}
+      <div className="flex flex-col h-[82vh] md:h-[76vh] max-h-[730px] overflow-hidden -m-1">
+        {/* 頂部上排：官方拓展打勾開關列 */}
         <div
-          className={`w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r pr-0 md:pr-3 pb-2 md:pb-0 h-full overflow-hidden ${
-            mobileStep === 'list' ? 'flex' : 'hidden md:flex'
-          }`}
-          style={{ borderColor: theme.border }}
+          className="px-3 py-2 rounded-xl border flex items-center justify-between flex-wrap gap-2 transition-colors mb-2.5 shrink-0"
+          style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
         >
+          <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
+            <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+            官方拓展職業:
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Object.keys(SOURCEBOOKS).map(sbKey => {
+              const sb = SOURCEBOOKS[sbKey];
+              const isEnabled = enabledBooks.includes(sbKey);
+
+              return (
+                <button
+                  key={sbKey}
+                  type="button"
+                  onClick={() => onToggleSourcebook && onToggleSourcebook(sbKey)}
+                  className="text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                  style={
+                    isEnabled
+                      ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
+                      : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
+                  }
+                >
+                  {isEnabled ? <GiCheckMark className="w-3 h-3" /> : null}
+                  <span>{sb.shortName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 雙欄主容器：左側名冊與右側詳情 */}
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 flex-1 min-h-0 overflow-hidden">
+          {/* ================= 左側欄：職業名冊與搜尋 (手機端步驟 1) ================= */}
+          <div
+            className={`w-full md:w-72 lg:w-80 shrink-0 flex-col border-b md:border-b-0 md:border-r pr-0 md:pr-3 pb-2 md:pb-0 h-full overflow-hidden ${
+              mobileStep === 'list' ? 'flex' : 'hidden md:flex'
+            }`}
+            style={{ borderColor: theme.border }}
+          >
           {/* 手機端步驟引導 */}
           <div className="flex md:hidden items-center justify-between pb-1.5 mb-1 text-slate-600">
             <span className="text-xs font-bold flex items-center gap-1.5">
@@ -507,6 +565,7 @@ export default function ClassPickerModal({
           )}
         </div>
       </div>
+    </div>
     </JRPGModal>
   );
 }
