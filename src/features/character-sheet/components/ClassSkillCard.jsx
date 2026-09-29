@@ -13,15 +13,123 @@ import JRPGBadge from '../../../components/ui/JRPGBadge';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import SkillStarPips from './SkillStarPips';
 import SkillDescription from '../utils/skillFormulaEvaluator';
+import SkillSuboptionModal from './SkillSuboptionModal';
+import {
+  getSkillSuboptionConfig,
+  calculateSkillSuboptionMax
+} from '../data/skillSuboptionsData';
 import { getClassInfo } from '../data/sourcebookConfig';
 import rulesData from '../data/rulesData.json';
 
 /**
+ * 子項目狀態與配置條 (SkillSuboptionBar)
+ */
+function SkillSuboptionBar({
+  className,
+  skillName,
+  sl,
+  selectedOptions = [],
+  onOpenModal
+}) {
+  const config = getSkillSuboptionConfig(className, skillName);
+  if (!config || sl <= 0) return null;
+
+  const maxQuota = calculateSkillSuboptionMax(className, skillName, sl);
+
+  // 整理顯示清單
+  let selectedList = [];
+  let selectedCount = 0;
+  if (Array.isArray(selectedOptions)) {
+    selectedList = selectedOptions;
+    selectedCount = selectedOptions.length;
+  } else if (selectedOptions && typeof selectedOptions === 'object') {
+    const keys = selectedOptions.keys || [];
+    const tones = selectedOptions.tones || [];
+    selectedList = [
+      ...keys.map(k => `音調: ${k}`),
+      ...tones.map(t => `曲風: ${t}`)
+    ];
+    selectedCount = keys.length + tones.length;
+  }
+
+  const isComplete = selectedCount === maxQuota;
+  const isOver = selectedCount > maxQuota;
+  const isUnder = selectedCount < maxQuota;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-200/80 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        {/* 配額狀態指示徽章 */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {selectedCount === 0 ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-dashed border-slate-300 font-bold">
+              尚未配置任何項目
+            </span>
+          ) : isComplete ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold flex items-center gap-1">
+              <GiCheckMark className="w-3 h-3 text-emerald-700" />
+              <span>已掌握 {selectedCount} / {maxQuota}（已完成構築）</span>
+            </span>
+          ) : isOver ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 font-bold flex items-center gap-1">
+              <GiHazardSign className="w-3 h-3 text-rose-700" />
+              <span>已掌握 {selectedCount} / {maxQuota}（超出 {selectedCount - maxQuota} 個，請刪減）</span>
+            </span>
+          ) : (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1">
+              <GiSparkles className="w-3 h-3 text-amber-600" />
+              <span>已掌握 {selectedCount} / {maxQuota}（尚餘 {maxQuota - selectedCount} 個名額）</span>
+            </span>
+          )}
+        </div>
+
+        {/* 觸發彈窗按鈕 */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenModal();
+          }}
+          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+            selectedCount === 0
+              ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
+              : 'bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs'
+          }`}
+        >
+          <GiQuillInk className="w-3.5 h-3.5" />
+          <span>{selectedCount === 0 ? `配置${config.itemTypeTitle}` : `調整${config.itemTypeTitle}`}</span>
+        </button>
+      </div>
+
+      {/* 已選標籤列 */}
+      {selectedCount > 0 ? (
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {selectedList.map((item, idx) => (
+            <span
+              key={idx}
+              className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
+            >
+              <span className="text-amber-500">✦</span>
+              <span>{item}</span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-slate-500 italic">
+          尚未選擇任何項目。請點擊上方按鈕展開清單完成角色構築。
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * 職業特技管理卡片 (ClassSkillCard)
- * 滿足需求 1, 2, 3：
+ * 滿足需求 1, 2, 3 與子項目挑選構築：
  * 1. 中英文名、專屬圖標並存，附帶一目了然的一句話風格描述。
  * 2. 展開點選模式：列出所有特技，Max SL 星星視覺化，點擊變色；點選儲存後恢復簡潔，僅顯示已點亮特技。
  * 3. 動態公式求值：未點時顯示計算公式，點亮後自動算好精準數值。
+ * 4. 子項目專屬挑選：為 9 大技能提供即時配額標籤與構建抽屜。
  */
 export default function ClassSkillCard({
   classItem,
@@ -38,6 +146,9 @@ export default function ClassSkillCard({
   const classDef = rulesData.classes[className] || {};
   const allAvailableSkills = classDef.skills || [];
 
+  // 子項目構築彈窗目標特技 { skillName, sl, selectedOptions }
+  const [suboptionModalSkill, setSuboptionModalSkill] = useState(null);
+
   // 暫存的特技配置字典 (用於編輯模式，保存點選狀態)
   const [draftSkills, setDraftSkills] = useState(() => {
     const map = {};
@@ -48,14 +159,27 @@ export default function ClassSkillCard({
     return map;
   });
 
-  // 當切換到編輯模式時，同步最新的 classItem.skills
-  const handleStartEdit = () => {
+  // 暫存的子項目配置字典 (用於編輯模式，保存各特技的子項目選項)
+  const [draftSuboptions, setDraftSuboptions] = useState(() => {
     const map = {};
     allAvailableSkills.forEach(sk => {
       const existing = (classItem.skills || []).find(s => s.name === sk.name);
+      map[sk.name] = existing?.selectedOptions || [];
+    });
+    return map;
+  });
+
+  // 當切換到編輯模式時，同步最新的 classItem.skills
+  const handleStartEdit = () => {
+    const map = {};
+    const subMap = {};
+    allAvailableSkills.forEach(sk => {
+      const existing = (classItem.skills || []).find(s => s.name === sk.name);
       map[sk.name] = existing ? existing.sl : 0;
+      subMap[sk.name] = existing?.selectedOptions || [];
     });
     setDraftSkills(map);
+    setDraftSuboptions(subMap);
     setIsEditing(true);
   };
 
@@ -78,7 +202,8 @@ export default function ClassSkillCard({
       if (sl > 0) {
         activeSkills.push({
           name: sk.name,
-          sl: Math.min(sk.maxSL || 5, sl)
+          sl: Math.min(sk.maxSL || 5, sl),
+          selectedOptions: draftSuboptions[sk.name] || []
         });
       }
     });
@@ -92,6 +217,36 @@ export default function ClassSkillCard({
     setIsEditing(false);
   };
 
+  // 開啟子項目彈窗
+  const handleOpenSuboptionModal = (skillName, currentSL, currentSelected) => {
+    setSuboptionModalSkill({
+      skillName,
+      sl: currentSL,
+      selectedOptions: currentSelected
+    });
+  };
+
+  // 儲存子項目彈窗選擇結果
+  const handleSaveSuboptions = (newOptions) => {
+    if (!suboptionModalSkill) return;
+    const targetSkillName = suboptionModalSkill.skillName;
+
+    if (isEditing) {
+      setDraftSuboptions(prev => ({
+        ...prev,
+        [targetSkillName]: newOptions
+      }));
+    } else {
+      const curSkills = JSON.parse(JSON.stringify(classItem.skills || []));
+      const target = curSkills.find(s => s.name === targetSkillName);
+      if (target) {
+        target.selectedOptions = newOptions;
+        onUpdateSkills(classIndex, curSkills);
+      }
+    }
+    setSuboptionModalSkill(null);
+  };
+
   return (
     <div
       className="rounded-xl border transition-all duration-200 overflow-hidden shadow-sm"
@@ -100,7 +255,7 @@ export default function ClassSkillCard({
         borderColor: isEditing ? theme.accent : theme.border
       }}
     >
-      {/* ================= 卡片頂部標題區 (需求 1：中英文名 + 專屬圖標 + 一言風格) ================= */}
+      {/* ================= 卡片頂部標題區 ================= */}
       <div
         className="p-3.5 sm:p-4 border-b flex flex-col gap-2 transition-colors"
         style={{
@@ -184,8 +339,8 @@ export default function ClassSkillCard({
           </div>
         </div>
 
-        {/* 需求 1：一小句風格/戰鬥畫風敘述（杜絕長篇大論） */}
-        <p className="text-xs text-slate-600 italic leading-relaxed pl-0.5 border-l-2 pl-2" style={{ borderColor: theme.accent }}>
+        {/* 風格/戰鬥畫風敘述 */}
+        <p className="text-xs text-slate-600 italic leading-relaxed pl-2 border-l-2" style={{ borderColor: theme.accent }}>
           {classInfo.tagline}
         </p>
       </div>
@@ -239,10 +394,19 @@ export default function ClassSkillCard({
                       />
                     </div>
 
-                    {/* 需求 3：自動算好數值的動態公式 */}
+                    {/* 自動算好數值的動態公式 */}
                     <div className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans pt-0.5">
                       <SkillDescription desc={skillDef?.desc || ''} sl={sk.sl} />
                     </div>
+
+                    {/* 子項目狀態與配置條 */}
+                    <SkillSuboptionBar
+                      className={className}
+                      skillName={sk.name}
+                      sl={sk.sl}
+                      selectedOptions={sk.selectedOptions || []}
+                      onOpenModal={() => handleOpenSuboptionModal(sk.name, sk.sl, sk.selectedOptions || [])}
+                    />
                   </div>
                 );
               })}
@@ -270,6 +434,7 @@ export default function ClassSkillCard({
               const currentSL = draftSkills[sk.name] || 0;
               const maxSL = sk.maxSL || 5;
               const isLearned = currentSL > 0;
+              const currentSuboptions = draftSuboptions[sk.name] || [];
 
               return (
                 <div
@@ -341,9 +506,20 @@ export default function ClassSkillCard({
                     </div>
                   </div>
 
-                  {/* 需求 3：動態公式求值 (未點時展示公式，點亮後展示精算結果) */}
+                  {/* 動態公式求值 (未點時展示公式，點亮後展示精算結果) */}
                   <div className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans pl-4 border-l border-slate-200">
                     <SkillDescription desc={sk.desc} sl={currentSL} />
+                  </div>
+
+                  {/* 子項目狀態與配置條 */}
+                  <div onClick={e => e.stopPropagation()}>
+                    <SkillSuboptionBar
+                      className={className}
+                      skillName={sk.name}
+                      sl={currentSL}
+                      selectedOptions={currentSuboptions}
+                      onOpenModal={() => handleOpenSuboptionModal(sk.name, currentSL, currentSuboptions)}
+                    />
                   </div>
                 </div>
               );
@@ -378,6 +554,20 @@ export default function ClassSkillCard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ================= 子項目構築彈窗 ================= */}
+      {suboptionModalSkill && (
+        <SkillSuboptionModal
+          isOpen={true}
+          onClose={() => setSuboptionModalSkill(null)}
+          className={className}
+          skillName={suboptionModalSkill.skillName}
+          sl={suboptionModalSkill.sl}
+          selectedOptions={suboptionModalSkill.selectedOptions}
+          onSave={handleSaveSuboptions}
+          theme={theme}
+        />
       )}
     </div>
   );

@@ -1361,13 +1361,134 @@ export default function CharacterPlayHUD({
                               <button
                                 type="button"
                                 onClick={() => toggleSkillExpand(`${cl.className}_${sk.name}`)}
-                                className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-0.5"
+                                className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-0.5 cursor-pointer"
                               >
                                 {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                 <span>{isExpanded ? '收合' : '展開完整效果'}</span>
                               </button>
                             )}
                           </div>
+
+                          {/* 子項目已掌握清單與專屬機制 */}
+                          {sk.selectedOptions && (Array.isArray(sk.selectedOptions) ? sk.selectedOptions.length > 0 : ((sk.selectedOptions.keys || []).length > 0 || (sk.selectedOptions.tones || []).length > 0)) && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                <span className="flex items-center gap-1 text-amber-900">
+                                  <GiSparkles className="w-3 h-3 text-amber-600" />
+                                  <span>已掌握子項目：</span>
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-1.5">
+                                {Array.isArray(sk.selectedOptions) ? (
+                                  sk.selectedOptions.map((optName, oIdx) => (
+                                    <span
+                                      key={oIdx}
+                                      className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
+                                    >
+                                      <span className="text-amber-500">✦</span>
+                                      <span>{optName}</span>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <>
+                                    {(sk.selectedOptions.keys || []).map((k, kIdx) => (
+                                      <span
+                                        key={`k_${kIdx}`}
+                                        className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <span className="text-amber-600 text-[10px]">音調</span>
+                                        <span>{k}</span>
+                                      </span>
+                                    ))}
+                                    {(sk.selectedOptions.tones || []).map((t, tIdx) => (
+                                      <span
+                                        key={`t_${tIdx}`}
+                                        className="text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-950 border border-purple-200 font-bold flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <span className="text-purple-600 text-[10px]">曲風</span>
+                                        <span>{t}</span>
+                                      </span>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+
+                              {/* 靈能者專屬靈刻時鐘 */}
+                              {cl.className === '靈能者' && sk.name === '心靈天賦' && (
+                                <div className="mt-2 p-2 bg-purple-50/70 rounded-xl border border-purple-200/80 flex items-center justify-between gap-3 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <ClockTracker
+                                      title="靈刻時鐘"
+                                      totalSegments={4}
+                                      filledSegments={character.brainwaveClock || 0}
+                                      theme="purple"
+                                      size={52}
+                                      onFilledChange={(newVal) => {
+                                        updateField('brainwaveClock', newVal);
+                                      }}
+                                    />
+                                    <div>
+                                      <div className="font-bold text-xs text-purple-950 flex items-center gap-1">
+                                        <span>靈刻時鐘</span>
+                                        <span className="font-mono text-[11px] text-purple-700">({character.brainwaveClock || 0} / 4)</span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 leading-tight">
+                                        每次使用天賦後填入 1 格。消耗 MP：【5 + 靈刻格數 × 5】
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateField('brainwaveClock', 0);
+                                      showToast('已清空靈刻時鐘');
+                                    }}
+                                    className="px-2 py-1 text-[11px] rounded-lg bg-white hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold transition-colors cursor-pointer"
+                                  >
+                                    重設靈刻
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* 植物學家專屬生長命刻 */}
+                              {cl.className === '植物學家' && sk.name === '植生術' && (
+                                <div className="mt-2 p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/80 flex items-center justify-between gap-3 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <ClockTracker
+                                      title="生長命刻"
+                                      totalSegments={4}
+                                      filledSegments={character.growthClock || 0}
+                                      theme="emerald"
+                                      size={52}
+                                      onFilledChange={(newVal) => {
+                                        updateField('growthClock', newVal);
+                                      }}
+                                    />
+                                    <div>
+                                      <div className="font-bold text-xs text-emerald-950 flex items-center gap-1">
+                                        <span>生長命刻</span>
+                                        <span className="font-mono text-[11px] text-emerald-700">({character.growthClock || 0} / 4)</span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 leading-tight">
+                                        回合結束填入 1 格並觸發效果。滿 4 格離園清空。
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateField('growthClock', 0);
+                                      showToast('已清空生長命刻');
+                                    }}
+                                    className="px-2 py-1 text-[11px] rounded-lg bg-white hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold transition-colors cursor-pointer"
+                                  >
+                                    清空花園
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
