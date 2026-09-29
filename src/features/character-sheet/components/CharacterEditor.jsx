@@ -147,11 +147,57 @@ export default function CharacterEditor({
     if (!curClasses[classIdx]) return;
     curClasses[classIdx].skills = updatedSkills;
     curClasses[classIdx].level = updatedSkills.reduce((sum, s) => sum + s.sl, 0);
-    updateField('classes', curClasses);
+
+    // 同步特技中所選的咒語至 character.spells
+    const allKnownSpellNames = new Set();
+    curClasses.forEach(cl => {
+      (cl.skills || []).forEach(sk => {
+        if (['元素魔法', '靈魂魔法', '熵系魔法'].includes(sk.name) && Array.isArray(sk.selectedOptions)) {
+          sk.selectedOptions.forEach(spName => allKnownSpellNames.add(spName));
+        }
+      });
+    });
+
+    const currentSpells = character.spells || [];
+    // 保留非三大核心學派的法術（如自訂或其它來源）
+    const nonCoreSpells = currentSpells.filter(sp => !['元素', '靈魂', '熵系'].includes(sp.school));
+    const newClassSpells = Array.from(allKnownSpellNames).map(spName => {
+      const found = (rulesData.spells || []).find(s => s.name === spName);
+      return found ? { ...found } : { name: spName };
+    });
+
+    onChange({
+      ...character,
+      classes: curClasses,
+      spells: [...nonCoreSpells, ...newClassSpells],
+      updatedAt: new Date().toISOString()
+    });
   };
 
   const handleRemoveClass = (classNameToRemove) => {
-    updateField('classes', (character.classes || []).filter(c => c.className !== classNameToRemove));
+    const remainingClasses = (character.classes || []).filter(c => c.className !== classNameToRemove);
+    const allKnownSpellNames = new Set();
+    remainingClasses.forEach(cl => {
+      (cl.skills || []).forEach(sk => {
+        if (['元素魔法', '靈魂魔法', '熵系魔法'].includes(sk.name) && Array.isArray(sk.selectedOptions)) {
+          sk.selectedOptions.forEach(spName => allKnownSpellNames.add(spName));
+        }
+      });
+    });
+
+    const currentSpells = character.spells || [];
+    const nonCoreSpells = currentSpells.filter(sp => !['元素', '靈魂', '熵系'].includes(sp.school));
+    const newClassSpells = Array.from(allKnownSpellNames).map(spName => {
+      const found = (rulesData.spells || []).find(s => s.name === spName);
+      return found ? { ...found } : { name: spName };
+    });
+
+    onChange({
+      ...character,
+      classes: remainingClasses,
+      spells: [...nonCoreSpells, ...newClassSpells],
+      updatedAt: new Date().toISOString()
+    });
     if (newlyAddedClassName === classNameToRemove) {
       setNewlyAddedClassName(null);
     }

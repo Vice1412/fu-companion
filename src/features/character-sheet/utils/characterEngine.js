@@ -1,5 +1,6 @@
 import rulesData from '../data/rulesData.json';
 import { SOURCEBOOKS } from '../data/sourcebookConfig';
+import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 
 // Dice ladder for step reductions
 const DICE_STEPS = [6, 8, 10, 12];
@@ -403,15 +404,48 @@ export const validateCharacter = (char) => {
     });
   }
 
+  // 步驟 3: 特技子項目配額檢驗 (如舞步、音調曲風、心靈天賦、魔法種子等)
+  (char.classes || []).forEach(cl => {
+    (cl.skills || []).forEach(sk => {
+      if (sk.sl > 0) {
+        const subConfig = getSkillSuboptionConfig(cl.className, sk.name);
+        if (subConfig) {
+          const maxQuota = calculateSkillSuboptionMax(cl.className, sk.name, sk.sl);
+          let currentCount = 0;
+          if (Array.isArray(sk.selectedOptions)) {
+            currentCount = sk.selectedOptions.length;
+          } else if (sk.selectedOptions && typeof sk.selectedOptions === 'object') {
+            currentCount = (sk.selectedOptions.keys || []).length + (sk.selectedOptions.tones || []).length;
+          }
+          if (currentCount < maxQuota) {
+            warnings.push({
+              step: 3,
+              field: `skill_suboptions_${cl.className}_${sk.name}`,
+              type: 'warning',
+              message: `【${cl.className}】的【${sk.name}】名額未滿：目前已配置 ${currentCount} 個，尚有 ${maxQuota - currentCount} 個名額可供選擇。請前往特技分頁完成構築。`
+            });
+          } else if (currentCount > maxQuota) {
+            warnings.push({
+              step: 3,
+              field: `skill_suboptions_${cl.className}_${sk.name}`,
+              type: 'warning',
+              message: `【${cl.className}】的【${sk.name}】超出配額：目前已配置 ${currentCount} 個，上限為 ${maxQuota} 個。請刪減 ${currentCount - maxQuota} 個選項。`
+            });
+          }
+        }
+      }
+    });
+  });
+
   // 步驟 4: 裝備與熟練度
   if (!char.equipment?.mainHand || char.equipment.mainHand === '無') {
     warnings.push({ step: 4, field: 'mainHand', type: 'info', message: '尚未裝備主手武器' });
   }
   if (stats.armorWarning) {
-    warnings.push({ step: 4, field: 'armor', type: 'warning', message: '目前穿戴軍用重甲防具，但所選職業缺乏熟練度' });
+    warnings.push({ step: 4, field: 'armor', type: 'warning', message: '目前穿戴職業防具，但所選職業缺乏熟練度' });
   }
   if (stats.shieldWarning) {
-    warnings.push({ step: 4, field: 'offHand', type: 'warning', message: '目前裝備軍用盾牌，但所選職業缺乏熟練度' });
+    warnings.push({ step: 4, field: 'offHand', type: 'warning', message: '目前裝備職業盾牌，但所選職業缺乏熟練度' });
   }
 
   // 步驟 5: 羈絆 (官方強烈建議起始至少 1 個)
