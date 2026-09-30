@@ -57,6 +57,7 @@ import {
   calculateCharacterStats,
   validateCharacter
 } from '../utils/characterEngine';
+import ErrorBoundary from '../../../components/ui/ErrorBoundary';
 
 export default function CharacterEditor({
   character,
@@ -632,6 +633,7 @@ export default function CharacterEditor({
           className="flex-1 w-full min-w-0 rounded-xl border p-4 sm:p-7 shadow-xs space-y-6 transition-colors"
           style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
         >
+          <ErrorBoundary inline label={TABS.find(t => t.id === activeTab)?.label || '編輯步驟'}>
 
           {/* ==================== TAB 1: 基礎身世 ==================== */}
           {activeTab === 1 && (
@@ -1418,6 +1420,7 @@ export default function CharacterEditor({
               </div>
             </div>
           )}
+          </ErrorBoundary>
 
           {/* Wizard Footer Navigation Bar */}
           <div className="pt-5 border-t flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: theme.border }}>

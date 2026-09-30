@@ -162,15 +162,17 @@ export default function SuboptionDetailsList({
                   </p>
                 )}
 
-                {/* 植物學家多階刻度骰面效果 */}
+                {/* 植物學家多階刻度與回合效果 */}
                 {detail.effects && Array.isArray(detail.effects) && (
-                  <div className="mt-1 pt-1 border-t border-slate-100 space-y-1">
-                    {detail.effects.map(ef => (
-                      <div key={ef.die} className="text-[10px] text-slate-600 flex items-start gap-1">
-                        <span className="font-mono font-bold text-amber-800 shrink-0">
-                          {ef.die}:
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-100 space-y-1.5">
+                    {detail.effects.map((ef, eIdx) => (
+                      <div key={eIdx} className="text-[11px] flex items-start gap-1.5">
+                        <span className="font-mono font-bold text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded text-[10px] shrink-0 border border-emerald-200">
+                          {ef.clock}
                         </span>
-                        <span>{renderTextWithAffinities(ef.text)}</span>
+                        <span className="text-slate-700 leading-relaxed font-sans">
+                          {renderTextWithAffinities(ef.text)}
+                        </span>
                       </div>
                     ))}
                   </div>

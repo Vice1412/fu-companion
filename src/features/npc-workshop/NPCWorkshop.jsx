@@ -26,6 +26,7 @@ import {
   SPECIES_DATA,
   syncLevelPassives
 } from './data';
+import { exportNpcToCombatant } from './utils/npcEngine';
 
 // --- COMPONENTS ---
 
