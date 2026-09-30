@@ -4,6 +4,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { exportNpcToCombatant } from '../../npc-workshop/utils/npcEngine';
+import { exportCharacterToCombatant } from '../../character-sheet/utils/characterEngine';
 import { Search, Plus, Swords, User, Shield, Folder, Tag } from 'lucide-react';
 
 export default function AddCombatantModal({

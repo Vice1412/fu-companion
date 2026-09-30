@@ -1,0 +1,301 @@
+import React, { useState } from 'react';
+import { GiSprout, GiFlowerPot, GiSparkles, GiCheckMark, GiHazardSign, GiPlantRoots } from 'react-icons/gi';
+import { Plus, Trash2, RotateCcw } from 'lucide-react';
+import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
+import { FLORIST_MAGISEEDS } from '../../data/skillSuboptionsData';
+
+/**
+ * 植物學家花園生長盤 (FloristGardenTracker)
+ *
+ * 專為植物學家【植生術】打造之跑團戰備追蹤盤：
+ * 1. 依據【植生術 SL】決定花園同時種植容量上限（至多 SL 株）。
+ * 2. 支援從已掌握的魔法種子中快速選擇並「播種至花園」。
+ * 3. 每株已播種植物配備 0~4 格生長命刻，支援一鍵「+1 回合命刻」與「回合結束：花園全體生長」。
+ * 4. 根據當前命刻（0~1格 / 2~3格 / 4格離園）即時高亮當前生效的機制效果，無需翻查手冊。
+ */
+export default function FloristGardenTracker({
+  character,
+  skillSL = 1,
+  selectedOptions = [],
+  onChange,
+  showToast
+}) {
+  const [selectedSeedToPlant, setSelectedSeedToPlant] = useState('');
+
+  // 取得角色當前花園資料
+  const gardenList = character.floristGarden || [];
+  const maxCapacity = Math.max(1, skillSL || 1);
+
+  // 提取已掌握的種子定義清單
+  const availableSeedNames = Array.isArray(selectedOptions) ? selectedOptions : [];
+  const availableSeeds = FLORIST_MAGISEEDS.filter(s => availableSeedNames.includes(s.name));
+  const fallbackSeeds = availableSeeds.length > 0 ? availableSeeds : FLORIST_MAGISEEDS;
+
+  const updateGarden = (newGarden) => {
+    if (!onChange) return;
+    onChange({
+      ...character,
+      floristGarden: newGarden,
+      updatedAt: new Date().toISOString()
+    });
+  };
+
+  // 播種至花園
+  const handlePlantSeed = (seedName) => {
+    if (!seedName) return;
+    if (gardenList.length >= maxCapacity) {
+      if (showToast) showToast(`花園容量已滿（上限 ${maxCapacity} 株，等同植生術 SL）！`, 'warning');
+      return;
+    }
+
+    const seedDef = FLORIST_MAGISEEDS.find(s => s.name === seedName);
+    const newEntry = {
+      instanceId: `seed_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      seedName,
+      clock: 0,
+      plantedAt: new Date().toISOString()
+    };
+
+    updateGarden([...gardenList, newEntry]);
+    setSelectedSeedToPlant('');
+    if (showToast) showToast(`已將【${seedName}】播種至花園！生長命刻：0 格。`, 'success');
+  };
+
+  // 推進單一植物命刻
+  const handleStepClock = (instanceId, delta) => {
+    const updated = gardenList.map(item => {
+      if (item.instanceId === instanceId) {
+        const nextClock = Math.max(0, Math.min(4, (item.clock || 0) + delta));
+        return { ...item, clock: nextClock };
+      }
+      return item;
+    });
+    updateGarden(updated);
+  };
+
+  // 移出花園／收穫
+  const handleRemoveSeed = (instanceId, seedName) => {
+    const updated = gardenList.filter(item => item.instanceId !== instanceId);
+    updateGarden(updated);
+    if (showToast) showToast(`已將【${seedName}】移出花園。`, 'info');
+  };
+
+  // 回合結束：花園全體生長 (+1 格)
+  const handleAdvanceAll = () => {
+    if (gardenList.length === 0) return;
+    let fullSeeds = [];
+    const updated = gardenList.map(item => {
+      const nextClock = Math.min(4, (item.clock || 0) + 1);
+      if (nextClock >= 4 && item.clock < 4) {
+        fullSeeds.push(item.seedName);
+      }
+      return { ...item, clock: nextClock };
+    });
+    updateGarden(updated);
+
+    if (fullSeeds.length > 0 && showToast) {
+      showToast(`回合結束：花園全員推進 1 格！其中【${fullSeeds.join('、')}】已達 4 格，請於離園時結算效果！`, 'info');
+    } else if (showToast) {
+      showToast('回合結束：花園所有種子生長命刻推進 1 格！', 'success');
+    }
+  };
+
+  return (
+    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/95 via-white to-teal-50/80 border border-emerald-200/90 shadow-xs space-y-3">
+      {/* 頂部標題列 */}
+      <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-emerald-700 text-white flex items-center justify-center shadow-2xs shrink-0">
+            <GiFlowerPot className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <div className="font-bold text-xs text-emerald-950 tracking-wide font-serif flex items-center gap-1.5">
+              <span>花園生長盤</span>
+              <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
+                容量: {gardenList.length}/{maxCapacity}
+              </span>
+            </div>
+            <div className="text-[10px] text-emerald-800/80">
+              每回合結束推進 1 格生長命刻（滿 4 格離園）
+            </div>
+          </div>
+        </div>
+
+        {/* 全體回合推進按鈕 */}
+        {gardenList.length > 0 && (
+          <button
+            type="button"
+            onClick={handleAdvanceAll}
+            className="px-2.5 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
+            title="回合結束時，將花園內所有植物命刻推進 1 格"
+          >
+            <GiSprout className="w-3.5 h-3.5" />
+            <span>回合結束：花園全員 +1 格</span>
+          </button>
+        )}
+      </div>
+
+      {/* 播種操作列（未滿容量時顯示） */}
+      {gardenList.length < maxCapacity && (
+        <div className="flex items-center gap-2 p-2 bg-emerald-100/50 rounded-xl border border-emerald-200/70 text-xs">
+          <select
+            value={selectedSeedToPlant}
+            onChange={e => setSelectedSeedToPlant(e.target.value)}
+            className="flex-1 bg-white border border-emerald-200 rounded-lg px-2.5 py-1 text-xs text-emerald-950 font-sans outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+          >
+            <option value="">-- 選擇要播種的魔法種子 --</option>
+            {fallbackSeeds.map(s => (
+              <option key={s.id || s.name} value={s.name}>
+                {s.name} ({s.duration || '至多 4 回合'})
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => handlePlantSeed(selectedSeedToPlant)}
+            disabled={!selectedSeedToPlant}
+            className="px-3 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1 transition-all shrink-0 cursor-pointer"
+          >
+            <Plus className="w-3 h-3" />
+            <span>播種入園</span>
+          </button>
+        </div>
+      )}
+
+      {/* 已播種植物卡片列表 */}
+      {gardenList.length > 0 ? (
+        <div className="space-y-2">
+          {gardenList.map(item => {
+            const seedDef = FLORIST_MAGISEEDS.find(s => s.name === item.seedName);
+            const clock = item.clock || 0;
+
+            // 判斷當前命刻階級
+            const isTier1 = clock <= 1;
+            const isTier2 = clock >= 2 && clock <= 3;
+            const isTier3 = clock >= 4;
+
+            return (
+              <div
+                key={item.instanceId}
+                className="p-3 rounded-xl bg-white border border-emerald-200 shadow-2xs space-y-2 transition-all hover:border-emerald-300"
+              >
+                {/* 植物抬頭與命刻控制 */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    <span className="font-serif font-black text-sm text-emerald-950">
+                      {item.seedName}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                      {clock === 0 ? '剛播種 (0格)' : clock < 4 ? `第 ${clock === 1 ? '1' : clock} 回合 (${clock}/4 格)` : '滿 4 格（即將離園）'}
+                    </span>
+                  </div>
+
+                  {/* 命刻步進與移出操作 */}
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleStepClock(item.instanceId, -1)}
+                      disabled={clock <= 0}
+                      className="px-1.5 py-0.5 rounded text-[11px] bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 font-mono font-bold cursor-pointer"
+                      title="後退 1 格"
+                    >
+                      -1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStepClock(item.instanceId, 1)}
+                      disabled={clock >= 4}
+                      className="px-2 py-0.5 rounded text-[11px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-30 text-white font-mono font-bold transition-colors cursor-pointer flex items-center gap-0.5 shadow-2xs"
+                      title="前進 1 回合 (+1 格)"
+                    >
+                      <span>+1 格</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSeed(item.instanceId, item.seedName)}
+                      className="p-1 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                      title="移出花園"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 格命刻進度指示器 */}
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {[1, 2, 3, 4].map(seg => {
+                    const isFilled = clock >= seg;
+                    const isCurrent = clock === seg || (clock === 0 && seg === 1);
+                    return (
+                      <div
+                        key={seg}
+                        onClick={() => handleStepClock(item.instanceId, seg - clock)}
+                        className={`h-2 rounded-full transition-all cursor-pointer ${
+                          isFilled
+                            ? 'bg-emerald-600 shadow-2xs'
+                            : 'bg-emerald-100 border border-emerald-200 hover:bg-emerald-200'
+                        }`}
+                        title={`點擊跳轉至命刻 ${seg} 格`}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* 即時生效之階級效果（當前命刻高亮顯示） */}
+                {seedDef?.effects && (
+                  <div className="pt-1.5 space-y-1 text-xs">
+                    {seedDef.effects.map((ef, efIdx) => {
+                      // 判定此條目是否在當前生效
+                      let isActive = false;
+                      if (ef.clock.includes('0~1') || ef.clock.includes('1 回合') || ef.clock.includes('1 格')) {
+                        isActive = isTier1;
+                      } else if (ef.clock.includes('2~3') || ef.clock.includes('2 格') || ef.clock.includes('3 格')) {
+                        isActive = isTier2;
+                      } else if (ef.clock.includes('4') || ef.clock.includes('離園')) {
+                        isActive = isTier3;
+                      }
+
+                      return (
+                        <div
+                          key={efIdx}
+                          className={`p-1.5 rounded-lg transition-all flex items-start gap-1.5 text-[11px] leading-relaxed ${
+                            isActive
+                              ? 'bg-emerald-50 border border-emerald-300 text-emerald-950 font-medium shadow-2xs'
+                              : 'text-slate-400 opacity-60'
+                          }`}
+                        >
+                          <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono shrink-0 font-bold ${
+                            isActive
+                              ? 'bg-emerald-700 text-white'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {ef.clock}
+                          </span>
+                          <span className="font-sans flex-1">
+                            {renderTextWithAffinities(ef.text)}
+                          </span>
+                          {isActive && (
+                            <span className="text-[10px] text-emerald-700 font-bold shrink-0">
+                              [生效中]
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="p-4 text-center bg-white/70 rounded-xl border border-dashed border-emerald-200 text-emerald-800/70 text-xs space-y-1">
+          <GiPlantRoots className="w-6 h-6 mx-auto text-emerald-400" />
+          <p>花園目前尚無種植中的魔法種子。</p>
+          <p className="text-[10px] text-slate-400">請從上方選單選擇已掌握的種子進行播種。</p>
+        </div>
+      )}
+    </div>
+  );
+}

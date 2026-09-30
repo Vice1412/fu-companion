@@ -48,6 +48,8 @@ import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import TinkererProjectTracker from './companions/TinkererProjectTracker';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
+import FloristGardenTracker from './companions/FloristGardenTracker';
+import ErrorBoundary from '../../../components/ui/ErrorBoundary';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -952,8 +954,18 @@ export default function CharacterPlayHUD({
         </div>
 
         <div className="p-4 sm:p-5">
-          {/* TAB 1: 武器與戰鬥 (Formula Pills & Combat Matrix) */}
-          {activeTab === 'attacks' && (
+          <ErrorBoundary
+            inline
+            label={
+              activeTab === 'attacks' ? '武器與戰鬥' :
+              activeTab === 'spells' ? '咒語與魔法' :
+              activeTab === 'skills' ? '職業特技' :
+              activeTab === 'bonds' ? '情感羈絆' :
+              activeTab === 'clocks' ? '個人命刻' : '行囊日誌'
+            }
+          >
+            {/* TAB 1: 武器與戰鬥 (Formula Pills & Combat Matrix) */}
+            {activeTab === 'attacks' && (
             <div className="space-y-4 animate-fade-in text-xs">
               {/* Defense & Initiative Dashboard */}
               <div
@@ -1198,6 +1210,7 @@ export default function CharacterPlayHUD({
                     const isOffensive = sp.isOffensive ?? rulesSpell?.isOffensive ?? (sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）'));
                     const spellCheck = parseCheckFormula('INS + WLP', stats);
                     const spellDamage = parseDamageFormula(sp.effect || '');
+                    const isExpanded = !!expandedSpells[sp.name];
 
                     return (
                       <div
@@ -1386,7 +1399,18 @@ export default function CharacterPlayHUD({
                                 />
                               )}
 
-                              {/* 2. 子項目效果速查清單與視圖切換 */}
+                              {/* 2. 若為植物學家【植生術】，常駐渲染花園生長盤 */}
+                              {cl.className === '植物學家' && sk.name === '植生術' && (
+                                <FloristGardenTracker
+                                  character={character}
+                                  skillSL={sk.sl}
+                                  selectedOptions={sk.selectedOptions}
+                                  onChange={onChange}
+                                  showToast={showToast}
+                                />
+                              )}
+
+                              {/* 3. 子項目效果速查清單與視圖切換 */}
                               <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
                                 <span className="flex items-center gap-1 text-amber-900">
                                   <GiSparkles className="w-3.5 h-3.5 text-amber-600" />
@@ -1736,6 +1760,7 @@ export default function CharacterPlayHUD({
               </div>
             </div>
           )}
+          </ErrorBoundary>
         </div>
       </div>
 

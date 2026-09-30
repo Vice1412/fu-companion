@@ -44,6 +44,40 @@ export default class ErrorBoundary extends React.Component {
       const errorMsg = this.state.error?.toString() || '未知運行時錯誤';
       const errorStack = this.state.errorInfo?.componentStack || this.state.error?.stack || '';
 
+      if (this.props.inline) {
+        return (
+          <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/70 text-amber-950 space-y-2.5 text-xs shadow-xs">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 font-bold text-amber-950">
+                <div className="w-6 h-6 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-800">
+                  <GiHazardSign className="w-3.5 h-3.5" />
+                </div>
+                <span>【{this.props.label || '此模組'}】載入暫時遇到狀況</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
+                className="px-3 py-1 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-2xs"
+              >
+                <GiSparkles className="w-3.5 h-3.5" />
+                <span>重試載入</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-amber-900/90 leading-relaxed font-sans">
+              已為您安全隔離此區塊異常。其餘跑團功能、生命資源（HP/MP/IP）、行囊與擲骰判定仍可正常使用。
+            </p>
+            {errorMsg && (
+              <details className="text-[10px] text-amber-800/80">
+                <summary className="cursor-pointer hover:underline">查看技術錯誤代碼</summary>
+                <div className="mt-1 p-2 rounded-lg bg-white/90 border border-amber-200 font-mono text-rose-800 break-all leading-tight">
+                  {errorMsg}
+                </div>
+              </details>
+            )}
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen bg-[#f5efdf] text-[#2c221e] flex items-center justify-center p-4 selection:bg-amber-200">
           <div className="max-w-lg w-full bg-[#fffdfa] border-2 border-[#c5b59a] rounded-2xl shadow-2xl p-6 sm:p-8 text-center space-y-5">

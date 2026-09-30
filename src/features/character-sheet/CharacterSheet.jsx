@@ -560,7 +560,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                       style={{ backgroundColor: charTheme.headerBg, borderColor: charTheme.border }}
                     >
                       <div
-                        onClick={() => handleOpenEditor(char)}
+                        onClick={() => handleOpenEditorMode(char)}
                         className="w-12 h-12 rounded-xl bg-[#fffdf9] border overflow-hidden shrink-0 flex items-center justify-center font-serif text-xl font-bold shadow-inner cursor-pointer hover:scale-105 hover:ring-2 hover:ring-emerald-500/50 transition-all group relative"
                         style={{ borderColor: charTheme.border, color: charTheme.accent }}
                         title="點擊前往編輯此角色與肖像"
