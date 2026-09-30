@@ -230,7 +230,13 @@ export default function FloristGardenTracker({
                     return (
                       <div
                         key={seg}
-                        onClick={() => handleStepClock(item.instanceId, seg - clock)}
+                        onClick={() => {
+                          if (clock === seg) {
+                            handleStepClock(item.instanceId, -1);
+                          } else {
+                            handleStepClock(item.instanceId, seg - clock);
+                          }
+                        }}
                         className={`h-2 rounded-full transition-all cursor-pointer ${
                           isFilled
                             ? 'bg-emerald-600 shadow-2xs'

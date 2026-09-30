@@ -1490,75 +1490,133 @@ export default function CharacterPlayHUD({
 
                               {/* 靈能者專屬靈刻時鐘 */}
                               {cl.className === '靈能者' && sk.name === '心靈天賦' && (
-                                <div className="mt-2 p-2 bg-purple-50/70 rounded-xl border border-purple-200/80 flex items-center justify-between gap-3 flex-wrap">
-                                  <div className="flex items-center gap-2">
+                                <div className="mt-2 p-2.5 bg-purple-50/80 rounded-xl border border-purple-200/90 flex items-center justify-between gap-3 flex-wrap">
+                                  <div className="flex items-center gap-3">
                                     <ClockTracker
-                                      title="靈刻時鐘"
+                                      title=""
                                       totalSegments={4}
                                       filledSegments={character.brainwaveClock || 0}
                                       theme="purple"
-                                      size={52}
-                                      onFilledChange={(newVal) => {
+                                      size={54}
+                                      compact={true}
+                                      onChange={(newVal) => {
                                         updateField('brainwaveClock', newVal);
                                       }}
                                     />
                                     <div>
-                                      <div className="font-bold text-xs text-purple-950 flex items-center gap-1">
+                                      <div className="font-bold text-xs text-purple-950 flex items-center gap-1.5">
                                         <span>靈刻時鐘</span>
-                                        <span className="font-mono text-[11px] text-purple-700">({character.brainwaveClock || 0} / 4)</span>
+                                        <span className="font-mono text-xs text-purple-700 font-bold">({character.brainwaveClock || 0} / 4)</span>
                                       </div>
                                       <p className="text-[10px] text-slate-500 leading-tight">
                                         每次使用天賦後填入 1 格。消耗 MP：【5 + 靈刻格數 × 5】
                                       </p>
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      updateField('brainwaveClock', 0);
-                                      showToast('已清空靈刻時鐘');
-                                    }}
-                                    className="px-2 py-1 text-[11px] rounded-lg bg-white hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold transition-colors cursor-pointer"
-                                  >
-                                    重設靈刻
-                                  </button>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cur = character.brainwaveClock || 0;
+                                        updateField('brainwaveClock', Math.max(0, cur - 1));
+                                      }}
+                                      disabled={(character.brainwaveClock || 0) <= 0}
+                                      className="px-2 py-1 text-xs rounded-lg bg-white hover:bg-purple-100 disabled:opacity-30 border border-purple-200 text-purple-900 font-bold transition-colors cursor-pointer"
+                                      title="靈刻 -1"
+                                    >
+                                      -1
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cur = character.brainwaveClock || 0;
+                                        updateField('brainwaveClock', Math.min(4, cur + 1));
+                                      }}
+                                      disabled={(character.brainwaveClock || 0) >= 4}
+                                      className="px-2.5 py-1 text-xs rounded-lg bg-purple-700 hover:bg-purple-800 disabled:opacity-30 text-white font-bold transition-colors cursor-pointer shadow-2xs"
+                                      title="靈刻 +1"
+                                    >
+                                      +1 格
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        updateField('brainwaveClock', 0);
+                                        showToast('已清空靈刻時鐘');
+                                      }}
+                                      disabled={(character.brainwaveClock || 0) === 0}
+                                      className="px-2 py-1 text-xs rounded-lg bg-white hover:bg-rose-50 disabled:opacity-30 border border-purple-200 text-slate-600 hover:text-rose-700 font-medium transition-colors cursor-pointer"
+                                      title="重設靈刻"
+                                    >
+                                      重設
+                                    </button>
+                                  </div>
                                 </div>
                               )}
 
                               {/* 植物學家專屬生長命刻 */}
                               {cl.className === '植物學家' && sk.name === '植生術' && (
-                                <div className="mt-2 p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/80 flex items-center justify-between gap-3 flex-wrap">
-                                  <div className="flex items-center gap-2">
+                                <div className="mt-2 p-2.5 bg-emerald-50/80 rounded-xl border border-emerald-200/90 flex items-center justify-between gap-3 flex-wrap">
+                                  <div className="flex items-center gap-3">
                                     <ClockTracker
-                                      title="生長命刻"
+                                      title=""
                                       totalSegments={4}
                                       filledSegments={character.growthClock || 0}
-                                      theme="emerald"
-                                      size={52}
-                                      onFilledChange={(newVal) => {
+                                      theme="green"
+                                      size={54}
+                                      compact={true}
+                                      onChange={(newVal) => {
                                         updateField('growthClock', newVal);
                                       }}
                                     />
                                     <div>
-                                      <div className="font-bold text-xs text-emerald-950 flex items-center gap-1">
+                                      <div className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
                                         <span>生長命刻</span>
-                                        <span className="font-mono text-[11px] text-emerald-700">({character.growthClock || 0} / 4)</span>
+                                        <span className="font-mono text-xs text-emerald-700 font-bold">({character.growthClock || 0} / 4)</span>
                                       </div>
                                       <p className="text-[10px] text-slate-500 leading-tight">
                                         回合結束填入 1 格並觸發效果。滿 4 格離園清空。
                                       </p>
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      updateField('growthClock', 0);
-                                      showToast('已清空生長命刻');
-                                    }}
-                                    className="px-2 py-1 text-[11px] rounded-lg bg-white hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold transition-colors cursor-pointer"
-                                  >
-                                    清空花園
-                                  </button>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cur = character.growthClock || 0;
+                                        updateField('growthClock', Math.max(0, cur - 1));
+                                      }}
+                                      disabled={(character.growthClock || 0) <= 0}
+                                      className="px-2 py-1 text-xs rounded-lg bg-white hover:bg-emerald-100 disabled:opacity-30 border border-emerald-200 text-emerald-900 font-bold transition-colors cursor-pointer"
+                                      title="命刻 -1"
+                                    >
+                                      -1
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cur = character.growthClock || 0;
+                                        updateField('growthClock', Math.min(4, cur + 1));
+                                      }}
+                                      disabled={(character.growthClock || 0) >= 4}
+                                      className="px-2.5 py-1 text-xs rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-30 text-white font-bold transition-colors cursor-pointer shadow-2xs"
+                                      title="命刻 +1"
+                                    >
+                                      +1 格
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        updateField('growthClock', 0);
+                                        showToast('已清空生長命刻');
+                                      }}
+                                      disabled={(character.growthClock || 0) === 0}
+                                      className="px-2 py-1 text-xs rounded-lg bg-white hover:bg-rose-50 disabled:opacity-30 border border-emerald-200 text-slate-600 hover:text-rose-700 font-medium transition-colors cursor-pointer"
+                                      title="清空生長命刻"
+                                    >
+                                      清空
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </div>
