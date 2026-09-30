@@ -13,6 +13,7 @@ import {
 } from 'react-icons/gi';
 import { X, Search } from 'lucide-react';
 import { RULE_CODEX, findCodexRule } from '../data/ruleCodexData';
+import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 
 export default function RuleCodexDrawer({
   isOpen: propIsOpen,
@@ -229,11 +230,11 @@ export default function RuleCodexDrawer({
                       <div className="space-y-1 text-xs">
                         <div>
                           <strong className="text-amber-800 dark:text-amber-400 font-bold">【連結】：</strong>
-                          <span className="text-stone-700 dark:text-stone-300">{arcana.merge}</span>
+                          <span className="text-stone-700 dark:text-stone-300">{renderTextWithAffinities(arcana.merge)}</span>
                         </div>
                         <div>
                           <strong className="text-rose-800 dark:text-rose-400 font-bold">【解除】：</strong>
-                          <span className="text-stone-700 dark:text-stone-300">{arcana.dismiss}</span>
+                          <span className="text-stone-700 dark:text-stone-300">{renderTextWithAffinities(arcana.dismiss)}</span>
                         </div>
                       </div>
                     </div>
@@ -483,7 +484,7 @@ export default function RuleCodexDrawer({
                             {currentRule.alchemy.effects.map((e, eIdx) => (
                               <tr key={eIdx}>
                                 <td className="p-1.5 text-center font-mono font-bold text-amber-800 dark:text-amber-400">{e.roll}</td>
-                                <td className="p-1.5 text-stone-700 dark:text-stone-300">{e.effect}</td>
+                                <td className="p-1.5 text-stone-700 dark:text-stone-300">{renderTextWithAffinities(e.effect)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -520,7 +521,7 @@ export default function RuleCodexDrawer({
                         {currentRule.infusions.basic.map((item, idx) => (
                           <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
                             <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
-                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{item.desc}</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{renderTextWithAffinities(item.desc)}</span>
                           </div>
                         ))}
                       </div>
@@ -532,7 +533,7 @@ export default function RuleCodexDrawer({
                         {currentRule.infusions.advanced.map((item, idx) => (
                           <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
                             <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
-                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{item.desc}</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400">{renderTextWithAffinities(item.desc)}</span>
                           </div>
                         ))}
                       </div>
@@ -544,7 +545,7 @@ export default function RuleCodexDrawer({
                         {currentRule.infusions.superior.map((item, idx) => (
                           <div key={idx} className="p-2 rounded-lg bg-stone-50 dark:bg-slate-900 border border-stone-200 dark:border-slate-700">
                             <span className="font-bold text-amber-900 dark:text-amber-300 block mb-0.5">{item.name} ({item.cost})</span>
-                            <span className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{item.desc}</span>
+                            <span className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{renderTextWithAffinities(item.desc)}</span>
                           </div>
                         ))}
                       </div>
@@ -583,7 +584,7 @@ export default function RuleCodexDrawer({
                         <span className="font-mono text-teal-800 dark:text-teal-400">{currentRule.magitech.advanced.cost}</span>
                       </div>
                       <p className="text-stone-700 dark:text-stone-300 leading-relaxed text-[11px]">
-                        {currentRule.magitech.advanced.desc}
+                        {renderTextWithAffinities(currentRule.magitech.advanced.desc)}
                       </p>
                       {/* 武器數據表 */}
                       <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-2 bg-white/80 dark:bg-slate-900/80 rounded border border-teal-200/60 dark:border-teal-900/60 text-[11px]">
@@ -767,7 +768,7 @@ export default function RuleCodexDrawer({
                         <span>規格：{sm.formula}</span>
                         {sm.flaw !== '無' && <span className="ml-1.5 text-rose-600 font-bold">[{sm.flaw}]</span>}
                       </div>
-                      <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{sm.desc}</p>
+                      <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{renderTextWithAffinities(sm.desc)}</p>
                     </div>
                   ))}
                 </div>
@@ -864,7 +865,7 @@ export default function RuleCodexDrawer({
                                 MP: {sp.mp} | 目標: {sp.target} | 持續: {sp.duration}
                               </span>
                             </div>
-                            <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">{sp.desc}</p>
+                            <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">{renderTextWithAffinities(sp.desc)}</p>
                           </div>
                         ))}
                       </div>

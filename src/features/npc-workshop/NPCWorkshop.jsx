@@ -592,9 +592,11 @@ const SpellCard = ({ skillId, spellName, isActive, isDisabled, isOverBudget, isC
               <div className="absolute -bottom-4 left-0 text-[10px] text-amber-700 font-bold opacity-0 group-focus-within/input:opacity-100 transition-opacity pointer-events-none">正在編輯自定義名稱</div>
             </div>
           ) : (
-            <span className={selections?.customName !== undefined ? 'text-amber-900 font-bold' : ''}>{renderFormattedText((selections?.customName !== undefined ? selections.customName : cleanSpellName).replace('⚡', ''), selections, npcLevel, partyLevel)}</span>
+            <span className={`flex items-center gap-1 ${selections?.customName !== undefined ? 'text-amber-900 font-bold' : ''}`}>
+              {isOffensive && <span className="fu-icon text-lg text-red-700 drop-shadow-sm shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}
+              <span>{renderFormattedText((selections?.customName !== undefined ? selections.customName : cleanSpellName).replace('⚡', ''), selections, npcLevel, partyLevel)}</span>
+            </span>
           )}
-          {isOffensive && <span className="fu-icon text-xl text-red-700 drop-shadow-sm ml-1 shrink-0">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}
           {isOverBudget && isActive && <span className="text-[10px] bg-red-100 text-red-800 border border-red-400 px-2 py-0.5 rounded flex items-center gap-1 shrink-0 w-fit animate-pulse ml-2"><AlertCircle size={10} /> 失效</span>}
         </div>
       </div>
@@ -1004,7 +1006,7 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
       title={onInspectorClick ? "點擊反向定位至編輯表單" : ""}
     >
       <div className={`font-bold text-[15px] mb-1 flex flex-wrap items-center gap-2 ${skill.isSecretArt ? 'text-fuchsia-900' : skill.category === 'boss' ? 'text-amber-900' : isSpellCategory ? 'text-purple-950' : 'text-stone-900'}`}>
-        <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${skill.isSecretArt ? 'bg-fuchsia-600 shadow-sm' : skill.category === 'boss' ? 'bg-amber-600 shadow-sm' : isSpellCategory ? 'bg-purple-600 shadow-sm' : 'bg-amber-700 shadow-sm'}`}></span>{displaySkillName.replace('⚡', '')}{isOffensiveSpell && <span className="fu-icon text-xl text-red-700 drop-shadow-sm ml-0.5">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}<CopyButton text={textToCopy} />
+        <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${skill.isSecretArt ? 'bg-fuchsia-600 shadow-sm' : skill.category === 'boss' ? 'bg-amber-600 shadow-sm' : isSpellCategory ? 'bg-purple-600 shadow-sm' : 'bg-amber-700 shadow-sm'}`}></span>{isOffensiveSpell && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-1 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}{displaySkillName.replace('⚡', '')}<CopyButton text={textToCopy} />
       </div>
 
       {isSpellCategory && (
@@ -3496,7 +3498,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             const rawEffectBase = effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + finalStats.Dmg}]`);
                             const replacedEffect = replaceNPC(rawEffectBase);
 
-                            let spellTextToCopy = `> ${isOffensive ? '⚡' : '✨'} ${getPlainText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}`;
+                            let spellTextToCopy = `> ${isOffensive ? '【攻擊性咒語】' : '【咒語】'} ${getPlainText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}`;
                             if (spellData) {
                               spellTextToCopy += ` (MP: ${spellData.mp} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData.duration})\n`;
                               if (isOffensive) {
@@ -3524,7 +3526,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                               <div key={i} className={`bg-[#f9f5eb] border-l-4 p-3 text-sm break-inside-avoid shadow-sm rounded-r-md border border-[#e2d6c1] ${isSecretArtForSpell ? 'border-l-fuchsia-600 bg-fuchsia-50/80 ring-1 ring-fuchsia-400' : 'border-l-purple-700'}`}>
                                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2d6c1] pb-2 mb-2">
                                   <span className={`font-bold text-[16px] flex flex-wrap items-center gap-1 ${isSecretArtForSpell ? 'text-fuchsia-900' : 'text-purple-900'}`}>
-                                    <span className="fu-icon text-xl drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span> <span className={selections.customName !== undefined ? 'text-amber-800 font-bold' : ''}>{renderFormattedText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}</span> {isOffensive && <span className="fu-icon text-xl text-red-700 drop-shadow-sm ml-1 shrink-0">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}
+                                    <span className="fu-icon text-xl drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span> {isOffensive && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-0.5 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}<span className={selections.customName !== undefined ? 'text-amber-800 font-bold' : ''}>{renderFormattedText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}</span>
                                     <CopyButton text={spellTextToCopy} />
                                   </span>
                                 </div>

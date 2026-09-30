@@ -260,19 +260,26 @@ export default function NPCCardPreview({
               <span className="fu-icon text-sm">c</span> 咒語
             </h4>
             <div className="space-y-2">
-              {spells.map((sp, idx) => (
-                <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
-                  <div className="flex items-center justify-between font-bold text-blue-900 mb-1">
-                    <span>{sp.name || sp.spellName || '法術'}</span>
-                    <span className="text-[11px] font-mono text-stone-600">
-                      MP {sp.selections?.mpCost || 10} · {sp.selections?.target || '單體'}
-                    </span>
+              {spells.map((sp, idx) => {
+                const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.spellName?.includes('⚡') || (sp.desc && (sp.desc.includes('傷害') || sp.desc.includes('【HR+')));
+                const rawName = (sp.name || sp.spellName || '法術').replace('⚡', '');
+                return (
+                  <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
+                    <div className="flex items-center justify-between font-bold text-blue-900 mb-1">
+                      <span className="flex items-center gap-1">
+                        {isOffensive && <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">o</span>}
+                        <span>{rawName}</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-stone-600">
+                        MP {sp.selections?.mpCost || 10} · {sp.selections?.target || '單體'}
+                      </span>
+                    </div>
+                    <p className="text-[#3c2f21] leading-relaxed font-sans">
+                      {renderDescription(sp.desc || sp.customDesc, sp.selections)}
+                    </p>
                   </div>
-                  <p className="text-[#3c2f21] leading-relaxed font-sans">
-                    {renderDescription(sp.desc || sp.customDesc, sp.selections)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
