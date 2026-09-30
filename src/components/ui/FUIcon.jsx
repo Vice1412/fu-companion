@@ -113,3 +113,70 @@ export default function FUIcon({ name, className = '', showLabel = false, ...pro
 
   return content;
 }
+
+/**
+ * 將文本中的九大屬性傷害關鍵字動態解析並渲染為官方字型圖標與專屬色彩
+ *
+ * 支援樣式：
+ * 1. 括號屬性：如【火】、【物理】等，替換為帶官方符號與色彩的【f火】、【p物理】
+ * 2. 屬性詞綴：如「火屬性」、「暗屬性傷害」、「物理抗性」、「毒傷」等，附帶符號與顏色
+ * 3. 屬性並列：如「風、電、冰傷害」、「土或火」、「暗、光或毒」等
+ */
+export function renderTextWithAffinities(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  // 嚴格匹配九相，避免誤傷「中毒」(狀態)、「微光視覺」、「曲風」、「暴風」、「物理防禦」(數值)、「火器」(武器) 等非傷害屬性詞彙
+  const regex = /(【(?:物理|風|電|暗|土|火|冰|光|毒)】|(?<![曲暴])風(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?|(?<![中劇])毒(?:屬性傷害|屬性抗性|屬性|傷害|抗性|傷)?(?![素液])|(?<!微)光(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?|(?<!黑)暗(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?|(?:物理(?![防])|電|土|火(?![器])|冰)(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?)/g;
+
+  const elements = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const matchIndex = match.index;
+    const matchStr = match[0];
+
+    if (matchIndex > lastIndex) {
+      elements.push(text.slice(lastIndex, matchIndex));
+    }
+
+    const cleanAff = matchStr.replace(/[【】]/g, '');
+    let matchedBaseAff = null;
+    for (const aff of ['物理', '風', '電', '暗', '土', '火', '冰', '光', '毒']) {
+      if (cleanAff.startsWith(aff)) {
+        matchedBaseAff = aff;
+        break;
+      }
+    }
+
+    const iconDef = matchedBaseAff ? FU_ICON_MAP[matchedBaseAff] : null;
+
+    if (iconDef) {
+      if (matchStr.startsWith('【') && matchStr.endsWith('】')) {
+        elements.push(
+          <span key={`aff_${matchIndex}`} className={`inline ${iconDef.color}`}>
+            【<span className="fu-icon text-xs leading-none mx-0.5">{iconDef.char}</span>
+            {matchedBaseAff}】
+          </span>
+        );
+      } else {
+        elements.push(
+          <span key={`aff_${matchIndex}`} className={`inline ${iconDef.color}`}>
+            <span className="fu-icon text-xs leading-none mr-0.5">{iconDef.char}</span>
+            {matchStr}
+          </span>
+        );
+      }
+    } else {
+      elements.push(matchStr);
+    }
+
+    lastIndex = matchIndex + matchStr.length;
+  }
+
+  if (lastIndex < text.length) {
+    elements.push(text.slice(lastIndex));
+  }
+
+  return elements;
+}

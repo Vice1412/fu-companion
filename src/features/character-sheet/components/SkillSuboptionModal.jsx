@@ -12,7 +12,7 @@ import {
 import JRPGModal from '../../../components/ui/JRPGModal';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import JRPGButton from '../../../components/ui/JRPGButton';
-import FUIcon from '../../../components/ui/FUIcon';
+import FUIcon, { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 import {
   getSkillSuboptionConfig,
   calculateSkillSuboptionMax,
@@ -390,8 +390,13 @@ export default function SkillSuboptionModal({
                         {isSelected && <GiCheckMark className="w-3 h-3" />}
                       </div>
 
-                      <span className={`font-bold tracking-wide text-sm ${isSelected ? 'text-amber-950 font-serif' : 'text-slate-800'}`}>
-                        {item.name}
+                      <span className={`font-bold tracking-wide text-sm flex items-center gap-1.5 ${isSelected ? 'text-amber-950 font-serif' : 'text-slate-800'}`}>
+                        {item.isOffensive && (
+                          <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">
+                            o
+                          </span>
+                        )}
+                        <span>{item.name}</span>
                       </span>
 
                       {/* 類型標籤 */}
@@ -401,26 +406,30 @@ export default function SkillSuboptionModal({
                         </span>
                       )}
 
-                      {/* 屬性傷害圖示 */}
-                      {item.affinity && (
-                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
-                          <FUIcon name={item.affinity} className="text-xs" />
-                          <span>{item.affinity}</span>
-                        </span>
-                      )}
+                      {/* 屬性傷害圖示 (舞步與魔奏演奏已由文本內聯符號呈現，在此隱藏小標誌) */}
+                      {!['dances', 'chanter'].includes(config.type) && (
+                        <>
+                          {item.affinity && (
+                            <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                              <FUIcon name={item.affinity} className="text-xs" />
+                              <span>{item.affinity}</span>
+                            </span>
+                          )}
 
-                      {item.affinities && item.affinities.map(aff => (
-                        <span key={aff} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
-                          <FUIcon name={aff} className="text-xs" />
-                          <span>{aff}</span>
-                        </span>
-                      ))}
+                          {item.affinities && item.affinities.map(aff => (
+                            <span key={aff} className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                              <FUIcon name={aff} className="text-xs" />
+                              <span>{aff}</span>
+                            </span>
+                          ))}
 
-                      {item.damageType && (
-                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-900 border border-red-200">
-                          <FUIcon name={item.damageType} className="text-xs" />
-                          <span>{item.damageType}</span>
-                        </span>
+                          {item.damageType && (
+                            <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-900 border border-red-200">
+                              <FUIcon name={item.damageType} className="text-xs" />
+                              <span>{item.damageType}</span>
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -459,12 +468,12 @@ export default function SkillSuboptionModal({
                   {/* 核心效果描述 */}
                   {item.effect && (
                     <p className="text-[11px] text-slate-700 leading-relaxed">
-                      {item.effect}
+                      {renderTextWithAffinities(item.effect)}
                     </p>
                   )}
                   {item.desc && (
                     <p className="text-[11px] text-slate-700 leading-relaxed">
-                      {item.desc}
+                      {renderTextWithAffinities(item.desc)}
                     </p>
                   )}
 
@@ -476,7 +485,7 @@ export default function SkillSuboptionModal({
                           <span className="font-mono font-bold text-emerald-900 bg-emerald-100 px-1 py-0.2 rounded text-[10px] shrink-0">
                             {eff.clock}
                           </span>
-                          <span className="text-slate-700 leading-relaxed">{eff.text}</span>
+                          <span className="text-slate-700 leading-relaxed">{renderTextWithAffinities(eff.text)}</span>
                         </div>
                       ))}
                     </div>

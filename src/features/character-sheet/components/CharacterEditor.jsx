@@ -35,6 +35,7 @@ import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGModal from '../../../components/ui/JRPGModal';
+import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 import CharacterCard from './CharacterCard';
 import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
@@ -1274,7 +1275,7 @@ export default function CharacterEditor({
                     className="text-[11px] italic p-2.5 rounded-lg border"
                     style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                   >
-                    {rulesData.quirks.find(q => q.name === character.quirk)?.desc}
+                    {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
                   </p>
                 )}
               </div>
@@ -1335,7 +1336,7 @@ export default function CharacterEditor({
                           <GiLaurelCrown className="w-4 h-4 shrink-0" style={{ color: theme.accent }} />
                           <span>{hs.name}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-0.5">{hs.effect}</p>
+                        <p className="text-[11px] text-slate-600 mt-0.5">{renderTextWithAffinities(hs.effect)}</p>
                       </div>
                       <button
                         type="button"

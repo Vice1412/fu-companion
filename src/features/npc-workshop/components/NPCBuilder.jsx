@@ -206,12 +206,15 @@ export default function NPCBuilder({
   };
 
   const handleAddSpell = (spell) => {
+    const isOffensive = !!(spell.isOffensive || spell.name?.includes('⚡') || spell.desc?.includes('傷害') || spell.effect?.includes('傷害'));
+    const cleanName = (spell.name || '').replace('⚡', '');
     const newSp = {
       id: `sp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       category: 'spell',
       source: 'spell',
-      name: spell.name,
-      spellName: spell.name,
+      name: cleanName,
+      spellName: cleanName,
+      isOffensive,
       selections: {
         mpCost: spell.mp || 10,
         target: spell.target || '單體生物'
@@ -933,20 +936,27 @@ export default function NPCBuilder({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                  {SPELLS_DATA.map((sp, idx) => {
-                    const isAdded = (npc.skills || []).some(s => s.name === sp.name || s.spellName === sp.name);
+                  {(Array.isArray(SPELLS_DATA) ? SPELLS_DATA : Object.entries(SPELLS_DATA || {}).map(([name, data]) => ({ name, ...data }))).map((sp, idx) => {
+                    const cleanName = (sp.name || '').replace('⚡', '');
+                    const isAdded = (npc.skills || []).some(s => s.name === cleanName || s.spellName === cleanName || s.name === sp.name || s.spellName === sp.name);
+                    const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.desc?.includes('傷害') || sp.effect?.includes('傷害');
                     return (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => isAdded ? handleDeleteSkill((npc.skills || []).find(s => s.name === sp.name)?.id) : handleAddSpell(sp)}
+                        onClick={() => isAdded ? handleDeleteSkill((npc.skills || []).find(s => s.name === cleanName || s.spellName === cleanName || s.name === sp.name)?.id) : handleAddSpell(sp)}
                         className={`p-2 rounded-lg border text-left text-xs flex items-center justify-between transition-all ${
                           isAdded
                             ? 'bg-blue-100 border-blue-400 text-blue-950 font-bold'
                             : 'bg-[#fffdf9] border-[#d6c7ab] hover:border-blue-500 text-[#3c2415]'
                         }`}
                       >
-                        <span className="truncate">🔮 {sp.name}</span>
+                        <span className="truncate flex items-center gap-1.5">
+                          <span className={`fu-icon text-xs leading-none shrink-0 ${isOffensive ? 'text-red-700 font-bold' : 'text-purple-700'}`} title={isOffensive ? '攻擊性咒語' : '咒語'}>
+                            {isOffensive ? 'o' : 'c'}
+                          </span>
+                          <span>{cleanName}</span>
+                        </span>
                         <span className="text-[10px] font-mono shrink-0 ml-1">
                           {isAdded ? '✓ 已加入' : '+ 加入'}
                         </span>

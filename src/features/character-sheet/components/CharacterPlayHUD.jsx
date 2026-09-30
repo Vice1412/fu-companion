@@ -28,7 +28,7 @@ import {
   GiCheckMark
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
-import FUIcon from '../../../components/ui/FUIcon';
+import FUIcon, { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import JRPGModal from '../../../components/ui/JRPGModal';
@@ -46,6 +46,8 @@ import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import TinkererProjectTracker from './companions/TinkererProjectTracker';
+import SuboptionDetailsList from './SuboptionDetailsList';
+import ChanterComposer from './companions/ChanterComposer';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -145,6 +147,7 @@ export default function CharacterPlayHUD({
   // Expanded cards tracker (for skills and spells details)
   const [expandedSkills, setExpandedSkills] = useState({});
   const [expandedSpells, setExpandedSpells] = useState({});
+  const [collapsedSuboptions, setCollapsedSuboptions] = useState({});
 
   // Free roll picker modal
   const [isFreeRollModalOpen, setIsFreeRollModalOpen] = useState(false);
@@ -1191,8 +1194,8 @@ export default function CharacterPlayHUD({
               {(character.spells || []).length > 0 ? (
                 <div className="space-y-2.5">
                   {(character.spells || []).map((sp, idx) => {
-                    const isExpanded = !!expandedSpells[sp.name];
-                    const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）');
+                    const rulesSpell = (rulesData.spells || []).find(s => s.name === sp.name);
+                    const isOffensive = sp.isOffensive ?? rulesSpell?.isOffensive ?? (sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）'));
                     const spellCheck = parseCheckFormula('INS + WLP', stats);
                     const spellDamage = parseDamageFormula(sp.effect || '');
 
@@ -1208,8 +1211,9 @@ export default function CharacterPlayHUD({
                             <div className="w-6 h-6 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center shrink-0">
                               <FUIcon name={isOffensive ? 'offensive' : 'spell'} className="text-sm" />
                             </div>
-                            <h4 className="font-serif font-black text-sm text-purple-950">
-                              {sp.name}
+                            <h4 className="font-serif font-black text-sm text-purple-950 flex items-center gap-1.5">
+                              {isOffensive && <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">o</span>}
+                              <span>{sp.name}</span>
                             </h4>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-bold">
                               {sp.school || '通用'}
@@ -1288,7 +1292,7 @@ export default function CharacterPlayHUD({
                             </button>
                             {isExpanded && (
                               <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-wrap">
-                                {sp.effect}
+                                {renderTextWithAffinities(sp.effect)}
                               </p>
                             )}
                           </div>
@@ -1371,48 +1375,94 @@ export default function CharacterPlayHUD({
 
                           {/* 子項目已掌握清單與專屬機制 */}
                           {sk.selectedOptions && (Array.isArray(sk.selectedOptions) ? sk.selectedOptions.length > 0 : ((sk.selectedOptions.keys || []).length > 0 || (sk.selectedOptions.tones || []).length > 0)) && (
-                            <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-1.5">
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-2.5">
+                              {/* 1. 若為魔奏者【魔法演奏】，常駐渲染即時合成器 */}
+                              {cl.className === '魔奏者' && sk.name === '魔法演奏' && (
+                                <ChanterComposer
+                                  character={character}
+                                  selectedOptions={sk.selectedOptions}
+                                  onConsumeMp={(mpCost) => adjustMp(-mpCost)}
+                                  showToast={showToast}
+                                />
+                              )}
+
+                              {/* 2. 子項目效果速查清單與視圖切換 */}
                               <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
                                 <span className="flex items-center gap-1 text-amber-900">
-                                  <GiSparkles className="w-3 h-3 text-amber-600" />
-                                  <span>已掌握子項目：</span>
+                                  <GiSparkles className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>已掌握項目戰鬥速查：</span>
                                 </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const key = `${cl.className}_${sk.name}`;
+                                    setCollapsedSuboptions(prev => ({ ...prev, [key]: !prev[key] }));
+                                  }}
+                                  className="text-[10px] px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-normal transition-colors cursor-pointer"
+                                >
+                                  {collapsedSuboptions[`${cl.className}_${sk.name}`] ? '展開效果卡片' : '收合為標籤'}
+                                </button>
                               </div>
 
-                              <div className="flex flex-wrap gap-1.5">
-                                {Array.isArray(sk.selectedOptions) ? (
-                                  sk.selectedOptions.map((optName, oIdx) => (
-                                    <span
-                                      key={oIdx}
-                                      className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
-                                    >
-                                      <span className="text-amber-500">✦</span>
-                                      <span>{optName}</span>
-                                    </span>
-                                  ))
-                                ) : (
-                                  <>
-                                    {(sk.selectedOptions.keys || []).map((k, kIdx) => (
+                              {collapsedSuboptions[`${cl.className}_${sk.name}`] ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {Array.isArray(sk.selectedOptions) ? (
+                                    sk.selectedOptions.map((optName, oIdx) => (
                                       <span
-                                        key={`k_${kIdx}`}
-                                        className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
+                                        key={oIdx}
+                                        onClick={() => {
+                                          const key = `${cl.className}_${sk.name}`;
+                                          setCollapsedSuboptions(prev => ({ ...prev, [key]: false }));
+                                        }}
+                                        title="點擊展開查看效果"
+                                        className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
                                       >
-                                        <span className="text-amber-600 text-[10px]">音調</span>
-                                        <span>{k}</span>
+                                        <span className="text-amber-500">✦</span>
+                                        <span>{optName}</span>
                                       </span>
-                                    ))}
-                                    {(sk.selectedOptions.tones || []).map((t, tIdx) => (
-                                      <span
-                                        key={`t_${tIdx}`}
-                                        className="text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-950 border border-purple-200 font-bold flex items-center gap-1 shadow-2xs"
-                                      >
-                                        <span className="text-purple-600 text-[10px]">曲風</span>
-                                        <span>{t}</span>
-                                      </span>
-                                    ))}
-                                  </>
-                                )}
-                              </div>
+                                    ))
+                                  ) : (
+                                    <>
+                                      {(sk.selectedOptions.keys || []).map((k, kIdx) => (
+                                        <span
+                                          key={`k_${kIdx}`}
+                                          onClick={() => {
+                                            const key = `${cl.className}_${sk.name}`;
+                                            setCollapsedSuboptions(prev => ({ ...prev, [key]: false }));
+                                          }}
+                                          title="點擊展開查看效果"
+                                          className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                                        >
+                                          <span className="text-amber-600 text-[10px]">音調</span>
+                                          <span>{k}</span>
+                                        </span>
+                                      ))}
+                                      {(sk.selectedOptions.tones || []).map((t, tIdx) => (
+                                        <span
+                                          key={`t_${tIdx}`}
+                                          onClick={() => {
+                                            const key = `${cl.className}_${sk.name}`;
+                                            setCollapsedSuboptions(prev => ({ ...prev, [key]: false }));
+                                          }}
+                                          title="點擊展開查看效果"
+                                          className="text-[11px] px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-950 border border-purple-200 font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                                        >
+                                          <span className="text-purple-600 text-[10px]">曲風</span>
+                                          <span>{t}</span>
+                                        </span>
+                                      ))}
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <SuboptionDetailsList
+                                  className={cl.className}
+                                  skillName={sk.name}
+                                  selectedOptions={sk.selectedOptions}
+                                  showVolumeBlock={true}
+                                />
+                              )}
 
                               {/* 靈能者專屬靈刻時鐘 */}
                               {cl.className === '靈能者' && sk.name === '心靈天賦' && (
@@ -1735,7 +1785,10 @@ export default function CharacterPlayHUD({
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <FUIcon name={isOffensive ? 'offensive' : 'spell'} className="text-sm" />
-                      <span className="font-bold text-sm text-purple-950">{sp.name}</span>
+                      <span className="font-bold text-sm text-purple-950 flex items-center gap-1.5">
+                        {isOffensive && <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">o</span>}
+                        <span>{sp.name}</span>
+                      </span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-bold">
                         {sp.school}
                       </span>
@@ -1747,7 +1800,7 @@ export default function CharacterPlayHUD({
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap">
-                      {sp.effect}
+                      {renderTextWithAffinities(sp.effect)}
                     </p>
                   </div>
 

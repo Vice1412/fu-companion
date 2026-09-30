@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GiSparkles, GiCancel, GiCheckMark, GiBroadsword, GiFlame } from 'react-icons/gi';
 import { Plus } from 'lucide-react';
 import { RULE_CODEX } from '../../data/ruleCodexData';
+import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 
 export default function ArcanistManager({
   character,
@@ -164,11 +165,11 @@ export default function ArcanistManager({
           <div className="text-xs space-y-1 bg-black/30 p-2.5 rounded-lg border border-white/10">
             <div>
               <span className="text-cyan-300 font-bold">連攜常駐增益：</span>
-              <span className="text-blue-100">{activeArcana.merge}</span>
+              <span className="text-blue-100">{renderTextWithAffinities(activeArcana.merge)}</span>
             </div>
             <div>
               <span className="text-amber-300 font-bold">解除爆發效果：</span>
-              <span className="text-stone-200">{activeArcana.dismiss}</span>
+              <span className="text-stone-200">{renderTextWithAffinities(activeArcana.dismiss)}</span>
               {levelDamageBonus > 0 && (
                 <span className="text-emerald-300 ml-1 font-mono font-bold">
                   (等級 {charLevel} 傷害 +{levelDamageBonus})
@@ -254,7 +255,7 @@ export default function ArcanistManager({
                 <div className="text-[11px] text-stone-500">領域：{arcana.domains}</div>
                 <div className="text-[11px] text-stone-700 dark:text-stone-300 line-clamp-2">
                   <span className="font-bold text-blue-700 dark:text-blue-300">連攜：</span>
-                  {arcana.merge}
+                  {renderTextWithAffinities(arcana.merge)}
                 </div>
               </div>
             );
@@ -376,7 +377,7 @@ export default function ArcanistManager({
 
               <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-950 dark:text-red-200 space-y-1">
                 <div className="font-bold">解除效果：</div>
-                <div>{activeArcana.dismiss}</div>
+                <div>{renderTextWithAffinities(activeArcana.dismiss)}</div>
                 {levelDamageBonus > 0 && (
                   <div className="text-emerald-700 dark:text-emerald-400 font-bold pt-1 border-t border-red-200/60 dark:border-red-800/60">
                     ★ 角色等級為 {charLevel} 級，解除傷害額外獲得 +{levelDamageBonus} 點加值！

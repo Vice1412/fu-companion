@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GiSpellBook, GiCancel, GiRollingDices, GiBiohazard } from 'react-icons/gi';
 import { Plus, ClipboardPaste } from 'lucide-react';
+import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 
 export default function ChimeristManager({
   character,
@@ -329,7 +330,7 @@ export default function ChimeristManager({
             </div>
 
             <div className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed bg-[#fdfbf7] dark:bg-slate-900/60 p-2 rounded border border-[#eee5d8] dark:border-slate-800">
-              <p>{sp.effect}</p>
+              <p>{renderTextWithAffinities(sp.effect)}</p>
               {hasViciousCycle && (
                 <p className="mt-1 font-bold text-emerald-700 dark:text-emerald-400 text-[11px] flex items-center gap-1 border-t border-emerald-200/60 dark:border-emerald-800/60 pt-1">
                   <GiBiohazard className="text-xs" />
@@ -371,7 +372,7 @@ export default function ChimeristManager({
               rows={6}
               value={pasteContent}
               onChange={e => setPasteContent(e.target.value)}
-              placeholder="例如：&#10;> **⚡ 劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)&#10;> 對目標造成【HR + 15】毒屬性傷害，並使其陷入中毒狀態。"
+              placeholder="例如：&#10;> **劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)&#10;> 對目標造成【HR + 15】毒屬性傷害，並使其陷入中毒狀態。"
               className="w-full p-2.5 rounded-lg border border-teal-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 text-xs font-mono outline-none focus:border-teal-500"
             />
 

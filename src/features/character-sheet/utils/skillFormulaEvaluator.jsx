@@ -1,4 +1,5 @@
 import React from 'react';
+import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 
 /**
  * 技能公式動態解析與求值器 (Skill Formula Evaluator)
@@ -206,7 +207,7 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
   const combinedRegex = new RegExp(`(（[oO⚡]）|\\([oO⚡]\\)|${escapedKeywords})`, 'g');
 
   const parts = text.split(combinedRegex);
-  if (parts.length === 1) return text;
+  if (parts.length === 1) return renderTextWithAffinities(text);
 
   return parts.map((part, pIdx) => {
     if (!part) return null;
@@ -215,12 +216,10 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
     // 1. 攻擊性咒語官方紅色閃電圖標
     if (/^(（[oO⚡]）|\([oO⚡]\))$/.test(part)) {
       return (
-        <span key={k} className="inline-flex items-center text-red-600 font-bold select-none mx-0.5">
-          <span>（</span>
-          <span className="fu-icon text-sm leading-none inline-block drop-shadow-2xs translate-y-[-0.5px]" title="攻擊性咒語">
+        <span key={k} className="inline text-red-600 font-bold select-none mx-0.5">
+          （<span className="fu-icon text-sm leading-none drop-shadow-2xs" title="攻擊性咒語">
             o
-          </span>
-          <span>）</span>
+          </span>）
         </span>
       );
     }
@@ -242,7 +241,8 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
       );
     }
 
-    return part;
+    // 3. 一般文字片段進行九相傷害屬性解析
+    return <React.Fragment key={k}>{renderTextWithAffinities(part)}</React.Fragment>;
   });
 }
 

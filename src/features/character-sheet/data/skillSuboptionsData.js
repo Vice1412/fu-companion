@@ -11,6 +11,8 @@
  * 7. 三大法術學派（元素師【元素魔法】、靈師【靈魂魔法】、熵師【熵系魔法】）之子項目配置規則
  */
 
+import rulesData from './rulesData.json';
+
 // ==========================================
 // 1. 舞者舞步庫 (17 種)
 // ==========================================
@@ -833,3 +835,101 @@ export function calculateSkillSuboptionMax(className, skillName, sl) {
   if (!config) return 0;
   return config.maxFormula ? config.maxFormula(sl) : sl;
 }
+
+/**
+ * 依據職業、技能與項目名稱獲取子項目的詳細效果資料
+ */
+export function getSuboptionDetails(className, skillName, rawItemName) {
+  if (!className || !skillName || !rawItemName) return null;
+  const config = getSkillSuboptionConfig(className, skillName);
+  if (!config) return null;
+
+  // 清理前綴，如 "音調: 熾熱" -> "熾熱", "曲風: 瘋狂" -> "瘋狂"
+  const cleanName = String(rawItemName).replace(/^(音調|曲風)[:：]\s*/, '').trim();
+
+  // 1. 三大法術學派咒語
+  if (config.type === 'spells') {
+    const spell = (rulesData.spells || []).find(
+      s => s.name === cleanName && (!config.school || s.school === config.school)
+    );
+    if (spell) {
+      return {
+        id: spell.name,
+        name: spell.name,
+        school: spell.school,
+        mp: spell.mp,
+        target: spell.target,
+        duration: spell.duration,
+        isOffensive: spell.isOffensive,
+        effect: spell.effect,
+        damageType: spell.damageType
+      };
+    }
+  }
+
+  // 2. 魔奏者（包含音量、音調、曲風）
+  if (config.type === 'chanter') {
+    // 檢查是否為音量
+    const vol = (config.data?.volumes || []).find(v => v.name === cleanName || v.id === cleanName);
+    if (vol) return { ...vol, itemType: 'volume', typeLabel: '音量' };
+
+    // 檢查是否為音調
+    const key = (config.data?.keys || []).find(k => k.name === cleanName || k.id === cleanName);
+    if (key) return { ...key, itemType: 'key', typeLabel: '音調' };
+
+    // 檢查是否為曲風
+    const tone = (config.data?.tones || []).find(t => t.name === cleanName || t.id === cleanName);
+    if (tone) return { ...tone, itemType: 'tone', typeLabel: '曲風' };
+  }
+
+  // 3. 一般陣列資料（舞步、心靈天賦、突變形態、魔法種子、徽記）
+  if (Array.isArray(config.data)) {
+    const item = config.data.find(d => d.name === cleanName || d.id === cleanName);
+    if (item) return item;
+  }
+
+  return {
+    name: cleanName,
+    effect: '暫無該子項目的詳細效果數據'
+  };
+}
+
+/**
+ * 魔奏者歌曲即時動態合成器
+ * 組合 [音量] + [音調] + [曲風]，動態替換曲風中的四維變量
+ */
+export function composeChanterSong(volumeIdOrName, keyName, toneName) {
+  const volumes = CHANTER_DATA.volumes || [];
+  const keys = CHANTER_DATA.keys || [];
+  const tones = CHANTER_DATA.tones || [];
+
+  const vol = volumes.find(v => v.id === volumeIdOrName || v.name === volumeIdOrName) || volumes[0];
+  const key = keys.find(k => k.name === keyName || k.id === keyName) || keys[0];
+  const tone = tones.find(t => t.name === toneName || t.id === toneName) || tones[0];
+
+  if (!vol || !key || !tone) return null;
+
+  // 動態置換曲風效果中的變量
+  // 1. 【音調傷害】 -> 【{damageType}】屬性傷害
+  // 2. 【音調狀態】 -> 【{status}】狀態
+  // 3. 【音調屬性】 -> 【{attribute}】
+  // 4. 【音調恢復值】 -> 【{recovery}】
+  let dynamicEffect = tone.effect || '';
+  dynamicEffect = dynamicEffect.replace(/【音調傷害】/g, `【${key.damageType}】屬性傷害`);
+  dynamicEffect = dynamicEffect.replace(/【音調狀態】/g, `【${key.status}】狀態`);
+  dynamicEffect = dynamicEffect.replace(/【音調屬性】/g, `【${key.attribute}】`);
+  dynamicEffect = dynamicEffect.replace(/【音調恢復值】/g, `【${key.recovery}】`);
+
+  const songTitle = `【${vol.name}・${key.name}調・${tone.name}曲】`;
+
+  return {
+    songTitle,
+    volume: vol,
+    key,
+    tone,
+    mp: vol.mp,
+    target: vol.target,
+    composedEffect: dynamicEffect
+  };
+}
+

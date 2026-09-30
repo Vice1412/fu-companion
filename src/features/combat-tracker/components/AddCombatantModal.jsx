@@ -134,7 +134,8 @@ export default function AddCombatantModal({
               tab === 'quick' ? 'bg-amber-700 text-white shadow-sm' : 'bg-[#eee6d3] text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#ebdcc4] border border-[#d6c7ab]'
             }`}
           >
-            ⚡ 快速自訂小兵/召喚物
+            <Plus className="w-3.5 h-3.5" />
+            <span>快速自訂小兵/召喚物</span>
           </button>
         </div>
 

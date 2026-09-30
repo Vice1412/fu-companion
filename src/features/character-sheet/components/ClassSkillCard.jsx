@@ -14,6 +14,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import SkillStarPips from './SkillStarPips';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import SkillSuboptionModal from './SkillSuboptionModal';
+import SuboptionDetailsList from './SuboptionDetailsList';
 import {
   getSkillSuboptionConfig,
   calculateSkillSuboptionMax
@@ -31,6 +32,7 @@ function SkillSuboptionBar({
   selectedOptions = [],
   onOpenModal
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const config = getSkillSuboptionConfig(className, skillName);
   if (!config || sl <= 0) return null;
 
@@ -83,37 +85,75 @@ function SkillSuboptionBar({
           )}
         </div>
 
-        {/* 觸發彈窗按鈕 */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenModal();
-          }}
-          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-            selectedCount === 0
-              ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
-              : 'bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs'
-          }`}
-        >
-          <GiQuillInk className="w-3.5 h-3.5" />
-          <span>{selectedCount === 0 ? `配置${config.itemTypeTitle}` : `調整${config.itemTypeTitle}`}</span>
-        </button>
+        {/* 右側按鈕群（展開效果詳情 + 調整按鈕） */}
+        <div className="flex items-center gap-1.5">
+          {selectedCount > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              className="px-2 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80 shadow-2xs"
+            >
+              <span>{isExpanded ? '收合效果詳情' : `展開效果詳情 (${selectedCount})`}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenModal();
+            }}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              selectedCount === 0
+                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-2xs'
+                : 'bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs'
+            }`}
+          >
+            <GiQuillInk className="w-3.5 h-3.5" />
+            <span>{selectedCount === 0 ? `配置${config.itemTypeTitle}` : `調整${config.itemTypeTitle}`}</span>
+          </button>
+        </div>
       </div>
 
-      {/* 已選標籤列 */}
+      {/* 展開詳情清單 OR 緊湊標籤列 */}
       {selectedCount > 0 ? (
-        <div className="flex flex-wrap gap-1.5 pt-0.5">
-          {selectedList.map((item, idx) => (
-            <span
-              key={idx}
-              className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs"
-            >
-              <span className="text-amber-500">✦</span>
-              <span>{item}</span>
-            </span>
-          ))}
-        </div>
+        isExpanded ? (
+          <div className="pt-1">
+            <SuboptionDetailsList
+              className={className}
+              skillName={skillName}
+              selectedOptions={selectedOptions}
+              showVolumeBlock={true}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {selectedList.map((item, idx) => {
+              const isOffensiveSpell = (rulesData.spells || []).some(s => s.name === item && s.isOffensive);
+              return (
+                <span
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(true);
+                  }}
+                  title="點擊展開查看效果詳情"
+                  className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-200 font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                >
+                  {isOffensiveSpell ? (
+                    <span className="fu-icon text-red-600 font-bold" title="攻擊性咒語">o</span>
+                  ) : (
+                    <span className="text-amber-500">✦</span>
+                  )}
+                  <span>{item}</span>
+                </span>
+              );
+            })}
+          </div>
+        )
       ) : (
         <p className="text-[11px] text-slate-500 italic">
           尚未選擇任何項目。請點擊上方按鈕展開清單完成角色構築。
