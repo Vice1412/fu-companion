@@ -7,6 +7,7 @@ export const CLOCK_THEMES = {
   red: { id: 'red', name: '赤紅', fill: '#8c2d36', stroke: '#58171e', bg: 'rgba(140, 45, 54, 0.15)' },
   blue: { id: 'blue', name: '群青藍', fill: '#27527a', stroke: '#17324c', bg: 'rgba(39, 82, 122, 0.15)' },
   green: { id: 'green', name: '翡翠綠', fill: '#245c45', stroke: '#133829', bg: 'rgba(36, 92, 69, 0.15)' },
+  emerald: { id: 'green', name: '翡翠綠', fill: '#245c45', stroke: '#133829', bg: 'rgba(36, 92, 69, 0.15)' },
   purple: { id: 'purple', name: '秘術紫', fill: '#5e387c', stroke: '#3a1f4f', bg: 'rgba(94, 56, 124, 0.15)' },
   gray: { id: 'gray', name: '鐵石灰', fill: '#404a58', stroke: '#20262f', bg: 'rgba(64, 74, 88, 0.15)' }
 };
@@ -16,6 +17,7 @@ export default function ClockTracker({
   totalSegments = 6,
   filledSegments = 0,
   onChange = null,
+  onFilledChange = null,
   theme = 'amber',
   type = 'circle', // 'circle' | 'line'
   size = 120,
@@ -23,27 +25,28 @@ export default function ClockTracker({
   compact = false,
   className = ''
 }) {
+  const actualOnChange = onChange || onFilledChange;
   const t = CLOCK_THEMES[theme] || CLOCK_THEMES.amber;
-  const isInteractive = typeof onChange === 'function';
+  const isInteractive = typeof actualOnChange === 'function';
 
   const handleSliceClick = (index) => {
     if (!isInteractive) return;
     if (filledSegments === index + 1) {
-      onChange(index);
+      actualOnChange(index);
     } else {
-      onChange(index + 1);
+      actualOnChange(index + 1);
     }
   };
 
   const handleStep = (step) => {
     if (!isInteractive) return;
     const nextVal = Math.max(0, Math.min(totalSegments, filledSegments + step));
-    onChange(nextVal);
+    actualOnChange(nextVal);
   };
 
   const handleReset = () => {
     if (!isInteractive) return;
-    onChange(0);
+    actualOnChange(0);
   };
 
   // SVG Circular Clock
