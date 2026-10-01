@@ -970,10 +970,12 @@ export default function CharacterEditor({
                       key={cl.className}
                       classItem={cl}
                       classIndex={cIdx}
+                      character={character}
                       theme={theme}
                       isInitialEdit={newlyAddedClassName === cl.className}
                       onUpdateSkills={handleUpdateClassSkills}
                       onRemoveClass={handleRemoveClass}
+                      onUpdateCharacter={onChange}
                     />
                   ))
                 )}

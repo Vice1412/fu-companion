@@ -254,6 +254,30 @@ export const calculateCharacterStats = (char) => {
     mdef += shieldDef.mdefBonus || 0;
   }
 
+  // 機師載具搭乘防禦覆蓋 (Techno Fantasy Atlas p. 161)
+  if (char.pilotVehicle?.isMounted) {
+    const activeMods = char.pilotVehicle?.activeModules || [];
+    if (activeMods.includes('flexible_plating')) {
+      def = currentDex + 2;
+      mdef = currentIns + 1;
+    } else if (activeMods.includes('heavy_plating')) {
+      def = 12;
+      mdef = 8;
+    } else if (activeMods.includes('runic_plating')) {
+      def = 10;
+      mdef = 11;
+    } else if (activeMods.includes('standard_plating')) {
+      def = 11;
+      mdef = 10;
+    }
+    // 載具盾牌模組加值 (每個提供 DEF+2, M.DEF+2)
+    const shieldModuleCount = activeMods.filter(id => id === 'shield_module').length;
+    if (shieldModuleCount > 0) {
+      def += shieldModuleCount * 2;
+      mdef += shieldModuleCount * 2;
+    }
+  }
+
   // 先攻修正
   let init = 0;
   if (armorDef?.initMod) init += armorDef.initMod;

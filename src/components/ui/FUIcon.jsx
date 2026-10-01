@@ -6,43 +6,43 @@ import React from 'react';
  */
 export const FU_ICON_MAP = {
   // 屬性九相 (Affinities & Damage Types - 官方標準順序: p a b d e f i l t)
-  '物理': { char: 'p', color: 'text-stone-700 font-bold', label: '物理' },
-  physical: { char: 'p', color: 'text-stone-700 font-bold', label: '物理' },
-  p: { char: 'p', color: 'text-stone-700 font-bold', label: '物理' },
+  '物理': { char: 'p', color: 'text-stone-700 dark:text-stone-300 font-bold', label: '物理' },
+  physical: { char: 'p', color: 'text-stone-700 dark:text-stone-300 font-bold', label: '物理' },
+  p: { char: 'p', color: 'text-stone-700 dark:text-stone-300 font-bold', label: '物理' },
 
-  '風': { char: 'a', color: 'text-cyan-700 font-bold', label: '風' },
-  air: { char: 'a', color: 'text-cyan-700 font-bold', label: '風' },
-  wind: { char: 'a', color: 'text-cyan-700 font-bold', label: '風' },
-  a: { char: 'a', color: 'text-cyan-700 font-bold', label: '風' },
+  '風': { char: 'a', color: 'text-cyan-700 dark:text-cyan-400 font-bold', label: '風' },
+  air: { char: 'a', color: 'text-cyan-700 dark:text-cyan-400 font-bold', label: '風' },
+  wind: { char: 'a', color: 'text-cyan-700 dark:text-cyan-400 font-bold', label: '風' },
+  a: { char: 'a', color: 'text-cyan-700 dark:text-cyan-400 font-bold', label: '風' },
 
-  '電': { char: 'b', color: 'text-amber-600 font-bold', label: '電' },
-  bolt: { char: 'b', color: 'text-amber-600 font-bold', label: '電' },
-  lightning: { char: 'b', color: 'text-amber-600 font-bold', label: '電' },
-  b: { char: 'b', color: 'text-amber-600 font-bold', label: '電' },
+  '電': { char: 'b', color: 'text-amber-600 dark:text-amber-400 font-bold', label: '電' },
+  bolt: { char: 'b', color: 'text-amber-600 dark:text-amber-400 font-bold', label: '電' },
+  lightning: { char: 'b', color: 'text-amber-600 dark:text-amber-400 font-bold', label: '電' },
+  b: { char: 'b', color: 'text-amber-600 dark:text-amber-400 font-bold', label: '電' },
 
-  '暗': { char: 'd', color: 'text-indigo-950 font-bold', label: '暗' },
-  dark: { char: 'd', color: 'text-indigo-950 font-bold', label: '暗' },
-  d: { char: 'd', color: 'text-indigo-950 font-bold', label: '暗' },
+  '暗': { char: 'd', color: 'text-indigo-950 dark:text-indigo-300 font-bold', label: '暗' },
+  dark: { char: 'd', color: 'text-indigo-950 dark:text-indigo-300 font-bold', label: '暗' },
+  d: { char: 'd', color: 'text-indigo-950 dark:text-indigo-300 font-bold', label: '暗' },
 
-  '土': { char: 'e', color: 'text-amber-800 font-bold', label: '土' },
-  earth: { char: 'e', color: 'text-amber-800 font-bold', label: '土' },
-  e: { char: 'e', color: 'text-amber-800 font-bold', label: '土' },
+  '土': { char: 'e', color: 'text-amber-800 dark:text-amber-500 font-bold', label: '土' },
+  earth: { char: 'e', color: 'text-amber-800 dark:text-amber-500 font-bold', label: '土' },
+  e: { char: 'e', color: 'text-amber-800 dark:text-amber-500 font-bold', label: '土' },
 
-  '火': { char: 'f', color: 'text-red-700 font-bold', label: '火' },
-  fire: { char: 'f', color: 'text-red-700 font-bold', label: '火' },
-  f: { char: 'f', color: 'text-red-700 font-bold', label: '火' },
+  '火': { char: 'f', color: 'text-red-700 dark:text-red-400 font-bold', label: '火' },
+  fire: { char: 'f', color: 'text-red-700 dark:text-red-400 font-bold', label: '火' },
+  f: { char: 'f', color: 'text-red-700 dark:text-red-400 font-bold', label: '火' },
 
-  '冰': { char: 'i', color: 'text-blue-700 font-bold', label: '冰' },
-  ice: { char: 'i', color: 'text-blue-700 font-bold', label: '冰' },
-  i: { char: 'i', color: 'text-blue-700 font-bold', label: '冰' },
+  '冰': { char: 'i', color: 'text-blue-700 dark:text-blue-400 font-bold', label: '冰' },
+  ice: { char: 'i', color: 'text-blue-700 dark:text-blue-400 font-bold', label: '冰' },
+  i: { char: 'i', color: 'text-blue-700 dark:text-blue-400 font-bold', label: '冰' },
 
-  '光': { char: 'l', color: 'text-amber-600 font-bold', label: '光' },
-  light: { char: 'l', color: 'text-amber-600 font-bold', label: '光' },
-  l: { char: 'l', color: 'text-amber-600 font-bold', label: '光' },
+  '光': { char: 'l', color: 'text-amber-600 dark:text-amber-300 font-bold', label: '光' },
+  light: { char: 'l', color: 'text-amber-600 dark:text-amber-300 font-bold', label: '光' },
+  l: { char: 'l', color: 'text-amber-600 dark:text-amber-300 font-bold', label: '光' },
 
-  '毒': { char: 't', color: 'text-fuchsia-800 font-bold', label: '毒' },
-  poison: { char: 't', color: 'text-fuchsia-800 font-bold', label: '毒' },
-  t: { char: 't', color: 'text-fuchsia-800 font-bold', label: '毒' },
+  '毒': { char: 't', color: 'text-fuchsia-800 dark:text-fuchsia-400 font-bold', label: '毒' },
+  poison: { char: 't', color: 'text-fuchsia-800 dark:text-fuchsia-400 font-bold', label: '毒' },
+  t: { char: 't', color: 'text-fuchsia-800 dark:text-fuchsia-400 font-bold', label: '毒' },
 
   // 攻擊射程 (Attack Range)
   '近戰': { char: 'm', color: 'text-[#3c2415]', label: '近戰' },
