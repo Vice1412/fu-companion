@@ -6,7 +6,9 @@ import {
   GiTrashCan,
   GiUpgrade,
   GiSaveArrow,
-  GiQuillInk
+  GiQuillInk,
+  GiSteeringWheel,
+  GiPawPrint
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
@@ -15,10 +17,21 @@ import SkillStarPips from './SkillStarPips';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import SkillSuboptionModal from './SkillSuboptionModal';
 import SuboptionDetailsList from './SuboptionDetailsList';
+import PilotVehicleModal from './companions/PilotVehicleModal';
+import WayfarerCompanionModal from './companions/WayfarerCompanionModal';
 import {
   getSkillSuboptionConfig,
   calculateSkillSuboptionMax
 } from '../data/skillSuboptionsData';
+import {
+  findFrameById,
+  getUnlockedModuleQuota,
+  getActiveModuleCapacity
+} from '../data/pilotVehicleData';
+import {
+  calculateCompanionMaxHp,
+  createDefaultCompanionData
+} from '../data/wayfarerCompanionData';
 import { getClassInfo } from '../data/sourcebookConfig';
 import rulesData from '../data/rulesData.json';
 
@@ -164,20 +177,122 @@ function SkillSuboptionBar({
 }
 
 /**
+ * 機師個人載具狀態與管理條 (PilotVehicleSkillBar)
+ */
+function PilotVehicleSkillBar({
+  sl,
+  vehicleData,
+  onOpenModal
+}) {
+  if (sl <= 0) return null;
+  const frame = findFrameById(vehicleData?.frameId || 'exoskeleton');
+  const unlockedQuota = getUnlockedModuleQuota(sl);
+  const activeCapacity = getActiveModuleCapacity(sl);
+  const unlockedCount = (vehicleData?.unlockedModules || []).length;
+  const activeCount = (vehicleData?.activeModules || []).length;
+  const isConfigured = unlockedCount > 0;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-200/80 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {!isConfigured ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-dashed border-slate-300 font-bold">
+              尚未配置個人載具
+            </span>
+          ) : (
+            <>
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold">
+                {frame.name} · {vehicleData?.name || '個人載具'}
+              </span>
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold">
+                解鎖 {unlockedCount}/{unlockedQuota} · 啟用 {activeCount}/{activeCapacity} 槽
+              </span>
+              {vehicleData?.isMounted && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-600 text-white font-bold">
+                  駕駛中
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenModal();
+          }}
+          className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white shadow-2xs"
+        >
+          <GiSteeringWheel className="w-3.5 h-3.5" />
+          <span>{isConfigured ? '管理個人載具' : '配置個人載具'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 旅人忠實夥伴隨從狀態與編輯條 (WayfarerCompanionSkillBar)
+ */
+function WayfarerCompanionSkillBar({
+  sl,
+  companionData,
+  characterLevel = 5,
+  onOpenModal
+}) {
+  if (sl <= 0) return null;
+  const comp = companionData || createDefaultCompanionData();
+  const maxHp = calculateCompanionMaxHp(sl, comp.mig || 8, characterLevel);
+  const isConfigured = !!companionData?.species;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-200/80 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold">
+            {comp.species || '野獸'} · {comp.name || '忠實夥伴'}
+          </span>
+          <span className="text-[11px] px-2 py-0.5 rounded-md bg-green-100 text-green-800 border border-green-300 font-mono font-bold">
+            HP {maxHp} · DEF d{comp.dex || 8} | M.DEF d{comp.ins || 8}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenModal();
+          }}
+          className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+        >
+          <GiPawPrint className="w-3.5 h-3.5" />
+          <span>{isConfigured ? '編輯忠實夥伴' : '配置忠實夥伴'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 職業特技管理卡片 (ClassSkillCard)
  * 滿足需求 1, 2, 3 與子項目挑選構築：
  * 1. 中英文名、專屬圖標並存，附帶一目了然的一句話風格描述。
  * 2. 展開點選模式：列出所有特技，Max SL 星星視覺化，點擊變色；點選儲存後恢復簡潔，僅顯示已點亮特技。
  * 3. 動態公式求值：未點時顯示計算公式，點亮後自動算好精準數值。
  * 4. 子項目專屬挑選：為 9 大技能提供即時配額標籤與構建抽屜。
+ * 5. 獨立實體/載具副卡：為機師【個人載具】與旅人【忠實夥伴】提供專屬配置條與管理彈窗。
  */
 export default function ClassSkillCard({
   classItem,
   classIndex,
+  character = {},
   theme,
   isInitialEdit = false,
   onUpdateSkills,
-  onRemoveClass
+  onRemoveClass,
+  onUpdateCharacter
 }) {
   const [isEditing, setIsEditing] = useState(isInitialEdit);
 
@@ -188,6 +303,12 @@ export default function ClassSkillCard({
 
   // 子項目構築彈窗目標特技 { skillName, sl, selectedOptions }
   const [suboptionModalSkill, setSuboptionModalSkill] = useState(null);
+
+  // 個人載具與忠實夥伴彈窗狀態
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
+  const [currentPilotSl, setCurrentPilotSl] = useState(1);
+  const [currentWayfarerSl, setCurrentWayfarerSl] = useState(1);
 
   // 暫存的特技配置字典 (用於編輯模式，保存點選狀態)
   const [draftSkills, setDraftSkills] = useState(() => {
@@ -439,14 +560,35 @@ export default function ClassSkillCard({
                       <SkillDescription desc={skillDef?.desc || ''} sl={sk.sl} />
                     </div>
 
-                    {/* 子項目狀態與配置條 */}
-                    <SkillSuboptionBar
-                      className={className}
-                      skillName={sk.name}
-                      sl={sk.sl}
-                      selectedOptions={sk.selectedOptions || []}
-                      onOpenModal={() => handleOpenSuboptionModal(sk.name, sk.sl, sk.selectedOptions || [])}
-                    />
+                    {/* 子項目狀態與配置條 / 個人載具條 / 忠實夥伴條 */}
+                    {sk.name === '個人載具' ? (
+                      <PilotVehicleSkillBar
+                        sl={sk.sl}
+                        vehicleData={character?.pilotVehicle}
+                        onOpenModal={() => {
+                          setCurrentPilotSl(sk.sl);
+                          setIsVehicleModalOpen(true);
+                        }}
+                      />
+                    ) : sk.name === '忠實夥伴' ? (
+                      <WayfarerCompanionSkillBar
+                        sl={sk.sl}
+                        companionData={character?.wayfarerData?.companion}
+                        characterLevel={character?.level || 5}
+                        onOpenModal={() => {
+                          setCurrentWayfarerSl(sk.sl);
+                          setIsCompanionModalOpen(true);
+                        }}
+                      />
+                    ) : (
+                      <SkillSuboptionBar
+                        className={className}
+                        skillName={sk.name}
+                        sl={sk.sl}
+                        selectedOptions={sk.selectedOptions || []}
+                        onOpenModal={() => handleOpenSuboptionModal(sk.name, sk.sl, sk.selectedOptions || [])}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -551,15 +693,36 @@ export default function ClassSkillCard({
                     <SkillDescription desc={sk.desc} sl={currentSL} />
                   </div>
 
-                  {/* 子項目狀態與配置條 */}
+                  {/* 子項目狀態與配置條 / 個人載具條 / 忠實夥伴條 */}
                   <div onClick={e => e.stopPropagation()}>
-                    <SkillSuboptionBar
-                      className={className}
-                      skillName={sk.name}
-                      sl={currentSL}
-                      selectedOptions={currentSuboptions}
-                      onOpenModal={() => handleOpenSuboptionModal(sk.name, currentSL, currentSuboptions)}
-                    />
+                    {sk.name === '個人載具' ? (
+                      <PilotVehicleSkillBar
+                        sl={currentSL}
+                        vehicleData={character?.pilotVehicle}
+                        onOpenModal={() => {
+                          setCurrentPilotSl(currentSL);
+                          setIsVehicleModalOpen(true);
+                        }}
+                      />
+                    ) : sk.name === '忠實夥伴' ? (
+                      <WayfarerCompanionSkillBar
+                        sl={currentSL}
+                        companionData={character?.wayfarerData?.companion}
+                        characterLevel={character?.level || 5}
+                        onOpenModal={() => {
+                          setCurrentWayfarerSl(currentSL);
+                          setIsCompanionModalOpen(true);
+                        }}
+                      />
+                    ) : (
+                      <SkillSuboptionBar
+                        className={className}
+                        skillName={sk.name}
+                        sl={currentSL}
+                        selectedOptions={currentSuboptions}
+                        onOpenModal={() => handleOpenSuboptionModal(sk.name, currentSL, currentSuboptions)}
+                      />
+                    )}
                   </div>
                 </div>
               );
@@ -609,6 +772,42 @@ export default function ClassSkillCard({
           theme={theme}
         />
       )}
+
+      {/* ================= 機師個人載具管理彈窗 ================= */}
+      <PilotVehicleModal
+        isOpen={isVehicleModalOpen}
+        onClose={() => setIsVehicleModalOpen(false)}
+        vehicleData={character?.pilotVehicle}
+        pilotSl={currentPilotSl}
+        onSave={(newVehicleData) => {
+          if (onUpdateCharacter) {
+            onUpdateCharacter({
+              ...character,
+              pilotVehicle: newVehicleData
+            });
+          }
+        }}
+      />
+
+      {/* ================= 旅人忠實夥伴隨從彈窗 ================= */}
+      <WayfarerCompanionModal
+        isOpen={isCompanionModalOpen}
+        onClose={() => setIsCompanionModalOpen(false)}
+        companionData={character?.wayfarerData?.companion}
+        wayfarerSl={currentWayfarerSl}
+        characterLevel={character?.level || 5}
+        onSave={(newCompData) => {
+          if (onUpdateCharacter) {
+            onUpdateCharacter({
+              ...character,
+              wayfarerData: {
+                ...(character?.wayfarerData || {}),
+                companion: newCompData
+              }
+            });
+          }
+        }}
+      />
     </div>
   );
 }

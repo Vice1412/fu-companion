@@ -45,6 +45,7 @@ import SkillDescription from '../utils/skillFormulaEvaluator';
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
+import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererProjectTracker from './companions/TinkererProjectTracker';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
@@ -1170,6 +1171,18 @@ export default function CharacterPlayHUD({
                 </div>
               </div>
 
+              {/* Pilot Personal Vehicle in Combat (if active) */}
+              {(character.classes || []).some(c => c.className === '機師' && (c.skills || []).some(s => s.name === '個人載具' && s.sl > 0)) && (
+                <div className="pt-2 border-t">
+                  <PilotVehicleCombatSheet
+                    character={character}
+                    onChange={onChange}
+                    onOpenDice={onOpenDice}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
+
               {/* Wayfarer Companion in Combat (if active) */}
               {(character.classes || []).some(c => c.className === '旅人' && (c.skills || []).some(s => s.name === '忠實夥伴' && s.sl > 0)) && (
                 <div className="pt-2 border-t">
@@ -1652,6 +1665,17 @@ export default function CharacterPlayHUD({
                   {cl.className === '旅人' && (cl.skills || []).some(s => s.name === '忠實夥伴' && s.sl > 0) && (
                     <div className="mt-3">
                       <WayfarerCompanionSheet
+                        character={character}
+                        onChange={onChange}
+                        onOpenDice={onOpenDice}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '機師' && (cl.skills || []).some(s => s.name === '個人載具' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <PilotVehicleCombatSheet
                         character={character}
                         onChange={onChange}
                         onOpenDice={onOpenDice}
