@@ -11,7 +11,8 @@ import {
   GiHazardSign,
   GiCrystalBall,
   GiCrossedSwords,
-  GiDiceSixFacesFive
+  GiDiceSixFacesFive,
+  GiRollingDices
 } from 'react-icons/gi';
 import { Plus } from 'lucide-react';
 import ClockTracker from '../../../../components/ui/ClockTracker';
@@ -19,6 +20,195 @@ import JRPGButton from '../../../../components/ui/JRPGButton';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 import { calculateCharacterStats } from '../../utils/characterEngine';
 import rulesData from '../../data/rulesData.json';
+
+// 官方修補匠煉金術【目標表】(Core Rulebook p. 212)
+export const ALCHEMY_TARGET_TABLE = [
+  { id: 't1', min: 1, max: 6, range: '1~6', label: '單體友方', desc: '你或者在場景中的一名你看得見的盟友' },
+  { id: 't2', min: 7, max: 11, range: '7~11', label: '單體敵方', desc: '場景中的一名你看得見的敵人' },
+  { id: 't3', min: 12, max: 16, range: '12~16', label: '群體友方', desc: '你與場景中你看得見的所有盟友' },
+  { id: 't4', min: 17, max: 20, range: '17~20', label: '群體敵方', desc: '場景中的每名敵人' }
+];
+
+// 官方修補匠煉金術【效果表】(Core Rulebook p. 213)
+export const getAlchemyEffectRows = (level = 5) => {
+  const dmg = level >= 40 ? 40 : level >= 20 ? 30 : 20;
+  return [
+    {
+      id: 'any_poison',
+      isAny: true,
+      diceLabel: '任意',
+      category: '保底備選',
+      label: `受到 ${dmg} 點毒屬性傷害`,
+      fallbackKey: 'poison'
+    },
+    {
+      id: 'any_heal',
+      isAny: true,
+      diceLabel: '任意',
+      category: '保底備選',
+      label: '恢復 30 點 HP',
+      fallbackKey: 'heal'
+    },
+    {
+      id: 'e1',
+      dice: [1],
+      diceLabel: '1',
+      category: '屬性提昇',
+      label: '【DEX】與【MIG】骰尺寸提升一階（最高為 d12），持續至你的下個回合結束'
+    },
+    {
+      id: 'e2',
+      dice: [2],
+      diceLabel: '2',
+      category: '屬性提昇',
+      label: '【INS】與【WLP】骰尺寸提升一階（最高為 d12），持續至你的下個回合結束'
+    },
+    {
+      id: 'e3',
+      dice: [3],
+      diceLabel: '3',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點風屬性傷害`
+    },
+    {
+      id: 'e4',
+      dice: [4],
+      diceLabel: '4',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點電屬性傷害`
+    },
+    {
+      id: 'e5',
+      dice: [5],
+      diceLabel: '5',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點暗屬性傷害`
+    },
+    {
+      id: 'e6',
+      dice: [6],
+      diceLabel: '6',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點土屬性傷害`
+    },
+    {
+      id: 'e7',
+      dice: [7],
+      diceLabel: '7',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點火屬性傷害`
+    },
+    {
+      id: 'e8',
+      dice: [8],
+      diceLabel: '8',
+      category: '屬性傷害',
+      label: `受到 ${dmg} 點冰屬性傷害`
+    },
+    {
+      id: 'e9',
+      dice: [9],
+      diceLabel: '9',
+      category: '元素抗性',
+      label: '獲得對風屬性與火屬性傷害的抗性，持續至場景結束'
+    },
+    {
+      id: 'e10',
+      dice: [10],
+      diceLabel: '10',
+      category: '元素抗性',
+      label: '獲得對電屬性與冰屬性傷害的抗性，持續至場景結束'
+    },
+    {
+      id: 'e11',
+      dice: [11],
+      diceLabel: '11',
+      category: '元素抗性',
+      label: '獲得對暗屬性與土屬性傷害的抗性，持續至場景結束'
+    },
+    {
+      id: 'e12',
+      dice: [12],
+      diceLabel: '12',
+      category: '異常狀態',
+      label: '陷入憤怒狀態'
+    },
+    {
+      id: 'e13',
+      dice: [13],
+      diceLabel: '13',
+      category: '異常狀態',
+      label: '陷入中毒狀態'
+    },
+    {
+      id: 'e14',
+      dice: [14],
+      diceLabel: '14',
+      category: '複合異常',
+      label: '同時陷入眩暈、動搖、緩慢與虛弱狀態'
+    },
+    {
+      id: 'e15',
+      dice: [15],
+      diceLabel: '15',
+      category: '狀態解除',
+      label: '解除所有狀態效果'
+    },
+    {
+      id: 'e16_17',
+      dice: [16, 17],
+      diceLabel: '16~17',
+      category: '強效回復',
+      label: '恢復 50 點 HP 與 50 點 MP'
+    },
+    {
+      id: 'e18',
+      dice: [18],
+      diceLabel: '18',
+      category: '極限回復',
+      label: '恢復 100 點 HP'
+    },
+    {
+      id: 'e19',
+      dice: [19],
+      diceLabel: '19',
+      category: '極限回復',
+      label: '恢復 100 點 MP'
+    },
+    {
+      id: 'e20',
+      dice: [20],
+      diceLabel: '20',
+      category: '神蹟回復',
+      label: '恢復 100 點 HP 與 100 點 MP'
+    }
+  ];
+};
+
+/**
+ * 智慧解析外部骰點文本（相容 Discord / CCFOLIA / BCDice / 純數字等多樣格式）
+ * 範例 1 (Discord BCDice): (4D20) ＞ 46[14,17,7,8] ＞ 46 -> [14, 17, 7, 8]
+ * 範例 2 (CCFOLIA): : 4D20 (4D20) ＞ 46[14, 17, 7, 8] ＞ 46 -> [14, 17, 7, 8]
+ * 範例 3 (純數字): 14, 17, 7, 8 -> [14, 17, 7, 8]
+ */
+export const parseExternalDiceRolls = (text, count = 4) => {
+  if (!text || typeof text !== 'string') return [];
+  // 策略 1：優先提取方括號 [14, 17, 7, 8]
+  const bracketMatch = text.match(/\[([^\]]+)\]/);
+  if (bracketMatch) {
+    const nums = (bracketMatch[1].match(/\b\d+\b/g) || [])
+      .map(Number)
+      .filter(n => n >= 1 && n <= 20);
+    if (nums.length > 0) return nums.slice(0, count);
+  }
+
+  // 策略 2：過濾骰子指令如 (4D20) 或 4d20，避免將指令中的 4 或 20 誤判為出目
+  const cleaned = text.replace(/\(?\b\d+[dD]\d+\b\)?/gi, ' ');
+  const nums = (cleaned.match(/\b\d+\b/g) || [])
+    .map(Number)
+    .filter(n => n >= 1 && n <= 20);
+  return nums.slice(0, count);
+};
 
 export default function TinkererWorkshop({
   character,
@@ -81,8 +271,8 @@ export default function TinkererWorkshop({
   const [targetDieIndex, setTargetDieIndex] = useState(null);
   const [effectDieIndex, setEffectDieIndex] = useState(null);
   const [useFallbackEffect, setUseFallbackEffect] = useState(null); // 'poison' or 'heal' or null
-  const [manualInputMode, setManualInputMode] = useState(false);
   const [manualValues, setManualValues] = useState({ die0: '10', die1: '10', die2: '10', die3: '10' });
+  const [pasteInputText, setPasteInputText] = useState('');
 
   // ----------------------------------------------------
   // 灌注術狀態
@@ -191,76 +381,148 @@ export default function TinkererWorkshop({
     }
     setRolledDice(results);
     setTargetDieIndex(0);
-    setEffectDieIndex(1);
+    setEffectDieIndex(results.length > 1 ? 1 : 0);
     setUseFallbackEffect(null);
 
+    const newManual = {};
+    results.forEach((val, idx) => {
+      newManual[`die${idx}`] = String(val);
+    });
+    setManualValues(newManual);
+
     updateCharacterData(tinkererData, { currentIp: nextIp });
-    showToast(`消耗 ${alchemyIpCost} 道具點成功調配！擲出 [${results.join(', ')}]，剩餘 ${nextIp} 道具點。`, 'success');
+    showToast(`消耗 ${alchemyIpCost} 道具點現場調配！擲出 [${results.join(', ')}]，剩餘 ${nextIp} 道具點。`, 'success');
   };
 
-  const handleApplyManualDice = () => {
+  const handleApplyManualDice = (shouldDeductIp = false) => {
     const results = [];
     for (let i = 0; i < alchemyDiceCount; i++) {
       const val = parseInt(manualValues[`die${i}`], 10) || 10;
       results.push(Math.min(20, Math.max(1, val)));
     }
     setRolledDice(results);
-    setTargetDieIndex(0);
-    setEffectDieIndex(1);
+    if (targetDieIndex === null || targetDieIndex >= results.length) {
+      setTargetDieIndex(0);
+    }
+    if (effectDieIndex === null || effectDieIndex >= results.length) {
+      setEffectDieIndex(results.length > 1 ? 1 : 0);
+    }
     setUseFallbackEffect(null);
-    showToast(`已設定外部骰點 [${results.join(', ')}]！`, 'info');
+
+    if (shouldDeductIp) {
+      const nextIp = consumeIp(alchemyIpCost, '道具點');
+      if (nextIp !== null) {
+        updateCharacterData(tinkererData, { currentIp: nextIp });
+        showToast(`已套用外部骰點 [${results.join(', ')}] 並扣除 ${alchemyIpCost} 道具點！剩餘 ${nextIp} 道具點。`, 'success');
+        return;
+      }
+    }
+    showToast(`已套用外部骰點 [${results.join(', ')}]！雙表已即時高亮所有命中項。`, 'info');
+  };
+
+  const handleManualDieChange = (idx, valueStr) => {
+    const nextManual = { ...manualValues, [`die${idx}`]: valueStr };
+    setManualValues(nextManual);
+
+    // 同步即時高亮雙表
+    const val = parseInt(valueStr, 10);
+    if (!isNaN(val) && val >= 1 && val <= 20) {
+      const nextRolled = [...(rolledDice.length === alchemyDiceCount ? rolledDice : Array.from({ length: alchemyDiceCount }, () => 10))];
+      nextRolled[idx] = val;
+      setRolledDice(nextRolled);
+      if (targetDieIndex === null) setTargetDieIndex(0);
+      if (effectDieIndex === null) setEffectDieIndex(nextRolled.length > 1 ? 1 : 0);
+    }
+  };
+
+  const handleSelectTarget = (diceIdx) => {
+    if (effectDieIndex === diceIdx && useFallbackEffect === null) {
+      setEffectDieIndex(null);
+    }
+    setTargetDieIndex(diceIdx);
+  };
+
+  const handleSelectEffect = (diceIdx) => {
+    setUseFallbackEffect(null);
+    if (targetDieIndex === diceIdx) {
+      setTargetDieIndex(null);
+    }
+    setEffectDieIndex(diceIdx);
+  };
+
+  const handleSelectFallbackEffect = (fallbackKey) => {
+    setUseFallbackEffect(fallbackKey);
+    setEffectDieIndex(null);
+  };
+
+  const handleResetAlchemy = () => {
+    setRolledDice([]);
+    setTargetDieIndex(null);
+    setEffectDieIndex(null);
+    setUseFallbackEffect(null);
   };
 
   // 取得目標解析
   const getAlchemyTargetInfo = (roll) => {
-    if (!roll) return { label: '請選擇一顆骰子指派為目標', desc: '' };
-    if (roll <= 6) return { label: '你或場景中一名你看得見的盟友', range: '1~6' };
-    if (roll <= 11) return { label: '場景中一名你看得見的敵人', range: '7~11' };
-    if (roll <= 16) return { label: '你與場景中你看得見的所有盟友', range: '12~16' };
-    return { label: '場景中你看得見的每名敵人', range: '17~20' };
+    if (!roll) return { label: '未選定目標（請由左側目標表點選）', range: '' };
+    const row = ALCHEMY_TARGET_TABLE.find(t => roll >= t.min && roll <= t.max);
+    return row ? { label: row.desc, range: row.range, category: row.label } : { label: '未知目標', range: '' };
   };
 
   // 取得效果解析
   const getAlchemyEffectInfo = (roll) => {
     if (useFallbackEffect === 'poison') {
       const dmg = characterLevel >= 40 ? 40 : characterLevel >= 20 ? 30 : 20;
-      return { label: `受到 ${dmg} 點毒屬性傷害`, isFallback: true };
+      return { label: `受到 ${dmg} 點毒屬性傷害`, isFallback: true, category: '保底備選' };
     }
     if (useFallbackEffect === 'heal') {
-      return { label: '恢復 30 點 HP', isFallback: true };
+      return { label: '恢復 30 點 HP', isFallback: true, category: '保底備選' };
     }
-    if (!roll) return { label: '請選擇一顆骰子指派為效果', desc: '' };
+    if (!roll) return { label: '未選定效果（請由右側效果表點選）', desc: '' };
 
-    const dmg = characterLevel >= 40 ? 40 : characterLevel >= 20 ? 30 : 20;
-    switch (roll) {
-      case 1: return { label: 'DEX 與 MIG 骰尺寸提升一階（最高為 d12），持續至你的下個回合結束' };
-      case 2: return { label: 'INS 與 WLP 骰尺寸提升一階（最高為 d12），持續至你的下個回合結束' };
-      case 3: return { label: `受到 ${dmg} 點風屬性傷害` };
-      case 4: return { label: `受到 ${dmg} 點電屬性傷害` };
-      case 5: return { label: `受到 ${dmg} 點暗屬性傷害` };
-      case 6: return { label: `受到 ${dmg} 點土屬性傷害` };
-      case 7: return { label: `受到 ${dmg} 點火屬性傷害` };
-      case 8: return { label: `受到 ${dmg} 點冰屬性傷害` };
-      case 9: return { label: '獲得對風屬性與火屬性傷害的抗性，持續至場景結束' };
-      case 10: return { label: '獲得對電屬性與冰屬性傷害的抗性，持續至場景結束' };
-      case 11: return { label: '獲得對暗屬性與土屬性傷害的抗性，持續至場景結束' };
-      case 12: return { label: '陷入憤怒狀態' };
-      case 13: return { label: '陷入中毒狀態' };
-      case 14: return { label: '同時陷入眩暈、動搖、緩慢與虛弱狀態' };
-      case 15: return { label: '解除所有狀態效果' };
-      case 16:
-      case 17: return { label: '恢復 50 點 HP 與 50 點 MP' };
-      case 18: return { label: '恢復 100 點 HP' };
-      case 19: return { label: '恢復 100 點 MP' };
-      case 20: return { label: '恢復 100 點 HP 與 100 點 MP' };
-      default: return { label: '未知效果' };
-    }
+    const rows = getAlchemyEffectRows(characterLevel);
+    const row = rows.find(r => !r.isAny && r.dice.includes(roll));
+    return row ? { label: row.label, category: row.category } : { label: '未知效果' };
   };
 
-  const targetDieValue = targetDieIndex !== null ? rolledDice[targetDieIndex] : null;
-  const effectDieValue = effectDieIndex !== null ? rolledDice[effectDieIndex] : null;
+  const targetDieValue = targetDieIndex !== null && rolledDice[targetDieIndex] !== undefined ? rolledDice[targetDieIndex] : null;
+  const effectDieValue = effectDieIndex !== null && rolledDice[effectDieIndex] !== undefined ? rolledDice[effectDieIndex] : null;
   const currentTargetInfo = getAlchemyTargetInfo(targetDieValue);
   const currentEffectInfo = getAlchemyEffectInfo(effectDieValue);
+
+  const handleParseExternalDice = (text) => {
+    if (!text || !text.trim()) {
+      showToast('請先貼入含有骰子出目的文字內容', 'warning');
+      return;
+    }
+    const parsed = parseExternalDiceRolls(text, alchemyDiceCount);
+    if (parsed.length === 0) {
+      showToast('未能從貼入內容中識別出 1~20 的出目，請檢查格式', 'warning');
+      return;
+    }
+
+    const newManual = { ...manualValues };
+    parsed.forEach((val, idx) => {
+      newManual[`die${idx}`] = String(val);
+    });
+    setManualValues(newManual);
+    setRolledDice(parsed);
+    setTargetDieIndex(0);
+    setEffectDieIndex(parsed.length > 1 ? 1 : 0);
+    setUseFallbackEffect(null);
+    showToast(`已智慧解析 ${parsed.length} 顆出目：[${parsed.join(', ')}]，雙表已即時高亮！`, 'success');
+  };
+
+  const handleCopyPotion = () => {
+    const tierTitle = alchemyTier === 1 ? '【基礎煉金術】' : alchemyTier === 2 ? '【高級煉金術】' : '【最高煉金術】';
+    const targetText = currentTargetInfo.label || '未選定目標';
+    const effectText = currentEffectInfo.label || '未選定效果';
+    const targetPart = `${targetText}${targetDieValue ? ` (出目 ${targetDieValue})` : ''}`;
+    const effectPart = `${effectText}${useFallbackEffect ? ' (任意保底)' : effectDieValue ? ` (出目 ${effectDieValue})` : ''}`;
+    const text = `${tierTitle}\n消耗：${alchemyIpCost} 道具點\n目標：${targetPart}\n效果：${effectPart}`;
+    navigator.clipboard.writeText(text);
+    showToast(`已複製${tierTitle}效果至剪貼簿！`, 'info');
+  };
 
   // ----------------------------------------------------
   // 灌注術處理
@@ -471,16 +733,6 @@ export default function TinkererWorkshop({
                     隨機調配藥劑：擲出 d20 骰組後，選擇一顆指派給【目標】、一顆指派給【效果】
                   </p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setManualInputMode(!manualInputMode)}
-                    className="text-[11px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline cursor-pointer"
-                  >
-                    {manualInputMode ? '切換回系統擲骰' : '手動輸入骰點 (相容 CCFOLIA / Discord)'}
-                  </button>
-                </div>
               </div>
 
               {alchemyTier === 0 ? (
@@ -490,167 +742,458 @@ export default function TinkererWorkshop({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* 調配按鈕區 */}
-                  {!manualInputMode ? (
-                    <div className="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800 flex-wrap">
-                      <div className="text-xs text-amber-900 dark:text-amber-200">
-                        點擊調配將自動扣除 <strong className="font-mono text-sm">{alchemyIpCost} IP</strong> 並擲出 <strong className="font-mono">{alchemyDiceCount} 個 d20</strong>：
+                  {/* ① 投擲與外部填寫雙軌控制台 */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/90 dark:from-slate-800 dark:via-slate-800/90 dark:to-amber-950/30 border border-amber-300/80 dark:border-amber-700/80 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5">
+                          <GiRollingDices className="text-amber-600 text-base" />
+                          <span>即席混合骰組：共需 {alchemyDiceCount} 顆 d20（消耗 {alchemyIpCost} 道具點）</span>
+                        </div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400">
+                          可直接點擊「現場調配」由系統擲骰，或在右側手動填入 Discord / CCFOLIA 擲出的出目
+                        </div>
                       </div>
 
-                      <JRPGButton
-                        variant="primary"
-                        size="sm"
-                        icon={GiRoundBottomFlask}
-                        onClick={handleRollAlchemy}
-                      >
-                        現場調配 ({alchemyIpCost} IP)
-                      </JRPGButton>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700 space-y-2">
-                      <div className="text-[11px] text-slate-600 dark:text-slate-300 font-bold">
-                        手動填寫在 Discord 或 CCFOLIA 擲出的 {alchemyDiceCount} 個 d20 點數：
-                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {Array.from({ length: alchemyDiceCount }).map((_, idx) => (
-                          <div key={idx} className="flex items-center gap-1">
-                            <span className="font-mono text-[11px] text-slate-500">d20 #{idx + 1}:</span>
-                            <input
-                              type="number"
-                              min="1"
-                              max="20"
-                              value={manualValues[`die${idx}`] || ''}
-                              onChange={(e) => setManualValues({ ...manualValues, [`die${idx}`]: e.target.value })}
-                              className="w-14 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-center text-xs"
-                            />
-                          </div>
-                        ))}
+                        <JRPGButton
+                          variant="primary"
+                          size="sm"
+                          icon={GiRollingDices}
+                          onClick={handleRollAlchemy}
+                        >
+                          現場調配 ({alchemyIpCost} IP · 擲 {alchemyDiceCount}d20)
+                        </JRPGButton>
+
                         <button
                           type="button"
-                          onClick={handleApplyManualDice}
-                          className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer"
+                          onClick={() => handleApplyManualDice(true)}
+                          className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs shadow-2xs cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
+                          title="套用當前輸入框中的數值並扣除 IP"
                         >
-                          確認點數
+                          <span>扣 {alchemyIpCost} IP 並套用</span>
                         </button>
                       </div>
                     </div>
-                  )}
 
-                  {/* 擲出的骰子選擇條 */}
-                  {rolledDice.length > 0 && (
-                    <div className="p-3.5 rounded-xl bg-amber-50/50 dark:bg-slate-700/30 border border-amber-200 dark:border-slate-600 space-y-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
-                        <span>點擊骰子指派至目標或效果：</span>
-                        <span className="text-[11px] text-slate-500 font-normal">
-                          （未指派之骰子將自動捨棄）
+                    {/* 外部骰點智慧解析與微調 */}
+                    <div className="pt-2 border-t border-amber-200/70 dark:border-slate-700 space-y-2.5 text-xs">
+                      {/* 智慧貼上外部出目列 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-stone-700 dark:text-stone-300 text-[11px] shrink-0">
+                          快速貼上外部出目：
+                        </span>
+                        <div className="flex-1 min-w-[260px] flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={pasteInputText}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setPasteInputText(val);
+                              // 若包含方括號或長字串，自動嘗試解析
+                              if (val.includes('[') || val.length >= 6) {
+                                const parsed = parseExternalDiceRolls(val, alchemyDiceCount);
+                                if (parsed.length > 0) {
+                                  handleParseExternalDice(val);
+                                }
+                              }
+                            }}
+                            placeholder="直接貼上 Discord / CCFOLIA 訊息，如：(4D20) ＞ 46[14,17,7,8] ＞ 46 或純出目"
+                            className="flex-1 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:border-amber-500 outline-none font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleParseExternalDice(pasteInputText)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-2xs cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
+                          >
+                            智慧解析
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 手動微調數值列與當前骰池視覺化 */}
+                      <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-stone-700 dark:text-stone-300 text-[11px]">
+                            個別出目微調：
+                          </span>
+                          {Array.from({ length: alchemyDiceCount }).map((_, idx) => (
+                            <div key={idx} className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-amber-200 dark:border-slate-700">
+                              <span className="font-mono text-[11px] text-amber-800 dark:text-amber-400 font-bold">#{idx + 1}:</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="20"
+                                value={manualValues[`die${idx}`] ?? ''}
+                                onChange={(e) => handleManualDieChange(idx, e.target.value)}
+                                placeholder="1~20"
+                                className="w-12 px-1 py-0.5 rounded border border-stone-200 dark:border-slate-700 font-mono text-center text-xs font-bold text-stone-900 dark:text-stone-100 outline-none focus:border-amber-500"
+                              />
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => handleApplyManualDice(false)}
+                            className="px-2.5 py-1 rounded bg-stone-200 dark:bg-slate-700 hover:bg-amber-100 text-stone-700 dark:text-stone-200 font-bold text-xs cursor-pointer transition-colors"
+                          >
+                            即時套用
+                          </button>
+                        </div>
+
+                        {/* 當前骰池徽章狀態 */}
+                        {rolledDice.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] text-stone-500">當前出目池：</span>
+                            {rolledDice.map((val, idx) => {
+                              const isTarget = targetDieIndex === idx;
+                              const isEffect = effectDieIndex === idx && useFallbackEffect === null;
+                              const isDiscarded = !isTarget && !isEffect;
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`px-2 py-0.5 rounded-md font-mono text-xs font-bold border flex items-center gap-1 transition-all ${
+                                    isTarget
+                                      ? 'bg-blue-600 text-white border-blue-700 shadow-2xs'
+                                      : isEffect
+                                      ? 'bg-rose-600 text-white border-rose-700 shadow-2xs'
+                                      : 'bg-stone-100 dark:bg-slate-800 text-stone-500 dark:text-stone-400 border-stone-300 dark:border-slate-700 opacity-60'
+                                  }`}
+                                >
+                                  <span>#{idx + 1}: {val}</span>
+                                  <span className="text-[10px] font-sans font-normal opacity-90">
+                                    {isTarget ? '目標' : isEffect ? '效果' : '捨棄'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ② 規則書雙表（目標表 + 效果表） */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                    
+                    {/* 左側：【目標表】(Target Table - 佔 5 欄) */}
+                    <div className="lg:col-span-5 space-y-2">
+                      <div className="flex items-center justify-between border-b border-blue-200 dark:border-blue-900 pb-1.5">
+                        <div className="flex items-center gap-1.5 text-blue-900 dark:text-blue-300 font-bold text-xs">
+                          <GiRoundBottomFlask className="text-base text-blue-600" />
+                          <span>【目標表】(手冊 p.212)</span>
+                        </div>
+                        <span className="text-[10px] text-blue-700/80 dark:text-blue-300/80">
+                          點選行或出目指派
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {rolledDice.map((val, idx) => {
-                          const isTarget = targetDieIndex === idx;
-                          const isEffect = effectDieIndex === idx;
-                          const isDiscarded = !isTarget && !isEffect;
+                      <div className="space-y-2">
+                        {ALCHEMY_TARGET_TABLE.map((row) => {
+                          const matchingDice = rolledDice
+                            .map((val, idx) => ({ val, idx }))
+                            .filter(d => d.val >= row.min && d.val <= row.max);
+                          const isHit = matchingDice.length > 0;
+                          const isSelected = targetDieIndex !== null && rolledDice[targetDieIndex] >= row.min && rolledDice[targetDieIndex] <= row.max;
 
                           return (
                             <div
-                              key={idx}
-                              className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 min-w-[76px] transition-all shadow-2xs ${
-                                isTarget
-                                  ? 'bg-blue-100 dark:bg-blue-900/60 border-blue-500 text-blue-950 dark:text-blue-100 ring-2 ring-blue-400'
-                                  : isEffect
-                                  ? 'bg-rose-100 dark:bg-rose-900/60 border-rose-500 text-rose-950 dark:text-rose-100 ring-2 ring-rose-400'
-                                  : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 opacity-60'
+                              key={row.id}
+                              onClick={() => {
+                                if (matchingDice.length > 0) {
+                                  handleSelectTarget(matchingDice[0].idx);
+                                }
+                              }}
+                              className={`p-2.5 rounded-xl border transition-all text-xs space-y-1.5 ${
+                                isSelected
+                                  ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-500 ring-2 ring-blue-400 text-blue-950 dark:text-blue-50 shadow-sm cursor-pointer'
+                                  : isHit
+                                  ? 'bg-blue-50/80 dark:bg-slate-800/90 border-blue-300 dark:border-blue-700/80 text-stone-900 dark:text-stone-100 hover:bg-blue-100/60 cursor-pointer shadow-2xs'
+                                  : 'bg-stone-50/40 dark:bg-slate-800/30 border-stone-200 dark:border-slate-700/50 text-stone-400 dark:text-stone-500 opacity-60'
                               }`}
                             >
-                              <span className="font-mono text-lg font-black">{val}</span>
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`font-mono text-xs font-black px-1.5 py-0.5 rounded ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : isHit
+                                      ? 'bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-200 font-bold'
+                                      : 'bg-stone-200 dark:bg-slate-700 text-stone-600 dark:text-stone-400'
+                                  }`}>
+                                    {row.range}
+                                  </span>
+                                  <span className="font-bold text-[11px] px-1.5 py-0.2 rounded bg-white/70 dark:bg-black/30 border border-current">
+                                    {row.label}
+                                  </span>
+                                </div>
 
-                              <div className="flex items-center gap-1 mt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (effectDieIndex === idx) setEffectDieIndex(targetDieIndex);
-                                    setTargetDieIndex(idx);
-                                  }}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
-                                    isTarget ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-100'
-                                  }`}
-                                >
-                                  目標
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (targetDieIndex === idx) setTargetDieIndex(effectDieIndex);
-                                    setEffectDieIndex(idx);
-                                    setUseFallbackEffect(null);
-                                  }}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
-                                    isEffect ? 'bg-rose-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-rose-100'
-                                  }`}
-                                >
-                                  效果
-                                </button>
+                                {isSelected ? (
+                                  <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs shrink-0">
+                                    <GiCheckMark className="text-xs" /> 已選為目標
+                                  </span>
+                                ) : isHit ? (
+                                  <div className="flex items-center gap-1 flex-wrap shrink-0" onClick={e => e.stopPropagation()}>
+                                    {matchingDice.map(m => (
+                                      <button
+                                        key={m.idx}
+                                        type="button"
+                                        onClick={() => handleSelectTarget(m.idx)}
+                                        className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-mono font-bold text-[11px] shadow-2xs transition-all cursor-pointer hover:scale-105 active:scale-95"
+                                        title={`指派骰子 #${m.idx + 1} (出目 ${m.val}) 作為目標`}
+                                      >
+                                        指派 #{m.idx + 1} ({m.val})
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-stone-400 font-mono">未命中</span>
+                                )}
                               </div>
+
+                              <p className="text-xs leading-relaxed font-medium">
+                                {row.desc}
+                              </p>
                             </div>
                           );
                         })}
                       </div>
+                    </div>
 
-                      {/* 備用效果按鈕 */}
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap text-[11px]">
-                        <span className="text-slate-500">備選效果（無須符合骰點）：</span>
-                        <button
-                          type="button"
-                          onClick={() => setUseFallbackEffect(useFallbackEffect === 'poison' ? null : 'poison')}
-                          className={`px-2 py-0.5 rounded border font-bold cursor-pointer transition-all ${
+                    {/* 右側：【效果表】(Effect Table - 佔 7 欄) */}
+                    <div className="lg:col-span-7 space-y-2">
+                      <div className="flex items-center justify-between border-b border-rose-200 dark:border-rose-900 pb-1.5">
+                        <div className="flex items-center gap-1.5 text-rose-900 dark:text-rose-300 font-bold text-xs">
+                          <GiSparkles className="text-base text-rose-600" />
+                          <span>【效果表】(手冊 p.213)</span>
+                        </div>
+                        <span className="text-[10px] text-rose-700/80 dark:text-rose-300/80">
+                          點選行或出目指派 · 保底隨時可選
+                        </span>
+                      </div>
+
+                      {/* 效果條目可滾動列表 */}
+                      <div className="max-h-[580px] overflow-y-auto space-y-1.5 pr-1.5">
+                        
+                        {/* 2 項「任意」保底條目 */}
+                        <div
+                          onClick={() => handleSelectFallbackEffect('poison')}
+                          className={`p-2 rounded-xl border transition-all text-xs flex items-center justify-between gap-2 cursor-pointer ${
                             useFallbackEffect === 'poison'
-                              ? 'bg-purple-600 text-white border-purple-700'
-                              : 'bg-white dark:bg-slate-800 border-slate-300 text-slate-700 dark:text-slate-300'
+                              ? 'bg-purple-100 dark:bg-purple-900/50 border-purple-500 ring-2 ring-purple-400 text-purple-950 dark:text-purple-50 shadow-sm'
+                              : 'bg-purple-50/70 dark:bg-slate-800/80 border-purple-200 dark:border-purple-800/70 text-stone-800 dark:text-stone-200 hover:bg-purple-100/50'
                           }`}
                         >
-                          任意：造成毒傷害
-                        </button>
+                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                            <span className="font-mono text-xs font-black px-1.5 py-0.5 rounded bg-purple-600 text-white">
+                              任意
+                            </span>
+                            <span className="font-bold text-[10px] px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800 shrink-0">
+                              保底備選
+                            </span>
+                            <div className="font-medium text-xs">
+                              {renderTextWithAffinities(`受到 ${characterLevel >= 40 ? 40 : characterLevel >= 20 ? 30 : 20} 點毒屬性傷害`)}
+                            </div>
+                          </div>
+                          {useFallbackEffect === 'poison' ? (
+                            <span className="px-2 py-0.5 rounded bg-purple-600 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs shrink-0">
+                              <GiCheckMark className="text-xs" /> 已選為效果
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleSelectFallbackEffect('poison'); }}
+                              className="px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] shadow-2xs transition-all shrink-0 cursor-pointer"
+                            >
+                              指派備選
+                            </button>
+                          )}
+                        </div>
+
+                        <div
+                          onClick={() => handleSelectFallbackEffect('heal')}
+                          className={`p-2 rounded-xl border transition-all text-xs flex items-center justify-between gap-2 cursor-pointer ${
+                            useFallbackEffect === 'heal'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/50 border-emerald-500 ring-2 ring-emerald-400 text-emerald-950 dark:text-emerald-50 shadow-sm'
+                              : 'bg-emerald-50/70 dark:bg-slate-800/80 border-emerald-200 dark:border-emerald-800/70 text-stone-800 dark:text-stone-200 hover:bg-emerald-100/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                            <span className="font-mono text-xs font-black px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+                              任意
+                            </span>
+                            <span className="font-bold text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shrink-0">
+                              保底備選
+                            </span>
+                            <div className="font-medium text-xs">
+                              恢復 30 點 HP
+                            </div>
+                          </div>
+                          {useFallbackEffect === 'heal' ? (
+                            <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs shrink-0">
+                              <GiCheckMark className="text-xs" /> 已選為效果
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleSelectFallbackEffect('heal'); }}
+                              className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs transition-all shrink-0 cursor-pointer"
+                            >
+                              指派備選
+                            </button>
+                          )}
+                        </div>
+
+                        {/* 1 ~ 20 手冊效果條目 */}
+                        {getAlchemyEffectRows(characterLevel).filter(r => !r.isAny).map((row) => {
+                          const matchingDice = rolledDice
+                            .map((val, idx) => ({ val, idx }))
+                            .filter(d => row.dice.includes(d.val));
+                          const isHit = matchingDice.length > 0;
+                          const isSelected = useFallbackEffect === null && effectDieIndex !== null && row.dice.includes(rolledDice[effectDieIndex]);
+
+                          return (
+                            <div
+                              key={row.id}
+                              onClick={() => {
+                                if (matchingDice.length > 0) {
+                                  handleSelectEffect(matchingDice[0].idx);
+                                }
+                              }}
+                              className={`p-2 rounded-xl border transition-all text-xs flex items-center justify-between gap-2 ${
+                                isSelected
+                                  ? 'bg-rose-100 dark:bg-rose-950/50 border-rose-500 ring-2 ring-rose-400 text-rose-950 dark:text-rose-50 shadow-sm cursor-pointer'
+                                  : isHit
+                                  ? 'bg-rose-50/80 dark:bg-slate-800/90 border-rose-300 dark:border-rose-700/80 text-stone-800 dark:text-stone-200 hover:bg-rose-100/60 cursor-pointer shadow-2xs'
+                                  : 'bg-stone-50/40 dark:bg-slate-800/30 border-stone-200 dark:border-slate-700/50 text-stone-400 dark:text-stone-500 opacity-60'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                <span className={`font-mono text-xs font-black px-1.5 py-0.5 rounded ${
+                                  isSelected
+                                    ? 'bg-rose-600 text-white'
+                                    : isHit
+                                    ? 'bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-200 font-bold'
+                                    : 'bg-stone-200 dark:bg-slate-700 text-stone-600 dark:text-stone-400'
+                                }`}>
+                                  {row.diceLabel}
+                                </span>
+                                <span className="font-bold text-[10px] px-1.5 py-0.2 rounded bg-white/70 dark:bg-black/30 border border-current shrink-0">
+                                  {row.category}
+                                </span>
+                                <div className="text-xs leading-relaxed font-medium min-w-0">
+                                  {renderTextWithAffinities(row.label)}
+                                </div>
+                              </div>
+
+                              {isSelected ? (
+                                <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs shrink-0">
+                                  <GiCheckMark className="text-xs" /> 已選為效果
+                                </span>
+                              ) : isHit ? (
+                                <div className="flex items-center gap-1 flex-wrap shrink-0" onClick={e => e.stopPropagation()}>
+                                  {matchingDice.map(m => (
+                                    <button
+                                      key={m.idx}
+                                      type="button"
+                                      onClick={() => handleSelectEffect(m.idx)}
+                                      className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-mono font-bold text-[11px] shadow-2xs transition-all cursor-pointer hover:scale-105 active:scale-95"
+                                      title={`指派骰子 #${m.idx + 1} (出目 ${m.val}) 作為效果`}
+                                    >
+                                      指派 #{m.idx + 1} ({m.val})
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-stone-400 font-mono shrink-0">未命中</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* ③ 調配成果匯總卡片 */}
+                  <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-50/80 via-white to-orange-50/70 dark:from-slate-900 dark:via-slate-800 dark:to-amber-950/20 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-amber-200 dark:border-slate-700 pb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded-lg bg-amber-600 text-white">
+                          <GiRoundBottomFlask className="text-base" />
+                        </div>
+                        <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                          <span>即席混合藥劑調配成果</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            消耗 {alchemyIpCost} 道具點
+                          </span>
+                        </h5>
+                      </div>
+
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setUseFallbackEffect(useFallbackEffect === 'heal' ? null : 'heal')}
-                          className={`px-2 py-0.5 rounded border font-bold cursor-pointer transition-all ${
-                            useFallbackEffect === 'heal'
-                              ? 'bg-emerald-600 text-white border-emerald-700'
-                              : 'bg-white dark:bg-slate-800 border-slate-300 text-slate-700 dark:text-slate-300'
-                          }`}
+                          onClick={handleCopyPotion}
+                          className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
                         >
-                          任意：恢復 30 點 HP
+                          <GiSparkles className="text-xs" />
+                          <span>複製藥劑效果</span>
                         </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 當前調配結果呈現 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* 目標解析卡 */}
-                    <div className="p-3 rounded-xl border border-blue-300 dark:border-blue-700/80 bg-blue-50/50 dark:bg-blue-950/20 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-300">
-                        <span>【目標】指派 (骰值 {targetDieValue || '-'})</span>
-                        <span className="font-mono text-[10px]">{currentTargetInfo.range || ''}</span>
-                      </div>
-                      <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
-                        {currentTargetInfo.label}
-                      </p>
-                    </div>
-
-                    {/* 效果解析卡 */}
-                    <div className="p-3 rounded-xl border border-rose-300 dark:border-rose-700/80 bg-rose-50/50 dark:bg-rose-950/20 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-bold text-rose-900 dark:text-rose-300">
-                        <span>【效果】指派 (骰值 {useFallbackEffect ? '任意' : effectDieValue || '-'})</span>
-                        {useFallbackEffect && (
-                          <span className="font-bold text-[10px] text-purple-700 dark:text-purple-300">備選生效中</span>
+                        {rolledDice.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleResetAlchemy}
+                            className="px-2.5 py-1 rounded-lg border border-stone-300 dark:border-slate-600 hover:bg-stone-100 dark:hover:bg-slate-700 text-stone-600 dark:text-stone-300 font-bold text-xs cursor-pointer transition-colors"
+                          >
+                            重置
+                          </button>
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-relaxed">
-                        {renderTextWithAffinities(currentEffectInfo.label)}
-                      </p>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      {/* 目標結果 */}
+                      <div className="p-3 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 space-y-1">
+                        <div className="flex items-center justify-between text-blue-900 dark:text-blue-300 font-bold">
+                          <span className="flex items-center gap-1"><GiRoundBottomFlask className="text-blue-600 text-sm" /> 藥劑目標</span>
+                          <span className="font-mono text-[11px]">
+                            {targetDieValue ? `出目: ${targetDieValue}` : '未指定'}
+                          </span>
+                        </div>
+                        <p className="text-stone-800 dark:text-stone-100 font-bold text-xs sm:text-sm">
+                          {currentTargetInfo.label}
+                        </p>
+                      </div>
+
+                      {/* 效果結果 */}
+                      <div className="p-3 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 space-y-1">
+                        <div className="flex items-center justify-between text-rose-900 dark:text-rose-300 font-bold">
+                          <span className="flex items-center gap-1"><GiSparkles className="text-rose-600 text-sm" /> 藥劑效果</span>
+                          <span className="font-mono text-[11px]">
+                            {useFallbackEffect ? '任意保底' : effectDieValue ? `出目: ${effectDieValue}` : '未指定'}
+                          </span>
+                        </div>
+                        <div className="text-stone-800 dark:text-stone-100 font-bold text-xs sm:text-sm leading-relaxed">
+                          {renderTextWithAffinities(currentEffectInfo.label)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 捨棄骰子提示 */}
+                    {rolledDice.length > 0 && (
+                      <div className="text-[11px] text-stone-500 dark:text-stone-400 flex items-center justify-between pt-1 border-t border-stone-100 dark:border-slate-800 flex-wrap gap-1">
+                        <span>
+                          未選定之其餘骰子：
+                          <strong className="font-mono ml-1 text-stone-700 dark:text-stone-300">
+                            {rolledDice.filter((_, idx) => idx !== targetDieIndex && (useFallbackEffect !== null || idx !== effectDieIndex)).join(', ') || '無'}
+                          </strong>
+                          （依手冊規則已自動棄置）
+                        </span>
+                        <span className="font-mono">
+                          出目總覽: [{rolledDice.join(', ')}]
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
