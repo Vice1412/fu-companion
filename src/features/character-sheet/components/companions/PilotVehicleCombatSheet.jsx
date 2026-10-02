@@ -17,6 +17,7 @@ import {
   PILOT_SUPPORT_MODULES
 } from '../../data/pilotVehicleData';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
+import { calculateCharacterStats } from '../../utils/characterEngine';
 
 export default function PilotVehicleCombatSheet({
   character,
@@ -109,7 +110,8 @@ export default function PilotVehicleCombatSheet({
   // 發動引擎之心
   const handleTriggerEngineHeart = (optionText) => {
     const cost = frame.mpFreeHeart ? 0 : 10;
-    const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : 40;
+    const stats = calculateCharacterStats(character);
+    const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : (stats.maxMp || 40);
     if (curMp < cost) {
       showToast(`MP 不足！發動引擎之心需要 ${cost} MP`);
       return;

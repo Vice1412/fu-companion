@@ -5,7 +5,7 @@
  * 2. 支援將 FU Companion 角色導出為 Fultimator 標準 JSON 格式
  */
 
-import { createNewCharacter } from './characterEngine.js';
+import { createNewCharacter, calculateCharacterStats } from './characterEngine.js';
 
 // 官方 28 職業英漢雙向對照字典
 export const CLASS_TRANSLATION_MAP = {
@@ -275,6 +275,7 @@ export const convertFultimatorToFUCompanion = (fChar) => {
  * 將 FU Companion 角色導出為 Fultimator 規範之 JSON 結構
  */
 export const convertFUCompanionToFultimator = (char) => {
+  const engineStats = calculateCharacterStats(char);
   return {
     uid: 'fu_companion_export',
     name: char.name || '冒險者',
@@ -307,16 +308,16 @@ export const convertFUCompanionToFultimator = (char) => {
     },
     stats: {
       hp: {
-        max: 45,
-        current: char.currentHp ?? 45
+        max: engineStats.maxHp,
+        current: char.currentHp !== null && char.currentHp !== undefined ? char.currentHp : engineStats.maxHp
       },
       mp: {
-        max: 45,
-        current: char.currentMp ?? 45
+        max: engineStats.maxMp,
+        current: char.currentMp !== null && char.currentMp !== undefined ? char.currentMp : engineStats.maxMp
       },
       ip: {
-        max: 6,
-        current: char.currentIp ?? 6
+        max: engineStats.maxIp,
+        current: char.currentIp !== null && char.currentIp !== undefined ? char.currentIp : engineStats.maxIp
       }
     },
     statuses: {

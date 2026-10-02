@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GiSpellBook, GiCancel, GiRollingDices, GiBiohazard } from 'react-icons/gi';
 import { Plus, ClipboardPaste } from 'lucide-react';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
+import { calculateCharacterStats } from '../../utils/characterEngine';
 
 export default function ChimeristManager({
   character,
@@ -166,7 +167,12 @@ export default function ChimeristManager({
     // 扣除 MP
     const mpCost = parseInt(spell.mp.replace(/\D/g, ''), 10) || 0;
     if (mpCost > 0) {
-      const currentMp = character.currentMp !== null ? character.currentMp : (character.stats?.maxMp || 40);
+      const stats = calculateCharacterStats(character);
+      const currentMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : (stats.maxMp || 40);
+      if (currentMp < mpCost) {
+        showToast(`目前 MP (${currentMp}) 不足以支付該咒語 (${mpCost} MP)！`, 'warning');
+        return;
+      }
       const nextMp = Math.max(0, currentMp - mpCost);
       onChange({
         ...character,

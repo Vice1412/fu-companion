@@ -158,7 +158,7 @@ export default function ArcanistManager({
               onClick={handleDismiss}
               className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-1"
             >
-              <span>自願解除 (Dismiss)</span>
+              <span>自願解除</span>
             </button>
           </div>
 
@@ -296,7 +296,7 @@ export default function ArcanistManager({
 
               <div>
                 <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  領域 (Domains)
+                  領域
                 </label>
                 <input
                   type="text"
@@ -309,7 +309,7 @@ export default function ArcanistManager({
 
               <div>
                 <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  連攜常駐增益 (Merge Benefits)
+                  連攜常駐增益
                 </label>
                 <textarea
                   rows={2}
@@ -322,7 +322,7 @@ export default function ArcanistManager({
 
               <div>
                 <label className="block font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  自願解除效果 (Dismiss Effect)
+                  自願解除效果
                 </label>
                 <textarea
                   rows={2}

@@ -8,7 +8,8 @@ import {
   GiSaveArrow,
   GiQuillInk,
   GiSteeringWheel,
-  GiPawPrint
+  GiPawPrint,
+  GiGears
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
@@ -19,6 +20,7 @@ import SkillSuboptionModal from './SkillSuboptionModal';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import PilotVehicleModal from './companions/PilotVehicleModal';
 import WayfarerCompanionModal from './companions/WayfarerCompanionModal';
+import TinkererGadgetsModal from './companions/TinkererGadgetsModal';
 import {
   getSkillSuboptionConfig,
   calculateSkillSuboptionMax
@@ -276,6 +278,63 @@ function WayfarerCompanionSkillBar({
 }
 
 /**
+ * 修補匠小工具科技樹狀態與管理條 (TinkererGadgetsSkillBar)
+ */
+function TinkererGadgetsSkillBar({
+  sl,
+  gadgetsData,
+  onOpenModal
+}) {
+  if (sl <= 0) return null;
+  const alchemy = gadgetsData?.alchemy || 0;
+  const infusion = gadgetsData?.infusion || 0;
+  const magitech = gadgetsData?.magitech || 0;
+  const allocated = alchemy + infusion + magitech;
+  const isConfigured = allocated > 0;
+
+  const getTierText = (tier) => (tier === 0 ? '無' : tier === 1 ? '基礎' : tier === 2 ? '進階' : '最高');
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-200/80 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {!isConfigured ? (
+            <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-dashed border-slate-300 font-bold">
+              尚未配置科技樹節點 (可分配 {sl} 點)
+            </span>
+          ) : (
+            <>
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                煉金 {getTierText(alchemy)} · 灌注 {getTierText(infusion)} · 魔導 {getTierText(magitech)}
+              </span>
+              <span className={`text-[11px] px-2 py-0.5 rounded-md font-mono font-bold ${
+                allocated >= sl
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200'
+              }`}>
+                已分配 {allocated} / {sl} 節點
+              </span>
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenModal();
+          }}
+          className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer bg-amber-600 hover:bg-amber-700 text-white shadow-2xs"
+        >
+          <GiGears className="w-3.5 h-3.5" />
+          <span>{isConfigured ? '管理小工具' : '配置科技樹'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 職業特技管理卡片 (ClassSkillCard)
  * 滿足需求 1, 2, 3 與子項目挑選構築：
  * 1. 中英文名、專屬圖標並存，附帶一目了然的一句話風格描述。
@@ -304,11 +363,13 @@ export default function ClassSkillCard({
   // 子項目構築彈窗目標特技 { skillName, sl, selectedOptions }
   const [suboptionModalSkill, setSuboptionModalSkill] = useState(null);
 
-  // 個人載具與忠實夥伴彈窗狀態
+  // 個人載具、忠實夥伴與修補匠小工具彈窗狀態
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
+  const [isGadgetsModalOpen, setIsGadgetsModalOpen] = useState(false);
   const [currentPilotSl, setCurrentPilotSl] = useState(1);
   const [currentWayfarerSl, setCurrentWayfarerSl] = useState(1);
+  const [currentTinkererSl, setCurrentTinkererSl] = useState(1);
 
   // 暫存的特技配置字典 (用於編輯模式，保存點選狀態)
   const [draftSkills, setDraftSkills] = useState(() => {
@@ -580,6 +641,15 @@ export default function ClassSkillCard({
                           setIsCompanionModalOpen(true);
                         }}
                       />
+                    ) : sk.name === '小工具' ? (
+                      <TinkererGadgetsSkillBar
+                        sl={sk.sl}
+                        gadgetsData={character?.tinkererData?.gadgets}
+                        onOpenModal={() => {
+                          setCurrentTinkererSl(sk.sl);
+                          setIsGadgetsModalOpen(true);
+                        }}
+                      />
                     ) : (
                       <SkillSuboptionBar
                         className={className}
@@ -714,6 +784,15 @@ export default function ClassSkillCard({
                           setIsCompanionModalOpen(true);
                         }}
                       />
+                    ) : sk.name === '小工具' ? (
+                      <TinkererGadgetsSkillBar
+                        sl={currentSL}
+                        gadgetsData={character?.tinkererData?.gadgets}
+                        onOpenModal={() => {
+                          setCurrentTinkererSl(currentSL);
+                          setIsGadgetsModalOpen(true);
+                        }}
+                      />
                     ) : (
                       <SkillSuboptionBar
                         className={className}
@@ -803,6 +882,26 @@ export default function ClassSkillCard({
               wayfarerData: {
                 ...(character?.wayfarerData || {}),
                 companion: newCompData
+              }
+            });
+          }
+        }}
+      />
+
+      {/* ================= 修補匠小工具科技樹彈窗 ================= */}
+      <TinkererGadgetsModal
+        isOpen={isGadgetsModalOpen}
+        onClose={() => setIsGadgetsModalOpen(false)}
+        gadgetsData={character?.tinkererData?.gadgets}
+        tinkererSL={currentTinkererSl}
+        characterLevel={character?.level || 5}
+        onSave={(newGadgetsData) => {
+          if (onUpdateCharacter) {
+            onUpdateCharacter({
+              ...character,
+              tinkererData: {
+                ...(character?.tinkererData || {}),
+                gadgets: newGadgetsData
               }
             });
           }

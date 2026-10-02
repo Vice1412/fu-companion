@@ -46,7 +46,7 @@ import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
-import TinkererProjectTracker from './companions/TinkererProjectTracker';
+import TinkererWorkshop from './companions/TinkererWorkshop';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
 import FloristGardenTracker from './companions/FloristGardenTracker';
@@ -230,29 +230,51 @@ export default function CharacterPlayHUD({
   // Consumable shortcut using IP
   const handleUseConsumable = (type) => {
     if (type === 'potion') {
-      if (curIp < 2) { showToast('道具點不足 2 點'); return; }
-      adjustIp(-2);
-      adjustHp(40);
-      showToast('使用治療藥水！回復 40 點 HP (消耗 2 IP)');
-    } else if (type === 'elixir') {
-      if (curIp < 2) { showToast('道具點不足 2 點'); return; }
-      adjustIp(-2);
-      adjustMp(40);
-      showToast('使用魔力萬能藥！回復 40 點 MP (消耗 2 IP)');
-    } else if (type === 'antidote') {
-      if (curIp < 1) { showToast('道具點不足 1 點'); return; }
-      adjustIp(-1);
-      updateField('statusAfflictions', { ...(character.statusAfflictions || {}), poisoned: false });
-      showToast('使用解毒劑！解除中毒狀態 (消耗 1 IP)');
-    } else if (type === 'tonic') {
-      if (curIp < 1) { showToast('道具點不足 1 點'); return; }
-      adjustIp(-1);
-      updateField('statusAfflictions', {
-        ...(character.statusAfflictions || {}),
-        dazed: false,
-        shaken: false
+      if (curIp < 2) { showToast('道具點不足 2 點', 'warning'); return; }
+      const nextIp = Math.max(0, curIp - 2);
+      const nextHp = Math.max(0, Math.min(stats.maxHp, curHp + 40));
+      onChange({
+        ...character,
+        currentIp: nextIp,
+        currentHp: nextHp,
+        updatedAt: new Date().toISOString()
       });
-      showToast('使用提神藥！解除眩暈與動搖狀態 (消耗 1 IP)');
+      showToast(`使用治療藥水！回復 40 點 HP (消耗 2 IP，剩餘 ${nextIp} IP)`, 'success');
+    } else if (type === 'elixir') {
+      if (curIp < 2) { showToast('道具點不足 2 點', 'warning'); return; }
+      const nextIp = Math.max(0, curIp - 2);
+      const nextMp = Math.max(0, Math.min(stats.maxMp, curMp + 40));
+      onChange({
+        ...character,
+        currentIp: nextIp,
+        currentMp: nextMp,
+        updatedAt: new Date().toISOString()
+      });
+      showToast(`使用魔力萬能藥！回復 40 點 MP (消耗 2 IP，剩餘 ${nextIp} IP)`, 'success');
+    } else if (type === 'antidote') {
+      if (curIp < 1) { showToast('道具點不足 1 點', 'warning'); return; }
+      const nextIp = Math.max(0, curIp - 1);
+      onChange({
+        ...character,
+        currentIp: nextIp,
+        statusAfflictions: { ...(character.statusAfflictions || {}), poisoned: false },
+        updatedAt: new Date().toISOString()
+      });
+      showToast(`使用解毒劑！解除中毒狀態 (消耗 1 IP，剩餘 ${nextIp} IP)`, 'success');
+    } else if (type === 'tonic') {
+      if (curIp < 1) { showToast('道具點不足 1 點', 'warning'); return; }
+      const nextIp = Math.max(0, curIp - 1);
+      onChange({
+        ...character,
+        currentIp: nextIp,
+        statusAfflictions: {
+          ...(character.statusAfflictions || {}),
+          dazed: false,
+          shaken: false
+        },
+        updatedAt: new Date().toISOString()
+      });
+      showToast(`使用提神藥！解除眩暈與動搖狀態 (消耗 1 IP，剩餘 ${nextIp} IP)`, 'success');
     }
   };
 
@@ -1684,11 +1706,12 @@ export default function CharacterPlayHUD({
                     </div>
                   )}
 
-                  {cl.className === '修補匠' && (cl.skills || []).some(s => ['高瞻遠矚', '造物', '小工具'].includes(s.name) && s.sl > 0) && (
+                  {cl.className === '修補匠' && (
                     <div className="mt-3">
-                      <TinkererProjectTracker
+                      <TinkererWorkshop
                         character={character}
                         onChange={onChange}
+                        onOpenDice={onOpenDice}
                         showToast={showToast}
                       />
                     </div>
