@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { GiMusicalNotes, GiCheckMark, GiSparkles, GiHazardSign } from 'react-icons/gi';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 import { CHANTER_DATA, composeChanterSong } from '../../data/skillSuboptionsData';
+import { calculateCharacterStats } from '../../utils/characterEngine';
 
 /**
  * 魔奏者魔法演奏即時合成器 (ChanterComposer)
@@ -16,6 +17,8 @@ export default function ChanterComposer({
   onConsumeMp,
   showToast
 }) {
+  const stats = calculateCharacterStats(character);
+  const currentMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : (stats.maxMp || 40);
   // 提取已掌握的音調與曲風
   const { availableKeys, availableTones } = useMemo(() => {
     let keys = [];
@@ -55,8 +58,6 @@ export default function ChanterComposer({
     return composeChanterSong(selectedVolId, selectedKeyName, selectedToneName);
   }, [selectedVolId, selectedKeyName, selectedToneName]);
 
-  // 當前 MP
-  const currentMp = character?.currentMp ?? 0;
   const isMpSufficient = currentMp >= (currentSong?.mp || 0);
 
   // 發動演奏
