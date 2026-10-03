@@ -5,9 +5,9 @@
 
 ---
 
-## 📌 核心規則一：圖示雙軌鐵律 (Icon System Dual-Track Policy)
+## 📌 核心規則一：圖示三軌鐵律 (Icon System Three-Track Policy)
 
-本專案在圖示運用上嚴格實行「**官方特有符號**」與「**Game-Icons.net 通用標誌**」的雙軌體系，並**嚴格禁絕所有 Unicode Emoji**。
+本專案在圖示運用上嚴格實行「**官方特有符號**」、「**Game-Icons.net 敘事標誌**」與「**功能性控件豁免**」的三軌體系，並**嚴格禁絕所有彩色圖像化 Emoji**。
 
 ### 軌道 1：官方專屬符號（必須使用官方字型 `.fu-icon` 或 `<FUIcon />`）
 凡屬於《Fabula Ultima》官方出版物與 Style Guide 規範之專屬遊戲機制符號，**一律嚴格使用官方字型 `FabulaUltimaIcons-Regular.otf`（CSS 類名 `.fu-icon` 或引入 `<FUIcon />` 組件）**，嚴禁使用通用圖標替代：
@@ -32,15 +32,26 @@
 4. **危機狀態指示符 (Crisis Indicator - Style Guide p.11 `HP X w X`)**：
    - 危機標誌 (Crisis): `w`
 
-### 軌道 2：通用 RPG 標誌與 UI 圖示（必須使用 https://game-icons.net/）
-凡不屬於官方字型範疇的其餘遊戲圖示與 UI 元素，**一律預設自 [Game-Icons.net](https://game-icons.net/)（透過 `react-icons/gi` 函式庫或 `<GameIcon />` 組件）**：
+### 軌道 2：敘事性遊戲圖示（必須使用 https://game-icons.net/）
+凡**具敘事、世界觀或遊戲機制意涵**的圖示，**一律預設自 [Game-Icons.net](https://game-icons.net/)（透過 `react-icons/gi` 函式庫或 `<GameIcon />` 組件）**：
 - **職業與範本頭像**：20 大官方經典範本（鍊金術士 `GiRoundBottomFlask`、暗黑騎士 `GiBlackKnightHelm` 等）、核心 15 職與拓展職業圖標。
 - **冒險資源與儀表板**：HP (`GiHealthNormal`)、MP (`GiLightningTear`)、IP (`GiBackpack`)、Zenit 金幣錢包 (`GiCoins`)、EXP 升級經驗 (`GiUpgrade`)、物語點 (`GiSparkles`)。
 - **角色特質與記錄**：個人命刻時鐘 (`GiPocketWatch`)、三維六向情感羈絆 (`GiBrokenHeart`, `GiEyeball`, `GiHeartShield` 等)、消耗品捷徑 (`GiRoundBottomFlask`, `GiCrystalBall`)。
+- **物種、定位與裝備類別**：野獸／構造體／惡魔／元素／類人／怪物／植物／不死等物種圖標；暴徒／獵人／法師／破壞者／衛士／輔助等定位圖標；近戰／遠程／防具／盾牌等裝備類別圖標。
+
+#### 軌道 2 豁免：一般功能性 UI 控件 (Functional UI Control Exemption)
+**純功能性操作控件不受本軌道約束**，無須改用 Game-Icons.net，可直接使用純 Unicode 排版字符或既有圖示庫：
+
+- **適用範圍**：返回／上一頁、關閉／打叉、搜尋、新增、折疊展開箭頭、前後切換、排序、篩選、複製、刪除等**純操作意涵、不承載世界觀敘事**的控件。
+- **允許字符**：`←` `→` `↑` `↓` `✕` `×` `＋` `－` `✓` `✗` `➔` `⇄` `⌄` `⌃` 等純排版字符。
+- **判定準則**：若將該圖示換成純文字（如「返回」「關閉」）後，**語意完全不變且不損失沉浸感**，即屬功能性控件，適用本豁免。
+- **邊界**：同一控件若同時承載敘事意涵（例如「翻開魔導書」而非單純「返回」），則回歸本軌道主體，須使用 Game-Icons.net。
 
 ### 軌道 3：零 Emoji 鐵律 (Zero Emoji Policy)
 - **整站嚴禁使用任何 Unicode Emoji**（嚴禁 ⚔️、🛡️、🔮、🧪、⚠️、✨、❌、✅、📜、👑、🩸、🏹 等）。
+- **Emoji 與排版字符之區分（重要）**：本鐵律所禁者為**彩色圖像化 Emoji（Emoji Presentation）**；軌道 2 豁免條款所列之純幾何／排版字符（`←` `✕` `✓` `✗` `➔` `⇄` `✦` `❖` `★` `◆` `①`~`⑤` 等）**不在此限**。前者為圖像，後者為字體排印符號。
 - 警示請使用 `GiHazardSign`，成功請使用 `GiCheckMark`，武器請使用 `GiBroadsword` 或 `GiCrossedSwords`，書籍請使用 `GiSpellBook`，英雄等級請使用 `GiLaurelCrown`。
+- **⚠️ 語意哨兵例外（極重要）**：`⚡`（U+26A1）雖屬 BMP 平面字符，仍為 Emoji，且在本專案中另具**語意哨兵**用途（附加於攻擊性咒語名稱末尾，供程式以 `.includes('⚡')` 判定攻擊性咒語）。**未完成結構化欄位遷移前，嚴禁直接全域刪除或取代。** 詳見 `AGENTS.md` §3.1。
 
 ---
 
@@ -92,8 +103,10 @@
 任何代碼生成或修改完成後，在回覆用戶前必須進行以下確認：
 1. **靜態正則檢測**：
    執行 PowerShell 掃描：
-   `Get-ChildItem -Path "src" -Recurse -File | Select-String -Pattern "[\uD83C-\uDBFF\uDC00-\uDFFF]"`
+   `Get-ChildItem -Path "src" -Recurse -File | Where-Object { $_.Extension -in '.js','.jsx','.json','.css' } | Select-String -Pattern "[\uD83C-\uDBFF\uDC00-\uDFFF\u26A1\u26A0\u2705\u274C\u26D3\u2620\u2744\u2600\u23F3\u270F\u2728\u2694\u2714\u2716]"`
    確保全站源碼中無任何 Emoji 字符。
+   **此正則同時涵蓋代理對（U+1F000+）與 BMP 平面 Emoji**；原始版本僅能命中代理對，檢出率不足四成，已修正。
+   **不包含**軌道 2 豁免之純排版字符（`←` `✕` `✓` `✗` `➔` `⇄` `✦` `❖` `★` `◆` `①`~`⑤`）。
 2. **構建驗證**：
    執行 `npm run build`，確保無任何編譯報錯與未解析的依賴。
 
