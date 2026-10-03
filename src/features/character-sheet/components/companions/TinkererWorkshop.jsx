@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import {
   GiGearHammer,
   GiRoundBottomFlask,
@@ -12,14 +13,66 @@ import {
   GiCrystalBall,
   GiCrossedSwords,
   GiDiceSixFacesFive,
-  GiRollingDices
+  GiRollingDices,
+  GiSpellBook
 } from 'react-icons/gi';
 import { Plus } from 'lucide-react';
 import ClockTracker from '../../../../components/ui/ClockTracker';
 import JRPGButton from '../../../../components/ui/JRPGButton';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 import { calculateCharacterStats } from '../../utils/characterEngine';
+import { openRuleCodex } from '../../utils/skillFormulaEvaluator';
 import rulesData from '../../data/rulesData.json';
+
+// 官方修補匠造物專案【基礎效力表】(Core Rulebook p. 135)
+export const PROJECT_POTENCY_OPTIONS = [
+  {
+    key: '小',
+    cost: 100,
+    label: '小效力 (100z)',
+    shortLabel: '小效力',
+    desc: '提供照明、在陸地或水上運輸人員或貨物、獲得有限形式的保護（限消耗品單一抗性）。',
+    needsSpecial: false
+  },
+  {
+    key: '中',
+    cost: 200,
+    label: '中效力 (200z)',
+    shortLabel: '中效力',
+    desc: '在水下旅行、壓制某種魔法效果、傳遞聲音或語言、代替發明者執行特定操作、提供短期能量。（需特殊原料）',
+    needsSpecial: true
+  },
+  {
+    key: '大',
+    cost: 400,
+    label: '大效力 (400z)',
+    shortLabel: '大效力',
+    desc: '飛行、短時間改變一處區域性質、消除魔法效果、擁有次級智慧、能與發明者並肩作戰、提供長期能量、捕獲或固定目標。（需特殊原料）',
+    needsSpecial: true
+  },
+  {
+    key: '強',
+    cost: 800,
+    label: '強效力 (800z)',
+    shortLabel: '強效力',
+    desc: '長時間改變一處區域性質、壓制惡魔力量、防止天災浩劫、擁有完整人格與自主心智。（需特殊原料）',
+    needsSpecial: true
+  }
+];
+
+// 官方修補匠造物專案【範圍倍率表】(Core Rulebook p. 135)
+export const PROJECT_AREA_OPTIONS = [
+  { key: '個體', mult: 1, label: '個體 (×1)', shortLabel: '個體', desc: '一個人大小的生物、一扇門、一棵樹、一件武器。' },
+  { key: '小型', mult: 2, label: '小型 (×2)', shortLabel: '小型', desc: '幾個人大小的生物、一個大生物、一小塊空地、一個房間、一節車廂、一間小屋。' },
+  { key: '大型', mult: 3, label: '大型 (×3)', shortLabel: '大型', desc: '一群人、小森林、一艘飛空艇或大帆船、城堡大廳、一所房屋、一頭巨型生物。' },
+  { key: '巨型', mult: 4, label: '巨型 (×4)', shortLabel: '巨型', desc: '要塞、湖泊、山頂、村莊、城市街區。' }
+];
+
+// 官方修補匠造物專案【使用次數倍率表】(Core Rulebook p. 135)
+export const PROJECT_USES_OPTIONS = [
+  { key: '消耗品', mult: 1, label: '消耗品 (×1)', shortLabel: '消耗品', desc: '一次性使用。啟動後失去效能，除非發明家另外再製造一個複製品。' },
+  { key: '永久', mult: 5, label: '永久使用 (×5)', shortLabel: '永久使用', desc: '永久可用。在不同的情況與場景下皆能重複保持其功用。' }
+];
 
 // 官方修補匠煉金術【目標表】(Core Rulebook p. 212)
 export const ALCHEMY_TARGET_TABLE = [
@@ -255,14 +308,44 @@ export default function TinkererWorkshop({
   );
 
   // ----------------------------------------------------
-  // 造物專案狀態
+  // 造物專案狀態 (Core Rulebook p.134~139 官方六大步驟)
   // ----------------------------------------------------
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [newTier, setNewTier] = useState('實用專案');
-  const [newZenit, setNewZenit] = useState('500');
-  const [newClockSegments, setNewClockSegments] = useState(6);
-  const [newNotes, setNewNotes] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newPotency, setNewPotency] = useState('小');
+  const [newArea, setNewArea] = useState('個體');
+  const [newUses, setNewUses] = useState('消耗品');
+  const [newHasFlaw, setNewHasFlaw] = useState(false);
+  const [newFlawDesc, setNewFlawDesc] = useState('');
+  const [newSpecialIngredient, setNewSpecialIngredient] = useState('');
+
+  // 彈窗鍵盤 ESC 與鎖定頁面滾動
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsAddModalOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isAddModalOpen]);
+
+  // 造物專案即時計算公式
+  const selectedPotencyObj = PROJECT_POTENCY_OPTIONS.find(p => p.key === newPotency) || PROJECT_POTENCY_OPTIONS[0];
+  const selectedAreaObj = PROJECT_AREA_OPTIONS.find(a => a.key === newArea) || PROJECT_AREA_OPTIONS[0];
+  const selectedUsesObj = PROJECT_USES_OPTIONS.find(u => u.key === newUses) || PROJECT_USES_OPTIONS[0];
+
+  const calcRawCost = selectedPotencyObj.cost * selectedAreaObj.mult * selectedUsesObj.mult;
+  const calcFlawDiscount = newHasFlaw ? Math.floor(calcRawCost * 0.25) : 0;
+  const calcDiscountedCost = calcRawCost - calcFlawDiscount;
+  const calcFinalPay = Math.max(0, calcDiscountedCost - freeCostDiscount);
+  const calcRequiredClock = Math.max(1, Math.ceil(calcDiscountedCost / 100));
+  const isSpecialRequired = selectedPotencyObj.needsSpecial;
 
   // ----------------------------------------------------
   // 煉金術狀態
@@ -334,26 +417,44 @@ export default function TinkererWorkshop({
   const handleAddProject = (e) => {
     e.preventDefault();
     if (!newProjectName.trim()) {
-      showToast('請輸入專案名稱', 'warning');
+      showToast('請輸入發明專案名稱', 'warning');
+      return;
+    }
+    if (isSpecialRequired && !newSpecialIngredient.trim()) {
+      showToast('中等及以上效力造物必須填寫 GM 指定的特殊材料！', 'warning');
       return;
     }
 
     const created = {
       id: `proj_${Date.now()}`,
       name: newProjectName.trim(),
-      tier: newTier,
-      zenit: parseInt(newZenit, 10) || 500,
-      totalClock: parseInt(newClockSegments, 10) || 6,
+      description: newDescription.trim(),
+      potency: newPotency,
+      area: newArea,
+      uses: newUses,
+      hasFlaw: newHasFlaw,
+      flaw: newFlawDesc.trim(),
+      specialIngredient: newSpecialIngredient.trim(),
+      rawCost: calcRawCost,
+      discountedCost: calcDiscountedCost,
+      zenit: calcFinalPay,
+      totalClock: calcRequiredClock,
       filledClock: 0,
-      notes: newNotes.trim(),
-      completed: false
+      completed: false,
+      createdAt: new Date().toISOString()
     };
 
     updateCharacterData({ projects: [created, ...projects] });
     setNewProjectName('');
-    setNewNotes('');
+    setNewDescription('');
+    setNewPotency('小');
+    setNewArea('個體');
+    setNewUses('消耗品');
+    setNewHasFlaw(false);
+    setNewFlawDesc('');
+    setNewSpecialIngredient('');
     setIsAddModalOpen(false);
-    showToast(`已建立新造物專案【${created.name}】！`, 'success');
+    showToast(`已建立新造物專案【${created.name}】！所需進度 ${created.totalClock} 格。`, 'success');
   };
 
   const handleDeleteProject = (projId) => {
@@ -628,35 +729,48 @@ export default function TinkererWorkshop({
           </div>
         </div>
 
-        {/* 標籤按鈕組 */}
-        <div className="flex items-center gap-1.5 bg-amber-100/60 dark:bg-slate-800 p-1 rounded-xl border border-amber-200 dark:border-slate-700">
-          {hasGadgets && (
+        {/* 操作與標籤按鈕組 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => openRuleCodex(activeTab === 'projects' ? '造物專案' : '小工具')}
+            className="px-2.5 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+            title={activeTab === 'projects' ? '開啟造物專案官方手冊完整速查 (手冊 p.134~139)' : '開啟小工具官方手冊完整速查大表 (手冊 p.212~216)'}
+          >
+            <GiSpellBook className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>規則概念速查</span>
+          </button>
+
+          {/* 標籤按鈕組 */}
+          <div className="flex items-center gap-1.5 bg-amber-100/60 dark:bg-slate-800 p-1 rounded-xl border border-amber-200 dark:border-slate-700">
+            {hasGadgets && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('gadgets')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'gadgets'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <GiGears className="w-4 h-4" />
+                <span>小工具工坊</span>
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => setActiveTab('gadgets')}
+              onClick={() => setActiveTab('projects')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'gadgets'
+                activeTab === 'projects'
                   ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700'
               }`}
             >
-              <GiGears className="w-4 h-4" />
-              <span>小工具工坊</span>
+              <GiGearHammer className="w-4 h-4" />
+              <span>造物專案 ({projects.length})</span>
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('projects')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'projects'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700'
-            }`}
-          >
-            <GiGearHammer className="w-4 h-4" />
-            <span>造物專案 ({projects.length})</span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -733,6 +847,16 @@ export default function TinkererWorkshop({
                     隨機調配藥劑：擲出 d20 骰組後，選擇一顆指派給【目標】、一顆指派給【效果】
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => openRuleCodex('小工具')}
+                  className="px-2 py-1 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                  title="開啟小工具官方手冊完整速查大表 (手冊 p.212~216)"
+                >
+                  <GiSpellBook className="text-amber-600 dark:text-amber-400 text-xs" />
+                  <span>規則概念速查</span>
+                </button>
               </div>
 
               {alchemyTier === 0 ? (
@@ -1217,20 +1341,32 @@ export default function TinkererWorkshop({
                   </p>
                 </div>
 
-                {activeInfusion && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-200 font-bold text-xs border border-cyan-300 dark:border-cyan-800">
-                    <GiCheckMark className="w-3.5 h-3.5" />
-                    <span>已套用【{activeInfusion.name}】</span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveInfusion(null)}
-                      className="ml-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                      title="清除"
-                    >
-                      <GiCancel className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => openRuleCodex('小工具')}
+                    className="px-2 py-1 rounded-lg border border-cyan-300 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 text-cyan-900 dark:text-cyan-200 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                    title="開啟小工具官方手冊完整速查大表 (手冊 p.212~216)"
+                  >
+                    <GiSpellBook className="text-cyan-600 dark:text-cyan-400 text-xs" />
+                    <span>規則概念速查</span>
+                  </button>
+
+                  {activeInfusion && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-200 font-bold text-xs border border-cyan-300 dark:border-cyan-800">
+                      <GiCheckMark className="w-3.5 h-3.5" />
+                      <span>已套用【{activeInfusion.name}】</span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveInfusion(null)}
+                        className="ml-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        title="清除"
+                      >
+                        <GiCancel className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {gadgets.infusion === 0 ? (
@@ -1365,6 +1501,16 @@ export default function TinkererWorkshop({
                     奪取士兵構裝體控制權、製造尖端魔加農火器、快捷施放魔法球原型咒語
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => openRuleCodex('小工具')}
+                  className="px-2 py-1 rounded-lg border border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-900 dark:text-purple-200 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                  title="開啟小工具官方手冊完整速查大表 (手冊 p.212~216)"
+                >
+                  <GiSpellBook className="text-purple-600 dark:text-purple-400 text-xs" />
+                  <span>規則概念速查</span>
+                </button>
               </div>
 
               {gadgets.magitech === 0 ? (
@@ -1582,31 +1728,65 @@ export default function TinkererWorkshop({
                         : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-amber-400'
                     }`}
                   >
-                    <div>
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${isDone ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
                           <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{proj.name}</h4>
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">
-                          {proj.tier}
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold border border-amber-300 dark:border-amber-800 font-mono">
+                            {proj.potency ? `${proj.potency}效力` : (proj.tier || '專案')}
+                          </span>
+                          {proj.area && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">
+                              {proj.area}
+                            </span>
+                          )}
+                          {proj.uses && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono">
+                              {proj.uses}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {proj.notes && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                          {proj.notes}
+                      {proj.description && (
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
+                          {proj.description}
                         </p>
                       )}
 
-                      <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-600 dark:text-slate-300 font-mono">
+                      {proj.specialIngredient && (
+                        <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 text-[11px] text-cyan-900 dark:text-cyan-200 flex items-center gap-1.5">
+                          <GiSparkles className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+                          <span className="font-bold">特殊材料：</span>
+                          <span className="truncate">{proj.specialIngredient}</span>
+                        </div>
+                      )}
+
+                      {proj.hasFlaw && (
+                        <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-[11px] text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                          <GiHazardSign className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span className="font-bold">致命缺陷 (-25%)：</span>
+                          <span className="truncate">{proj.flaw || '已協商缺陷'}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-600 dark:text-slate-300 font-mono">
                         <span className="flex items-center gap-1">
                           <GiCoins className="w-3.5 h-3.5 text-amber-500" />
-                          總成本：{proj.zenit} z
+                          材料花費：{proj.zenit} z
                         </span>
-                        {freeCostDiscount > 0 && (
-                          <span className="text-amber-600 dark:text-amber-400 font-bold">
-                            (抵扣 {Math.min(proj.zenit, freeCostDiscount)} z)
+                        {proj.rawCost && proj.rawCost !== proj.zenit && (
+                          <span className="text-slate-400 line-through">
+                            (原價 {proj.rawCost} z)
+                          </span>
+                        )}
+                        {isDone && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                            <GiCheckMark className="w-3.5 h-3.5" />
+                            <span>完工入庫</span>
                           </span>
                         )}
                       </div>
@@ -1642,128 +1822,294 @@ export default function TinkererWorkshop({
         </div>
       )}
 
-      {/* 新增專案彈窗 */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-amber-300 dark:border-amber-700 p-5 space-y-4 text-xs font-sans text-slate-800 dark:text-slate-100">
-            <div className="flex items-center justify-between border-b pb-2 dark:border-slate-700">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <GiGearHammer className="w-4 h-4 text-amber-600" />
-                <span>發起新造物專案</span>
-              </h3>
+      {/* 新增專案彈窗 (官方六大步驟三乘數計算器) */}
+      {isAddModalOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-fade-in">
+          {/* 背景點擊關閉 */}
+          <div className="fixed inset-0 -z-10" onClick={() => setIsAddModalOpen(false)} />
+
+          <div
+            className="relative w-full max-w-xl bg-[#fffdf9] dark:bg-slate-900 border-2 border-amber-300 dark:border-amber-700/80 rounded-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[92vh] text-slate-800 dark:text-slate-100 text-xs font-sans"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 頂部裝飾條 */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 shrink-0" />
+
+            {/* 彈窗 Header */}
+            <div className="px-5 py-3.5 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 text-amber-50 flex items-center justify-between shadow-md shrink-0">
+              <div className="flex items-center gap-2">
+                <GiGearHammer className="w-5 h-5 text-amber-200" />
+                <h3 className="font-bold text-sm sm:text-base tracking-wide flex items-center gap-2">
+                  <span>發起新造物專案</span>
+                  <span className="text-[11px] font-normal text-amber-200/90 font-mono bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/30">
+                    核心手冊 134~139 頁
+                  </span>
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                className="p-1 rounded-lg text-amber-200 hover:text-white hover:bg-amber-800/80 transition-colors cursor-pointer"
+                title="關閉 (ESC)"
               >
                 <GiCancel className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAddProject} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  發明專案名稱
-                </label>
-                <input
-                  type="text"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="例如：可折疊滑翔翼、多功能魔導工具箱"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+            {/* 表單主滾動容器 */}
+            <form onSubmit={handleAddProject} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* 步驟 1：名稱與描述 */}
+              <div className="space-y-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    專案類型 / 階級
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    發明專案名稱 <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    value={newTier}
-                    onChange={(e) => setNewTier(e.target.value)}
-                    className="w-full px-2 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
-                  >
-                    <option value="實用專案">實用專案 (小效力)</option>
-                    <option value="中型發明">中型發明 (中效力)</option>
-                    <option value="大型工程">大型工程 (大效力)</option>
-                    <option value="傳奇巨構">傳奇巨構 (強效力)</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="例如：磁力靴、探索者號飛空艇、加特林魔像"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-hidden"
+                    required
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    總材料成本 (z)
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    功能描述與運作原理 (GM 裁定可行性)
                   </label>
-                  <input
-                    type="number"
-                    value={newZenit}
-                    onChange={(e) => {
-                      setNewZenit(e.target.value);
-                      const z = parseInt(e.target.value, 10) || 500;
-                      // 每 100z 換算 1 格進度
-                      const calcClock = Math.max(4, Math.min(12, Math.round(z / 100)));
-                      setNewClockSegments(calcClock);
-                    }}
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs font-mono"
+                  <textarea
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="描述發明效果、如何運作、所需能源與具體益處。"
+                    rows={2}
+                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-hidden"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  進度命刻格數 (依每 100z 約 1 格換算)
-                </label>
-                <div className="flex items-center gap-2">
-                  {[4, 6, 8, 10, 12].map((seg) => (
-                    <button
-                      key={seg}
-                      type="button"
-                      onClick={() => setNewClockSegments(seg)}
-                      className={`flex-1 py-1 rounded-lg border font-mono font-bold text-xs transition-all cursor-pointer ${
-                        newClockSegments === seg
-                          ? 'bg-amber-500 text-white border-amber-600'
-                          : 'border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      {seg} 格
-                    </button>
-                  ))}
+              {/* 步驟 2~3：官方三乘數計算器 */}
+              <div className="space-y-3.5 p-3.5 rounded-xl bg-amber-50/50 dark:bg-slate-800/50 border border-amber-200 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                    <GiGearHammer className="w-4 h-4 text-amber-600" />
+                    <span>官方三乘數計算器 (效力 × 範圍 × 使用次數)</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-stone-500">
+                    手冊 p.135
+                  </span>
+                </div>
+
+                {/* 乘數 1：基礎效力 */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    1. 基礎效力 (Base Potency)：
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {PROJECT_POTENCY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setNewPotency(opt.key)}
+                        className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          newPotency === opt.key
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-amber-300 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <span className="font-bold text-xs">{opt.label}</span>
+                        <span className={`text-[10px] font-mono mt-0.5 ${newPotency === opt.key ? 'text-amber-100' : 'text-slate-400'}`}>
+                          {opt.needsSpecial ? '需特殊材料' : '基礎成本'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400 bg-white/70 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 leading-relaxed">
+                    <strong>{selectedPotencyObj.label}：</strong>{selectedPotencyObj.desc}
+                  </p>
+                </div>
+
+                {/* 乘數 2：範圍倍率 */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    2. 範圍倍率 (Area Multiplier)：
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {PROJECT_AREA_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setNewArea(opt.key)}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          newArea === opt.key
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-amber-300 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <span className="font-bold text-xs block">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400 bg-white/70 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 leading-relaxed">
+                    <strong>{selectedAreaObj.label}：</strong>{selectedAreaObj.desc}
+                  </p>
+                </div>
+
+                {/* 乘數 3：使用次數倍率 */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    3. 使用次數倍率 (Uses Multiplier)：
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PROJECT_USES_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setNewUses(opt.key)}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          newUses === opt.key
+                            ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-amber-300 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <span className="font-bold text-xs block">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-400 bg-white/70 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 leading-relaxed">
+                    <strong>{selectedUsesObj.label}：</strong>{selectedUsesObj.desc}
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  功能備註 / 致命缺陷協商
+              {/* 步驟 4：致命缺陷協商 */}
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800 dark:text-slate-200 select-none">
+                  <input
+                    type="checkbox"
+                    checked={newHasFlaw}
+                    onChange={(e) => setNewHasFlaw(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <GiHazardSign className="w-4 h-4 text-amber-600" />
+                    <span>協商致命缺陷 (總成本減免 25%)</span>
+                  </span>
                 </label>
-                <textarea
-                  value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
-                  placeholder="例如：可承載兩人、續航力三小時；致命缺陷：浸水失靈。"
-                  rows={2}
-                  className="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
-                />
+
+                {newHasFlaw && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1 animate-fade-in">
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                      缺陷具體限制 (選填)
+                    </label>
+                    <input
+                      type="text"
+                      value={newFlawDesc}
+                      onChange={(e) => setNewFlawDesc(e.target.value)}
+                      placeholder="例如：需定期回充能源、極不可靠、體積笨重噪音巨大、或具電屬性弱點。"
+                      className="w-full px-3 py-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/20 text-xs focus:ring-1 focus:ring-rose-500 focus:outline-hidden"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t dark:border-slate-700">
+              {/* 步驟 5：特殊成分材料備忘 (中等以上效力必填) */}
+              {isSpecialRequired && (
+                <div className="p-3.5 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/30 border border-cyan-300 dark:border-cyan-800/80 space-y-2 animate-fade-in">
+                  <div className="flex items-center gap-1.5 text-cyan-900 dark:text-cyan-200 font-bold text-xs">
+                    <GiSparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <span>冒險焦點：特殊材料 (中等以上效力必備)</span>
+                  </div>
+                  <p className="text-[11px] text-cyan-800 dark:text-cyan-300 leading-relaxed">
+                    官方規則明文規範：中等及以上效力之發明，GM 會指定一項無法以金幣購買的珍稀原料，作為 1~2 場跑團冒險焦點。
+                  </p>
+                  <div>
+                    <label className="block text-[11px] font-bold text-cyan-900 dark:text-cyan-200 mb-1">
+                      特殊原料名稱與獲取線索 <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newSpecialIngredient}
+                      onChange={(e) => setNewSpecialIngredient(e.target.value)}
+                      placeholder="例如：元素史萊姆的黏性核心、上古空艇浮空石、火山結晶火精髓。"
+                      className="w-full px-3 py-1.5 rounded-xl border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-cyan-500 focus:outline-hidden"
+                      required={isSpecialRequired}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 步驟 6：成本結算與進度命刻即時儀表板 */}
+              <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/60 dark:from-slate-800 dark:to-amber-950/30 border border-amber-300 dark:border-amber-700 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-amber-200/80 dark:border-amber-800 pb-2">
+                  <span className="font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5 text-xs">
+                    <GiCoins className="w-4 h-4 text-amber-600" />
+                    <span>成本結算與進度命刻即時儀表板</span>
+                  </span>
+                  <span className="font-mono text-[11px] text-amber-800 dark:text-amber-400 font-bold">
+                    每 100z = 1 點進度
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 font-mono">
+                    <span>基礎算式：</span>
+                    <span>{selectedPotencyObj.cost} z × {selectedAreaObj.mult} × {selectedUsesObj.mult} = {calcRawCost} z</span>
+                  </div>
+
+                  {newHasFlaw && (
+                    <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 font-mono">
+                      <span>致命缺陷減免 (-25%)：</span>
+                      <span>-{calcFlawDiscount} z (折減後 {calcDiscountedCost} z)</span>
+                    </div>
+                  )}
+
+                  {freeCostDiscount > 0 && (
+                    <div className="flex items-center justify-between text-amber-700 dark:text-amber-300 font-mono">
+                      <span>特技【高瞻遠矚】抵扣 (SL {visionarySL})：</span>
+                      <span>-{Math.min(calcDiscountedCost, freeCostDiscount)} z</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-amber-200/60 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2 text-sm">
+                    <div className="font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1">
+                      <span>最終材料花費：</span>
+                      <span className="font-mono text-base text-amber-700 dark:text-amber-400">{calcFinalPay} z</span>
+                    </div>
+
+                    <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                      <span>所需推進進度：</span>
+                      <span className="font-mono text-base text-amber-700 dark:text-amber-400">{calcRequiredClock} 格</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-stone-500 dark:text-stone-400 pt-1">
+                    每日團隊推進：每位參與 PC +1，每位修補匠 +1{visionarySL > 0 ? `，高瞻遠矚 +${visionarySL}` : ''}，幫手 +1。
+                  </p>
+                </div>
+              </div>
+
+              {/* 底部按鈕 */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold cursor-pointer transition-colors"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
                 >
-                  確認建立
+                  <GiGearHammer className="w-4 h-4" />
+                  <span>確認發起專案</span>
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
