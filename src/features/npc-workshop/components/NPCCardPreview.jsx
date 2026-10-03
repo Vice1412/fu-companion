@@ -1,5 +1,15 @@
 import React from 'react';
-import { Shield, Sparkles, Zap, Heart, Swords, Skull, Eye } from 'lucide-react';
+import {
+  Swords,
+  Skull,
+  Eye,
+} from 'lucide-react';
+import {
+  GiCheckedShield,
+  GiCrystalBall,
+  GiHealthNormal,
+  GiLightningTear,
+} from 'react-icons/gi';
 import {
   calculateNpcStats,
   getSpeciesAffinities,
@@ -128,7 +138,7 @@ export default function NPCCardPreview({
         {/* HP */}
         <div className="bg-[#fee2e2] rounded-lg p-2.5 border border-[#fca5a5]">
           <div className="text-[10px] text-red-800 font-mono uppercase font-bold flex items-center gap-1">
-            <Heart className="w-3 h-3 text-red-600 fill-red-500/20" /> HP 生命值
+            <GiHealthNormal className="w-3 h-3 text-red-600" /> HP 生命值
           </div>
           <div className="text-base font-mono font-black text-red-900 mt-0.5">
             {maxHp}
@@ -141,7 +151,7 @@ export default function NPCCardPreview({
         {/* MP */}
         <div className="bg-[#dbeafe] rounded-lg p-2.5 border border-[#93c5fd]">
           <div className="text-[10px] text-blue-800 font-mono uppercase font-bold flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-blue-600" /> MP 魔力值
+            <GiLightningTear className="w-3 h-3 text-blue-600" /> MP 魔力值
           </div>
           <div className="text-base font-mono font-black text-blue-900 mt-0.5">
             {maxMp}
@@ -151,7 +161,7 @@ export default function NPCCardPreview({
         {/* Def */}
         <div className="bg-[#fef3c7] rounded-lg p-2.5 border border-[#fcd34d]">
           <div className="text-[10px] text-amber-900 font-mono uppercase font-bold flex items-center gap-1">
-            <Shield className="w-3 h-3 text-amber-700" /> 物防 DEF
+            <GiCheckedShield className="w-3 h-3 text-amber-700" /> 物防 DEF
           </div>
           <div className="text-base font-mono font-black text-amber-950 mt-0.5">
             {stats.Def}
@@ -161,7 +171,7 @@ export default function NPCCardPreview({
         {/* Magic Def & Initiative */}
         <div className="bg-[#ede9fe] rounded-lg p-2.5 border border-[#ddd6fe]">
           <div className="text-[10px] text-purple-900 font-mono uppercase font-bold flex items-center gap-1">
-            <Zap className="w-3 h-3 text-purple-700" /> 魔防 M.DEF / 先攻 INIT
+            <GiCrystalBall className="w-3 h-3 text-purple-700" /> 魔防 M.DEF / 先攻 INIT
           </div>
           <div className="text-base font-mono font-black text-purple-950 mt-0.5">
             {stats.MDef} <span className="text-xs text-stone-500 font-normal">/</span> +{stats.Init}

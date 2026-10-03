@@ -1,7 +1,73 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as htmlToImage from 'html-to-image';
-import { Copy, RefreshCw, Edit3, Save, Upload, Image as ImageIcon, FileText, Trash2, BookOpen, PlusCircle, LayoutPanelLeft, UserSquare2, X, ChevronRight, ChevronLeft, ShieldAlert, Eye, Settings, Download, Sword, Swords, CheckCircle2, Lock, Unlock, AlertCircle, ChevronDown, ChevronUp, Star, Users, Crown, Link, Zap, Sparkles, Target, Shield, Map, Bomb, AlertTriangle, PawPrint, Cpu, Flame, Dna, Leaf, Ghost, User, Search, Check, ZoomIn, ZoomOut, Move, Crop, RotateCcw, Palette, Filter, ArrowUpDown, MessageSquare, FileCode } from 'lucide-react';
-import { GiDragonHead, GiRollingDices } from 'react-icons/gi';
+import {
+  Copy,
+  RefreshCw,
+  Edit3,
+  Save,
+  Upload,
+  Image as ImageIcon,
+  FileText,
+  Trash2,
+  PlusCircle,
+  LayoutPanelLeft,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Eye,
+  Settings,
+  Download,
+  CheckCircle2,
+  Lock,
+  Unlock,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Link,
+  Target,
+  Shield,
+  Map,
+  Bomb,
+  AlertTriangle,
+  Search,
+  Check,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  Crop,
+  RotateCcw,
+  Palette,
+  Filter,
+  ArrowUpDown,
+  MessageSquare,
+  FileCode,
+} from 'lucide-react';
+import {
+  GiBrain,
+  GiBroadsword,
+  GiCheckedShield,
+  GiCrossedSwords,
+  GiDeathSkull,
+  GiDevilMask,
+  GiDna2,
+  GiDragonHead,
+  GiFern,
+  GiGearHammer,
+  GiGhost,
+  GiHumanPyramid,
+  GiLaurelCrown,
+  GiMonsterGrasp,
+  GiPawPrint,
+  GiPositionMarker,
+  GiRollingDices,
+  GiScrollUnfurled,
+  GiSparkSpirit,
+  GiSparkles,
+  GiSpellBook,
+  GiStarSwirl,
+  GiTentacleStrike,
+  GiUpgrade,
+} from 'react-icons/gi';
 
 import {
   DAMAGE_TYPES,
@@ -63,14 +129,14 @@ const getDynamicValues = (npcLevel, partyLevel = 5) => {
 };
 
 const SPECIES_THEMES = {
-  sp_beast: { color: 'amber', icon: <PawPrint size={24} />, label: 'BEAST', bg: 'bg-amber-50/80', border: 'border-amber-400/60', text: 'text-amber-900 font-bold' },
-  sp_construct: { color: 'stone', icon: <Cpu size={24} />, label: 'CONSTRUCT', bg: 'bg-stone-100/80', border: 'border-stone-400/60', text: 'text-stone-800 font-bold' },
-  sp_demon: { color: 'red', icon: <Flame size={24} />, label: 'DEMON', bg: 'bg-red-50/80', border: 'border-red-400/60', text: 'text-red-900 font-bold' },
-  sp_element: { color: 'cyan', icon: <Zap size={24} />, label: 'ELEMENTAL', bg: 'bg-cyan-50/80', border: 'border-cyan-400/60', text: 'text-cyan-900 font-bold' },
-  sp_humanoid: { color: 'blue', icon: <User size={24} />, label: 'HUMANOID', bg: 'bg-blue-50/80', border: 'border-blue-400/60', text: 'text-blue-900 font-bold' },
-  sp_monster: { color: 'purple', icon: <Dna size={24} />, label: 'MONSTER', bg: 'bg-purple-50/80', border: 'border-purple-400/60', text: 'text-purple-900 font-bold' },
-  sp_plant: { color: 'emerald', icon: <Leaf size={24} />, label: 'PLANT', bg: 'bg-emerald-50/80', border: 'border-emerald-400/60', text: 'text-emerald-900 font-bold' },
-  sp_undead: { color: 'indigo', icon: <Ghost size={24} />, label: 'UNDEAD', bg: 'bg-indigo-50/80', border: 'border-indigo-400/60', text: 'text-indigo-900 font-bold' },
+  sp_beast: { color: 'amber', icon: <GiPawPrint size={24} />, label: 'BEAST', bg: 'bg-amber-50/80', border: 'border-amber-400/60', text: 'text-amber-900 font-bold' },
+  sp_construct: { color: 'stone', icon: <GiGearHammer size={24} />, label: 'CONSTRUCT', bg: 'bg-stone-100/80', border: 'border-stone-400/60', text: 'text-stone-800 font-bold' },
+  sp_demon: { color: 'red', icon: <GiDevilMask size={24} />, label: 'DEMON', bg: 'bg-red-50/80', border: 'border-red-400/60', text: 'text-red-900 font-bold' },
+  sp_element: { color: 'cyan', icon: <GiSparkSpirit size={24} />, label: 'ELEMENTAL', bg: 'bg-cyan-50/80', border: 'border-cyan-400/60', text: 'text-cyan-900 font-bold' },
+  sp_humanoid: { color: 'blue', icon: <GiHumanPyramid size={24} />, label: 'HUMANOID', bg: 'bg-blue-50/80', border: 'border-blue-400/60', text: 'text-blue-900 font-bold' },
+  sp_monster: { color: 'purple', icon: <GiTentacleStrike size={24} />, label: 'MONSTER', bg: 'bg-purple-50/80', border: 'border-purple-400/60', text: 'text-purple-900 font-bold' },
+  sp_plant: { color: 'emerald', icon: <GiFern size={24} />, label: 'PLANT', bg: 'bg-emerald-50/80', border: 'border-emerald-400/60', text: 'text-emerald-900 font-bold' },
+  sp_undead: { color: 'indigo', icon: <GiGhost size={24} />, label: 'UNDEAD', bg: 'bg-indigo-50/80', border: 'border-indigo-400/60', text: 'text-indigo-900 font-bold' },
 };
 
 const TEMPLATE_KEY_TRANSLATIONS = {
@@ -308,7 +374,7 @@ const SectionAccordion = ({ title, icon, current, max, hideIfZeroMax = false, de
   const isOverflow = isFreeMode ? false : (forceOverflow || (max > 0 && current > max)); const isComplete = alwaysComplete || (current >= max) || isFreeMode;
   let statusBadge = null;
   if (isFreeMode) {
-    statusBadge = <span className="flex items-center gap-1 text-[10px] text-fuchsia-800 bg-fuchsia-100 border border-fuchsia-300 px-2 py-0.5 rounded-full ml-1 md:ml-2 font-bold"><Sparkles size={12} /> <span className="hidden md:inline">解鎖限制</span> ({current}/∞)</span>;
+    statusBadge = <span className="flex items-center gap-1 text-[10px] text-fuchsia-800 bg-fuchsia-100 border border-fuchsia-300 px-2 py-0.5 rounded-full ml-1 md:ml-2 font-bold"><GiSparkles size={12} /> <span className="hidden md:inline">解鎖限制</span> ({current}/∞)</span>;
   } else if (!alwaysComplete) {
     if (isOverflow) statusBadge = <span className="flex items-center gap-1 text-[10px] text-red-800 bg-red-100 border border-red-300 px-2 py-0.5 rounded-full ml-1 md:ml-2 animate-pulse font-bold"><AlertCircle size={12} /> <span className="hidden md:inline">超額失效</span> ({current}/{max})</span>;
     else if (isComplete) statusBadge = <span className="flex items-center gap-1 text-[10px] text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full ml-1 md:ml-2 font-bold"><CheckCircle2 size={12} /> <span className="hidden md:inline">已完成</span> ({current}/{max})</span>;
@@ -528,7 +594,7 @@ const SkillCard = ({ skill, isActive, isDisabled, isOverBudget, lockedMsg, onTog
             })}
         </div>
       )}
-      {isActive && skill.category === 'attack' && <div className={`mt-3 pt-2 border-t text-[11px] font-bold flex items-center gap-1 ${isOverBudget ? 'border-red-300 text-red-700' : 'border-[#d6c7ab]/50 text-amber-800'}`}><Sword size={12} /> {isOverBudget ? '因額度溢出，此技能已從上方【基礎攻擊與核心能力】中移除。' : '已加入上方【基礎攻擊與核心能力】，請至該區塊配置詳細數值。'}</div>}
+      {isActive && skill.category === 'attack' && <div className={`mt-3 pt-2 border-t text-[11px] font-bold flex items-center gap-1 ${isOverBudget ? 'border-red-300 text-red-700' : 'border-[#d6c7ab]/50 text-amber-800'}`}><GiBroadsword size={12} /> {isOverBudget ? '因額度溢出，此技能已從上方【基礎攻擊與核心能力】中移除。' : '已加入上方【基礎攻擊與核心能力】，請至該區塊配置詳細數值。'}</div>}
     </div>
   );
 };
@@ -3208,9 +3274,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const prevStep = () => setCurrentStep(p => Math.max(p - 1, 1));
 
   const steps = [
-    { num: 1, title: "定位", icon: <UserSquare2 size={18} /> }, { num: 2, title: "等級", icon: <Copy size={18} /> }, { num: 3, title: "物種", icon: <ImageIcon size={18} /> },
-    { num: 4, title: "能力", icon: <Sword size={18} /> }, { num: 5, title: "Boss", icon: <Crown size={18} /> }, { num: 6, title: "負面", icon: <Trash2 size={18} /> },
-    { num: 7, title: "特質", icon: <FileText size={18} /> }, { num: 8, title: "戰術", icon: <Edit3 size={18} /> }
+    { num: 1, title: "定位", icon: <GiPositionMarker size={18} /> }, { num: 2, title: "等級", icon: <GiUpgrade size={18} /> }, { num: 3, title: "物種", icon: <GiDna2 size={18} /> },
+    { num: 4, title: "能力", icon: <GiBroadsword size={18} /> }, { num: 5, title: "Boss", icon: <GiLaurelCrown size={18} /> }, { num: 6, title: "負面", icon: <GiDeathSkull size={18} /> },
+    { num: 7, title: "特質", icon: <GiScrollUnfurled size={18} /> }, { num: 8, title: "戰術", icon: <GiBrain size={18} /> }
   ];
 
   const renderCharacterCard = () => {
@@ -4091,7 +4157,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
         return (
           <div className="flex flex-col h-full space-y-8 animate-in fade-in zoom-in-95 duration-500 max-w-5xl mx-auto relative pb-10 select-none">
             <div className="bg-[#f5efdf] border-l-4 border-amber-700 p-4 rounded text-[#2c221e] border border-[#d6c7ab] shadow-sm">
-              <h3 className="font-bold mb-1 text-[#3c2415] flex items-center gap-2"><Sparkles size={18} className="text-amber-700" /> 步驟 1：選擇NPC的定位</h3>
+              <h3 className="font-bold mb-1 text-[#3c2415] flex items-center gap-2"><GiSparkles size={18} className="text-amber-700" /> 步驟 1：選擇NPC的定位</h3>
               <p className="text-sm text-[#574c43]">每個定位都擁有獨特的成長屬性。環狀捲軸已開啟，您可以無限滑動來挑選。</p>
             </div>
 
@@ -4285,7 +4351,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
                 {displayMilestones.length > 0 && (
                   <div className="mt-8 border-t border-[#d6c7ab] pt-6">
-                    <h4 className="text-sm font-bold text-amber-900 mb-4 flex items-center gap-2"><Star size={18} className="fill-amber-500/20 text-amber-700" /> 達到等級解鎖的天賦里程碑</h4>
+                    <h4 className="text-sm font-bold text-amber-900 mb-4 flex items-center gap-2"><GiStarSwirl size={18} className="text-amber-700" /> 達到等級解鎖的天賦里程碑</h4>
                     <div className="space-y-3">
                       {displayMilestones.map(skill => (
                         <div key={skill.id} className={`bg-[#f9f5eb] border ${skill.isSystem ? 'border-amber-300' : 'border-amber-400'} rounded-lg p-4 flex flex-col gap-2 relative overflow-hidden group hover:bg-[#f4ebd9] transition-colors shadow-sm`}>
@@ -4353,7 +4419,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
                     {state.rank === "冠位" && (
                       <div className="bg-[#f9f5eb] border border-[#d6c7ab] p-4 rounded-xl animate-in slide-in-from-top-4 fade-in duration-500 shadow-sm relative overflow-hidden">
-                        <div className="absolute -right-4 -top-4 opacity-10 rotate-12 pointer-events-none text-amber-800"><Crown size={80} /></div>
+                        <div className="absolute -right-4 -top-4 opacity-10 rotate-12 pointer-events-none text-amber-800"><GiLaurelCrown size={80} /></div>
 
                         <div className="flex items-center justify-between mb-4 relative z-10">
                           <div className="flex flex-col">
@@ -4404,7 +4470,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             <div className={`p-6 md:p-8 rounded-xl border transition-all duration-300 ${state.selectedSpeciesId ? 'bg-[#fffdf9] border-[#d6c7ab] shadow-md' : 'bg-[#fffdf9]/60 border-[#d6c7ab] opacity-70'}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className={`p-2 rounded-lg ${state.selectedSpeciesId ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-[#eee6d3] text-[#6b5a4b]'}`}>
-                  <Users size={24} />
+                  <GiMonsterGrasp size={24} />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-[#3c2415] tracking-widest">物種選擇</h3>
@@ -4415,7 +4481,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               {/* Species Selector Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
                 {SPECIES_DATA.map(sp => {
-                  const theme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <Users size={20} />, label: 'UNKNOWN' };
+                  const theme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, label: 'UNKNOWN' };
                   const isSelected = state.selectedSpeciesId === sp.id;
 
                   return (
@@ -4443,7 +4509,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   {(() => {
                     const sp = SPECIES_DATA.find(s => s.id === state.selectedSpeciesId);
                     if (!sp) return null;
-                    const selectedTheme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <Users size={20} />, bg: 'bg-[#f5efdf]', border: 'border-[#d6c7ab]', text: 'text-[#3c2415]', label: 'UNKNOWN' };
+                    const selectedTheme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, bg: 'bg-[#f5efdf]', border: 'border-[#d6c7ab]', text: 'text-[#3c2415]', label: 'UNKNOWN' };
 
                     return (
                       <>
@@ -4470,7 +4536,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             {sp.mandatorySelections.map(cfg => (
                               <div key={cfg.key} className="flex flex-col gap-2">
                                 <label className="text-[11px] font-bold text-[#6b5a4b] tracking-wider flex items-center gap-1.5 uppercase">
-                                  <Sparkles size={12} className="text-amber-700" /> {cfg.label}
+                                  <GiSparkles size={12} className="text-amber-700" /> {cfg.label}
                                 </label>
                                 {(cfg.type === 'multiselect_2' || cfg.type === 'multiselect') ? (
                                   <div className="flex flex-wrap gap-2">
@@ -4544,7 +4610,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             <div className="space-y-4">
                               <div className="flex justify-between items-center border-b border-[#d6c7ab] pb-2">
                                 <label className="text-[11px] font-black text-amber-900 tracking-widest uppercase flex items-center gap-2">
-                                  <Star size={14} /> 物種增益選擇 (Pick {maxPicks})
+                                  <GiStarSwirl size={14} /> 物種增益選擇 (Pick {maxPicks})
                                 </label>
                                 <span className={`text-[11px] font-black tracking-widest px-2 py-0.5 rounded ${selectedCount >= maxPicks ? 'bg-amber-700 text-white' : 'bg-[#eee6d3] text-[#6b5a4b]'}`}>
                                   {selectedCount} / {maxPicks}
@@ -4739,7 +4805,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 border-b border-[#d6c7ab] pb-4">
                   <div>
                     <h4 className="text-base md:text-lg font-black tracking-widest text-[#3c2415] flex items-center gap-2">
-                      <Sparkles size={20} className="text-fuchsia-700 animate-pulse" />
+                      <GiSparkles size={20} className="text-fuchsia-700 animate-pulse" />
                       自定義 NPC 體質與基礎骰子
                     </h4>
                     <p className="text-xs text-[#6b5a4b] mt-1 leading-relaxed">
@@ -4849,7 +4915,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl p-6 shadow-sm overflow-hidden relative group">
               <div className="absolute top-0 right-0 p-4 opacity-[0.05] text-8xl pointer-events-none group-hover:scale-110 transition-transform">🔥</div>
               <label className="block text-sm text-[#3c2415] mb-4 font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
-                <Crown size={18} className="text-amber-700" /> 反派等級
+                <GiLaurelCrown size={18} className="text-amber-700" /> 反派等級
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.entries(VILLAIN_TIERS).map(([key, tier]) => (
@@ -4978,7 +5044,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
             {/* 基礎攻擊與核心能力 (Basic Attacks) */}
             {basicAttacksToRender.length > 0 && (
-              <SectionAccordion title="基礎攻擊與核心能力" icon={<Swords size={16} />} current={basicAttacksToRender.length} max={basicAttacksToRender.length} hideIfZeroMax={false} titleColor="text-amber-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+              <SectionAccordion title="基礎攻擊與核心能力" icon={<GiCrossedSwords size={16} />} current={basicAttacksToRender.length} max={basicAttacksToRender.length} hideIfZeroMax={false} titleColor="text-amber-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
                 <div className="space-y-4">
                   {basicAttacksToRender.map(skill => (
                     <div key={skill.id} id={`skill-card-${skill.id}`} className={`transition-all duration-300 ${highlightedSkillId === skill.id ? 'ring-4 ring-amber-500 bg-amber-100 rounded-xl p-1 shadow-lg scale-[1.02]' : ''}`}>
@@ -5029,7 +5095,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               </div>
             </SectionAccordion>
 
-            <SectionAccordion title="定位技能" icon={<ShieldAlert size={16} />} current={usedRoleSkills} max={maxRoleSkills} hideIfZeroMax={true} titleColor="text-blue-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+            <SectionAccordion title="定位技能" icon={<GiCheckedShield size={16} />} current={usedRoleSkills} max={maxRoleSkills} hideIfZeroMax={true} titleColor="text-blue-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
               {usedRoleSkillForBoss > 0 && !state.isFreeModeEnabled && (
                 <div className="mb-4 bg-amber-50 border border-amber-300 p-3 rounded text-[11px] text-amber-900 flex items-center gap-2">
                   <AlertTriangle size={14} className="text-amber-700" />
@@ -5093,7 +5159,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               <div className="space-y-6">
 
             {allSpellbooksToRender.length > 0 && (
-              <SectionAccordion title="咒語書配置" icon={<BookOpen size={16} />} current={allSpellbooksToRender.reduce((sum, s) => sum + (s.selectedSpells || []).length, 0)} max={allSpellbooksToRender.reduce((sum, s) => sum + (s.spellConfig?.capacity || 0), 0)} titleColor="text-purple-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
+              <SectionAccordion title="咒語書配置" icon={<GiSpellBook size={16} />} current={allSpellbooksToRender.reduce((sum, s) => sum + (s.selectedSpells || []).length, 0)} max={allSpellbooksToRender.reduce((sum, s) => sum + (s.spellConfig?.capacity || 0), 0)} titleColor="text-purple-900" borderColor="border-[#d6c7ab]" isFreeMode={state.isFreeModeEnabled}>
                 <div className="space-y-4">
                   {/* Search box for spells */}
                   <div className="relative">
@@ -5150,7 +5216,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             )}
 
             {/* Custom Abilities Section (Permanent / 常駐) */}
-            <SectionAccordion title="✨ 完全自訂技能" icon={<Sparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
+            <SectionAccordion title="✨ 完全自訂技能" icon={<GiSparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
               <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-xl mb-6 shadow-sm">
                 <h4 className="text-indigo-900 text-xs font-bold mb-3 flex items-center gap-2"><PlusCircle size={14} /> 快速新增自訂能力</h4>
                 <div className="flex flex-col gap-3">
@@ -5326,7 +5392,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               {/* Active Boss Skills Global Sticky Nav */}
               {processedSkills.filter(s => s.source === 'bossSkill').length > 0 && (
                 <div className="bg-[#f4ebd9]/95 backdrop-blur-md p-3 rounded-xl border border-[#d6c7ab] shadow-md flex flex-wrap gap-2 items-center">
-                  <span className="text-xs font-bold text-[#6b5a4b] mr-1 flex items-center gap-1"><Crown size={14} className="text-amber-700" /> 技能導航：</span>
+                  <span className="text-xs font-bold text-[#6b5a4b] mr-1 flex items-center gap-1"><GiLaurelCrown size={14} className="text-amber-700" /> 技能導航：</span>
                   {processedSkills.filter(s => s.source === 'bossSkill').map(activeSkill => {
                     const dbSkill = BOSS_SKILLS_DATA.find(db => db.id === activeSkill.libId);
                     const cat = dbSkill?.subCategory || '未分類';
@@ -5390,13 +5456,13 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             </div>
             {state.rank !== '冠位' ? (
               <div className="bg-[#fffdf9] p-8 md:p-12 rounded-2xl border border-[#d6c7ab] shadow-md flex flex-col items-center justify-center text-center relative overflow-hidden group mt-4">
-                <Crown size={80} className="text-amber-700/30 mb-6 drop-shadow-sm" />
+                <GiLaurelCrown size={80} className="text-amber-700/30 mb-6 drop-shadow-sm" />
                 <h3 className="text-3xl font-black text-[#3c2415] tracking-widest mb-3">力量尚未覺醒</h3>
                 <p className="text-[#6b5a4b] max-w-md mx-auto mb-8 leading-relaxed">您的 NPC 目前是「{state.rank}」。<br />解鎖強大的 Boss 技能需要「冠位」階級。</p>
 
                 <div className="w-full max-w-lg">
                   <div className="text-sm font-bold text-amber-900 mb-3 tracking-widest uppercase flex items-center justify-center gap-2">
-                    <Crown size={14} /> 選擇冠位倍率以一鍵覺醒 <Crown size={14} />
+                    <GiLaurelCrown size={14} /> 選擇冠位倍率以一鍵覺醒 <GiLaurelCrown size={14} />
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     {[1, 2, 3, 4, 5, 6].map(mult => (
@@ -6016,7 +6082,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                       <div className="mt-auto flex gap-2">
                         <button onClick={() => { setState(npc); setActiveMainTab('build'); }} className="flex-1 bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] py-2 rounded text-sm font-bold flex justify-center items-center gap-1 transition-colors border border-[#d6c7ab]"><Edit3 size={14} /> 編輯</button>
                         <button onClick={() => { setState(npc); setActiveMainTab('preview'); }} className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-900 py-2 rounded text-sm font-bold flex justify-center items-center gap-1 transition-colors border border-amber-300"><Eye size={14} /> 預覽</button>
-                        <button onClick={() => handleSendToCombat(npc)} className="bg-rose-100 hover:bg-rose-200 text-rose-900 px-3 py-2 rounded text-sm font-bold flex justify-center items-center gap-1 transition-colors border border-rose-300" title="推入戰鬥房間"><Swords size={14} /> 入戰</button>
+                        <button onClick={() => handleSendToCombat(npc)} className="bg-rose-100 hover:bg-rose-200 text-rose-900 px-3 py-2 rounded text-sm font-bold flex justify-center items-center gap-1 transition-colors border border-rose-300" title="推入戰鬥房間"><GiCrossedSwords size={14} /> 入戰</button>
                         <button onClick={() => {
                           if (window.confirm(`確定要刪除「${npc.name || "未知實體"}」嗎？此操作無法復原。`)) {
                             setLibrary(prev => {

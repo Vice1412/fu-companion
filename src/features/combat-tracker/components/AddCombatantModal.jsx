@@ -5,7 +5,17 @@ import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { exportNpcToCombatant } from '../../npc-workshop/utils/npcEngine';
 import { exportCharacterToCombatant } from '../../character-sheet/utils/characterEngine';
-import { Search, Plus, Swords, User, Shield, Folder, Tag } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Shield,
+  Folder,
+  Tag,
+} from 'lucide-react';
+import {
+  GiDragonHead,
+  GiVisoredHelm,
+} from 'react-icons/gi';
 
 export default function AddCombatantModal({
   isOpen,
@@ -119,7 +129,7 @@ export default function AddCombatantModal({
               tab === 'npc' ? 'bg-amber-700 text-white shadow-sm' : 'bg-[#eee6d3] text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#ebdcc4] border border-[#d6c7ab]'
             }`}
           >
-            <Swords className="w-3.5 h-3.5" /> 怪物庫選取 ({npcLibrary.length})
+            <GiDragonHead className="w-3.5 h-3.5" /> 怪物庫選取 ({npcLibrary.length})
           </button>
           <button
             onClick={() => setTab('character')}
@@ -127,7 +137,7 @@ export default function AddCombatantModal({
               tab === 'character' ? 'bg-amber-700 text-white shadow-sm' : 'bg-[#eee6d3] text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#ebdcc4] border border-[#d6c7ab]'
             }`}
           >
-            <User className="w-3.5 h-3.5" /> 玩家名冊選取 ({characterRoster.length})
+            <GiVisoredHelm className="w-3.5 h-3.5" /> 玩家名冊選取 ({characterRoster.length})
           </button>
           <button
             onClick={() => setTab('quick')}

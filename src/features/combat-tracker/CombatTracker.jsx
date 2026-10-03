@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Swords,
-  Shield,
   Plus,
   RotateCcw,
   Wifi,
   WifiOff,
   Users,
-  Clock,
   Trash2,
   Share2,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
+import {
+  GiCheckedShield,
+  GiCrossedSwords,
+  GiPocketWatch,
+} from 'react-icons/gi';
 import JRPGButton from '../../components/ui/JRPGButton';
 import JRPGBadge from '../../components/ui/JRPGBadge';
 import CombatantCard from './components/CombatantCard';
@@ -211,7 +213,7 @@ export default function CombatTracker() {
 
           <div>
             <h2 className="font-serif font-black text-xl text-[#2c221e] flex items-center gap-2">
-              <Swords className="w-5 h-5 text-amber-700" /> 戰鬥與輪次管理中樞
+              <GiCrossedSwords className="w-5 h-5 text-amber-700" /> 戰鬥與輪次管理中樞
             </h2>
             <div className="flex items-center gap-3 text-xs font-mono mt-1">
               <span className="text-sky-800 font-bold">
@@ -323,7 +325,7 @@ export default function CombatTracker() {
       <div className="bg-[#fffdf9] rounded-xl border border-[#d6c7ab] p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between border-b border-[#d6c7ab]/80 pb-2">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-rose-700" />
+            <GiPocketWatch className="w-4 h-4 text-rose-700" />
             <h3 className="font-serif font-bold text-sm text-[#2c221e]">
               戰鬥場景命刻 (Scene Clocks - 危機倒數與環境進度)
             </h3>
@@ -369,7 +371,7 @@ export default function CombatTracker() {
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-sky-600/40 pb-2">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-sky-700" />
+              <GiCheckedShield className="w-4 h-4 text-sky-700" />
               <h3 className="font-serif font-bold text-base text-sky-900">
                 玩家小隊
               </h3>
@@ -402,7 +404,7 @@ export default function CombatTracker() {
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-rose-600/40 pb-2">
             <div className="flex items-center gap-2">
-              <Swords className="w-4 h-4 text-rose-700" />
+              <GiCrossedSwords className="w-4 h-4 text-rose-700" />
               <h3 className="font-serif font-bold text-base text-rose-900">
                 敵方怪物與 Boss (Enemies & Bosses)
               </h3>

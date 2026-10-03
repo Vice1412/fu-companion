@@ -1,5 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Trash2, Copy, Tag, Folder, Swords } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Trash2,
+  Copy,
+  Tag,
+  Folder,
+} from 'lucide-react';
+import {
+  GiCrossedSwords,
+} from 'react-icons/gi';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { calculateNpcStats } from '../utils/npcEngine';
@@ -155,7 +165,7 @@ export default function NPCLibrary({
       {/* Grid of NPC Cards */}
       {filteredNpcs.length === 0 ? (
         <div className="text-center py-16 bg-[#fffdf9] rounded-xl border border-dashed border-[#d6c7ab] p-8 shadow-sm">
-          <Swords className="w-12 h-12 text-[#8c7b6c] mx-auto mb-3 opacity-40" />
+          <GiCrossedSwords className="w-12 h-12 text-[#8c7b6c] mx-auto mb-3 opacity-40" />
           <h4 className="text-base font-bold text-[#3c2415]">檔案庫目前沒有符合條件的 NPC</h4>
           <p className="text-xs text-[#6b5a4b] mt-1">點擊上方「建立新 NPC」開始構建</p>
         </div>

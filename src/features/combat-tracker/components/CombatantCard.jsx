@@ -1,7 +1,5 @@
 import React from 'react';
 import {
-  Heart,
-  Sparkles,
   Shield,
   Zap,
   Swords,
@@ -10,8 +8,12 @@ import {
   EyeOff,
   CheckCircle,
   FileText,
-  AlertTriangle
+  AlertTriangle,
 } from 'lucide-react';
+import {
+  GiHealthNormal,
+  GiLightningTear,
+} from 'react-icons/gi';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import GameIcon from '../../../components/ui/GameIcon';
 
@@ -163,7 +165,7 @@ export default function CombatantCard({
       <div className="px-3.5 py-2.5 border-b border-[#d6c7ab]/80 bg-[#fbf7ee] space-y-1.5">
         <div className="flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-1.5 font-bold text-red-700 font-sans">
-            <Heart className="w-3.5 h-3.5 text-red-600 fill-red-600/30" />
+            <GiHealthNormal className="w-3.5 h-3.5 text-red-600" />
             <span>HP</span>
             {isCrisis && (
               <span className="text-[10px] text-rose-700 font-sans font-bold flex items-center gap-0.5 animate-bounce">
@@ -222,7 +224,7 @@ export default function CombatantCard({
       <div className="px-3.5 py-2.5 border-b border-[#d6c7ab]/80 bg-[#fbf7ee]/60 space-y-1.5">
         <div className="flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-1.5 font-bold text-sky-800 font-sans">
-            <Sparkles className="w-3.5 h-3.5 text-sky-600 fill-sky-600/30" />
+            <GiLightningTear className="w-3.5 h-3.5 text-sky-600" />
             <span>MP</span>
           </div>
           <div className="text-[#2c221e]">

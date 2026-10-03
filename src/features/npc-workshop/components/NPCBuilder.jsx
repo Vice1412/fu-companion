@@ -10,25 +10,23 @@ import {
   Check,
   AlertCircle,
   Info,
-  Shield,
-  Sparkles,
   Swords,
-  Skull
 } from 'lucide-react';
 import {
-  GiBrute,
-  GiDragonHead,
-  GiCrossbow,
-  GiWizardStaff,
-  GiDaggers,
-  GiShieldReflect,
-  GiHeartPlus,
-  GiUpgrade,
-  GiSwordman,
-  GiPawPrint,
   GiBookCover,
+  GiBrute,
+  GiCrossbow,
+  GiDaggers,
+  GiDeathSkull,
+  GiDragonHead,
+  GiHeartPlus,
+  GiPawPrint,
+  GiShieldReflect,
   GiSparkles,
-  GiTrashCan
+  GiSwordman,
+  GiTrashCan,
+  GiUpgrade,
+  GiWizardStaff,
 } from 'react-icons/gi';
 
 import JRPGButton from '../../../components/ui/JRPGButton';
@@ -563,7 +561,7 @@ export default function NPCBuilder({
               {npc.rank === '冠位' && (
                 <div className="p-4 rounded-xl bg-red-50 border border-red-300 space-y-2">
                   <label className="text-xs font-mono text-red-900 font-bold flex items-center justify-between">
-                    <span className="flex items-center gap-1.5"><Skull className="w-4 h-4 text-red-700" /> 冠位倍率 (Champion Multiplier ×1~×6)</span>
+                    <span className="flex items-center gap-1.5"><GiDeathSkull className="w-4 h-4 text-red-700" /> 冠位倍率 (Champion Multiplier ×1~×6)</span>
                     <span className="text-sm">×{npc.championMultiplier || 1} (技能配額 +{npc.championMultiplier || 1})</span>
                   </label>
                   <input
@@ -865,7 +863,7 @@ export default function NPCBuilder({
               {/* Role Skills List */}
               <div className="space-y-3">
                 <h5 className="font-bold text-xs text-amber-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-700" />
+                  <GiShieldReflect className="w-3.5 h-3.5 text-amber-700" />
                   <span>【{npc.role}】定位技能庫</span>
                 </h5>
 
@@ -932,7 +930,7 @@ export default function NPCBuilder({
               <div className="p-4 rounded-xl bg-[#f5efdf] border border-[#d6c7ab] space-y-3">
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-xs text-amber-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-700" />
+                    <GiSparkles className="w-3.5 h-3.5 text-blue-700" />
                     <span>通用與專屬咒語書</span>
                   </h5>
                 </div>
@@ -986,7 +984,7 @@ export default function NPCBuilder({
               <div className="p-4 rounded-xl bg-purple-50/80 border border-purple-300 space-y-3">
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-xs text-purple-950 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Skull className="w-4 h-4 text-purple-800" />
+                    <GiDeathSkull className="w-4 h-4 text-purple-800" />
                     <span>負面技能 (Negative Skills - 額外獲得 +1 技能名額)</span>
                   </h5>
                 </div>
@@ -1036,7 +1034,7 @@ export default function NPCBuilder({
               <div className="space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h5 className="font-bold text-xs text-red-950 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Skull className="w-4 h-4 text-red-700" />
+                    <GiDeathSkull className="w-4 h-4 text-red-700" />
                     <span>冠位 Boss 絕技庫 (40 個技能分類展示)</span>
                   </h5>
 
