@@ -24,8 +24,8 @@
 
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
-- **建置指令**：`npm run build`（Vite 6，實測約 4.4 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,824 kB（gzip 515 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **建置指令**：`npm run build`（Vite 6，實測約 6.8 秒，exit 0）
+- **建置產物**：`dist/`，JS 1,831 kB（gzip 519 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
 - **測試指令**：`npm run test:sentinel`（實測 60/60 通過，exit 0）。
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
@@ -65,7 +65,9 @@ $pdf = "E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_
 - **軌道 2（敘事性遊戲圖示）**：職業、範本、物種、定位、資源、狀態、裝備類別等**具世界觀敘事意涵**者，一律 `react-icons/gi`。
 - **軌道 2 豁免（功能性 UI 控件）**：返回、關閉／打叉、搜尋、新增、折疊箭頭等**純操作控件**，可使用純 Unicode 排版字符（`←` `✕` `✓` `➔` 等）**或既有圖示庫**，不強制改用 Game-Icons.net。
   - 判定準則：換成純文字後語意不變、且不損沉浸感者 → 功能性控件，適用豁免。
+  - **`lucide-react` 硬性範圍（2026-10-04 裁定）**：**僅限**功能性控件。敘事槽位（物種、範本、職業、定位、資源、裝備類別、屬性、反派階級、區塊標題、徽章、空狀態）一律 `react-icons/gi`——lucide 的均勻描邊幾何語彙與羊皮紙＋gi 實心剪影互斥。
 - **軌道 3（零 Emoji）**：彩色圖像化 Emoji 全站禁止；純排版字符（`✦` `❖` `★` `◆` `①`~`⑤`）不在此限。
+  - **符號詞彙表（2026-10-04 裁定）**：需要視覺錨點的敘事／狀態標記，一律採 `GEMINI.md`「軌道 3 附錄」的**封閉詞彙** `★ ❖ ✦ ✕ ※ △ ◈ ▽ ▼ ◆ ● ◷ ✎`，不得自行發明新符號。官方機制符號仍優先走 `.fu-icon`。
 - ⚠️ 檢測正則已同步更新至 `GEMINI.md` 規則五.1（與本檔 §3 同版本）。
 
 ### 規則二：規則手冊依據標準
@@ -224,13 +226,24 @@ Get-ChildItem -Path "src" -Recurse -File |
 > **注意**：`CATEGORIES` 與 `TYPE_STYLES` 已同時具備 `fuIcon` 欄位，
 > 官方字型遷移**已完成一半**——只差移除 `icon` / `emoji` 退路。
 
-### B. 圖示庫分裂（違反規則一軌道 2）
-- 使用 `lucide-react`：**26** 檔
-- 使用 `react-icons/gi`：**37** 檔
-- **同時使用兩者：18 檔**
+### B. 圖示庫分佈（規則一軌道 2）
+清查方法：`scripts/audit_lucide_usage.py`（只計 JSX 使用點，不計匯入本身）。
 
-> 成因見 §5「文件衝突」。**依 2026-10-03 裁定（§6 A）：功能性 lucide 用法合規，DSH 不主動清理；
-> 僅需清查「敘事性圖示誤用 lucide」者。**
+| 時點 | lucide 檔 | gi 檔 | 同時使用 | lucide 使用點 |
+|---|---|---|---|---|
+| 2026-10-03（原始基準） | 26 | 37 | 18 | 243 |
+| 2026-10-04（階段 3 完成後） | **26** | **42** | **23** | 敘事槽位 52 點已改 gi |
+
+> ✅ **階段 3 已於 2026-10-04 完成**（commit `ce85f55`）：52 個誤用於敘事槽位者改為 gi。
+> lucide 檔案數**不變**是正確結果——本階段不動功能性控件，只把敘事槽位換掉；
+> gi 檔數上升 5 檔（`NPCCardPreview`／`NPCLibrary`／`CombatTracker`／`AddCombatantModal`／`CombatantCard` 由「純 lucide」轉為混用）。
+>
+> **判定準則**：功能性控件（返回／關閉／搜尋／新增／折疊／排序／篩選／複製／刪除／上傳下載／顯示切換／Toast 狀態）→ lucide 合規；
+> 敘事槽位（物種／範本／職業／定位／資源／裝備類別／屬性／反派階級／區塊標題／徽章／空狀態）→ 一律 gi。
+> 此準則已寫入 `GEMINI.md` 軌道 2 豁免條款。
+>
+> **離群診斷**：`character-sheet` 系列本來就全面使用 gi（`GiHealthNormal`／`GiLightningTear`／`GiSparkles`／`GiPocketWatch`／`GiCrossedSwords`），
+> 誤用集中於 `npc-workshop` 與 `combat-tracker`——即歷史上由不同批次實作、未經同一次圖示稽核的兩個模組。
 
 ### C. 純中文邊界案例（規則三）
 - `src/features/npc-workshop/NPCWorkshop.jsx` `SPECIES_THEMES` 的 `label` 為英文：
@@ -246,8 +259,9 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-04 實測 4.36 秒）。
-- JS bundle 1,824 kB / gzip 515 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-04 實測 6.8 秒）。
+- JS bundle 1,831 kB / gzip 519 kB，觸發 Vite chunk-size 警告（>500 kB）。
+  較階段 3 前的 1,824 kB 增加約 7 kB，來源為 gi 圖示路徑細節多於 lucide——**屬預期代價，非退化**。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
 - `npm run test:sentinel` 通過（60/60，exit 0）。**本專案目前僅此一組自動化測試**；
   其餘模組（角色卡引擎、戰鬥輪次、造物專案公式）**無任何測試覆蓋**，屬已知缺口。
@@ -256,17 +270,17 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ## 5. 文件衝突與過時處（DSH 判讀依據）
 
-### A. 圖示政策自相矛盾
+### A. 圖示政策自相矛盾（已由 2026-10-04 裁定消解）
 - `PROJECT_SPEC.md:26` 列「**圖標庫：`lucide-react`**」
 - `PROJECT_SPEC.md:100` 卻寫「全站所有其餘圖標**默認一律從 Game-Icons.net** 選取，
   **嚴禁隨意混用現代極簡扁平圖標**」
 - `GEMINI.md` 規則一軌道 2 與 `PROJECT_CHANGELOG.md:10` 皆只認 Game-Icons.net。
 
 > lucide-react 正是「現代極簡扁平圖標」。
-> **依 `GEMINI.md` 軌道 2 豁免條款**：功能性控件可使用既有圖示庫，
-> 故 18 個混用檔案中的 lucide 用法**若屬功能性控件即為合規**，DSH 不主動清理。
-> 惟**敘事性圖示**若誤用 lucide，須改用 `react-icons/gi`——此為後續清查重點。
-> `PROJECT_SPEC.md:26` 與 `:100` 的矛盾，一律以 `GEMINI.md` 為準。
+> ✅ **2026-10-04 裁定已把矛盾切乾淨**：lucide **僅限功能性控件**（軌道 2 豁免），
+> 敘事槽位一律 `react-icons/gi`。此界線已寫入 `GEMINI.md` 軌道 2 豁免條款，並於同日完成階段 3 清查（§4 B）。
+> 故 `PROJECT_SPEC.md:26` 的「圖標庫：lucide-react」應理解為**僅指功能性控件層**，其餘仍以 `GEMINI.md` 為準。
+> 建議後續修訂 `PROJECT_SPEC.md` 時一併更正此兩行。
 
 ### B. `PROJECT_SPEC.md` 整體已過時
 - §4 描述深色石板底（`bg-zinc-950` / `#0c0d0e`）——**實際全站為羊皮紙暖色調**。
@@ -293,10 +307,12 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ## 6. 待決事項（需使用者裁定，DSH 不得自行決定）
 
-### A. ~~軌道 2 的適用範圍~~ ✅ 已於 2026-10-03 裁定
+### A. ~~軌道 2 的適用範圍~~ ✅ 已於 2026-10-03 裁定，2026-10-04 收斂完成
 使用者裁定：**敘事性圖示 → Game-Icons.net；一般功能性控件（返回、打叉等）→ 純 Unicode 即可。**
 已寫入 `GEMINI.md` 軌道 2 豁免條款與軌道 3，並同步本檔 §2。
-後續唯一待辦：清查**敘事性圖示誤用 lucide** 的個案。
+
+> ✅ **後續待辦已於 2026-10-04 結清**：敘事性圖示誤用 lucide 的個案已全數清查並修正（52 點，見 §4 B），
+> 且「lucide 僅限功能性控件」已升格為 `GEMINI.md` 硬性條款。
 
 ### B. ~~官方 PDF 位置~~ ✅ 已於 2026-10-03 提供
 官方英文 Core v1.1 原書位於**專案目錄之外**：
@@ -321,18 +337,21 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 | 階段 | 工作 | 前置條件 | 觸發規則四文案預審 | 狀態 |
 |---|---|---|---|---|
 | 1 | **`⚡` 語意哨兵遷移**：資料層改為結構化 `isOffensive` 欄位 + localStorage 遷移 | 無 | 否（純內部結構） | ✅ **2026-10-04 完成**（commit `280bbb8`，測試 60/60） |
-| 2 | **裝飾性 Emoji 清除**：§4 A 現行清單（76 行 / 145 次） | **階段 1 完成** ✅ | **是**（多為面向使用者文字） | ⏳ **待辦——下一個可執行動作** |
-| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 | ⏳ 待辦 |
+| 2 | **裝飾性 Emoji 清除**：§4 A 現行清單（76 行 / 145 次） | **階段 1 完成** ✅ | **是**（多為面向使用者文字） | ⏳ **待辦——裁決表已備妥** |
+| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 | ✅ **2026-10-04 完成**（commit `ce85f55`，52 點） |
 
 > ✅ **階段 1 已完成**：判定邏輯與哨兵解耦（見 §3.1），
 > 故階段 2 執行時**不會**再造成攻擊性咒語判定（傷害／MP／預覽標記）失效。
 > 原始警告「階段 1 未完成前嚴禁執行階段 2」已解除。
 >
-> 階段 2 涉及大量面向使用者的文字改動，**必須先提交 `implementation_plan.md` 並取得確認**
-> （依 `GEMINI.md` 規則四／本檔 §2）。
+> ✅ **階段 3 已完成**：52 個敘事槽位誤用已改 gi（見 §4 B）。
+> **原本的排序（1→2→3）經實證應調整為 1→3→2**——因為階段 3 決定了那些位置「鄰居」的視覺語言，
+> 階段 2 的符號選擇必須與鄰居同語言，否則會出現 dingbat／lucide／gi 三種語彙同框。
+> 此後續已按修正後順序執行。
 >
-> 階段 3 的清查起點：26 檔使用 `lucide-react`、18 檔與 `react-icons/gi` 混用（§4 B）。
-> 判定準則依 §2 規則一的軌道 2 豁免條款——功能性控件不動，敘事性圖示才需替換。
+> 階段 2 涉及大量面向使用者的文字改動，**必須先提交文案草案並取得確認**
+> （依 `GEMINI.md` 規則四／本檔 §2）。裁決工具：
+> `emoji-cleanup-decisions.xlsx`（逐列裁決表）＋ `implementation_plan.md`（方針與符號詞彙表）。
 
 ---
 
@@ -348,3 +367,4 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *2026-10-03：同步使用者裁定之圖示三軌分類（敘事 → Game-Icons；功能性控件 → Unicode 豁免），並修正 `GEMINI.md` 規則五.1 之 Emoji 檢測正則。*
 *2026-10-04：稽核複驗並更新基準——§3.1 哨兵遷移完成、§4 A 殘留數更新為 76 行 / 145 次（`src/` 程式碼檔 75 個 / 38,619 行）、§4 E 補列測試現況、§6 D 階段 1 標記完成。*
 *同日完成工作區收尾：10/02 起懸置的 16 個檔案分 6 個 commit 提交；測試自未受版控的 `scratch/` 移入 `tests/` 並加入 `npm run test:sentinel`。*
+*2026-10-04（續）：完成階段 3 敘事性圖示清查（52 點，commit `ce85f55`），並將兩項裁定升格為 `GEMINI.md` 硬性條款——「lucide 僅限功能性控件」與「軌道 3 附錄符號詞彙表」。§4 B 改為分佈基準、§6 A 結清、§6 D 標記階段 3 完成並註明實證後的建議順序 1→3→2。*
