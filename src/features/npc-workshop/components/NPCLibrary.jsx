@@ -128,7 +128,7 @@ export default function NPCLibrary({
                   : 'bg-[#eee6d3] text-[#6b5a4b] hover:text-[#2c221e] hover:bg-[#e4d9c0] border border-[#d6c7ab] border-b-0'
               }`}
             >
-              🏷️ {fac} ({count})
+              ◈ {fac} ({count})
             </button>
           );
         })}
@@ -213,7 +213,7 @@ export default function NPCLibrary({
                       {npc.faction && (
                         <>
                           <span>·</span>
-                          <span className="text-stone-700">🏷️ {npc.faction}</span>
+                          <span className="text-stone-700">◈ {npc.faction}</span>
                         </>
                       )}
                     </div>
@@ -281,7 +281,7 @@ export default function NPCLibrary({
                     onClick={() => onSelectNpc(npc)}
                     className="ml-auto"
                   >
-                    ✏️ 編輯
+                    ✎ 編輯
                   </JRPGButton>
                 </div>
               </div>

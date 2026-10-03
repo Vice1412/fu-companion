@@ -42,7 +42,7 @@ export default function FateClockPage() {
       type: 'circle'
     };
     setClocks(prev => [newClock, ...prev]);
-    showToast('✨ 已新增命刻！');
+    showToast('已新增命刻！');
   };
 
   const handleUpdateClock = (clkId, patch) => {
@@ -60,7 +60,7 @@ export default function FateClockPage() {
       <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-[#d6c7ab]">
         <div>
           <h2 className="font-serif font-black text-2xl text-[#2c221e] flex items-center gap-2.5 tracking-wide">
-            <span className="text-amber-700">⏳</span> 命刻編織者
+            <span className="text-amber-700">◷</span> 命刻編織者
           </h2>
           <p className="text-xs text-[#6b5a4b] mt-0.5">
             《FU》進度時鐘工作台 · 支援圓盤切片與線形進度 · 多主題色調與即時互動

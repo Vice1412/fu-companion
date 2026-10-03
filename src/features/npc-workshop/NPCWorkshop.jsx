@@ -239,7 +239,7 @@ const resolveTemplateVariables = (text, selections, options = {}) => {
       }
 
       if (damageEmojis && DAMAGE_TYPES.includes(val)) {
-        return `${TYPE_STYLES[val].emoji}${val}`;
+        return `${val}`;
       }
 
       return val;
@@ -276,7 +276,7 @@ const getPlainText = (text, selections, npcLevel = 5, partyLevel = 5, hideMeta =
   });
   plain = plain.replace(/<([^>]+)>/g, (match, p1) => {
     if (/^\/?(?:meta|status)/i.test(p1)) return "";
-    return DAMAGE_TYPES.includes(p1) ? `${TYPE_STYLES[p1].emoji}${p1}` : p1;
+    return DAMAGE_TYPES.includes(p1) ? p1 : p1;
   });
   plain = plain.replace(/__NPC_NAME__(.*?)__NPC_END__/g, "**$1**");
   return plain;
@@ -348,13 +348,13 @@ const renderFormattedText = (text, selections, npcLevel = 5, partyLevel = 5, hid
       }
       if (Array.isArray(val)) return <span key={i} className="font-bold text-[#2c221e]">{val.map((v, vi) => <span key={vi} className="block ml-2">● {v}</span>)}</span>;
       if (typeof val === 'string' && (val.includes('{') || val.includes('['))) return <React.Fragment key={i}>{renderFormattedText(val, selections, npcLevel, partyLevel, hideMeta)}</React.Fragment>;
-      if (DAMAGE_TYPES.includes(val)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[val].color} tracking-wide drop-shadow-sm`}>{TYPE_STYLES[val].fuIcon ? <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[val].fuIcon}</span> : TYPE_STYLES[val].emoji}<span>{val}</span></span>;
+      if (DAMAGE_TYPES.includes(val)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[val].color} tracking-wide drop-shadow-sm`}><span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[val].fuIcon}</span><span>{val}</span></span>;
       return <span key={i} className="font-extrabold text-[#2c221e]">{val}</span>;
     }
     if (part.startsWith('<') && part.endsWith('>')) {
       const type = part.slice(1, -1);
       if (/^\/?(?:meta|status)/i.test(type)) return null;
-      if (DAMAGE_TYPES.includes(type)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[type].color} tracking-wide drop-shadow-sm`}>{TYPE_STYLES[type].fuIcon ? <span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[type].fuIcon}</span> : TYPE_STYLES[type].emoji}<span>{type}</span></span>;
+      if (DAMAGE_TYPES.includes(type)) return <span key={i} className={`inline-flex items-center gap-1 font-extrabold ${TYPE_STYLES[type].color} tracking-wide drop-shadow-sm`}><span className="fu-icon text-sm leading-none translate-y-[0.5px]">{TYPE_STYLES[type].fuIcon}</span><span>{type}</span></span>;
       return part;
     }
     return part;
@@ -389,7 +389,7 @@ const SectionAccordion = ({ title, icon, current, max, hideIfZeroMax = false, de
       </button>
       {isExpanded && (
         <div className="p-4 bg-[#fbf7ee]/60 animate-in slide-in-from-top-2 rounded-b-lg">
-          {isOverflow && <div className="mb-4 bg-red-50 border border-red-300 p-3 rounded flex items-start gap-2 text-red-900 text-xs shadow-sm"><AlertCircle size={16} className="shrink-0 mt-0.5 text-red-700" /><div><strong className="block text-red-800 mb-0.5">⚠️ 額度溢出警告</strong>您目前的選擇已超過系統允許的上限或缺少前置技能。所有標記為紅色的技能將<strong>強制失效</strong>。</div></div>}
+          {isOverflow && <div className="mb-4 bg-red-50 border border-red-300 p-3 rounded flex items-start gap-2 text-red-900 text-xs shadow-sm"><AlertCircle size={16} className="shrink-0 mt-0.5 text-red-700" /><div><strong className="block text-red-800 mb-0.5">△ 額度溢出警告</strong>您目前的選擇已超過系統允許的上限或缺少前置技能。所有標記為紅色的技能將<strong>強制失效</strong>。</div></div>}
           {children}
         </div>
       )}
@@ -654,7 +654,7 @@ const SpellCard = ({ skillId, spellName, isActive, isDisabled, isOverBudget, isC
       </div>}
       <div className={`font-bold text-[16px] mb-2 pr-6 flex flex-col sm:flex-row sm:items-center gap-1 ${isOverBudget && isActive ? 'text-red-900' : isActive ? (isSecretArt ? 'text-fuchsia-950' : 'text-purple-950') : 'text-[#3c2f21]'}`}>
         <div className="flex items-center gap-1 w-full">
-          {isMaxMp ? '🔵' : <span className="fu-icon text-xl text-purple-700 drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span>}
+          {isMaxMp ? '●' : <span className="fu-icon text-xl text-purple-700 drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span>}
           {isEditing ? (
             <div className="flex-1 relative group/input">
               <input type="text" className={`bg-transparent border border-transparent rounded px-1 -mx-1 outline-none w-full transition-colors hover:border-[#d6c7ab] hover:bg-[#fbf7ee] focus:border-purple-500 focus:bg-[#fffdf9] ${isOverBudget ? 'text-red-900' : selections?.customName !== undefined ? 'text-amber-900 font-bold' : (isSecretArt ? 'text-fuchsia-950' : 'text-purple-950')}`} value={selections?.customName !== undefined ? selections.customName : cleanSpellName} onChange={(e) => onSelectionChange(skillId, spellName, 'customName', e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) onSelectionChange(skillId, spellName, 'customName', undefined); }} onClick={(e) => e.stopPropagation()} />
@@ -1021,7 +1021,6 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
   let displaySkillName = skill.customName?.trim() ? skill.customName : skill.originalName;
   displaySkillName = displaySkillName.replace(/Lv\.\d+\s解鎖天賦：/, '').replace(/^(技能|能力)：/, '').replace(/（(獨特動作|特殊規則)）/, '').replace(/\(定位技能\)/, '').trim();
 
-  const icon = skill.category === 'attack' ? '⚔️' : skill.category === 'action' ? '⚡' : skill.category === 'boss' ? '👑' : skill.category === 'negative' ? '⛓️' : skill.category === 'spell' ? '🔮' : '📜';
   
   const isSpellCategory = skill.category === 'spell' || skill.spellData;
   const showOffensiveIcon = isSpellCategory && (skill.spellData?.isOffensive || isOffensiveSpell(displaySkillName));
@@ -1031,7 +1030,7 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
     const spMp = skill.spellData?.mp || '10';
     const spTarget = getPlainText(replaceNPC(skill.spellData?.target || '一個生物'), skill.selections, npcLevel, partyLevel, true);
     const spDuration = skill.spellData?.duration || '瞬發';
-    textToCopy += `> ${showOffensiveIcon ? '⚡' : '🔮'} ${normalizeSpellName(displaySkillName)} (MP: ${spMp} | 目標: ${spTarget} | 持續: ${spDuration})\n`;
+    textToCopy += `> ${normalizeSpellName(displaySkillName)} (MP: ${spMp} | 目標: ${spTarget} | 持續: ${spDuration})\n`;
     if (showOffensiveIcon) {
       const accStr = totalMagicAcc > 0 ? ` +${totalMagicAcc}` : (totalMagicAcc < 0 ? ` - ${Math.abs(totalMagicAcc)}` : '');
       const formulaDisplay = finalStats.magicFormula || '[INS + WLP]';
@@ -1039,7 +1038,7 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
     }
     if (replacedDesc) textToCopy += `> ${getPlainText(replacedDesc, skill.selections, npcLevel, partyLevel, true).split('\n').join('\n> ')}\n`;
   } else {
-    textToCopy += `> ${icon} ${displaySkillName}\n`;
+    textToCopy += `> ${displaySkillName}\n`;
     if (skill.attack) {
       const dist = getPlainText(replacedDist, skill.selections, npcLevel, partyLevel, true); const form = getPlainText(replacedForm, skill.selections, npcLevel, partyLevel, true); const accStr = finalStats.Acc > 0 ? ` +${finalStats.Acc}` : (finalStats.Acc < 0 ? ` - ${Math.abs(finalStats.Acc)}` : ''); const dmg = skill.attack.baseDmg + finalStats.Dmg; const type = getPlainText(replacedType, skill.selections, npcLevel, partyLevel, true);
       textToCopy += `> [${dist}] ${form}${accStr} ✦ [HR + ${dmg}] ${type}傷害\n`;
@@ -1373,9 +1372,6 @@ function FreeModeConfirmModal({ isOpen, onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#fffdf9] border-2 border-fuchsia-600 rounded-2xl max-w-md w-full p-6 shadow-xl relative overflow-hidden animate-in zoom-in-95 duration-200 text-[#2c221e]">
-        <div className="absolute top-0 right-0 p-6 opacity-[0.06] text-9xl pointer-events-none select-none text-fuchsia-900">
-          🔓
-        </div>
 
         <div className="flex items-center gap-3 text-fuchsia-900 font-black text-lg mb-4">
           <div className="p-2.5 bg-fuchsia-100 rounded-xl border border-fuchsia-300 shadow-inner">
@@ -1795,7 +1791,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       setIsFreeModeConfirmOpen(true);
     } else {
       setState(prev => ({ ...prev, isFreeModeEnabled: false }));
-      showToast('🔒 已恢復嚴謹模式：重新計算技能額度與規則限制。', 'success');
+      showToast('已恢復嚴謹模式：重新計算技能額度與規則限制。', 'success');
     }
   };
 
@@ -1803,7 +1799,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     setIsFreeModeConfirmOpen(false);
     if (!state) return;
     setState(prev => ({ ...prev, isFreeModeEnabled: true }));
-    showToast('✨ 已解除規則限制：現在可以自由編輯體質骰子與技能額度！', 'success');
+    showToast('已解除規則限制：現在可以自由編輯體質骰子與技能額度！', 'success');
   };
 
   const [toast, setToast] = useState(null);
@@ -1815,10 +1811,10 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       combatants.push(combatant);
       activeCombat.combatants = combatants;
       localStorage.setItem('fu_companion_active_combat', JSON.stringify(activeCombat));
-      showToast(`⚔️ 已將【${npc.name || 'NPC'}】推入戰鬥房間！`, 'success');
+      showToast(`已將【${npc.name || 'NPC'}】推入戰鬥房間！`, 'success');
     } catch (e) {
       console.error('Failed to send to combat:', e);
-      showToast('❌ 入戰失敗，請確認怪物數據完整。', 'error');
+      showToast('入戰失敗，請確認怪物數據完整。', 'error');
     }
   };
 
@@ -2010,7 +2006,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
       const file = files[0];
       if (!file.name.toLowerCase().endsWith('.json')) {
-        showToast("⚠️ 請拖曳 .json 格式的 NPC 檔案", "warning");
+        showToast("請拖曳 .json 格式的 NPC 檔案", "warning");
         return;
       }
 
@@ -2029,16 +2025,16 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               localStorage.setItem('fu_npc_library', JSON.stringify(newLib));
               return newLib;
             });
-            showToast(`✅ 成功備份/匯入 ${parsed.length} 個 NPC 至檔案庫！`, "success");
+            showToast(`成功備份/匯入 ${parsed.length} 個 NPC 至檔案庫！`, "success");
             setActiveMainTab('library');
           } else if (parsed && typeof parsed === 'object') {
             const migrated = migrateNpcState(parsed);
             setState(migrated);
             setActiveMainTab('build');
-            showToast(`✅ 成功讀取「${migrated.name || 'NPC'}」的檔案！`, "success");
+            showToast(`成功讀取「${migrated.name || 'NPC'}」的檔案！`, "success");
           }
         } catch (err) {
-          showToast("❌ JSON 格式解析失敗，請確認檔案內容是否正確！", "error");
+          showToast("JSON 格式解析失敗，請確認檔案內容是否正確！", "error");
         }
       };
       reader.readAsText(file);
@@ -2058,7 +2054,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   // --- Task 3.2: Backup All NPCs ---
   const handleBackupAllNPCs = () => {
     if (!library || library.length === 0) {
-      showToast("⚠️ 檔案庫目前為空，無可備份的 NPC", "warning");
+      showToast("檔案庫目前為空，無可備份的 NPC", "warning");
       return;
     }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(library, null, 2));
@@ -2069,7 +2065,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast(`✅ 已成功備份包含 ${library.length} 個 NPC 的全庫檔案！`, "success");
+    showToast(`已成功備份包含 ${library.length} 個 NPC 的全庫檔案！`, "success");
   };
 
   // --- Task 3.3: Reverse Card Inspector Click Handler ---
@@ -2085,7 +2081,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       setStep4SubTab(subTabHint);
     }
     setHighlightedSkillId(skillId);
-    showToast("📍 已反向定位至該技能配置卡片", "info");
+    showToast("已反向定位至該技能配置卡片", "info");
 
     setTimeout(() => {
       const el = document.getElementById(`skill-card-${skillId}`) || document.getElementById(`boss-skill-${skillId}`);
@@ -2113,7 +2109,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
   const handleAddCustomSkill = () => {
     if (!newCustomSkill.name.trim() || !newCustomSkill.desc.trim()) {
-      showToast('⚠️ 名稱與效果敘述不可為空！', 'error');
+      showToast('名稱與效果敘述不可為空！', 'error');
       return;
     }
 
@@ -2164,7 +2160,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       duration: '瞬發',
       formula: '[INS + WLP]'
     });
-    showToast(`✨ 成功新增自訂技能：「${finalName}」`, 'success');
+    showToast(`成功新增自訂技能：「${finalName}」`, 'success');
   };
 
   const speciesAffinities = useMemo(() => getSpeciesAffinities(state?.selectedSpeciesId, state?.speciesConfig), [state?.selectedSpeciesId, state?.speciesConfig]);
@@ -2292,7 +2288,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     const targetNPC = updatedLibrary.find(n => n.id === targetId);
     if (targetNPC) {
       setState(targetNPC);
-      showToast(`🔗 已切換至「${targetNPC.name || "未知實體"}」`);
+      showToast(`已切換至「${targetNPC.name || "未知實體"}」`);
     }
   };
 
@@ -2969,7 +2965,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const processImageFile = (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      showToast("❌ 請選擇正確的圖片檔案 (JPG, PNG, GIF, WebP)", "error");
+      showToast("請選擇正確的圖片檔案 (JPG, PNG, GIF, WebP)", "error");
       return;
     }
     const reader = new FileReader();
@@ -3010,7 +3006,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       img.src = rawDataUrl;
     };
     reader.onerror = () => {
-      showToast("❌ 讀取檔案失敗", "error");
+      showToast("讀取檔案失敗", "error");
     };
     reader.readAsDataURL(file);
   };
@@ -3025,11 +3021,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const handleLoadImageUrl = (urlToLoad) => {
     const url = (urlToLoad || imageUrlInput || '').trim();
     if (!url) {
-      showToast("⚠️ 請輸入有效的圖片網址", "warning");
+      showToast("請輸入有效的圖片網址", "warning");
       return;
     }
     setIsUrlLoading(true);
-    showToast("⏳ 正在讀取網路圖片...", "info");
+    showToast("正在讀取網路圖片...", "info");
 
     if (url.startsWith('data:image/')) {
       setCropImageSource(url);
@@ -3081,7 +3077,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           tryLoadImage(proxyUrl, true);
         } else {
           setIsUrlLoading(false);
-          showToast("❌ 無法載入該網址的圖片，請確認連結正確或下載後拖曳上傳", "error");
+          showToast("無法載入該網址的圖片，請確認連結正確或下載後拖曳上傳", "error");
         }
       };
 
@@ -3106,7 +3102,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       avatarRawBase64: pendingRawSource || p.avatarRawBase64 || croppedDataUrl
     }));
     setIsCropModalOpen(false);
-    showToast("🖼️ 頭像裁切與調整完成！");
+    showToast("頭像裁切與調整完成！");
   };
 
   const handleAvatarDragEnter = (e) => {
@@ -3144,7 +3140,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       if (file.type.startsWith('image/')) {
         processImageFile(file);
       } else {
-        showToast("❌ 請拖曳圖片檔案 (JPG, PNG, GIF, WebP)", "error");
+        showToast("請拖曳圖片檔案 (JPG, PNG, GIF, WebP)", "error");
       }
       return;
     }
@@ -3160,7 +3156,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     if (!sheetRef.current) return;
 
     setRoleDrafts({});
-    showToast("🖼️ 正在處理並匯出高畫質 JPG，請稍候...");
+    showToast("正在處理並匯出高畫質 JPG，請稍候...");
 
     try {
       // 確保字體完全加載
@@ -3193,10 +3189,10 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       a.click();
       document.body.removeChild(a);
 
-      showToast("✅ 角色卡已成功匯出！", "success");
+      showToast("角色卡已成功匯出！", "success");
     } catch (error) {
       console.error('Export failed:', error);
-      showToast("❌ 匯出失敗，請重試或更換瀏覽器。", "error");
+      showToast("匯出失敗，請重試或更換瀏覽器。", "error");
     }
   };
 
@@ -3262,9 +3258,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
         loadedState = migrateNpcState(loadedState);
         setState(loadedState);
         setActiveMainTab('build');
-        showToast(`✅ 成功讀取「${loadedState.name || 'NPC'}」的檔案！`);
+        showToast(`成功讀取「${loadedState.name || 'NPC'}」的檔案！`);
       } catch (err) {
-        showToast("❌ 無效的 JSON 檔案！請確認格式是否正確。", 'error');
+        showToast("無效的 JSON 檔案！請確認格式是否正確。", 'error');
       }
     };
     reader.readAsText(file);
@@ -3321,7 +3317,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-3">
                   <div className="text-xs font-bold tracking-widest px-3 py-1 border shadow-inner flex flex-wrap justify-center sm:justify-start items-center gap-1 text-center sm:text-left transition-colors duration-300" style={{ backgroundColor: currentTheme.subpanelBg, borderColor: currentTheme.border, color: currentTheme.textDark }}>
                     {[
-                      state.villainTier !== 'none' && revealLevel === 'full' ? `🔥 ${VILLAIN_TIERS[state.villainTier].label}` : null,
+                      state.villainTier !== 'none' && revealLevel === 'full' ? `★ ${VILLAIN_TIERS[state.villainTier].label}` : null,
                       `Lv ${state.level}`,
                       state.rank === "冠位" ? `${state.rank} (${state.championMultiplier})` : state.rank,
                       SPECIES_DATA.find(s => s.id === state.selectedSpeciesId)?.name
@@ -3456,11 +3452,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                                   className="bg-[#fffdf9] border border-[#d6c7ab] px-2.5 py-1 rounded-md shadow-2xs flex items-center gap-1.5 text-xs font-bold transition-all hover:scale-105 shrink-0"
                                 >
                                   <span className={`inline-flex items-center gap-1 ${styleInfo.color || 'text-stone-800'}`}>
-                                    {styleInfo.fuIcon ? (
-                                      <span className="fu-icon text-base leading-none translate-y-[0.5px]">{styleInfo.fuIcon}</span>
-                                    ) : (
-                                      <span>{styleInfo.emoji || ''}</span>
-                                    )}
+                                    <span className="fu-icon text-base leading-none translate-y-[0.5px]">{styleInfo.fuIcon}</span>
                                     <span>{t}</span>
                                   </span>
                                 </div>
@@ -3473,7 +3465,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   )}
                   {finalStats.statusImmunities && finalStats.statusImmunities.length > 0 && (
                     <div className={`pt-2 flex flex-wrap items-center gap-2 text-xs font-bold ${groupedAffs.length > 0 ? 'border-t border-[#d6c7ab]/70' : ''}`}>
-                      <span className="text-amber-900 font-black tracking-wider shrink-0 flex items-center gap-1">🛡️ 異常免疫：</span>
+                      <span className="text-amber-900 font-black tracking-wider shrink-0 flex items-center gap-1">◆ 異常免疫：</span>
                       <div className="flex flex-wrap gap-1.5">
                         {finalStats.statusImmunities.map(status => (
                           <span key={status} className="bg-[#fffdf9] border border-[#d6c7ab] px-2.5 py-1 rounded-md text-xs font-bold text-stone-800 shadow-2xs">
@@ -3514,7 +3506,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               return (
                 <div className="bg-[#f4ebd9]/60 p-3.5 rounded-lg border border-[#d6c7ab]/80 text-xs text-[#5c4a38] leading-relaxed shadow-inner">
                   <div className="font-bold text-[#3c2415] mb-1 flex items-center gap-1.5 text-sm">
-                    <span>📜 種族特質 / 背景說明</span>
+                    <span>✦ 種族特質 / 背景說明</span>
                   </div>
                   <div>{renderFormattedText(content, state.speciesConfig, state.level, state.partyLevel)}</div>
                 </div>
@@ -3637,7 +3629,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   )}
                   {groupedSkills.rule.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="text-lg">📜</span> 特殊規則</h3>
+                      <h3 className="text-lg font-bold border-b-2 mb-3 flex items-center gap-2 tracking-widest" style={{ borderBottomColor: currentTheme.accent, color: currentTheme.accentDark }}><span className="text-lg">✦</span> 特殊規則</h3>
                       {groupedSkills.rule.map(skill => (
                         <ReadOnlySkill key={skill.id} skill={skill} finalStats={finalStats} npcName={validNpcName} npcLevel={state.level} partyLevel={state.partyLevel} onInspectorClick={handleInspectorClick} />
                       ))}
@@ -3693,7 +3685,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
       if (isRevealed('combat')) {
         if (stats.spellList && stats.spellList.length > 0) {
-          text += `**🔮 咒語**\n`;
+          text += `**咒語**\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -3715,7 +3707,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           });
         }
 
-        text += `**⚔️ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS)**\n`;
+        text += `**基本攻擊與行動**\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
@@ -3984,7 +3976,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       }
 
       if (revealLevel === 'full' && (state.selectedNegativeSkills || []).length > 0) {
-        md += `#### ⛓️ 負面技能\n`;
+        md += `#### 負面技能\n`;
         state.selectedNegativeSkills.forEach(neg => {
           const skill = NEGATIVE_SKILLS_DATA.find(s => s.id === neg.id);
           if (skill) {
@@ -3998,7 +3990,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
         const validNpcName = state.name && state.name.trim() !== "" && state.name !== "未知實體" ? state.name.trim() : null;
 
         if (stats.spellList && stats.spellList.length > 0) {
-          md += `#### 🔮 咒語\n`;
+          md += `#### 咒語\n`;
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
@@ -4023,7 +4015,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             const rawEffectBase = effectiveDesc ? effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + stats.Dmg}]`) : '';
             const replacedEffect = replaceNPC(rawEffectBase);
 
-            md += `> **${isOffensive ? '⚡' : '✨'} ${normalizeSpellName(effectiveName)}** (MP: ${spellData?.mp || '?'} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData?.duration || '瞬發'})\n`;
+            md += `> **${normalizeSpellName(effectiveName)}** (MP: ${spellData?.mp || '?'} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData?.duration || '瞬發'})\n`;
             if (isOffensive) {
               const accStr = totalMagicAcc > 0 ? ` +${totalMagicAcc}` : (totalMagicAcc < 0 ? ` - ${Math.abs(totalMagicAcc)}` : '');
               const formulaDisplay = state.magicFormula || '[INS + WLP]';
@@ -4039,7 +4031,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           });
         }
 
-        md += `#### ⚔️ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS)\n`;
+        md += `#### 基本攻擊與行動\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let rawName = s.customName || s.originalName;
@@ -4224,9 +4216,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             const WatermarkIcon = ROLE_ICONS[roleName] || ROLE_DESCRIPTIONS[roleName]?.Icon;
                             return WatermarkIcon ? (
                               <WatermarkIcon className="w-48 h-48 sm:w-56 sm:h-56 -rotate-12 transform translate-x-8 -translate-y-8" />
-                            ) : (
-                              <span className="text-[10rem] leading-none transform translate-x-12 -translate-y-12 block">{ROLE_DESCRIPTIONS[roleName]?.icon}</span>
-                            );
+                            ) : null;
                           })()}
                         </div>
 
@@ -4236,9 +4226,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                               const CardIcon = ROLE_ICONS[roleName] || ROLE_DESCRIPTIONS[roleName]?.Icon;
                               return CardIcon ? (
                                 <CardIcon className="w-14 h-14" />
-                              ) : (
-                                <span className="text-6xl">{ROLE_DESCRIPTIONS[roleName]?.icon}</span>
-                              );
+                              ) : null;
                             })()}
                           </div>
                           <div>
@@ -4291,9 +4279,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                     <div className={`mb-1 drop-shadow-sm flex items-center justify-center ${isCurrent ? 'text-amber-800' : 'text-[#6b5a4b]'}`}>
                       {QuickIcon ? (
                         <QuickIcon className="w-6 h-6 sm:w-7 sm:h-7" />
-                      ) : (
-                        <span className="text-xl sm:text-3xl">{ROLE_DESCRIPTIONS[r]?.icon}</span>
-                      )}
+                      ) : null}
                     </div>
                     <div className={`text-[9px] sm:text-[11px] font-black tracking-widest ${isCurrent ? 'text-[#3c2415]' : 'text-[#6b5a4b]'}`}>{r}</div>
                   </button>
@@ -4574,7 +4560,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                         {sp.optionalDrawback && (
                           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
                             <label className="text-[11px] font-bold text-red-800 tracking-wider flex items-center gap-1.5 uppercase mb-3 text-center">
-                              ⚠️ 額外代償選項
+                              △ 額外代償選項
                             </label>
                             <p className="text-xs text-[#574c43] mb-3 text-center italic">{sp.optionalDrawback.desc}</p>
                             <div className="flex justify-center">
@@ -4774,9 +4760,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             {/* Step 4 Sub-tabs */}
             <div className="flex bg-[#e8dec8] rounded-xl p-1 gap-1 border border-[#d6c7ab] shadow-inner">
               {[
-                { id: 'stats', label: '基礎數值與相性', emoji: '🎲' },
-                { id: 'skills', label: '攻擊與技能庫', emoji: '⚔️' },
-                { id: 'spells', label: '咒語與自訂能力', emoji: '🔮' },
+                { id: 'stats', label: '基礎數值與相性', Icon: GiRollingDices },
+                { id: 'skills', label: '攻擊與技能庫', Icon: GiCrossedSwords },
+                { id: 'spells', label: '咒語與自訂能力', Icon: GiSpellBook },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -4788,7 +4774,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   }`}
                   style={step4SubTab === tab.id ? { borderBottom: `2px solid ${workshopTheme.accent}` } : {}}
                 >
-                  <span>{tab.emoji}</span>
+                  <tab.Icon className="w-4 h-4" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.id === 'stats' ? '數值' : tab.id === 'skills' ? '技能' : '咒語'}</span>
                 </button>
@@ -4809,7 +4795,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                       自定義 NPC 體質與基礎骰子
                     </h4>
                     <p className="text-xs text-[#6b5a4b] mt-1 leading-relaxed">
-                      🔓 自定義模式已啟動：可自由調整 DEX, INS, MIG, WLP 骰子大小。HP/MP/物防/魔防將自動連動計算調整。
+                      自定義模式已啟動：可自由調整 DEX, INS, MIG, WLP 骰子大小。HP/MP/物防/魔防將自動連動計算調整。
                     </p>
                   </div>
                   {state.customDice && Object.keys(state.customDice).some(k => state.customDice[k]) && (
@@ -4913,7 +4899,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
             {/* 反派等級 */}
             <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl p-6 shadow-sm overflow-hidden relative group">
-              <div className="absolute top-0 right-0 p-4 opacity-[0.05] text-8xl pointer-events-none group-hover:scale-110 transition-transform">🔥</div>
               <label className="block text-sm text-[#3c2415] mb-4 font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
                 <GiLaurelCrown size={18} className="text-amber-700" /> 反派等級
               </label>
@@ -4993,7 +4978,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                         </div>
                       )}
                       <div className="flex items-center gap-1 sm:gap-2 mb-1.5">
-                        <span className={`text-xl sm:text-2xl drop-shadow-sm ${isDisabled && !isSpeciesLocked && playerState === 'normal' ? 'text-[#8c7b6c]' : typeStyle.color}`}>{typeStyle.fuIcon ? <span className="fu-icon">{typeStyle.fuIcon}</span> : typeStyle.emoji}</span>
+                        <span className={`text-xl sm:text-2xl drop-shadow-sm ${isDisabled && !isSpeciesLocked && playerState === 'normal' ? 'text-[#8c7b6c]' : typeStyle.color}`}><span className="fu-icon">{typeStyle.fuIcon}</span></span>
                         <span className={`text-lg sm:text-xl font-extrabold tracking-widest ${isDisabled && !isSpeciesLocked && playerState === 'normal' ? 'text-[#8c7b6c]' : typeStyle.color}`}>{type}</span>
                       </div>
                       <span className="bg-[#fffdf9] px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold tracking-widest border border-[#d6c7ab] shadow-sm">{style.label}</span>
@@ -5006,7 +4991,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             {/* 攻擊性咒語檢定公式選擇區塊 */}
             {hasOffensiveSpells && (
               <div className="bg-[#fffdf9] border border-[#d6c7ab] rounded-xl p-5 shadow-sm overflow-hidden relative group animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="absolute top-0 right-0 p-4 opacity-[0.05] text-7xl pointer-events-none group-hover:scale-110 transition-transform text-purple-900">🔮</div>
                 <label className="block text-sm text-purple-900 mb-3 font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
                   <span className="fu-icon text-lg">c</span> 攻擊性咒語檢定公式
                 </label>
@@ -5216,7 +5200,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             )}
 
             {/* Custom Abilities Section (Permanent / 常駐) */}
-            <SectionAccordion title="✨ 完全自訂技能" icon={<GiSparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
+            <SectionAccordion title="完全自訂技能" icon={<GiSparkles size={16} />} current={state.skills.filter(s => s.id.startsWith('custom_')).length} max={0} titleColor="text-indigo-900" borderColor="border-indigo-300" alwaysComplete={true} isFreeMode={state.isFreeModeEnabled} defaultExpanded={true}>
               <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-xl mb-6 shadow-sm">
                 <h4 className="text-indigo-900 text-xs font-bold mb-3 flex items-center gap-2"><PlusCircle size={14} /> 快速新增自訂能力</h4>
                 <div className="flex flex-col gap-3">
@@ -5382,7 +5366,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               <h3 className="font-bold mb-1 text-[#3c2415]">步驟 5：Boss 技能</h3>
               <p className="text-sm text-[#574c43]">這些強大且顛覆規則的能力，只有「冠位」級別的敵人才有資格獲得。</p>
               <div className="mt-2 p-2 bg-[#fffdf9] border border-[#d6c7ab] rounded text-[11px] text-[#574c43] leading-relaxed italic">
-                💡 規則提醒：您可以透過替換掉相同數量的「定位技能」來獲得額外的 Boss 技能。
+                ※ 規則提醒：您可以透過替換掉相同數量的「定位技能」來獲得額外的 Boss 技能。
               </div>
             </div>
 
@@ -5470,7 +5454,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                         key={mult}
                         onClick={() => {
                           setState(prev => ({ ...prev, rank: '冠位', championMultiplier: mult }));
-                          showToast(`✨ 成功覺醒為冠位 (倍率 x${mult})！`, 'success');
+                          showToast(`成功覺醒為冠位 (倍率 x${mult})！`, 'success');
                         }}
                         className="flex flex-col items-center justify-center py-3 bg-[#f5efdf] border border-[#d6c7ab] rounded-xl hover:bg-amber-100 hover:border-amber-600 hover:scale-105 transition-all shadow-sm"
                       >
@@ -6124,7 +6108,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                 }`}
                 title="點擊前往定位技能配置"
               >
-                🛡️ 定位技能 {usedRoleSkills}/{maxRoleSkills}
+                ❖ 定位技能 {usedRoleSkills}/{maxRoleSkills}
               </button>
             )}
             {/* 咒語容量 */}
@@ -6143,7 +6127,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   }`}
                   title="點擊前往咒語配置"
                 >
-                  🔮 咒語容量 {usedSpells}/{maxSpells}
+                  ✦ 咒語容量 {usedSpells}/{maxSpells}
                 </button>
               );
             })()}
@@ -6153,7 +6137,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-900 transition-all hover:scale-105 ml-auto md:ml-0"
               title="點擊前往相性配置"
             >
-              ⚡ 弱 {currentAffinities.vul} | 抗 {currentAffinities.res} | 免 {currentAffinities.imm}
+              ▽ 弱 {currentAffinities.vul} | ▼ 抗 {currentAffinities.res} | ◆ 免 {currentAffinities.imm}
             </button>
           </div>
 

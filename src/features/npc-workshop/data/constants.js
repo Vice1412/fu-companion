@@ -19,8 +19,8 @@ export const AFFINITY_STATES = { normal: { label: '一般', bg: 'bg-stone-100', 
 export const LEVELS = [5, 10, 20, 30, 40, 50, 60];
 export const PARTY_LEVELS = [5, 20, 40];
 export const RANKS = ["士兵", "精英", "冠位"];
-export const CATEGORIES = [{ id: 'attack', name: '基本攻擊', icon: '⚔️', fuIcon: 'm' }, { id: 'spell', name: '咒語', icon: '🔮', fuIcon: 'c' }, { id: 'action', name: '其餘行動', icon: '⚡', fuIcon: 's' }, { id: 'rule', name: '特殊規則', icon: '📜' }, { id: 'boss', name: 'Boss', icon: '👑' }];
-export const TYPE_STYLES = { '物理': { emoji: '⚔️', fuIcon: 'p', color: 'text-stone-700 font-bold' }, '風': { emoji: '🌪️', fuIcon: 'a', color: 'text-cyan-700 font-bold' }, '電': { emoji: '⚡', fuIcon: 'b', color: 'text-amber-600 font-bold' }, '暗': { emoji: '🌑', fuIcon: 'd', color: 'text-indigo-950 font-bold' }, '土': { emoji: '🏔️', fuIcon: 'e', color: 'text-amber-800 font-bold' }, '火': { emoji: '🔥', fuIcon: 'f', color: 'text-red-700 font-bold' }, '冰': { emoji: '❄️', fuIcon: 'i', color: 'text-blue-700 font-bold' }, '光': { emoji: '☀️', fuIcon: 'l', color: 'text-amber-600 font-bold' }, '毒': { emoji: '☠️', fuIcon: 't', color: 'text-fuchsia-800 font-bold' }, '攻擊性咒語': { emoji: '💥', fuIcon: 'o', color: 'text-red-700 font-bold' } };
+export const CATEGORIES = [{ id: 'attack', name: '基本攻擊', fuIcon: 'm' }, { id: 'spell', name: '咒語', fuIcon: 'c' }, { id: 'action', name: '其餘行動', fuIcon: 's' }, { id: 'rule', name: '特殊規則' }, { id: 'boss', name: 'Boss' }];
+export const TYPE_STYLES = { '物理': { fuIcon: 'p', color: 'text-stone-700 font-bold' }, '風': { fuIcon: 'a', color: 'text-cyan-700 font-bold' }, '電': { fuIcon: 'b', color: 'text-amber-600 font-bold' }, '暗': { fuIcon: 'd', color: 'text-indigo-950 font-bold' }, '土': { fuIcon: 'e', color: 'text-amber-800 font-bold' }, '火': { fuIcon: 'f', color: 'text-red-700 font-bold' }, '冰': { fuIcon: 'i', color: 'text-blue-700 font-bold' }, '光': { fuIcon: 'l', color: 'text-amber-600 font-bold' }, '毒': { fuIcon: 't', color: 'text-fuchsia-800 font-bold' }, '攻擊性咒語': { fuIcon: 'o', color: 'text-red-700 font-bold' } };
 export const STATUS_OPTIONS = ["眩暈", "動搖", "緩慢", "虛弱"]; export const STATUS_AND_POISON = ["眩暈", "動搖", "緩慢", "虛弱", "中毒", "憤怒"]; export const ACTION_TYPES = ["攻擊", "裝備", "防禦", "阻礙", "使用庫存", "推進目標", "咒語", "研究", "技能"];
 
 export const ROLE_ICONS = {
@@ -33,12 +33,12 @@ export const ROLE_ICONS = {
 };
 
 export const ROLE_DESCRIPTIONS = {
-  "暴徒": { Icon: GiBrute, icon: "🩸", subtitle: "「越戰越勇的肉搏戰車」", desc: "擁有極高的 HP 與強大的原始攻擊力，但防禦較低且弱點多。非常適合做為高壓消耗戰的 Boss，或掩護其他複雜敵人的強力肉盾。" },
-  "獵人": { Icon: GiCrossbow, icon: "🏹", subtitle: "「致命的高速刺客」", desc: "擁有極高的命中與先攻，專精單體爆發與趁虛而入。擅長利用敵人的破綻與異常狀態造成毀滅性的打擊，是能瞬間撕裂防線的殺手。" },
-  "法師": { Icon: GiWizardStaff, icon: "🔮", subtitle: "「掌控元素的移動砲台」", desc: "擁有最高的群體傷害潛力與 MP 儲備，精通各種屬性魔法。極度依賴 MP，HP 較低，通常需要隊友保護才能發揮最大破壞力。" },
-  "破壞者": { Icon: GiTimeBomb, icon: "💣", subtitle: "「折磨心智的極惡干擾者」", desc: "不以直接傷害見長，精通各種強大的 Debuff、封鎖動作與抽取 MP。能透過異常狀態瓦解玩家戰術，是最陰險的控場大師。" },
-  "衛士": { Icon: GiShieldReflect, icon: "🛡️", subtitle: "「堅不可摧的鐵壁守護者」", desc: "擁有最強的雙防禦加成。擅長保護盟友、提供抗性，並在隊友受擊時發動無情的反擊。通常伴隨著需要保護的高威脅目標出現。" },
-  "輔助": { Icon: GiHealing, icon: "🌿", subtitle: "「扭轉戰局的幕後推手」", desc: "缺乏直接攻擊力，但能提供強大增益、治癒並充當 MP 電池。能讓團隊威脅成倍增加，是玩家必須優先集火擊殺的戰術樞紐。" }
+  "暴徒": { Icon: GiBrute, subtitle: "「越戰越勇的肉搏戰車」", desc: "擁有極高的 HP 與強大的原始攻擊力，但防禦較低且弱點多。非常適合做為高壓消耗戰的 Boss，或掩護其他複雜敵人的強力肉盾。" },
+  "獵人": { Icon: GiCrossbow, subtitle: "「致命的高速刺客」", desc: "擁有極高的命中與先攻，專精單體爆發與趁虛而入。擅長利用敵人的破綻與異常狀態造成毀滅性的打擊，是能瞬間撕裂防線的殺手。" },
+  "法師": { Icon: GiWizardStaff, subtitle: "「掌控元素的移動砲台」", desc: "擁有最高的群體傷害潛力與 MP 儲備，精通各種屬性魔法。極度依賴 MP，HP 較低，通常需要隊友保護才能發揮最大破壞力。" },
+  "破壞者": { Icon: GiTimeBomb, subtitle: "「折磨心智的極惡干擾者」", desc: "不以直接傷害見長，精通各種強大的 Debuff、封鎖動作與抽取 MP。能透過異常狀態瓦解玩家戰術，是最陰險的控場大師。" },
+  "衛士": { Icon: GiShieldReflect, subtitle: "「堅不可摧的鐵壁守護者」", desc: "擁有最強的雙防禦加成。擅長保護盟友、提供抗性，並在隊友受擊時發動無情的反擊。通常伴隨著需要保護的高威脅目標出現。" },
+  "輔助": { Icon: GiHealing, subtitle: "「扭轉戰局的幕後推手」", desc: "缺乏直接攻擊力，但能提供強大增益、治癒並充當 MP 電池。能讓團隊威脅成倍增加，是玩家必須優先集火擊殺的戰術樞紐。" }
 };
 export const VILLAIN_TIERS = { 
   "none": { up: 0, label: "非反派", color: "text-stone-600", border: "border-stone-300", bg: "bg-stone-100/60" }, 

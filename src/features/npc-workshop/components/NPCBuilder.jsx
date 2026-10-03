@@ -436,7 +436,7 @@ export default function NPCBuilder({
                 ? 'bg-red-100 text-red-900 border-red-300'
                 : 'bg-red-50 text-red-950 border-red-200'
             }`}>
-              <span>👑 Boss技能:</span>
+              <span>★ Boss技能:</span>
               <span>{budgets.bossSkills.used} / {budgets.bossSkills.max}</span>
             </div>
           )}
@@ -813,7 +813,7 @@ export default function NPCBuilder({
                 </div>
                 <p>• 定位要求弱點: <strong>{budgets.weaknesses.min} 個</strong> (暴徒 2 個，其餘定位 1 個)。</p>
                 <p>• 等級解鎖額度: 抗性 <strong>{budgets.resistances.max} 個</strong>，免疫 <strong>{budgets.immunities.max} 個</strong>。</p>
-                <p>• 💡 條款特別提示：給予 NPC【物理】弱點將額外獲得 <strong>+1 定位技能名額</strong>。</p>
+                <p>• ※ 條款特別提示：給予 NPC【物理】弱點將額外獲得 <strong>+1 定位技能名額</strong>。</p>
               </div>
 
               <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
@@ -1071,7 +1071,7 @@ export default function NPCBuilder({
                           className="w-full px-4 py-2.5 bg-[#f5efdf] hover:bg-[#eee6d3] flex items-center justify-between text-xs font-bold text-[#3c2415] transition-colors"
                         >
                           <span className="flex items-center gap-2">
-                            <span>👑 {subCat}</span>
+                            <span>★ {subCat}</span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#d6c7ab]">
                               {filteredSkills.length} 個
                             </span>

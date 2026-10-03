@@ -101,7 +101,7 @@ export default function NPCCardPreview({
             </JRPGBadge>
             {npc.faction && (
               <JRPGBadge variant="zinc" size="xs">
-                🏷️ {npc.faction}
+                ◈ {npc.faction}
               </JRPGBadge>
             )}
           </div>
@@ -111,7 +111,7 @@ export default function NPCCardPreview({
             <span>·</span>
             <span>定位: <strong className="text-amber-800 font-sans font-bold">{npc.role}</strong></span>
             {npc.villainTier && npc.villainTier !== 'none' && (
-              <span className="text-red-700 font-bold">👑 {npc.villainTier === 'minor' ? '次要反派' : npc.villainTier === 'major' ? '主要反派' : '最終反派'}</span>
+              <span className="text-red-700 font-bold">★ {npc.villainTier === 'minor' ? '次要反派' : npc.villainTier === 'major' ? '主要反派' : '最終反派'}</span>
             )}
           </div>
 
@@ -128,7 +128,7 @@ export default function NPCCardPreview({
             className="p-1.5 text-[#6b5a4b] hover:text-amber-800 hover:bg-[#e4d9c0] rounded-lg transition-colors shrink-0"
             title="編輯 NPC"
           >
-            ✏️
+            ✎
           </button>
         )}
       </div>
@@ -343,15 +343,15 @@ export default function NPCCardPreview({
                 } else if (sk.source === 'roleSkill' || sk.isRoleSkill) {
                   badgeLabel = '定位技能';
                   badgeClass = 'bg-emerald-100 text-emerald-900 border-emerald-300';
-                  icon = '🛡️';
+                  icon = '❖';
                 } else if (sk.category === 'boss' || sk.source === 'bossSkill') {
                   badgeLabel = 'Boss 技能';
                   badgeClass = 'bg-red-100 text-red-900 border-red-300';
-                  icon = '👑';
+                  icon = '★';
                 } else if (sk.source === 'negativeSkill' || sk.category === 'negative') {
                   badgeLabel = '負面技能';
                   badgeClass = 'bg-purple-100 text-purple-900 border-purple-300';
-                  icon = '💀';
+                  icon = '✕';
                 }
 
                 const nameText = sk.name || sk.originalName || sk.skillName || '技能';
