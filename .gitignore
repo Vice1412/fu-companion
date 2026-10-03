@@ -26,3 +26,6 @@ dist-ssr
 # Temporary scratch & artifacts
 scratch/
 .gemini/
+
+# Test bundle output
+.test-build/
