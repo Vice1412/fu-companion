@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import {
   GiSpellBook,
@@ -24,10 +24,18 @@ export default function RuleCodexDrawer({
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [activeRuleId, setActiveRuleId] = useState('arcana');
   const [searchTerm, setSearchTerm] = useState('');
+  const contentScrollRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 當切換標籤頁或開啟速查時，確保滾動容器回到最頂端
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
+  }, [activeRuleId, internalIsOpen]);
 
   // 支援全域事件 fu:open-rule-codex
   useEffect(() => {
@@ -167,7 +175,7 @@ export default function RuleCodexDrawer({
         </div>
 
         {/* 內容主滾動容器 */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-[#2c221e] dark:text-stone-200 text-xs sm:text-sm leading-relaxed">
+        <div ref={contentScrollRef} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 text-[#2c221e] dark:text-stone-200 text-xs sm:text-sm leading-relaxed">
           {/* 當前概念頭銜 */}
           <div className="border-b border-[#e6dbc9] dark:border-slate-800 pb-3">
             <div className="flex items-center justify-between">
