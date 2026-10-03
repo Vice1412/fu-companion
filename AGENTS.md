@@ -24,8 +24,12 @@
 
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
-- **建置指令**：`npm run build`（Vite 6，實測約 9 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,823 kB（gzip 515 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **建置指令**：`npm run build`（Vite 6，實測約 4.4 秒，exit 0）
+- **建置產物**：`dist/`，JS 1,824 kB（gzip 515 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm run test:sentinel`（實測 60/60 通過，exit 0）。
+  測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
+  ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
+  2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
 - **樣式系統**：Tailwind 3。全站為**羊皮紙暖色調**（`#fbf7ee` / `#3c2415` / `#d6c7ab`），**非**深色石板底。
 - **資料層**：純 localStorage，四個 key：
   `fu_companion_npc_library`、`fu_companion_character_roster`、
@@ -117,7 +121,7 @@ Get-ChildItem -Path "src" -Recurse -File | Select-String -Pattern "[\uD83C-\uDBF
 ```
 
 **只能命中代理對（U+1F000 以上）**，會完全漏掉所有 BMP 平面 emoji。
-經實測，本專案實際違規數為：
+經實測（2026-10-03，哨兵遷移**前**的原始基準），本專案實際違規數為：
 
 | 檢測方式 | 命中行數 | 命中次數 |
 |---|---|---|
@@ -126,6 +130,8 @@ Get-ChildItem -Path "src" -Recurse -File | Select-String -Pattern "[\uD83C-\uDBF
 
 原始正則的**檢出率僅 27.5%（按行）／34.8%（按次數）**——
 這是歷次「零 Emoji 檢驗通過」卻仍殘留大量 emoji 的直接原因。
+
+> ⚠️ 上表為**歷史基準**，用以證明正則修正的必要性；**現行殘留數見 §4 A**（76 行 / 145 次）。
 
 > ⚠️ **單位陷阱**：`Select-String` 預設**每行只回傳一筆**（行數）；
 > 加上 `-AllMatches` 則回傳**每個匹配**（次數）。
@@ -147,23 +153,32 @@ Get-ChildItem -Path "src" -Recurse -File |
 > 註：`✦ U+2726`、`✓ U+2713`、`✗ U+2717`、`➔ U+2794`、`❖ U+2756`、`★ U+2605`、`◆ U+25C6`、`①`~`⑤` 屬**排版字符（dingbat）而非 emoji**。
 > 依 `GEMINI.md` 軌道 2 豁免條款與軌道 3「Emoji 與排版字符之區分」，**明確允許保留**，且**刻意不納入**上述正則。
 
-### 3.1 ⚡ 是語意哨兵，不是裝飾 — **極重要**
+### 3.1 ⚡ 語意哨兵 —— ✅ 已於 2026-10-04 完成結構化遷移
 
-`⚡`（U+26A1）在本專案中**承載資料語意**，並非裝飾性 emoji：
+**原設計**：攻擊性咒語以 `⚡`（U+26A1）為名稱後綴，程式以 `.includes('⚡')` 判定。
+該隱式約定已廢除，改由結構化欄位承載：
 
-- 攻擊性咒語名稱以 `⚡` 為後綴標記，例如 `src/features/npc-workshop/data/spells.js` 的 `"吐息⚡"`、`"雷霆⚡"`。
-- 程式碼以 `.includes('⚡')` 判定 `isOffensive`，例如：
-  - `src/features/npc-workshop/NPCWorkshop.jsx`（多處，含 `:543`、`:645`、`:2746`）
-  - `src/features/character-sheet/components/CharacterPlayHUD.jsx:418`
-  - `src/features/npc-workshop/components/NPCBuilder.jsx:209`
-- 渲染時才被剝除並替換為官方字型 `o`（攻擊性咒語）圖示。
+- **資料層**：`src/features/npc-workshop/data/spells.js` 的 `SPELLS_DATA[...].isOffensive === true`。
+- **判定入口**：同檔 `isOffensiveSpell(name)`——先做舊哨兵相容，再查結構化欄位。
+- **舊存檔遷移**：`src/features/npc-workshop/utils/npcEngine.js` 的 `migrateSpellSentinel()`／`migrateNpcState()`，
+  正規化技能名稱、咒語書選項、已選咒語與物種咒語鍵，並為「僅以哨兵表達攻擊性」的舊資料補上 `spellData.isOffensive`。
+- **原始碼零 Emoji 字面量**：判定路徑一律以跳脫序列 `'\u26A1'` 表示
+  （`spells.js:9`、`npcEngine.js:13`、`skillFormulaEvaluator.jsx` 的正則）。
+- **回歸護欄**：`npm run test:sentinel` 的 H 區段會檢查上述三檔不含哨兵字面量。
 
-> **🚫 嚴禁直接全域刪除或取代 `⚡`。**
-> 這樣做會讓全站攻擊性咒語判定失效（咒語傷害／MP 計算／預覽標記連帶錯誤）。
->
-> **正確做法**：先在資料層改為結構化欄位（如 `isOffensive: true`），
-> 同步撰寫 localStorage 舊存檔遷移（比照 `migrateNpcState` 模式），
-> 確認新舊資料皆可正確判定後，才移除 `⚡` 哨兵。
+**殘留的 `⚡` 僅 6 行，已降級為純顯示字串，不再是任何判定依據**：
+
+| 位置 | 用途 |
+|---|---|
+| `NPCWorkshop.jsx:958` | 技能分類圖示（複製文本用） |
+| `NPCWorkshop.jsx:968` | 複製文本前綴 |
+| `NPCWorkshop.jsx:3960` | Markdown 匯出標題 |
+| `NPCWorkshop.jsx:6090` | 相性摘要標籤「弱／抗／免」 |
+| `constants.js:22` | `CATEGORIES.icon`（已並存 `fuIcon` 官方字型欄位） |
+| `constants.js:23` | `TYPE_STYLES.emoji`（已並存 `fuIcon` 官方字型欄位） |
+
+> ✅ **判定邏輯已與哨兵解耦**，故 §6 D 階段 2 執行時**不會**再造成攻擊性咒語判定失效。
+> 上述 6 行仍**不得無腦刪除**——它們會在階段 2 依文案預審一併處理（多數需改為官方字型或 Game-Icons）。
 
 ---
 
@@ -173,33 +188,33 @@ Get-ChildItem -Path "src" -Recurse -File |
 > 依 `GEMINI.md` 規則六，每次稽核仍須以即時源碼重新驗證。
 
 ### A. Emoji 殘留（違反規則一軌道 3）
-以**修正版正則**實測（`src/` 75 檔）：
+以**修正版正則**實測（`src/` 程式碼檔 75 個——`.js`/`.jsx`/`.json`/`.css`——共 38,619 行；含非程式碼檔則 82 檔 / 39,231 行）：
 
-- `GEMINI.md` **修正前**正則：**41 行 / 98 次**
-- 修正後正則：**149 行 / 282 次**
+| 時點 | 行（檔案:行） | 次 | 說明 |
+|---|---|---|---|
+| 2026-10-03（稽核原始基準） | 149 | 282 | 修正版正則首次套用 |
+| 2026-10-04（哨兵遷移後） | **76** | **145** | 階段 1 完成後 |
 
-主要集中於「唯一標示為完整」的 NPC 工坊：
+**現行殘留清單（2026-10-04 實測，76 行 / 145 次）**：
 
-| 檔案 | 行 | 次 |
-|---|---|---|
-| `src/features/npc-workshop/NPCWorkshop.jsx` | 77 | 112 |
-| `src/features/npc-workshop/data/roles.js` | 7 | 37 |
-| `src/features/npc-workshop/data/constants.js` | 8 | 35 |
-| `src/features/npc-workshop/data/speciesData.js` | 5 | 32 |
-| `src/features/npc-workshop/data/spells.js` | 22 | 22 |
-| `src/features/npc-workshop/components/NPCCardPreview.jsx` | 8 | 14 |
-| `src/features/npc-workshop/components/NPCBuilder.jsx` | 7 | 10 |
-| `src/features/npc-workshop/components/NPCLibrary.jsx` | 3 | 5 |
-| `src/features/character-sheet/components/companions/ChimeristManager.jsx` | 4 | 5 |
-| `src/features/character-sheet/utils/skillFormulaEvaluator.jsx` | 3 | 5 |
-| `src/features/character-sheet/components/CharacterPlayHUD.jsx` | 3 | 3 |
-| `src/features/clocks/FateClockPage.jsx` | 2 | 2 |
+| 檔案 | 行 | 次 | 性質 |
+|---|---|---|---|
+| `src/features/npc-workshop/NPCWorkshop.jsx` | 54 | 86 | 4 行顯示用 `⚡` + 50 行裝飾性 emoji |
+| `src/features/npc-workshop/data/constants.js` | 8 | 35 | 6 行裝飾性 + 2 行 `⚡` 退路欄位 |
+| `src/features/npc-workshop/components/NPCCardPreview.jsx` | 6 | 11 | 裝飾性 |
+| `src/features/npc-workshop/components/NPCBuilder.jsx` | 3 | 6 | 裝飾性 |
+| `src/features/npc-workshop/components/NPCLibrary.jsx` | 3 | 5 | 裝飾性 |
+| `src/features/clocks/FateClockPage.jsx` | 2 | 2 | 裝飾性（`:45` `✨`、`:63` `⏳`） |
 
-> **`roles.js` / `speciesData.js` / `spells.js` 的命中全部是 `⚡` 語意哨兵**，非裝飾性 emoji，
-> 處理方式見 §3.1，**不得逕行刪除**。
+> ✅ **已自清單消失的檔案（階段 1 成果）**：`roles.js`（7/37）、`speciesData.js`（5/32）、
+> `spells.js`（22/22）、`ChimeristManager.jsx`（4/5）、`skillFormulaEvaluator.jsx`（3/5）、
+> `CharacterPlayHUD.jsx`（3/3）。前三者為哨兵、後三者為哨兵字面量。
 >
-> ✅ **`src/features/character-sheet/data/rulesData.json` 已自違規清單移除**：
-> 其 81 處原為 `✦`（U+2726）等排版字符，依 2026-10-03 裁定屬允許保留，**不再是違規**。
+> ✅ **`src/features/character-sheet/data/rulesData.json` 不在清單內**：
+> 其 81 處為 `✦`（U+2726）等排版字符，依 2026-10-03 裁定允許保留。
+>
+> ⚠️ 殘留的 6 行 `⚡`（見 §3.1）**已不承載判定語意**，可安全清除；
+> 其餘約 70 行為裝飾性 emoji，清除時**必須先過規則四文案預審**。
 
 `src/features/npc-workshop/data/constants.js` 為結構性來源：
 - `:22` `CATEGORIES` 的 `icon` 欄位（`⚔️ 🔮 ⚡ 📜 👑`）
@@ -230,10 +245,12 @@ Get-ChildItem -Path "src" -Recurse -File |
 - 同檔 `renderTextWithAffinities`（`:157`、`:164`）正確使用純 `inline`。
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
-### E. 建置
-- `npm run build` 通過（exit 0）。
-- JS bundle 1,823 kB / gzip 515 kB，觸發 Vite chunk-size 警告（>500 kB）。
+### E. 建置與測試
+- `npm run build` 通過（exit 0，2026-10-04 實測 4.36 秒）。
+- JS bundle 1,824 kB / gzip 515 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
+- `npm run test:sentinel` 通過（60/60，exit 0）。**本專案目前僅此一組自動化測試**；
+  其餘模組（角色卡引擎、戰鬥輪次、造物專案公式）**無任何測試覆蓋**，屬已知缺口。
 
 ---
 
@@ -301,17 +318,21 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 ### D. ~~技術債清理排程~~ ✅ 已於 2026-10-03 裁定：**納入近期工作**
 清理範圍與**強制順序**如下（順序不可顛倒）：
 
-| 階段 | 工作 | 前置條件 | 觸發規則四文案預審 |
-|---|---|---|---|
-| 1 | **`⚡` 語意哨兵遷移**：資料層改為結構化 `isOffensive` 欄位 + localStorage 遷移 | 無 | 否（純內部結構） |
-| 2 | **裝飾性 Emoji 清除**：§4 A 清單中非 `⚡` 者 | **階段 1 完成** | **是**（多為面向使用者文字） |
-| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 |
+| 階段 | 工作 | 前置條件 | 觸發規則四文案預審 | 狀態 |
+|---|---|---|---|---|
+| 1 | **`⚡` 語意哨兵遷移**：資料層改為結構化 `isOffensive` 欄位 + localStorage 遷移 | 無 | 否（純內部結構） | ✅ **2026-10-04 完成**（commit `280bbb8`，測試 60/60） |
+| 2 | **裝飾性 Emoji 清除**：§4 A 現行清單（76 行 / 145 次） | **階段 1 完成** ✅ | **是**（多為面向使用者文字） | ⏳ **待辦——下一個可執行動作** |
+| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 | ⏳ 待辦 |
 
-> ⚠️ **階段 1 未完成前，嚴禁執行階段 2。**
-> 否則會誤刪 `⚡` 哨兵，導致全站攻擊性咒語判定（傷害／MP／預覽標記）全面失效。
+> ✅ **階段 1 已完成**：判定邏輯與哨兵解耦（見 §3.1），
+> 故階段 2 執行時**不會**再造成攻擊性咒語判定（傷害／MP／預覽標記）失效。
+> 原始警告「階段 1 未完成前嚴禁執行階段 2」已解除。
 >
 > 階段 2 涉及大量面向使用者的文字改動，**必須先提交 `implementation_plan.md` 並取得確認**
 > （依 `GEMINI.md` 規則四／本檔 §2）。
+>
+> 階段 3 的清查起點：26 檔使用 `lucide-react`、18 檔與 `react-icons/gi` 混用（§4 B）。
+> 判定準則依 §2 規則一的軌道 2 豁免條款——功能性控件不動，敘事性圖示才需替換。
 
 ---
 
@@ -323,5 +344,7 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 
 ---
 
-*建立於本次 DSH 稽核。稽核範圍：`src/` 75 檔、38,481 行；`npm run build` 通過。*
+*建立於 2026-10-03 DSH 稽核。稽核範圍：`src/` 75 檔、38,481 行；`npm run build` 通過。*
 *2026-10-03：同步使用者裁定之圖示三軌分類（敘事 → Game-Icons；功能性控件 → Unicode 豁免），並修正 `GEMINI.md` 規則五.1 之 Emoji 檢測正則。*
+*2026-10-04：稽核複驗並更新基準——§3.1 哨兵遷移完成、§4 A 殘留數更新為 76 行 / 145 次（`src/` 程式碼檔 75 個 / 38,619 行）、§4 E 補列測試現況、§6 D 階段 1 標記完成。*
+*同日完成工作區收尾：10/02 起懸置的 16 個檔案分 6 個 commit 提交；測試自未受版控的 `scratch/` 移入 `tests/` 並加入 `npm run test:sentinel`。*
