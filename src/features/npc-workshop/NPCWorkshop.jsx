@@ -24,9 +24,11 @@ import {
   SPELLS_DATA,
   ROLES_DATA,
   SPECIES_DATA,
-  syncLevelPassives
+  syncLevelPassives,
+  isOffensiveSpell,
+  normalizeSpellName
 } from './data';
-import { exportNpcToCombatant } from './utils/npcEngine';
+import { exportNpcToCombatant, migrateSpellSentinel } from './utils/npcEngine';
 
 // --- COMPONENTS ---
 
@@ -540,9 +542,9 @@ const SpellCard = ({ skillId, spellName, isActive, isDisabled, isOverBudget, isC
     if (!isActive) setIsEditing(false);
   }, [isActive]);
 
-  const isOffensive = spellName.includes('⚡');
+  const isOffensive = isOffensiveSpell(spellName);
   const isMaxMp = spellName === "最大 MP +10";
-  const cleanSpellName = spellName.replace(/\(Lv30\+\)/g, '').trim();
+  const cleanSpellName = normalizeSpellName(spellName);
   const spellData = SPELLS_DATA[cleanSpellName];
 
   const getCleanTextForEditor = (text) => {
@@ -595,7 +597,7 @@ const SpellCard = ({ skillId, spellName, isActive, isDisabled, isOverBudget, isC
           ) : (
             <span className={`flex items-center gap-1 ${selections?.customName !== undefined ? 'text-amber-900 font-bold' : ''}`}>
               {isOffensive && <span className="fu-icon text-lg text-red-700 drop-shadow-sm shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}
-              <span>{renderFormattedText((selections?.customName !== undefined ? selections.customName : cleanSpellName).replace('⚡', ''), selections, npcLevel, partyLevel)}</span>
+              <span>{renderFormattedText(normalizeSpellName(selections?.customName !== undefined ? selections.customName : cleanSpellName), selections, npcLevel, partyLevel)}</span>
             </span>
           )}
           {isOverBudget && isActive && <span className="text-[10px] bg-red-100 text-red-800 border border-red-400 px-2 py-0.5 rounded flex items-center gap-1 shrink-0 w-fit animate-pulse ml-2"><AlertCircle size={10} /> 失效</span>}
@@ -642,7 +644,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
     targetType: initialTargetType,
     maxTargets: initialMaxTargets,
     duration: skill.spellData?.duration || '瞬發',
-    isOffensive: skill.spellData?.isOffensive || (skill.customName || skill.originalName)?.includes('⚡') || false,
+    isOffensive: skill.spellData?.isOffensive || isOffensiveSpell(skill.customName || skill.originalName),
     formula: skill.spellData?.formula || '[INS + WLP]'
   });
 
@@ -666,7 +668,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
         targetType: tType,
         maxTargets: mTargets,
         duration: skill.spellData?.duration || '瞬發',
-        isOffensive: skill.spellData?.isOffensive || (skill.customName || skill.originalName)?.includes('⚡') || false,
+        isOffensive: skill.spellData?.isOffensive || isOffensiveSpell(skill.customName || skill.originalName),
         formula: skill.spellData?.formula || '[INS + WLP]'
       });
     }
@@ -680,10 +682,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
     let cleanBaseMp = editSpellData.baseMp.replace(/×\s*T/gi, '').trim() || '10';
     let computedMp = editSpellData.targetType === '至多 X 個生物' ? `${cleanBaseMp} × T` : cleanBaseMp;
 
-    let finalName = editName.trim();
-    if (skill.category === 'spell' && editSpellData.isOffensive && !finalName.includes('⚡')) {
-      finalName += ' ⚡';
-    }
+    const finalName = editName.trim();
 
     onUpdate(skill.id, {
       customName: finalName === (skill.originalName || '') ? undefined : finalName,
@@ -821,7 +820,7 @@ const EditableSkill = ({ skill, rawSkill, onUpdate, onDelete, onUpdateSelection,
   return (
     <div className={`group relative border-l-4 ${skill.source === 'levelPassive' ? 'border-amber-500 bg-amber-50/50' : 'border-stone-400 bg-[#fffdf9]'} hover:bg-[#fbf7ee] transition-colors rounded-r py-2.5 pl-3 mb-3 border border-stone-200 shadow-sm ${skill.isSecretArt ? 'ring-2 ring-fuchsia-400 bg-fuchsia-50/40' : ''}`}>
       <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#fffdf9] p-1 rounded shadow border border-[#d6c7ab] z-10"><button onClick={() => setIsEditing(true)} className="p-1 hover:text-amber-700" title="編輯"><Edit3 size={14} /></button>{!isDefault && <button onClick={() => onDelete(skill.id)} className="p-1 hover:text-red-700" title="刪除"><Trash2 size={14} /></button>}</div>
-      <div className={`font-bold text-[15px] mb-1 flex items-center gap-2 ${skill.isSecretArt ? 'text-fuchsia-900' : 'text-amber-900'}`}><span className="text-[#6b5a4b] text-xs bg-[#f4ebd9] px-1.5 py-0.5 rounded border border-[#d6c7ab]">{CATEGORIES.find(c => c.id === skill.category)?.name || '未分類'}</span>{(skill.customName || skill.originalName)?.replace('⚡', '')}{typeof (skill.customName || skill.originalName) === 'string' && (skill.customName || skill.originalName).includes('⚡') && <span className="fu-icon text-red-700 drop-shadow-sm text-lg ml-0.5">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}{!isDefault && <span className="text-[10px] text-red-700 border border-red-300 bg-red-50 px-1 rounded">自訂</span>}{skill.source === 'levelPassive' && <span className="text-[10px] text-amber-800 border border-amber-300 bg-amber-100 px-1 rounded"><Lock size={10} className="inline mr-1 mb-0.5" />等級解鎖</span>}</div>
+      <div className={`font-bold text-[15px] mb-1 flex items-center gap-2 ${skill.isSecretArt ? 'text-fuchsia-900' : 'text-amber-900'}`}><span className="text-[#6b5a4b] text-xs bg-[#f4ebd9] px-1.5 py-0.5 rounded border border-[#d6c7ab]">{CATEGORIES.find(c => c.id === skill.category)?.name || '未分類'}</span>{normalizeSpellName(skill.customName || skill.originalName)}{isOffensiveSpell(skill.customName || skill.originalName) && <span className="fu-icon text-red-700 drop-shadow-sm text-lg ml-0.5">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}{!isDefault && <span className="text-[10px] text-red-700 border border-red-300 bg-red-50 px-1 rounded">自訂</span>}{skill.source === 'levelPassive' && <span className="text-[10px] text-amber-800 border border-amber-300 bg-amber-100 px-1 rounded"><Lock size={10} className="inline mr-1 mb-0.5" />等級解鎖</span>}</div>
       {skill.selectionsConfig && (
         <div className={`mt-2 flex flex-col gap-2 p-2 bg-[#f8f3e6] border border-[#e2d6c1] rounded text-xs border-l-2 ${skill.source === 'levelPassive' ? 'border-amber-500' : 'border-red-600'} mb-2`}>
           {skill.selectionsConfig
@@ -959,15 +958,15 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
   const icon = skill.category === 'attack' ? '⚔️' : skill.category === 'action' ? '⚡' : skill.category === 'boss' ? '👑' : skill.category === 'negative' ? '⛓️' : skill.category === 'spell' ? '🔮' : '📜';
   
   const isSpellCategory = skill.category === 'spell' || skill.spellData;
-  const isOffensiveSpell = isSpellCategory && (skill.spellData?.isOffensive || displaySkillName.includes('⚡'));
+  const showOffensiveIcon = isSpellCategory && (skill.spellData?.isOffensive || isOffensiveSpell(displaySkillName));
   const totalMagicAcc = (finalStats.Acc || 0) + (finalStats.MagicAccModifier || 0);
 
   if (isSpellCategory) {
     const spMp = skill.spellData?.mp || '10';
     const spTarget = getPlainText(replaceNPC(skill.spellData?.target || '一個生物'), skill.selections, npcLevel, partyLevel, true);
     const spDuration = skill.spellData?.duration || '瞬發';
-    textToCopy += `> ${isOffensiveSpell ? '⚡' : '🔮'} ${displaySkillName.replace('⚡', '')} (MP: ${spMp} | 目標: ${spTarget} | 持續: ${spDuration})\n`;
-    if (isOffensiveSpell) {
+    textToCopy += `> ${showOffensiveIcon ? '⚡' : '🔮'} ${normalizeSpellName(displaySkillName)} (MP: ${spMp} | 目標: ${spTarget} | 持續: ${spDuration})\n`;
+    if (showOffensiveIcon) {
       const accStr = totalMagicAcc > 0 ? ` +${totalMagicAcc}` : (totalMagicAcc < 0 ? ` - ${Math.abs(totalMagicAcc)}` : '');
       const formulaDisplay = finalStats.magicFormula || '[INS + WLP]';
       textToCopy += `> ${formulaDisplay}${accStr} ✦ 魔法攻擊\n`;
@@ -1007,7 +1006,7 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
       title={onInspectorClick ? "點擊反向定位至編輯表單" : ""}
     >
       <div className={`font-bold text-[15px] mb-1 flex flex-wrap items-center gap-2 ${skill.isSecretArt ? 'text-fuchsia-900' : skill.category === 'boss' ? 'text-amber-900' : isSpellCategory ? 'text-purple-950' : 'text-stone-900'}`}>
-        <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${skill.isSecretArt ? 'bg-fuchsia-600 shadow-sm' : skill.category === 'boss' ? 'bg-amber-600 shadow-sm' : isSpellCategory ? 'bg-purple-600 shadow-sm' : 'bg-amber-700 shadow-sm'}`}></span>{isOffensiveSpell && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-1 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}{displaySkillName.replace('⚡', '')}<CopyButton text={textToCopy} />
+        <span className={`w-2 h-2 rounded-full inline-block shrink-0 ${skill.isSecretArt ? 'bg-fuchsia-600 shadow-sm' : skill.category === 'boss' ? 'bg-amber-600 shadow-sm' : isSpellCategory ? 'bg-purple-600 shadow-sm' : 'bg-amber-700 shadow-sm'}`}></span>{showOffensiveIcon && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-1 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}{normalizeSpellName(displaySkillName)}<CopyButton text={textToCopy} />
       </div>
 
       {isSpellCategory && (
@@ -1020,7 +1019,7 @@ const ReadOnlySkill = ({ skill, finalStats, npcName, npcLevel, partyLevel, onIns
         </div>
       )}
 
-      {isOffensiveSpell && (
+      {showOffensiveIcon && (
         <div className="text-blue-900 text-[13px] font-bold mb-1.5 ml-2 md:ml-4 flex items-center gap-1.5">
           <span className="text-[#2c221e] tracking-widest">{finalStats.magicFormula || '[INS + WLP]'}</span> {totalMagicAcc !== 0 && <span className="text-amber-700">{totalMagicAcc > 0 ? `+ ${totalMagicAcc}` : `- ${Math.abs(totalMagicAcc)}`}</span>} ✦ 魔法攻擊
         </div>
@@ -1190,7 +1189,7 @@ const getInitialAffinities = () => { const init = {}; DAMAGE_TYPES.forEach(type 
 
 const migrateNpcState = (npc) => {
   if (!npc) return npc;
-  const migrated = { ...npc };
+  const migrated = migrateSpellSentinel({ ...npc });
   if (!migrated.affinities) migrated.affinities = getInitialAffinities();
   else if (typeof migrated.affinities.vulnerabilities === 'string') migrated.affinities = getInitialAffinities();
 
@@ -2052,10 +2051,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       return;
     }
 
+    // 攻擊性與否改由結構化欄位 spellData.isOffensive 承載（見下方 onAdd），
+    // 不再以名稱後綴哨兵標記（AGENTS.md §3.1）。
     let finalName = newCustomSkill.name.trim();
-    if (newCustomSkill.category === 'spell' && newCustomSkill.isOffensiveSpell && !finalName.includes('⚡')) {
-      finalName += ' ⚡';
-    }
 
     let computedTarget = newCustomSkill.targetType;
     if (newCustomSkill.targetType === '至多 X 個生物') {
@@ -2743,9 +2741,9 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
 
   const hasOffensiveSpells = (() => {
     if (!state) return false;
-    const hasListSpell = finalStats.spellList?.some(s => s.name?.includes('⚡'));
-    const hasSpellbookOption = allSpellbooksToRender?.some(s => s.spellConfig?.options?.some(opt => opt.includes('⚡')));
-    const hasCustomOffensiveSpell = state.skills?.some(s => s.category === 'spell' && (s.customName || s.originalName || '').includes('⚡'));
+    const hasListSpell = finalStats.spellList?.some(s => isOffensiveSpell(s.name));
+    const hasSpellbookOption = allSpellbooksToRender?.some(s => s.spellConfig?.options?.some(opt => isOffensiveSpell(opt)));
+    const hasCustomOffensiveSpell = state.skills?.some(s => s.category === 'spell' && (s.spellData?.isOffensive || isOffensiveSpell(s.customName || s.originalName)));
     return hasListSpell || hasSpellbookOption || hasCustomOffensiveSpell;
   })();
 
@@ -3478,11 +3476,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                           {finalStats.spellList.map((spellObj, i) => {
                             const rawSpellName = spellObj.name;
                             const selections = spellObj.selections || {};
-                            const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+                            const cleanSpellName = normalizeSpellName(rawSpellName);
                             const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
                             const spellData = SPELLS_DATA[cleanSpellName];
                             const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
-                            const isOffensive = cleanSpellName.includes('⚡');
+                            const isOffensive = isOffensiveSpell(rawSpellName);
                             const isSecretArtForSpell = cleanSpellName === secretArtTarget || rawSpellName === secretArtTarget;
                             const totalMagicAcc = finalStats.Acc + finalStats.MagicAccModifier;
 
@@ -3499,7 +3497,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             const rawEffectBase = effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + finalStats.Dmg}]`);
                             const replacedEffect = replaceNPC(rawEffectBase);
 
-                            let spellTextToCopy = `> ${isOffensive ? '【攻擊性咒語】' : '【咒語】'} ${getPlainText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}`;
+                            let spellTextToCopy = `> ${isOffensive ? '【攻擊性咒語】' : '【咒語】'} ${getPlainText(normalizeSpellName(effectiveName), selections, state.level, state.partyLevel)}`;
                             if (spellData) {
                               spellTextToCopy += ` (MP: ${spellData.mp} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData.duration})\n`;
                               if (isOffensive) {
@@ -3527,7 +3525,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                               <div key={i} className={`bg-[#f9f5eb] border-l-4 p-3 text-sm break-inside-avoid shadow-sm rounded-r-md border border-[#e2d6c1] ${isSecretArtForSpell ? 'border-l-fuchsia-600 bg-fuchsia-50/80 ring-1 ring-fuchsia-400' : 'border-l-purple-700'}`}>
                                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e2d6c1] pb-2 mb-2">
                                   <span className={`font-bold text-[16px] flex flex-wrap items-center gap-1 ${isSecretArtForSpell ? 'text-fuchsia-900' : 'text-purple-900'}`}>
-                                    <span className="fu-icon text-xl drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span> {isOffensive && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-0.5 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}<span className={selections.customName !== undefined ? 'text-amber-800 font-bold' : ''}>{renderFormattedText(effectiveName.replace('⚡', ''), selections, state.level, state.partyLevel)}</span>
+                                    <span className="fu-icon text-xl drop-shadow-sm shrink-0">{CATEGORIES.find(c => c.id === 'spell')?.fuIcon || 'c'}</span> {isOffensive && <span className="fu-icon text-xl text-red-700 drop-shadow-sm mr-0.5 shrink-0" title="攻擊性咒語">{TYPE_STYLES['攻擊性咒語']?.fuIcon || 'o'}</span>}<span className={selections.customName !== undefined ? 'text-amber-800 font-bold' : ''}>{renderFormattedText(normalizeSpellName(effectiveName), selections, state.level, state.partyLevel)}</span>
                                     <CopyButton text={spellTextToCopy} />
                                   </span>
                                 </div>
@@ -3633,16 +3631,16 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
-            const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+            const cleanSpellName = normalizeSpellName(rawSpellName);
             const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
             const spellData = SPELLS_DATA[cleanSpellName];
             const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
-            const isOffensive = cleanSpellName.includes('⚡');
+            const isOffensive = isOffensiveSpell(rawSpellName);
             const totalMagicAcc = stats.Acc + stats.MagicAccModifier;
             const replacedTarget = getPlainText(spellData?.target, selections, state.level, state.partyLevel);
             const replacedEffect = getPlainText(effectiveDesc ? effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + stats.Dmg}]`) : '', selections, state.level, state.partyLevel, true);
 
-            text += `> **${effectiveName.replace('⚡', '')}** (MP: ${spellData?.mp || '?'} | 目標: ${replacedTarget} | 持續: ${spellData?.duration || '瞬發'})\n`;
+            text += `> **${normalizeSpellName(effectiveName)}** (MP: ${spellData?.mp || '?'} | 目標: ${replacedTarget} | 持續: ${spellData?.duration || '瞬發'})\n`;
             if (isOffensive) {
               const accStr = totalMagicAcc >= 0 ? `+${totalMagicAcc}` : `${totalMagicAcc}`;
               text += `> *精確: ${state.magicFormula || '[INS + WLP]'} ${accStr}*\n`;
@@ -3689,7 +3687,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
-            const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+            const cleanSpellName = normalizeSpellName(rawSpellName);
             const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
             const spellData = SPELLS_DATA[cleanSpellName];
             const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
@@ -3828,11 +3826,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
         stats.spellList.forEach(spellObj => {
           const rawSpellName = spellObj.name;
           const selections = spellObj.selections || {};
-          const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+          const cleanSpellName = normalizeSpellName(rawSpellName);
           const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
           const spellData = SPELLS_DATA[cleanSpellName];
           const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
-          const isOffensive = cleanSpellName.includes('⚡');
+          const isOffensive = isOffensiveSpell(rawSpellName);
           const replacedTarget = getPlainText(spellData?.target, selections, state.level, state.partyLevel);
           const replacedEffect = getPlainText(
             effectiveDesc ? effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + stats.Dmg}]`) : '',
@@ -3847,10 +3845,10 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             if (fMatch && fMatch[1] && fMatch[2]) {
               magicDice = `1d{${fMatch[1].toUpperCase()}}+1d{${fMatch[2].toUpperCase()}}`;
             }
-            cmdLines.push(`${magicDice}${accStr} 【${effectiveName.replace('⚡', '')}】魔攻檢定 (MP: ${spellData?.mp || '?'})`);
+            cmdLines.push(`${magicDice}${accStr} 【${normalizeSpellName(effectiveName)}】魔攻檢定 (MP: ${spellData?.mp || '?'})`);
             cmdLines.push(`效果：${replacedEffect.replace(/\n+/g, ' ')}`);
           } else {
-            cmdLines.push(`【${effectiveName.replace('⚡', '')}】咒語發動 (MP: ${spellData?.mp || '?'} | 目標: ${replacedTarget})`);
+            cmdLines.push(`【${normalizeSpellName(effectiveName)}】咒語發動 (MP: ${spellData?.mp || '?'} | 目標: ${replacedTarget})`);
             cmdLines.push(`效果：${replacedEffect.replace(/\n+/g, ' ')}`);
           }
         });
@@ -3938,11 +3936,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           stats.spellList.forEach(spellObj => {
             const rawSpellName = spellObj.name;
             const selections = spellObj.selections || {};
-            const cleanSpellName = rawSpellName.replace(/\(Lv30\+\)/g, '').trim();
+            const cleanSpellName = normalizeSpellName(rawSpellName);
             const effectiveName = selections.customName !== undefined ? selections.customName : cleanSpellName;
             const spellData = SPELLS_DATA[cleanSpellName];
             const effectiveDesc = selections.customDesc !== undefined ? selections.customDesc : spellData?.effect || '';
-            const isOffensive = cleanSpellName.includes('⚡');
+            const isOffensive = isOffensiveSpell(rawSpellName);
             const isSecretArtForSpell = cleanSpellName === secretArtTarget || rawSpellName === secretArtTarget;
             const totalMagicAcc = stats.Acc + stats.MagicAccModifier;
 
@@ -3959,7 +3957,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
             const rawEffectBase = effectiveDesc ? effectiveDesc.replace(/【HR\+(\d+)】/g, (match, p1) => `[HR + ${parseInt(p1) + stats.Dmg}]`) : '';
             const replacedEffect = replaceNPC(rawEffectBase);
 
-            md += `> **${isOffensive ? '⚡' : '✨'} ${effectiveName.replace('⚡', '')}** (MP: ${spellData?.mp || '?'} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData?.duration || '瞬發'})\n`;
+            md += `> **${isOffensive ? '⚡' : '✨'} ${normalizeSpellName(effectiveName)}** (MP: ${spellData?.mp || '?'} | 目標: ${getPlainText(replacedTarget, selections, state.level, state.partyLevel)} | 持續: ${spellData?.duration || '瞬發'})\n`;
             if (isOffensive) {
               const accStr = totalMagicAcc > 0 ? ` +${totalMagicAcc}` : (totalMagicAcc < 0 ? ` - ${Math.abs(totalMagicAcc)}` : '');
               const formulaDisplay = state.magicFormula || '[INS + WLP]';

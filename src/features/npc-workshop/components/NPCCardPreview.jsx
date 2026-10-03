@@ -11,7 +11,9 @@ import {
   AFFINITY_STATES,
   TYPE_STYLES,
   ROLES_DATA,
-  SPECIES_DATA
+  SPECIES_DATA,
+  isOffensiveSpell,
+  normalizeSpellName
 } from '../data';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
@@ -261,8 +263,8 @@ export default function NPCCardPreview({
             </h4>
             <div className="space-y-2">
               {spells.map((sp, idx) => {
-                const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.spellName?.includes('⚡') || (sp.desc && (sp.desc.includes('傷害') || sp.desc.includes('【HR+')));
-                const rawName = (sp.name || sp.spellName || '法術').replace('⚡', '');
+                const isOffensive = sp.isOffensive || isOffensiveSpell(sp.name) || isOffensiveSpell(sp.spellName) || (sp.desc && (sp.desc.includes('傷害') || sp.desc.includes('【HR+')));
+                const rawName = normalizeSpellName(sp.name || sp.spellName || '法術');
                 return (
                   <div key={idx} className="bg-[#fbf7ee] rounded-lg p-2.5 border border-[#d6c7ab] text-xs">
                     <div className="flex items-center justify-between font-bold text-blue-900 mb-1">

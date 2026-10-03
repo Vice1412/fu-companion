@@ -3,6 +3,7 @@ import { GiSpellBook, GiCancel, GiRollingDices, GiBiohazard } from 'react-icons/
 import { Plus, ClipboardPaste } from 'lucide-react';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 import { calculateCharacterStats } from '../../utils/characterEngine';
+import { hasLegacyOffensiveSentinel } from '../../../npc-workshop/data/spells';
 
 export default function ChimeristManager({
   character,
@@ -109,11 +110,11 @@ export default function ChimeristManager({
     }
 
     // 範例格式：
-    // > **⚡ 劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)
+    // > **[攻擊性標記] 劇毒吐息** (MP: 10 | 目標: 一個生物 | 持續: 瞬發)
     // > 對目標造成【HR + 15】毒屬性傷害。
     const text = pasteContent.trim();
     let name = '';
-    let isOffensive = text.includes('⚡') || text.includes('（o）') || text.includes('(o)');
+    let isOffensive = hasLegacyOffensiveSentinel(text) || text.includes('（o）') || text.includes('(o)');
     let mp = '10';
     let target = '一個生物';
     let duration = '瞬發';
@@ -125,10 +126,12 @@ export default function ChimeristManager({
     else if (text.includes('植物') || text.toLowerCase().includes('plant')) detectedSpecies = '植物';
     else if (text.includes('魔獸') || text.toLowerCase().includes('monster')) detectedSpecies = '魔獸';
 
-    // 匹配咒語名稱：如 **⚡ 劇毒吐息** 或 **劇毒吐息**
+    // 匹配咒語名稱：如 **〔攻擊性標記〕劇毒吐息** 或 **劇毒吐息**
+    // 註：`\u26A1`（攻擊性）與 `\u2728`（非攻擊性）為舊版 NPC 匯出文字的前綴標記，
+    //     僅供解析相容，永不渲染；以跳脫序列表示，避免原始碼出現 Emoji 字面量。
     const nameMatch = text.match(/\*\*([^*]+)\*\*/);
     if (nameMatch) {
-      name = nameMatch[1].replace(/[⚡✨(o)（o）]/g, '').trim();
+      name = nameMatch[1].replace(/[\u26A1\u2728(o)（o）]/g, '').trim();
     }
 
     // 匹配 MP、目標、持續

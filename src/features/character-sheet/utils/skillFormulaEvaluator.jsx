@@ -253,9 +253,9 @@ export function openRuleCodex(keyword) {
 function renderWordsAndKeywords(text, keyPrefix = '') {
   if (!text || typeof text !== 'string') return text;
 
-  // 組合正則：攻擊性咒語 (（o）/ (o) / (⚡)) 以及非通用規則關鍵字
+  // 組合正則：攻擊性咒語（（o）/(o)，另相容舊版閃電哨兵 U+26A1）以及非通用規則關鍵字
   const escapedKeywords = CODEX_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-  const combinedRegex = new RegExp(`(（[oO⚡]）|\\([oO⚡]\\)|${escapedKeywords})`, 'g');
+  const combinedRegex = new RegExp(`(（[oO\u26A1]）|\\([oO\u26A1]\\)|${escapedKeywords})`, 'g');
 
   const parts = text.split(combinedRegex);
   if (parts.length === 1) return renderTextWithAffinities(text);
@@ -265,7 +265,7 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
     const k = `${keyPrefix}-${pIdx}`;
 
     // 1. 攻擊性咒語官方紅色閃電圖標
-    if (/^(（[oO⚡]）|\([oO⚡]\))$/.test(part)) {
+    if (/^(（[oO\u26A1]）|\([oO\u26A1]\))$/.test(part)) {
       return (
         <span key={k} className="inline text-red-600 font-bold select-none mx-0.5">
           （<span className="fu-icon text-sm leading-none drop-shadow-2xs" title="攻擊性咒語">

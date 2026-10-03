@@ -33,6 +33,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import JRPGModal from '../../../components/ui/JRPGModal';
 import ClockTracker from '../../../components/ui/ClockTracker';
+import { hasLegacyOffensiveSentinel } from '../../npc-workshop/data/spells';
 import {
   calculateCharacterStats,
   canLevelUp,
@@ -41,12 +42,13 @@ import {
 import rulesData from '../data/rulesData.json';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
-import SkillDescription from '../utils/skillFormulaEvaluator';
+import SkillDescription, { openRuleCodex } from '../utils/skillFormulaEvaluator';
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererWorkshop from './companions/TinkererWorkshop';
+import TinkererGadgetsQuickRef from './companions/TinkererGadgetsQuickRef';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
 import FloristGardenTracker from './companions/FloristGardenTracker';
@@ -414,7 +416,7 @@ export default function CharacterPlayHUD({
       mp: spell.mp || '10',
       target: spell.target || '單體',
       duration: spell.duration || '瞬發',
-      isOffensive: !!spell.isOffensive || spell.name?.includes('⚡') || spell.effect?.includes('（o）') || spell.effect?.includes('受到'),
+      isOffensive: !!spell.isOffensive || hasLegacyOffensiveSentinel(spell.name) || spell.effect?.includes('（o）') || spell.effect?.includes('受到'),
       effect: spell.effect || ''
     }];
 
@@ -1242,7 +1244,7 @@ export default function CharacterPlayHUD({
                 <div className="space-y-2.5">
                   {(character.spells || []).map((sp, idx) => {
                     const rulesSpell = (rulesData.spells || []).find(s => s.name === sp.name);
-                    const isOffensive = sp.isOffensive ?? rulesSpell?.isOffensive ?? (sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）'));
+                    const isOffensive = sp.isOffensive ?? rulesSpell?.isOffensive ?? (hasLegacyOffensiveSentinel(sp.name) || sp.effect?.includes('傷害') || sp.effect?.includes('（o）'));
                     const spellCheck = parseCheckFormula('INS + WLP', stats);
                     const spellDamage = parseDamageFormula(sp.effect || '');
                     const isExpanded = !!expandedSpells[sp.name];
@@ -1400,9 +1402,25 @@ export default function CharacterPlayHUD({
                               <span style={{ color: theme.accent }}>✦</span>
                               <span>{sk.name}</span>
                             </span>
-                            <span className="font-mono text-xs px-2 py-0.5 rounded-lg bg-[#f4ebd9] text-[#3c2415] border-[#d6c7ab]">
-                              SL {sk.sl} / {skillDef?.maxSL || 5}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {cl.className === '修補匠' && sk.name === '小工具' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openRuleCodex('小工具');
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                  title="開啟小工具官方手冊完整速查大表 (手冊 p.212~216)"
+                                >
+                                  <GiSpellBook className="text-amber-600 dark:text-amber-400 text-xs" />
+                                  <span>規則概念速查</span>
+                                </button>
+                              )}
+                              <span className="font-mono text-xs px-2 py-0.5 rounded-lg bg-[#f4ebd9] text-[#3c2415] border-[#d6c7ab]">
+                                SL {sk.sl} / {skillDef?.maxSL || 5}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="text-[11px] text-slate-600 leading-relaxed">
@@ -1656,6 +1674,16 @@ export default function CharacterPlayHUD({
                               )}
                             </div>
                           )}
+
+                          {/* 修補匠小工具專屬戰鬥速查 */}
+                          {cl.className === '修補匠' && sk.name === '小工具' && (
+                            <TinkererGadgetsQuickRef
+                              gadgetsData={character.tinkererData?.gadgets}
+                              sl={sk.sl}
+                              onOpenCodex={() => openRuleCodex('小工具')}
+                              characterLevel={character.level || 5}
+                            />
+                          )}
                         </div>
                       );
                     })}
@@ -1905,7 +1933,7 @@ export default function CharacterPlayHUD({
           <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1">
             {availableRulesSpells.map((sp, idx) => {
               const isLearned = (character.spells || []).some(s => s.name === sp.name);
-              const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.effect?.includes('傷害') || sp.effect?.includes('（o）');
+              const isOffensive = sp.isOffensive || hasLegacyOffensiveSentinel(sp.name) || sp.effect?.includes('傷害') || sp.effect?.includes('（o）');
 
               return (
                 <div

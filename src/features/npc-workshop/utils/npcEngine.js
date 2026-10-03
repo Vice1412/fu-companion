@@ -2,8 +2,15 @@ import {
   DAMAGE_TYPES,
   ROLES_DATA,
   syncLevelPassives,
-  SPECIES_DATA
+  SPECIES_DATA,
+  stripLegacySentinel
 } from '../data';
+
+/**
+ * 舊版語意哨兵（U+26A1）。
+ * 僅供遷移舊存檔使用；以跳脫序列表示，原始碼中不出現 Emoji 字面量（GEMINI.md 規則一軌道 3）。
+ */
+const LEGACY_OFFENSIVE_SENTINEL = '\u26A1';
 
 export const getDynamicValues = (npcLevel, partyLevel = 5) => {
   const pl = parseInt(partyLevel) || 5;
@@ -401,9 +408,81 @@ export const createNewNPC = () => {
   };
 };
 
+/**
+ * 階段 1 遷移：清除舊存檔中的閃電語意哨兵（U+26A1），改由結構化 `isOffensive` 欄位表達。
+ *
+ * 舊存檔可能以三種形式攜帶哨兵：
+ *   1. 技能名稱（`customName` / `originalName`）
+ *   2. 咒語書選項（`spellConfig.options`）與已選咒語（`selectedSpells[].name`）
+ *   3. 物種咒語（`speciesConfig.spell` 與 `speciesConfig.spellSelections` 的鍵）
+ *
+ * 純讀取路徑已由 `stripLegacySentinel` 容忍哨兵，但**名稱等值比較**
+ * （如 `stats.spellList.some(s => s.name === spellName)`）必須靠本函式正規化，
+ * 否則會產生重複咒語項目。
+ *
+ * @param {object} npc - NPC 狀態物件（不會被就地修改）
+ * @returns {object} 已正規化的新物件
+ */
+export const migrateSpellSentinel = (npc) => {
+  if (!npc || typeof npc !== 'object') return npc;
+  const out = { ...npc };
+  const hasSentinel = (v) => typeof v === 'string' && v.includes(LEGACY_OFFENSIVE_SENTINEL);
+
+  // 1) 技能：名稱、咒語書選項、已選咒語
+  if (Array.isArray(out.skills)) {
+    out.skills = out.skills.map((sk) => {
+      if (!sk || typeof sk !== 'object') return sk;
+      const next = { ...sk };
+      const wasOffensive = hasSentinel(next.customName) || hasSentinel(next.originalName);
+
+      if (hasSentinel(next.customName)) next.customName = stripLegacySentinel(next.customName);
+      if (hasSentinel(next.originalName)) next.originalName = stripLegacySentinel(next.originalName);
+
+      if (next.spellConfig && Array.isArray(next.spellConfig.options)) {
+        next.spellConfig = {
+          ...next.spellConfig,
+          options: next.spellConfig.options.map((o) => (hasSentinel(o) ? stripLegacySentinel(o) : o))
+        };
+      }
+
+      if (Array.isArray(next.selectedSpells)) {
+        next.selectedSpells = next.selectedSpells.map((sp) => {
+          if (typeof sp === 'string') return hasSentinel(sp) ? stripLegacySentinel(sp) : sp;
+          if (sp && typeof sp === 'object' && hasSentinel(sp.name)) return { ...sp, name: stripLegacySentinel(sp.name) };
+          return sp;
+        });
+      }
+
+      // 舊資料僅以哨兵表達攻擊性者，補上結構化欄位
+      if (wasOffensive) {
+        next.spellData = { ...(next.spellData || {}), isOffensive: true };
+      }
+      return next;
+    });
+  }
+
+  // 2) 物種設定：咒語選擇與其 selections 的鍵
+  if (out.speciesConfig && typeof out.speciesConfig === 'object') {
+    const sc = { ...out.speciesConfig };
+    Object.keys(sc).forEach((k) => {
+      if (hasSentinel(sc[k])) sc[k] = stripLegacySentinel(sc[k]);
+    });
+    if (sc.spellSelections && typeof sc.spellSelections === 'object') {
+      const nextSel = {};
+      Object.entries(sc.spellSelections).forEach(([k, v]) => {
+        nextSel[hasSentinel(k) ? stripLegacySentinel(k) : k] = v;
+      });
+      sc.spellSelections = nextSel;
+    }
+    out.speciesConfig = sc;
+  }
+
+  return out;
+};
+
 export const migrateNpcState = (npc) => {
   if (!npc) return createNewNPC();
-  const migrated = { ...npc };
+  const migrated = migrateSpellSentinel({ ...npc });
   if (!migrated.id) migrated.id = `npc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   if (!migrated.faction) migrated.faction = "未分類";
   if (!migrated.tags || !Array.isArray(migrated.tags)) migrated.tags = [];

@@ -48,7 +48,9 @@ import {
   TYPE_STYLES,
   SPELLS_DATA,
   BOSS_SKILLS_DATA,
-  NEGATIVE_SKILLS_DATA
+  NEGATIVE_SKILLS_DATA,
+  isOffensiveSpell,
+  normalizeSpellName
 } from '../data';
 import { syncLevelPassives } from '../data/roles';
 import { calculateNpcBudgets, calculateNpcStats } from '../utils/npcEngine';
@@ -206,8 +208,8 @@ export default function NPCBuilder({
   };
 
   const handleAddSpell = (spell) => {
-    const isOffensive = !!(spell.isOffensive || spell.name?.includes('⚡') || spell.desc?.includes('傷害') || spell.effect?.includes('傷害'));
-    const cleanName = (spell.name || '').replace('⚡', '');
+    const isOffensive = !!(spell.isOffensive || isOffensiveSpell(spell.name) || spell.desc?.includes('傷害') || spell.effect?.includes('傷害'));
+    const cleanName = normalizeSpellName(spell.name);
     const newSp = {
       id: `sp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       category: 'spell',
@@ -937,9 +939,9 @@ export default function NPCBuilder({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
                   {(Array.isArray(SPELLS_DATA) ? SPELLS_DATA : Object.entries(SPELLS_DATA || {}).map(([name, data]) => ({ name, ...data }))).map((sp, idx) => {
-                    const cleanName = (sp.name || '').replace('⚡', '');
+                    const cleanName = normalizeSpellName(sp.name);
                     const isAdded = (npc.skills || []).some(s => s.name === cleanName || s.spellName === cleanName || s.name === sp.name || s.spellName === sp.name);
-                    const isOffensive = sp.isOffensive || sp.name?.includes('⚡') || sp.desc?.includes('傷害') || sp.effect?.includes('傷害');
+                    const isOffensive = sp.isOffensive || isOffensiveSpell(sp.name) || sp.desc?.includes('傷害') || sp.effect?.includes('傷害');
                     return (
                       <button
                         key={idx}
