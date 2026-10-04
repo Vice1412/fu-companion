@@ -26,7 +26,7 @@ export const CLASS_TRANSLATION_MAP = {
   'wayfarer': '旅人',
   'weaponmaster': '武器大師',
 
-  // 高等奇幻 (High Fantasy)
+  // 高度奇幻 (High Fantasy)
   'commander': '指揮官',
   'dancer': '舞者',
   'chanter': '魔奏者',

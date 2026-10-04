@@ -43,7 +43,7 @@
 | 書 | 檔名 | 頁數 | 用途 |
 |---|---|---|---|
 | 核心規則書 v1.1 | `最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf` | 362 | 機制最高權威 |
-| 高等奇幻手冊 | `最終幻想1.1\..._High_Fantasy_Atlas.pdf` | 202 | 拓展職業 |
+| 高度奇幻手冊 | `最終幻想1.1\..._High_Fantasy_Atlas.pdf` | 202 | 拓展職業 |
 | 自然奇幻手冊 | `最終幻想1.1\..._Natural_Fantasy_Atlas.pdf` | 210 | 拓展職業 |
 | 科技奇幻手冊 | `最終幻想1.1\..._Techno_Fantasy_Atlas.pdf` | 218 | 拓展職業 |
 | 怪物圖鑑 Vol.1 | `Fabula Ultima Bestiary Vol. 1 KS_preview.pdf` | 366 | **NPC 定位（職業）來源** |
@@ -76,6 +76,42 @@ $pdf = "<原書所在目錄>\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Ro
 > ⚠️ **封面頁文字層有重複行**（該頁採 faux-bold 疊印）；其餘內文頁抽取乾淨，
 > 表格數值可直接用於機制核對。
 
+### 1.2 民間漢化 CHM 抽取（譯名權威，規則二.1）
+
+**檔案**：`E:\MINGWAN\TRPG\Fabula ultima\DLC\《Fabula Ultima最终物语》全扩展不全书V1.0(1).CHM`
+（250 KB，**專案目錄之外，不隨版控**）
+
+**用途**：**只管譯名，不管機制**。機制一律以英文原書為準（見 §1.1）。
+
+#### 已知限制（2026-10-04 實測）
+
+| 項目 | 結果 |
+|---|---|
+| `hh.exe -decompile` | ❌ 回傳 exit 0 但**解不出任何檔案**（已排除非 ASCII 路徑因素，複製到純英文路徑後同樣失敗） |
+| 7-Zip / 7za / 7zr | ❌ 未安裝 |
+| PyPI `chm` 套件 | ❌ 是 GDAL 的東西，與微軟 CHM 無關 |
+| PyPI `pylzx` / `chmlib` / `libmspack` | ❌ 皆無此套件 |
+| **HTML 本體** | ❌ LZX 壓縮（`LZXC` 標記位於偏移 4410），**目前無工具可解** |
+| **索引字串區（偏移 0–4410）** | ✅ **未壓縮**，目錄與全部術語可直接抽出 |
+
+> 🔑 **關鍵**：CHM 的 `/#STRINGS` 區塊是**明文**。146 個中文片段中有 **140 個落在 4410 之前**——
+> 也就是說**目錄（＝全部術語）完全可讀**，只有條目內文讀不到。
+> 對「查譯名」這個用途而言，這樣就夠了。
+
+#### 抽取指令
+
+```powershell
+# 先複製到純 ASCII 路徑（hh.exe 對非 ASCII 路徑不友善，雖然這不是本次失敗主因）
+Copy-Item -LiteralPath "<CHM 原始路徑>" -Destination "scratch\src.chm" -Force
+# 掃出未壓縮區的可讀字串（腳本見 scratch/chm_strings.py，不在版控內）
+& $py "scratch\chm_strings.py"
+```
+
+**判讀**：輸出即 CHM 目錄。`4410` 之後的片段是壓縮雜訊（如 `巹奩`、`錨䗎`），**不可採信**。
+
+> ⚠️ **本檔為「不全書」**：缺漏的內容**不代表官方沒有**，只代表這份漢化沒收錄。
+> 查不到譯名時**不得反推為「官方無此內容」**，只能標記為「CHM 未收錄」。
+
 ---
 
 ## 2. `GEMINI.md` 七大規則在 DSH 的對應實作
@@ -94,6 +130,8 @@ $pdf = "<原書所在目錄>\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Ro
 - 官方英文 Core v1.1 為機制最高權威；民間漢化為中文譯名標準；衝突時官方英文優先。
 - ✅ **官方原書可讀**（位置與抽取方式見 §1.1）。涉及《FU》專有子系統的實作前，
   **必須先抽取對應章節逐條核對**，嚴禁憑記憶編造等級階級、檢定或數值。
+- ✅ **譯名權威＝CHM（2026-10-04 使用者裁定）**：中文譯名一律以《Fabula Ultima 最終物語》全擴展不全書 V1.0 為準。
+  **只管譯名，不管機制**——CHM 決定「中文怎麼寫」，英文原書決定「規則是什麼」，兩者職責不可互換。抽取方式見 §1.2。
 - **「職業」定譯鐵律**：Martial 系列一律譯「職業」（職業近戰武器／職業遠程武器／職業防具／職業盾牌），**嚴禁「軍用」**。
 
 ### 規則三：純中文顯示鐵律
@@ -391,7 +429,7 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 | NPC 定位 | 6 | **Bestiary Vol. 1 p.46**：「six NPC roles (brute, hunter, mage, saboteur, sentinel, and support)」——並以各定位描述語意逐條交叉驗證（見 `properNouns.js` 註解） |
 | 物種 | 8 | **Core p.302**「Choose the NPC's Species: …」 |
 | 職業 · 核心 | 15 | **Core** Character Classes（p.182–200） |
-| 職業 · 高等奇幻 | 4 | **High Fantasy Atlas**：Chanter, Commander, Dancer, Symbolist |
+| 職業 · 高度奇幻 | 4 | **High Fantasy Atlas**：Chanter, Commander, Dancer, Symbolist |
 | 職業 · 自然奇幻 | 4 | **Natural Fantasy Atlas**：Floralist, Gourmet, Invoker, Merchant |
 | 職業 · 科技奇幻 | 3 | **Techno Fantasy Atlas**：Esper, Mutant, Pilot |
 
@@ -428,6 +466,36 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 在 `src/` 皆為 0）。**現已有原書可核，屬可實作的缺口**，但這是一整批新內容（非修正），
 需先由使用者裁定是否納入與優先序——**DSH 不自行決定**。
 
+### G. 譯名權威改為 CHM —— ✅ 2026-10-04 已套用
+使用者裁定：中文譯名一律以民間漢化 CHM 為準（已寫入 `GEMINI.md` 規則二.1），**只管譯名、不管機制**。
+
+**已修正（1 項，4 處）**：`高等奇幻` → **`高度奇幻`**
+- `sourcebookConfig.js`：`name`／`shortName`／註解
+- `fultimatorConverter.js`：註解
+- `GEMINI.md` 規則二.2 的手冊清單同步更正
+
+> 這是**實際的不一致**，不只是用詞偏好：UI 顯示的書名用「高等奇幻」，
+> 但 `rulesData.json` 已有 **3 處技能說明**使用「高度奇幻」，而 CHM 標準是「高度奇幻」。
+> 也就是說專案內部本來就兩種寫法並存。
+
+**已核對為相符，無需修改**：
+- `金手指`＝Quirk ✅ 本專案**本來就正確**（28 處），與 CHM 一致。
+- 拓展職業譯名全數相符：機師／靈能者／突變體／徽記師／指揮官／舞者／魔奏者／植物學家／美食家／祈喚者／商人／死靈術士。
+- `營地活動` ✅ 相符。
+
+> 🚨 **更正本檔稍早的一項錯誤（同日）**：本檔與回覆中曾稱本專案把 Quirk 譯為「**奇異點**」——
+> **實測 `奇異點` 在 `src/` 出現 0 次**。那是敘述者自行套用的詞，**不是專案用語**。
+> 錯誤陳述已於本節更正。**教訓：描述專案現況前必須先 grep，不得憑印象。**
+
+**⏸️ 使用者裁定暫緩（2026-10-04）—— 金手指的來源標記問題**：
+- 原發現：`（高奇）`／`（自奇）`／`（科奇）` 後綴標記**不完整**——高度奇幻原書有 **16 筆**金手指，App 只標了 **6 筆**；
+  `空手道`(EMPTY HANDS)、`光榮的命運`(GLORIOUS FATE)、`傳家寶`(HEIRLOOM)、`亡者歸來`(REVENANT)、
+  `天才的宿敵`(RIVAL PRODIGIES)、`應劫之人`(RUINBRINGER)、`交織的靈魂`(SOULS ENTWINED)、
+  `被束縛的心`(FETTERED HEART)、`老載具`(OLD TRANSPORT) 等**全部漏標**。自然／科技奇幻同理。
+- 且 `rulesData.json` 的 `quirks` **無 `source` 欄位**，導致**手冊開關對金手指完全失效**
+  （`CharacterEditor.jsx` 直接 `rulesData.quirks.map(...)`，無任何來源過濾）。
+- **裁定：金手指暫時擱置，先專注完善角色卡。** 此項保留為待辦，不得自行動工。
+
 ---
 
 ## 7. 本檔維護
@@ -450,3 +518,5 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *2026-10-04（英文註釋）：使用者提供四本官方原書（三本 Atlas ＋ Bestiary Vol.1）後，完成職業／定位／物種的「`中文 · ENGLISH`」註釋——**NPC 定位 6 筆 ← Bestiary p.46**、物種 8 筆 ← Core p.302、職業 26 筆 ← 三本 Atlas ＋ Core。新增 `src/utils/properNouns.js` 與 `tests/properNouns.test.mjs`（33 項）。關鍵發現：職業英文**早已存在**於 `sourcebookConfig.js` 的 `CLASS_METADATA.en`，本次僅補兩張小表、**未造重複對照表**，並順帶獨立驗證了既有表的 26 筆全部正確。*
 *同日過程失誤（已修）：匯入插入邏輯誤判「最後一條 import」為多行 import 的起始行，把 `withEn` 插進區塊中間（`AddCombatantModal`）；另一處在替換時吃掉 `className={` 的收尾大括號（`NPCWorkshop:4285`）——後者由 `npm run build` 攔下，前者由 `git HEAD` 增量比對定位。兩者皆已修正並加入掃描自查。*
 *2026-10-04（Bonus Collection）：使用者提供第五本原書後，`CLASS_METADATA` 的**最後兩筆**（`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`）已於該書目錄逐條確認——**35 筆職業英文至此全數經官方原書核實，再無未驗項**。同時實測發現該書其餘七項特典內容（New Heroic Skills、Halloween Quirks／Characters／Heroic Skills、Arcane Whispers、三隻 Additional Bosses）在本專案**完全未涵蓋**，已記入 §6 F 待裁定。*
+*2026-10-04（譯名權威＝CHM）：使用者裁定中文譯名一律以民間漢化 CHM 為準，機制仍以英文原書為準，並指定「金手指」為 Quirk 譯名。CHM 的 `hh.exe -decompile` 解不開、7-Zip 與各 PyPI CHM/LZX 套件皆不可用，**但索引字串區未壓縮**（`/#STRINGS`，偏移 0–4410），目錄與全部術語可直接抽出——已建立可重複的抽取流程（§1.2）。比對結果：`金手指` 本專案**本來就正確**；實際不一致的是 **`高等奇幻` 應為 `高度奇幻`**（UI 書名與 `rulesData.json` 技能說明原本兩種寫法並存），已修正 4 處並同步 `GEMINI.md` 規則二.2。*
+*同日並更正敘述者自身的一項錯誤陳述：先前稱本專案把 Quirk 譯為「奇異點」——實測該詞在 `src/` 出現 **0 次**，純屬誤稱。*

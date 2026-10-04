@@ -32,8 +32,8 @@ export const SOURCEBOOKS = {
   },
   highFantasy: {
     id: 'highFantasy',
-    name: '高等奇幻手冊',
-    shortName: '高等奇幻',
+    name: '高度奇幻手冊',
+    shortName: '高度奇幻',
     badgeColor: 'purple',
     desc: '史詩般的英雄宿命、誓約與魔法，包含指揮官、舞者、魔奏者、徽記師。',
     defaultEnabled: false,
@@ -197,7 +197,7 @@ export const CLASS_METADATA = {
     tagline: '精通各類兵器武技的近戰行家。'
   },
 
-  // 高等奇幻 (High Fantasy)
+  // 高度奇幻 (High Fantasy)
   '指揮官': {
     name: '指揮官',
     en: 'Commander',
