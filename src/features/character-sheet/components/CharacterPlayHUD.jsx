@@ -48,6 +48,7 @@ import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererWorkshop from './companions/TinkererWorkshop';
+import ClassResourceStrip from './ClassResourceStrip';
 import TinkererGadgetsQuickRef from './companions/TinkererGadgetsQuickRef';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
@@ -865,7 +866,14 @@ export default function CharacterPlayHUD({
         </div>
       </div>
 
-      {/* 3. Status Afflictions (六大狀態異常) */}
+      {/* 3. 職業資源池（只有對應職業才出現；數值見 data/classResources.js） */}
+      <ClassResourceStrip
+        character={character}
+        onChange={onChange}
+        showToast={showToast}
+      />
+
+      {/* 4. Status Afflictions (六大狀態異常) */}
       <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold text-slate-700 flex items-center gap-1">
@@ -900,7 +908,7 @@ export default function CharacterPlayHUD({
         </div>
       </div>
 
-      {/* 4. Four Attributes Block (DEX / INS / MIG / WLP - Click-to-Roll) */}
+      {/* 5. Four Attributes Block (DEX / INS / MIG / WLP - Click-to-Roll) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { key: 'dex', enName: 'DEX', zhName: '敏捷', cur: stats.currentDex, base: stats.baseDex },
@@ -945,7 +953,7 @@ export default function CharacterPlayHUD({
         ))}
       </div>
 
-      {/* 5. Sub-Tabs: 武器與戰鬥 | 咒語與魔法 | 職業特技 | 情感羈絆 | 個人命刻 | 行囊日誌 */}
+      {/* 6. Sub-Tabs: 武器與戰鬥 | 咒語與魔法 | 職業特技 | 情感羈絆 | 個人命刻 | 行囊日誌 */}
       <div className="bg-[#fffdf9] rounded-xl border-2 overflow-hidden shadow-sm" style={{ borderColor: theme.border }}>
         <div
           className="flex items-center gap-1 p-2 border-b overflow-x-auto transition-colors duration-200"
