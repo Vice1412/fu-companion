@@ -47,6 +47,7 @@
 | 自然奇幻手冊 | `最終幻想1.1\..._Natural_Fantasy_Atlas.pdf` | 210 | 拓展職業 |
 | 科技奇幻手冊 | `最終幻想1.1\..._Techno_Fantasy_Atlas.pdf` | 218 | 拓展職業 |
 | 怪物圖鑑 Vol.1 | `Fabula Ultima Bestiary Vol. 1 KS_preview.pdf` | 366 | **NPC 定位（職業）來源** |
+| 官方特典合輯 | `最終幻想1.1\Fabula_Ultima_TTJRPG_Bonus_Collection.pdf` | 48 | 兩筆 bonus 職業＋其餘特典內容 |
 
 - ⚠️ `read` 工具**無法**直讀 PDF；`pdftotext` / `pdftk` **皆未安裝**。
 - ✅ **`pypdf 6.19.0` 已安裝**（DSH bundled Python）。
@@ -399,11 +400,29 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 > 且 `withEn` 統一轉大寫——因為既有 `ClassPickerModal` 是用 CSS `uppercase` 顯示職業英文，
 > 若行內沿用原表的 Title Case，職業與定位會同框不一致（此不一致由冒煙測試抓到）。
 >
-> ⚠️ **仍未對書核對者（誠實標註）**：`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`
-> 兩筆來自「**官方特典合輯**」，該文件**不在工作區內**。它們是**既有表原有的值**（非本次新增），
-> 且同表其餘 26 筆經原書核對全部正確，故予保留；但**未經獨立核實**。
+> ✅ **35 筆全數核對完畢（含最後兩筆）**：`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`
+> 已於 **Bonus Collection** 目錄逐條確認——p.6「Ace of Cards」、p.12「Necromancer」，
+> 並經內文佐證（該書說明 Ace of Cards 出自 2023 愚人節特典、Necromancer 出自 2022 萬聖節特典）。
+> **`CLASS_METADATA` 至此再無未經核實的項目。**
 >
 > **測試**：`npm run test:propernouns`（33 項）守住「查無英文原樣回傳、不得臆造」與格式鐵律。
+
+### F. Bonus Collection 的其餘內容 —— 未涵蓋（可選實作，需先裁定優先序）
+`rulesData.json` 的 `bonus` 來源只涵蓋**兩筆職業**。Bonus Collection 目錄另有七項特典內容：
+
+| 內容 | 頁 |
+|---|---|
+| New Heroic Skills | 10 |
+| Necromancer Heroic Skills | 14 |
+| Halloween Quirks | 16 |
+| Halloween Characters | 24 |
+| Halloween Heroic Skills | 26 |
+| Arcane Whispers（秘儀師相關） | 32 |
+| Additional Bosses：Carmilla／Typhos／Zuccaborg | 38／40／42／44 |
+
+**實測全部零命中**（`卡蜜拉`／`泰弗斯`／`祖卡堡`／`萬聖`／`Halloween`／`奧術低語`／`Arcane Whispers`
+在 `src/` 皆為 0）。**現已有原書可核，屬可實作的缺口**，但這是一整批新內容（非修正），
+需先由使用者裁定是否納入與優先序——**DSH 不自行決定**。
 
 ---
 
@@ -426,3 +445,4 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *同日發現並修正本檔自身的假事實：§1.1 原記載「已安裝 pypdf」為**假**（`ModuleNotFoundError`），意即規則二.4 在此之前無法執行；已補裝並驗證。*
 *2026-10-04（英文註釋）：使用者提供四本官方原書（三本 Atlas ＋ Bestiary Vol.1）後，完成職業／定位／物種的「`中文 · ENGLISH`」註釋——**NPC 定位 6 筆 ← Bestiary p.46**、物種 8 筆 ← Core p.302、職業 26 筆 ← 三本 Atlas ＋ Core。新增 `src/utils/properNouns.js` 與 `tests/properNouns.test.mjs`（33 項）。關鍵發現：職業英文**早已存在**於 `sourcebookConfig.js` 的 `CLASS_METADATA.en`，本次僅補兩張小表、**未造重複對照表**，並順帶獨立驗證了既有表的 26 筆全部正確。*
 *同日過程失誤（已修）：匯入插入邏輯誤判「最後一條 import」為多行 import 的起始行，把 `withEn` 插進區塊中間（`AddCombatantModal`）；另一處在替換時吃掉 `className={` 的收尾大括號（`NPCWorkshop:4285`）——後者由 `npm run build` 攔下，前者由 `git HEAD` 增量比對定位。兩者皆已修正並加入掃描自查。*
+*2026-10-04（Bonus Collection）：使用者提供第五本原書後，`CLASS_METADATA` 的**最後兩筆**（`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`）已於該書目錄逐條確認——**35 筆職業英文至此全數經官方原書核實，再無未驗項**。同時實測發現該書其餘七項特典內容（New Heroic Skills、Halloween Quirks／Characters／Heroic Skills、Arcane Whispers、三隻 Additional Bosses）在本專案**完全未涵蓋**，已記入 §6 F 待裁定。*
