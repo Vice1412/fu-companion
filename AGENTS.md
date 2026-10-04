@@ -61,10 +61,14 @@
   用法：`python scratch/pdf_text.py <pdf> <起始頁> <結束頁>`，或 `--search "關鍵字" [前後頁數]`。
 
 ```powershell
-$py = "C:\Users\Admin2\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe"
-$pdf = "E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf"
+# DSH bundled Python（路徑隨環境而異；以 $env:DSH_* 或 harness 回報的 python 路徑取代）
+$py = "<DSH bundled python>\python.exe"
+$pdf = "<原書所在目錄>\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf"
 & $py "scratch\pdf_text.py" $pdf <起始頁> <結束頁>
 ```
+
+> ⚠️ 本節原本記有**本機絕對路徑**（含 Windows 使用者名稱）。本 repo 為**公開**，
+> 已於 2026-10-04 改為佔位符。實際路徑請由環境自行取得，**不要把使用者名稱寫回本檔**。
 
 > ⚠️ **頁碼偏移**：PDF 實體頁碼 = 書上印刷頁碼 **+2**
 > （實測：印刷 p.132 的基本防具表 → PDF 第 134 頁）。引用官方頁碼時務必換算。
