@@ -22,6 +22,7 @@ import ClockTracker from '../../../components/ui/ClockTracker';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import rulesData from '../data/rulesData.json';
 import { getCharacterTheme } from '../utils/characterThemes';
+import { withEn } from '../../../utils/properNouns';
 
 export default function CharacterCard({
   character,
@@ -159,7 +160,7 @@ export default function CharacterCard({
                     }}
                   >
                     <GameIcon name={cl.className} size={13} style={{ color: theme.accent }} />
-                    {cl.className} (Lv {cl.level})
+                    {withEn(cl.className)} (Lv {cl.level})
                   </span>
                 ))}
                 {/* Check if total SL is below required level */}

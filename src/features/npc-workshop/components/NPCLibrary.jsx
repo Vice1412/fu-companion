@@ -14,6 +14,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import { calculateNpcStats } from '../utils/npcEngine';
 import { SPECIES_DATA } from '../data';
+import { withEn } from '../../../utils/properNouns';
 
 export default function NPCLibrary({
   library = [],
@@ -209,7 +210,7 @@ export default function NPCLibrary({
                     <div className="flex items-center gap-1.5 text-[11px] text-[#6b5a4b] mt-1 font-mono">
                       <span>{speciesObj?.name || '未知種族'}</span>
                       <span>·</span>
-                      <span className="text-amber-800 font-bold">{npc.role}</span>
+                      <span className="text-amber-800 font-bold">{withEn(npc.role)}</span>
                       {npc.faction && (
                         <>
                           <span>·</span>

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:sentinel": "esbuild tests/sentinelMigration.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/sentinelMigration.mjs --log-level=warning && node .test-build/sentinelMigration.mjs"
+    "test": "npm run test:sentinel && npm run test:propernouns",
+    "test:sentinel": "esbuild tests/sentinelMigration.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/sentinelMigration.mjs --log-level=warning && node .test-build/sentinelMigration.mjs",
+    "test:propernouns": "esbuild tests/properNouns.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/properNouns.mjs --log-level=warning && node .test-build/properNouns.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

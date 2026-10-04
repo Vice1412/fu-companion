@@ -95,6 +95,7 @@ import {
   normalizeSpellName
 } from './data';
 import { exportNpcToCombatant, migrateSpellSentinel } from './utils/npcEngine';
+import { withEn } from '../../utils/properNouns';
 
 // --- COMPONENTS ---
 
@@ -4230,7 +4231,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                             })()}
                           </div>
                           <div>
-                            <h2 className="text-3xl sm:text-4xl font-black text-[#3c2415] tracking-[0.15em] mb-1">{roleName}</h2>
+                            <h2 className="text-3xl sm:text-4xl font-black text-[#3c2415] tracking-[0.15em] mb-1">{withEn(roleName)}</h2>
                             <div className={`inline-block px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase ${isActive ? 'bg-amber-200/80 text-amber-950 border border-amber-400' : 'bg-[#eee6d3] text-[#6b5a4b]'}`}>
                               {ROLE_DESCRIPTIONS[roleName].subtitle}
                             </div>
@@ -4281,7 +4282,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                         <QuickIcon className="w-6 h-6 sm:w-7 sm:h-7" />
                       ) : null}
                     </div>
-                    <div className={`text-[9px] sm:text-[11px] font-black tracking-widest ${isCurrent ? 'text-[#3c2415]' : 'text-[#6b5a4b]'}`}>{r}</div>
+                    <div className={`text-[9px] sm:text-[11px] font-black tracking-widest ${isCurrent ? 'text-[#3c2415]' : 'text-[#6b5a4b]'}`}>{withEn(r)}</div>
                   </button>
                 );
               })}
@@ -5792,7 +5793,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                           >
                             <div className="flex flex-col gap-0.5 overflow-hidden">
                               <span className="text-sm font-bold truncate">{npc.name || "未知"}</span>
-                              <span className="text-[10px] opacity-70 tracking-tight">Lv. {npc.level} | {npc.role}</span>
+                              <span className="text-[10px] opacity-70 tracking-tight">Lv. {npc.level} | {withEn(npc.role)}</span>
                             </div>
                             {isLinked ? (
                               <div className="bg-amber-700 text-white rounded-full p-1 shadow-sm">
@@ -6061,7 +6062,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                           const LibRoleIcon = ROLE_ICONS[npc.role] || ROLE_DESCRIPTIONS[npc.role]?.Icon;
                           return LibRoleIcon ? <LibRoleIcon className="w-3.5 h-3.5 text-amber-800 shrink-0 inline" /> : null;
                         })()}
-                        <span>{npc.role}</span>
+                        <span>{withEn(npc.role)}</span>
                       </p>
                       <div className="mt-auto flex gap-2">
                         <button onClick={() => { setState(npc); setActiveMainTab('build'); }} className="flex-1 bg-[#eee6d3] hover:bg-[#e4d9c0] text-[#3c2f21] py-2 rounded text-sm font-bold flex justify-center items-center gap-1 transition-colors border border-[#d6c7ab]"><Edit3 size={14} /> 編輯</button>

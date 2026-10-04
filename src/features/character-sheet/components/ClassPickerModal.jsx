@@ -14,6 +14,7 @@ import SkillStarPips from './SkillStarPips';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import { SOURCEBOOKS, getClassInfo } from '../data/sourcebookConfig';
 import rulesData from '../data/rulesData.json';
+import { withEn } from '../../../utils/properNouns';
 
 /**
  * 職業選擇與技能分配彈窗 (ClassPickerModal)
@@ -286,7 +287,7 @@ export default function ClassPickerModal({
                       </div>
                       <div className="min-w-0">
                         <div className="font-serif font-black text-xs text-slate-800 truncate">
-                          {item.className}
+                          {withEn(item.className)}
                         </div>
                         <div className="font-mono text-[10px] font-bold text-slate-400 uppercase truncate">
                           {item.info.en}
@@ -357,7 +358,7 @@ export default function ClassPickerModal({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-serif font-black text-base" style={{ color: theme.textDark }}>
-                        {activeClassItem.className}
+                        {withEn(activeClassItem.className)}
                       </h3>
                       <span className="font-mono text-xs font-bold text-slate-400 uppercase">
                         / {activeClassItem.info.en}
@@ -552,7 +553,7 @@ export default function ClassPickerModal({
                         ? '請先分配技能等級'
                         : totalAllocatedSL >= 5
                           ? '開局需兼修 2~3 個職業'
-                          : `確認修習【${activeClassItem.className}】（投入 ${totalAllocatedSL} 級）`}
+                          : `確認修習【${withEn(activeClassItem.className)}】（投入 ${totalAllocatedSL} 級）`}
                   </JRPGButton>
                 </div>
               </div>

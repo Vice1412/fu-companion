@@ -33,6 +33,7 @@ import {
 } from './utils/fultimatorConverter.js';
 import JRPGButton from '../../components/ui/JRPGButton';
 import JRPGBadge from '../../components/ui/JRPGBadge';
+import { withEn } from '../../utils/properNouns';
 
 const STORAGE_KEY = 'fu_companion_character_roster';
 
@@ -610,7 +611,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                               className="text-[10px] px-1.5 py-0.5 rounded border font-mono font-medium"
                               style={{ backgroundColor: '#fffdf9', borderColor: charTheme.border, color: charTheme.textDark }}
                             >
-                              {c.className} Lv{c.level}
+                              {withEn(c.className)} Lv{c.level}
                             </span>
                           ))}
                         </div>

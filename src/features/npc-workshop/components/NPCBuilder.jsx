@@ -52,6 +52,7 @@ import {
 } from '../data';
 import { syncLevelPassives } from '../data/roles';
 import { calculateNpcBudgets, calculateNpcStats } from '../utils/npcEngine';
+import { withEn } from '../../../utils/properNouns';
 
 export default function NPCBuilder({
   npc,
@@ -342,7 +343,7 @@ export default function NPCBuilder({
             {npc.name || '未命名實體'}
           </h3>
           <span className="text-xs text-[#6b5a4b] font-mono hidden sm:inline">
-            ({npc.role} · Lv.{npc.level} {npc.rank})
+            ({withEn(npc.role)} · Lv.{npc.level} {npc.rank})
           </span>
         </div>
 
@@ -855,7 +856,7 @@ export default function NPCBuilder({
                     <span className="text-amber-800">5.</span> 定位技能庫與法術選用
                   </h4>
                   <p className="text-xs text-[#6b5a4b] mt-1">
-                    挑選【{npc.role}】定位的專屬技能與法術。當前配額: {budgets.roleSkills.used} / {budgets.roleSkills.max}
+                    挑選【{withEn(npc.role)}】定位的專屬技能與法術。當前配額: {budgets.roleSkills.used} / {budgets.roleSkills.max}
                   </p>
                 </div>
               </div>
@@ -864,7 +865,7 @@ export default function NPCBuilder({
               <div className="space-y-3">
                 <h5 className="font-bold text-xs text-amber-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
                   <GiShieldReflect className="w-3.5 h-3.5 text-amber-700" />
-                  <span>【{npc.role}】定位技能庫</span>
+                  <span>【{withEn(npc.role)}】定位技能庫</span>
                 </h5>
 
                 {roleSkillOptions.length === 0 ? (

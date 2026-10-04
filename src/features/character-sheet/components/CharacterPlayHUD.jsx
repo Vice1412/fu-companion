@@ -53,6 +53,7 @@ import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
 import FloristGardenTracker from './companions/FloristGardenTracker';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
+import { withEn } from '../../../utils/properNouns';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -1385,7 +1386,7 @@ export default function CharacterPlayHUD({
               {(character.classes || []).map((cl, cIdx) => (
                 <div key={cIdx} className="space-y-2">
                   <div className="flex items-center gap-2 border-b pb-1" style={{ borderColor: theme.border }}>
-                    <span className="font-serif font-black text-sm" style={{ color: theme.textDark }}>{cl.className}</span>
+                    <span className="font-serif font-black text-sm" style={{ color: theme.textDark }}>{withEn(cl.className)}</span>
                     <JRPGBadge variant={theme.badgeVariant} size="xs">Lv {cl.level}</JRPGBadge>
                   </div>
 
@@ -2119,7 +2120,7 @@ export default function CharacterPlayHUD({
                 <option value="" disabled>-- 選擇職業 --</option>
                 {(character.classes || []).map(cl => (
                   <option key={cl.className} value={cl.className}>
-                    {cl.className} (目前 Lv {cl.level})
+                    {withEn(cl.className)} (目前 Lv {cl.level})
                   </option>
                 ))}
               </select>

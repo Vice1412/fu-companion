@@ -58,6 +58,7 @@ import {
   validateCharacter
 } from '../utils/characterEngine';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
+import { withEn } from '../../../utils/properNouns';
 
 export default function CharacterEditor({
   character,
@@ -1604,7 +1605,7 @@ export default function CharacterEditor({
                           style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                         >
                           <GameIcon name={c.className} size={12} style={{ color: theme.accent }} />
-                          {c.className} Lv{c.level}
+                          {withEn(c.className)} Lv{c.level}
                         </span>
                       ))}
                       <span className="text-slate-400 text-[10px]">
@@ -1622,7 +1623,7 @@ export default function CharacterEditor({
                       </div>
                       {preset.classes.map((c, i) => (
                         <div key={i} className="text-[11px] leading-tight">
-                          <span className="font-bold" style={{ color: theme.textDark }}>{c.className}:</span>{' '}
+                          <span className="font-bold" style={{ color: theme.textDark }}>{withEn(c.className)}:</span>{' '}
                           {c.skills.map(s => `${s.name}${s.sl > 1 ? ` SL${s.sl}` : ''}`).join('、')}
                         </div>
                       ))}

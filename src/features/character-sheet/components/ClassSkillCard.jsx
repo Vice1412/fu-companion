@@ -36,6 +36,7 @@ import {
 } from '../data/wayfarerCompanionData';
 import { getClassInfo } from '../data/sourcebookConfig';
 import rulesData from '../data/rulesData.json';
+import { withEn } from '../../../utils/properNouns';
 
 /**
  * 子項目狀態與配置條 (SkillSuboptionBar)
@@ -554,7 +555,7 @@ export default function ClassSkillCard({
               type="button"
               onClick={() => onRemoveClass(className)}
               className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-              title={`移除職業【${className}】`}
+              title={`移除職業【${withEn(className)}】`}
             >
               <GiTrashCan className="w-4 h-4" />
             </button>

@@ -16,6 +16,7 @@ import {
   GiDragonHead,
   GiVisoredHelm,
 } from 'react-icons/gi';
+import { withEn } from '../../../utils/properNouns';
 
 export default function AddCombatantModal({
   isOpen,
@@ -202,7 +203,7 @@ export default function AddCombatantModal({
                           <JRPGBadge variant="slate" size="xs">{npc.rank}</JRPGBadge>
                         </div>
                         <div className="text-[11px] text-[#6b5a4b] font-mono mt-0.5">
-                          <span>{npc.role}</span>
+                          <span>{withEn(npc.role)}</span>
                           {npc.faction && (
                             <span className="ml-2 text-amber-800 font-sans font-bold inline-flex items-center gap-0.5">
                               <Tag className="w-2.5 h-2.5" />
