@@ -439,9 +439,9 @@ export default function ChimeristManager({
                     onChange={e => setNewSpecies(e.target.value)}
                     className="w-full p-2 rounded-lg border border-emerald-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-900 dark:text-stone-100 outline-none focus:border-emerald-500"
                   >
-                    <option value="野獸">野獸 (Beast)</option>
-                    <option value="魔獸">魔獸 (Monster)</option>
-                    <option value="植物">植物 (Plant)</option>
+                    <option value="野獸">野獸 · BEAST</option>
+                    <option value="魔獸">魔獸 · MONSTER</option>
+                    <option value="植物">植物 · PLANT</option>
                   </select>
                 </div>
                 <div>

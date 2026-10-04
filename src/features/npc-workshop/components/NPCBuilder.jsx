@@ -533,7 +533,7 @@ export default function NPCBuilder({
             <div className="space-y-6 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">2.</span> 等級、階級與反派地位 (Level & Rank)
+                  <span className="text-amber-800">2.</span> 等級、階級與反派地位
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
                   設定怪物的等級規模（5~60 級）與戰鬥階級（士兵 / 精英 / 冠位 Boss），階級將賦予額外的生命值與技能名額。
@@ -973,7 +973,7 @@ export default function NPCBuilder({
             <div className="space-y-6 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg text-[#3c2415] flex items-center gap-2">
-                  <span className="text-amber-800">6.</span> Boss 絕技與負面技能 (Boss & Negative Skills)
+                  <span className="text-amber-800">6.</span> Boss 絕技與負面技能
                 </h4>
                 <p className="text-xs text-[#6b5a4b] mt-1">
                   配置強大的 40 個冠位 Boss 絕技或負面技能。選用負面技能可為 NPC 額外獲得 +1 個技能名額。

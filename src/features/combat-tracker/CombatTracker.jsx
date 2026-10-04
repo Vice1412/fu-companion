@@ -406,7 +406,7 @@ export default function CombatTracker() {
             <div className="flex items-center gap-2">
               <GiCrossedSwords className="w-4 h-4 text-rose-700" />
               <h3 className="font-serif font-bold text-base text-rose-900">
-                敵方怪物與 Boss (Enemies & Bosses)
+                敵方怪物與 Boss
               </h3>
               <JRPGBadge variant="rose" size="xs">
                 {enemyCombatants.length} 隻

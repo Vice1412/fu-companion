@@ -284,12 +284,12 @@ export default function CharacterEditor({
   };
 
   const TABS = [
-    { id: 1, label: '基礎身世', en: 'IDENTITY', icon: 'edit' },
-    { id: 2, label: '四維屬性', en: 'ATTRIBUTES', icon: 'dice' },
-    { id: 3, label: '職業與技能', en: 'CLASSES', icon: 'swords' },
-    { id: 4, label: '裝備配置', en: 'EQUIPMENT', icon: 'shield' },
-    { id: 5, label: '情感羈絆', en: 'BONDS', icon: 'hp' },
-    { id: 6, label: '特質與命刻', en: 'HEROIC & CLOCKS', icon: 'clock' }
+    { id: 1, label: '基礎身世', icon: 'edit' },
+    { id: 2, label: '四維屬性', icon: 'dice' },
+    { id: 3, label: '職業與技能', icon: 'swords' },
+    { id: 4, label: '裝備配置', icon: 'shield' },
+    { id: 5, label: '情感羈絆', icon: 'hp' },
+    { id: 6, label: '特質與命刻', icon: 'clock' }
   ];
 
   // Attribute sum
@@ -430,7 +430,7 @@ export default function CharacterEditor({
                       <div className={`text-[10px] font-mono leading-tight mt-0.5 truncate ${
                         isTabActive ? 'text-white/80' : 'text-slate-400'
                       }`}>
-                        {t.en}
+                        {t.label}
                       </div>
                     </div>
                   </div>

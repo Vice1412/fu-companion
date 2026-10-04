@@ -260,7 +260,7 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
                   <div className="flex items-center justify-between pt-3 border-t border-sky-100/80 text-xs relative z-10 mt-3">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 group-hover:text-sky-600 transition-colors font-medium">
                       <span className={`w-1.5 h-1.5 rounded-full ${chap.status === 'complete' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-                      <span>{chap.status === 'complete' ? 'CLICK TO OPEN' : 'WIP · 點擊確認'}</span>
+                      <span>{chap.status === 'complete' ? '點擊翻開' : '開發中 · 點擊確認'}</span>
                     </span>
                     
                     <div className="w-7 h-7 rounded-full bg-sky-50 group-hover:bg-sky-600 border border-sky-200 group-hover:border-sky-600 flex items-center justify-center transition-all group-hover:shadow-md group-hover:scale-105">

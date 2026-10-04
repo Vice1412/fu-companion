@@ -1,5 +1,21 @@
 # ⚔️ FU Companion 《物語助手》 - 跑團整合助手 APP 規格與開發執行指南
 
+> ⚠️ **文件狀態：已過時（歷史願景文件），不得作為現況事實依據。**
+>
+> 本文件為專案**初期**的願景與分步實施指南。實作過程中架構與視覺語彙均已演進，
+> 多處描述與當前源碼不符。**規範效力**以 `GEMINI.md` 為第一順位、`AGENTS.md` 為第二順位；
+> **事實陳述**一律以當前工作區源碼為唯一基準（依 `GEMINI.md` 規則六）。
+>
+> **已知過時處（2026-10-04 更正，詳見 `AGENTS.md` §5 B）**：
+> - §1 核心原則 2：**非**深色石板底。全站為**羊皮紙暖色調**（`#fbf7ee` / `#3c2415` / `#d6c7ab`）。
+> - §2 圖標庫：**非**以 `lucide-react` 為主。三軌鐵律為「官方字型 `.fu-icon` / 敘事性 `react-icons/gi` / 功能性控件可用 lucide 或純 Unicode」。
+> - §3 目錄結構：`src/types/`、`src/utils/storage.js`、`src/utils/exportImport.js`、`JRPGSelect.jsx` **皆不存在**。
+> - §3 模塊順序：第四個章節是 **`clocks`（命刻記錄）**，非 `dice-roller`；骰子為全域浮動模態窗 `DiceRollerModal`。
+> - §4 色彩系統：同 §1 核心原則 2，整節以深色石板底描述，已失效。
+> - §6 分階段工作流：Phase 1–6 皆已完成，另經三輪技術債清理（見 `AGENTS.md` §6 D）。
+>
+> 本文件保留作為專案意圖的歷史記錄；**修訂它之前請先讀 `GEMINI.md` 與 `AGENTS.md`**。
+
 > **文件定位**：本文件為 AI CLI 智能體（Antigravity CLI / Claude Code / OpenCode）的完整項目初始化與分步實施規範指南。
 > **項目名稱**：`fu-companion FU Companion 《物語助手》`
 > **項目實體目錄**：`"E:\MINGWAN\Projects\FU Companion"`
@@ -13,7 +29,8 @@
 
 ### 核心原則：
 1. **純前端、零伺服器依賴**：數據以 `localStorage` 即時自動持久化，提供「一鍵導出 / 導入 JSON」完整備份，方便上線 Vercel / GitHub Pages。
-2. **JRPG 統一視覺語義**：深色石板底底色、琥珀金與青色符文高亮、細邊框微質感卡片、專屬進度時鐘（Clocks）。
+2. ~~**JRPG 統一視覺語義**：深色石板底底色、琥珀金與青色符文高亮、細邊框微質感卡片、專屬進度時鐘（Clocks）。~~
+   ⚠️ **已失效**：全站實際為**羊皮紙暖色調**（`#fbf7ee` / `#3c2415` / `#d6c7ab`）＋襯線字＋官方字型圖示，非深色石板底。
 3. **組件零件先行**：所有頁面必須強制調用封裝好的原子 UI 零件庫，嚴禁頁面內隨意拼湊不同風格的按鈕或容器。
 4. **數據血液貫通**：NPC 工坊生成的高危 Boss 或小怪、角色卡分頁中的玩家角色，皆可**一鍵「推入戰鬥輪次」**，實現數據零摩擦互通。
 
@@ -23,7 +40,7 @@
 
 - **框架**：React 19 + Vite
 - **樣式**：TailwindCSS + PostCSS + Autoprefixer
-- **圖標庫**：`lucide-react`
+- ~~**圖標庫**：`lucide-react`~~ ⚠️ **已失效**：實際為三軌鐵律（官方字型 `.fu-icon` / 敘事性 `react-icons/gi` / 功能性控件可用 lucide 或純 Unicode），見 `GEMINI.md` 規則一。
 - **特效工具**：`canvas-confetti`（大成功 / 絕殺特寫）
 - **實用工具庫**：`clsx`, `tailwind-merge`
 
@@ -66,16 +83,19 @@ fabula-companion/
     │   │   ├── CombatTracker.jsx   # 主頁面（輪次控制、先攻列表、場景時鐘）
     │   │   ├── components/         # 參戰者卡片、實時 HP/MP 扣減、狀態異常開關
     │   │   └── utils/              # 輪次循環演算法、先攻排序
-    │   └── dice-roller/            # 模塊 4：FU 專屬擲骰面板（全站懸浮或分頁）
-    │       └── DiceRoller.jsx      # 雙屬性檢定、HR（High Roll）、大成功/大失敗計算
-    ├── types/                      # 數據標準結構模型
-    │   ├── character.js            # 角色數據模型
-    │   ├── npc.js                  # NPC/怪物數據模型
-    │   └── combat.js               # 參戰實體模型與轉換器（exportToCombatant）
-    └── utils/
-        ├── storage.js              # localStorage 自動存儲與防抖
-        └── exportImport.js         # JSON 導出與導入備份邏輯
+    │   └── dice-roller/            # 全域浮動模態窗（非章節）
+    │       └── DiceRollerModal.jsx # 雙屬性檢定、HR（High Roll）、大成功/大失敗計算
+    ├── types/                      # ⚠️ 不存在（實際無此目錄）
+    │   ├── character.js            # ⚠️ 不存在
+    │   ├── npc.js                  # ⚠️ 不存在
+    │   └── combat.js               # ⚠️ 不存在（跨模組轉換改於各 feature 內實作）
+    └── utils/                      # 實際僅 soundEffects.js
+        ├── storage.js              # ⚠️ 不存在（各 feature 自行讀寫 localStorage）
+        └── exportImport.js         # ⚠️ 不存在（備份還原實作於 App.jsx）
 ```
+
+> ⚠️ **實際章節順序**：`character`（角色卡助手）／`workshop`（NPC 工坊）／`combat`（戰鬥輪次）／
+> **`clocks`（命刻記錄）**。第四個章節**不是** `dice-roller`。
 
 ---
 
@@ -83,12 +103,16 @@ fabula-companion/
 
 所有 CLI Agent 在撰寫組件與樣式時，**嚴格遵循以下視覺語法**：
 
-1. **色彩系統**：
-   - **底色 (Background)**：`bg-zinc-950`（主背景 `#0c0d0e`）、`bg-zinc-900`（卡片表面）。
-   - **主色 (Accent / Amber Gold)**：`amber-500` (`#f59e0b`)、`amber-400`（按鈕聚焦、核心數字、高亮邊框）。
-   - **輔色 (Runic Cyan / Magic)**：`cyan-400` / `sky-400`（MP 消耗、法術、特技標籤）。
-   - **生命 (Health / Danger)**：`rose-500` / `red-500`（HP 條、危機 Crisis 觸發閃爍）。
-   - **邊框 (Border)**：`border-zinc-800`（常態）、`border-amber-500/40`（聚焦或重要頭部）。
+1. ~~**色彩系統**：~~
+   ⚠️ **整節已失效**：以下為初期深色設計，**實際全站為羊皮紙暖色調**。實際值：
+   - **底色**：`#fbf7ee`（NPC 工坊）／`#f4fbf7`（角色卡）／`#fdf4f5`（戰鬥輪次）／`#f0f9ff`（命刻記錄）；封面為 `#ebf5f8`。
+   - **文字**：`#2c221e` / `#3c2415`；**邊框**：`#d6c7ab`（羊皮紙褐）；**卡面**：`#fffdf9`。
+   - 保留有效的部分：`font-mono` 用於骰階與 HP/MP 數值；`rounded-lg` / `rounded-xl` 圓角統一。
+   - ~~**底色 (Background)**：`bg-zinc-950`（主背景 `#0c0d0e`）、`bg-zinc-900`（卡片表面）。~~
+   - ~~**主色 (Accent / Amber Gold)**：`amber-500` (`#f59e0b`)、`amber-400`（按鈕聚焦、核心數字、高亮邊框）。~~
+   - ~~**輔色 (Runic Cyan / Magic)**：`cyan-400` / `sky-400`（MP 消耗、法術、特技標籤）。~~
+   - ~~**生命 (Health / Danger)**：`rose-500` / `red-500`（HP 條、危機 Crisis 觸發閃爍）。~~
+   - ~~**邊框 (Border)**：`border-zinc-800`（常態）、`border-amber-500/40`（聚焦或重要頭部）。~~
 2. **字體與排版**：
    - 等寬數字排版：骰階、HP/MP 數值使用 `font-mono`，避免數值跳動導致佈局抖動。
    - 圓角：統一為 `rounded-lg` 或 `rounded-xl`，禁止不同模塊出現生硬的混用。

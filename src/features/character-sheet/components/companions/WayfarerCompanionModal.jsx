@@ -326,7 +326,7 @@ export default function WayfarerCompanionModal({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
               <GiSparkles className="text-emerald-600" />
-              <span>1. 夥伴物種（Species）</span>
+              <span>1. 夥伴物種</span>
             </label>
             <div className="grid grid-cols-4 gap-2">
               {COMPANION_SPECIES.map(sp => {

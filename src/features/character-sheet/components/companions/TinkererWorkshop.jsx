@@ -1903,7 +1903,7 @@ export default function TinkererWorkshop({
                 {/* 乘數 1：基礎效力 */}
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                    1. 基礎效力 (Base Potency)：
+                    1. 基礎效力：
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {PROJECT_POTENCY_OPTIONS.map((opt) => (
@@ -1932,7 +1932,7 @@ export default function TinkererWorkshop({
                 {/* 乘數 2：範圍倍率 */}
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                    2. 範圍倍率 (Area Multiplier)：
+                    2. 範圍倍率：
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {PROJECT_AREA_OPTIONS.map((opt) => (
@@ -1958,7 +1958,7 @@ export default function TinkererWorkshop({
                 {/* 乘數 3：使用次數倍率 */}
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                    3. 使用次數倍率 (Uses Multiplier)：
+                    3. 使用次數倍率：
                   </label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {PROJECT_USES_OPTIONS.map((opt) => (

@@ -3755,7 +3755,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
           });
           text += `\n`;
         }
-        text += `[ 基本攻擊與行動 (BASIC ATTACKS & ACTIONS) ]\n`;
+        text += `[ 基本攻擊與行動 ]\n`;
         processedSkills.filter(s => !s.isOverBudget).forEach(s => {
           if (revealLevel !== 'full' && (s.source === 'bossSkill' || s.category === 'rule' || s.category === 'action')) return;
           let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
@@ -3850,7 +3850,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       const attackSkills = validSkills.filter(s => s.attack);
       if (attackSkills.length > 0) {
         cmdLines.push(``);
-        cmdLines.push(`// ===== 基本攻擊 (BASIC ATTACKS) =====`);
+        cmdLines.push(`// ===== 基本攻擊 =====`);
         attackSkills.forEach(s => {
           let skillName = (s.customName || s.originalName).replace(/^(技能|能力)：/, '').replace(/\(定位技能\)/, '').trim();
           const dist = getPlainText(s.attack.distance, s.selections, state.level, state.partyLevel);
@@ -3880,7 +3880,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       // 咒語
       if (stats.spellList && stats.spellList.length > 0) {
         cmdLines.push(``);
-        cmdLines.push(`// ===== 咒語 (SPELLS) =====`);
+        cmdLines.push(`// ===== 咒語 =====`);
         stats.spellList.forEach(spellObj => {
           const rawSpellName = spellObj.name;
           const selections = spellObj.selections || {};
@@ -4467,7 +4467,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
               {/* Species Selector Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
                 {SPECIES_DATA.map(sp => {
-                  const theme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, label: 'UNKNOWN' };
+                  const theme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, label: '未知' };
                   const isSelected = state.selectedSpeciesId === sp.id;
 
                   return (
@@ -4495,7 +4495,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   {(() => {
                     const sp = SPECIES_DATA.find(s => s.id === state.selectedSpeciesId);
                     if (!sp) return null;
-                    const selectedTheme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, bg: 'bg-[#f5efdf]', border: 'border-[#d6c7ab]', text: 'text-[#3c2415]', label: 'UNKNOWN' };
+                    const selectedTheme = SPECIES_THEMES[sp.id] || { color: 'gray', icon: <GiMonsterGrasp size={20} />, bg: 'bg-[#f5efdf]', border: 'border-[#d6c7ab]', text: 'text-[#3c2415]', label: '未知' };
 
                     return (
                       <>

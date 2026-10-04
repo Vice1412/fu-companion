@@ -41,8 +41,15 @@
   `E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf`
 - **規格**：11.8 MB、**362 頁**。
 - ⚠️ `read` 工具**無法**直讀 PDF；`pdftotext` / `pdftk` **皆未安裝**。
-- ✅ **已安裝 `pypdf 6.19.0` + `fontTools 4.66.1`**（裝於 DSH bundled Python）。
-- **抽取工具**：`scratch/pdf_text.py`（本次稽核時建立）
+- ✅ **`pypdf 6.19.0` 已安裝**（DSH bundled Python）。
+  - 🚨 **2026-10-04 實測發現：本行原先記載的「已安裝」是假的**——`import pypdf` 直接
+    `ModuleNotFoundError`，意即 `GEMINI.md` 規則二.4「實作前必須先讀官方原書」
+    在該日之前**根本無法執行**。此為本檔第二個被實證推翻的「環境事實」（第一個見 §4 A）。
+  - 已以 `python -m pip install pypdf` 補上。**日後新增此類環境事實，必須在同一輪實跑驗證指令**：
+    `& $py -c "import pypdf; print(pypdf.__version__)"`
+  - `fontTools` 狀態未複驗（文字抽取不需要它）。
+- **抽取工具**：`scratch/pdf_text.py`（`scratch/` 不在版控內，重建即可）。
+  用法：`python scratch/pdf_text.py <pdf> <起始頁> <結束頁>`，或 `--search "關鍵字" [前後頁數]`。
 
 ```powershell
 $py = "C:\Users\Admin2\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe"
@@ -227,12 +234,31 @@ Get-ChildItem -Path "src" -Recurse -File |
 > **離群診斷**：`character-sheet` 系列本來就全面使用 gi（`GiHealthNormal`／`GiLightningTear`／`GiSparkles`／`GiPocketWatch`／`GiCrossedSwords`），
 > 誤用集中於 `npc-workshop` 與 `combat-tracker`——即歷史上由不同批次實作、未經同一次圖示稽核的兩個模組。
 
-### C. 純中文邊界案例（規則三）
-- `src/features/npc-workshop/NPCWorkshop.jsx` `SPECIES_THEMES` 的 `label` 為英文：
-  `'BEAST'`、`'CONSTRUCT'`、`'DEMON'`、`'ELEMENTAL'`、`'HUMANOID'`、`'MONSTER'`、`'PLANT'`、`'UNDEAD'`
-- `src/components/book/BookCoverHub.jsx:104` 顯示 `FU COMPANION 《物語助手》`
-- `src/features/character-sheet/data/rulesData.json` 含 `秘儀師【Playtest】` 等英文標籤
-- `src/features/character-sheet/components/CharacterEditor.jsx:1020-1038` 使用 `✓` / `✗`
+### C. 純中文邊界案例（規則三）—— 2026-10-04 大幅收斂
+使用者裁定「**專有名詞例外**」後，規則三改為三段式（已寫入 `GEMINI.md`）：
+**介面標題／步驟標籤一律純中文**；**職業／範本／物種用「中文 · ENGLISH」**；其餘照舊。
+
+**本次已清除（面向使用者的英文標籤）**：
+- `CharacterEditor.jsx` 六步驟的 `en` 欄位（`IDENTITY`／`ATTRIBUTES`／`CLASSES`／`EQUIPMENT`／`BONDS`／`HEROIC & CLOCKS`）與其渲染點 `{t.en}`
+- `NPCWorkshop.jsx` 複製文本的 `(BASIC ATTACKS & ACTIONS)`／`(BASIC ATTACKS)`／`(SPELLS)`
+- `NPCBuilder.jsx` 兩處步驟標題 `(Level & Rank)`／`(Boss & Negative Skills)`
+- `CombatTracker.jsx` `(Enemies & Bosses)`
+- `TinkererWorkshop.jsx` 三個公式標籤 `(Base Potency)`／`(Area Multiplier)`／`(Uses Multiplier)`
+- `WayfarerCompanionModal.jsx` `（Species）`
+- `BookCoverHub.jsx` `'CLICK TO OPEN'` → `'點擊翻開'`
+- `ChimeristManager.jsx` 三個物種選項 `野獸 (Beast)` → `野獸 · BEAST`
+
+**經裁定保留，不再是違規**：
+- `SPECIES_THEMES` 的八個物種英文標籤（`'BEAST'`…`'UNDEAD'`）——物種屬專有名詞，
+  且物種瓷磚本即中英並列（中文名一行、英文標籤一行）。
+  ✅ 英文名已由原書 **Core p.302** 逐字核對：`beast, construct, demon, elemental, humanoid, monster, plant, undead`。
+
+**仍待處理 / 刻意不改**：
+- `BookCoverHub.jsx:104` 的 `FU COMPANION 《物語助手》`（品牌雙語並列，待裁定）
+- `rulesData.json` 的 `秘儀師【Playtest】` 等英文標籤
+- `CharacterEditor.jsx` 的 `✓` / `✗`（dingbat，依 2026-10-03 裁定允許）
+- ⚠️ `NPCWorkshop.jsx` 的 ccfolia 參數 `{ label: "INIT", … }`——**這是外部工具（ccfolia）的欄位識別字，
+  不是顯示文案，刻意保留**。改掉會破壞使用者既有的 ccfolia 聊天巨集。
 
 ### D. 規則七.4 `inline-flex` — **休眠狀態，非現行違規**
 - `src/components/ui/FUIcon.jsx:107` 的 `showLabel` 分支使用 `inline-flex`。
@@ -263,21 +289,31 @@ Get-ChildItem -Path "src" -Recurse -File |
 > 故 `PROJECT_SPEC.md:26` 的「圖標庫：lucide-react」應理解為**僅指功能性控件層**，其餘仍以 `GEMINI.md` 為準。
 > 建議後續修訂 `PROJECT_SPEC.md` 時一併更正此兩行。
 
-### B. `PROJECT_SPEC.md` 整體已過時
+### B. `PROJECT_SPEC.md` 整體已過時 —— ✅ 2026-10-04 已加註並就地更正
 - §4 描述深色石板底（`bg-zinc-950` / `#0c0d0e`）——**實際全站為羊皮紙暖色調**。
 - §3 將 `dice-roller` 列為「模塊 4」——**實際第四個章節是 `clocks`（命刻記錄）**，
   骰子為全域浮動模態窗（`DiceRollerModal`）。
 - §3 的 `src/types/`、`src/utils/storage.js`、`src/utils/exportImport.js`、`JRPGSelect.jsx`
   **在實際源碼中不存在**。
 
-> **判讀原則**：`PROJECT_SPEC.md` 為**初期願景文件**，僅 §4 的圖示條款仍部分有效。
+> ✅ **已於 2026-10-04 處理**：文件頂部加上「**已過時（歷史願景文件），不得作為現況事實依據**」狀態區塊，
+> 逐條列出六處已知過時點；並就地以刪除線標註 §1 核心原則 2、§2 圖標庫、§3 目錄結構、
+> §4 色彩系統，同時補上**實際值**（羊皮紙色票、實際章節順序、不存在的檔案）。
+>
+> **判讀原則**：本文件現為**專案意圖的歷史記錄**。規範效力以 `GEMINI.md` 為第一順位，
+> 事實陳述一律以當前源碼為準。
 
-### C. `PROJECT_CHANGELOG.md` 的合規宣稱不實
+### C. `PROJECT_CHANGELOG.md` 的合規宣稱不實 —— ✅ 2026-10-04 已加更正註記
 - `:51`「修改檔案中零 Unicode Emoji 字符。」
 - `:88`「全站 100% 通過零 Emoji 檢測。」
 - `:119`「角色卡、名冊、骰盅與時鐘體系通過零 Emoji 檢驗。」
 
 > 實測 98 處代理對 emoji 仍存在，**三處宣稱皆與現況不符**。
+>
+> ✅ **已於 2026-10-04 處理**：文件頂部加上更正表，逐條列出三處不實宣稱與實測值，
+> 並寫明**根因**（當時的檢測正則只命中代理對，檢出率約 27.5%／34.8%）與
+> **真正達成時間**（2026-10-04 技術債三階段完成後，非任一歷史宣告的時間點）。
+>
 > 此為 `GEMINI.md` 規則六存在的實證理由：**歷史報告不可信**。
 
 ### D. 路徑引用不精確
@@ -330,6 +366,27 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 > 階段 2 的執行流程可複用：**逐列裁決表（`emoji-cleanup-decisions.xlsx`）→ 使用者標注 → 回讀套用**。
 > 這是 `GEMINI.md` 規則四在 DSH 下對「Antigravity Artifact 標注回饋」的等效替代（本檔 §2）。
 
+### E. 職業／範本／物種的英文註釋 —— 部分可做，部分受阻（需你提供來源）
+使用者 2026-10-04 裁定：**職業／範本／物種**加英文，格式固定為「`中文 · ENGLISH`」。
+
+**✅ 已可實作（原書 Core 有官方英文，且已逐字核對）**：
+- **物種（8 筆）**：`beast, construct, demon, elemental, humanoid, monster, plant, undead`
+  —— 出自 **Core p.302**「Choose the NPC's Species: …」。UI 本即中英並列，無需改碼。
+- **核心職業（15 筆）**：原書 `Character Classes`（p.248 起）。已抽取確認存在者：
+  `Arcanist`、`Elementalist`、`Entropist`、`Fury`、`Guardian`、`Loremaster`、`Orator`、
+  `Rogue`、`Sharpshooter`、`Spiritist`、`Tinkerer`、`Wayfarer`、`Weaponmaster`（其餘待逐頁抽取）。
+
+**🚫 受阻（依規則二.4 不得臆造）**：
+- `rulesData.json` 實有 **35 筆職業**（含 `【Playtest】` 變體），其中約 20 筆來自
+  **本工作區未收錄的拓展書**：死靈術士、徽記師、魔奏者、舞者、指揮官、機師、靈能者、
+  突變體、美食家、祈喚者、植物學家、卡牌大師… **無英文原書可核**。
+- ⚠️ **NPC 定位（暴徒／獵人／法師／破壞者／衛士／輔助）在原書 Core 中根本不存在**——
+  已對全書 362 頁做全文檢索：`Brute` 僅出現於「brute military force」與身世表；
+  `Saboteur` 零命中。故此六筆**沒有官方英文可標**。
+  使用者舉例的 `ORATOR` 實為**核心職業**（吟唱者），與 NPC 定位不是同一層級。
+
+**需要你提供**：拓展書 PDF，或直接指定那 20 筆職業與 6 筆定位的英文名。**在那之前我不會動手填。**
+
 ---
 
 ## 7. 本檔維護
@@ -346,3 +403,6 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *同日完成工作區收尾：10/02 起懸置的 16 個檔案分 6 個 commit 提交；測試自未受版控的 `scratch/` 移入 `tests/` 並加入 `npm run test:sentinel`。*
 *2026-10-04（續）：完成階段 3 敘事性圖示清查（52 點，commit `ce85f55`），並將兩項裁定升格為 `GEMINI.md` 硬性條款——「lucide 僅限功能性控件」與「軌道 3 附錄符號詞彙表」。§4 B 改為分佈基準、§6 A 結清、§6 D 標記階段 3 完成並註明實證後的建議順序 1→3→2。*
 *2026-10-04（終）：完成階段 2 裝飾性 Emoji 清除——`src/` 命中數由 76 行 / 145 次降至 **0 / 0**，零 Emoji 鐵律首次真正達成。執行方式為「逐列裁決表 → 使用者標注 → 回讀套用」（`emoji-cleanup-decisions.xlsx`，80 列全數採用建議）。資料層三個 emoji 退路欄位整欄移除，三處純裝飾浮水印刪除。技術債三階段全部結案。*
+*2026-10-04（規則三裁定）：使用者裁定「專有名詞例外」——職業／範本／物種改用「`中文 · ENGLISH`」（間隔號分隔，英文在後）。已寫入 `GEMINI.md` 規則三第 4 點，並同步清除 8 處介面英文標籤。*
+*同日另修正：① 魔加農 IP 由 3 改回 **2**（原書 `MAGICANNON (Advanced)` 逐字核對，前一次 2→3 的提交未經查證即為錯誤）；② `ErrorBoundary` 的「修復暫存並重載」補上確認對話框（原會靜默刪除整場戰鬥存檔）；③ `PROJECT_SPEC.md` 加註已過時狀態並就地更正、`PROJECT_CHANGELOG.md` 加上不實宣稱更正表。*
+*同日發現並修正本檔自身的假事實：§1.1 原記載「已安裝 pypdf」為**假**（`ModuleNotFoundError`），意即規則二.4 在此之前無法執行；已補裝並驗證。*

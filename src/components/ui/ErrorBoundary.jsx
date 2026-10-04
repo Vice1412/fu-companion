@@ -21,6 +21,11 @@ export default class ErrorBoundary extends React.Component {
   };
 
   handleResetCache = () => {
+    const ok = window.confirm(
+      '此操作會清除「目前進行中的戰鬥」（輪次、參戰者、場景時鐘），'
+      + '角色卡與 NPC 檔案庫不受影響。\n\n建議先確認已完成匯出備份。要繼續嗎？'
+    );
+    if (!ok) return;
     try {
       localStorage.removeItem('fu_companion_active_combat');
       // Keep characters and NPCs unless user explicitly wants to purge, but fix any corrupted active view
