@@ -26,8 +26,9 @@
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
 - **建置產物**：`dist/`，JS 1,830 kB（gzip 518 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33** 通過，exit 0）。
-  兩組測試：`npm run test:sentinel`（哨兵遷移與回歸護欄）、`npm run test:propernouns`（專有名詞對照與格式鐵律）。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 94/94** 通過，exit 0）。
+  三組測試：`npm run test:sentinel`（哨兵遷移與回歸護欄）、`npm run test:propernouns`（專有名詞對照與格式鐵律）、
+  `npm run test:projects`（造物專案成本與每日推進公式，對照原書官方範例）。
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
   2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
@@ -321,9 +322,11 @@ Get-ChildItem -Path "src" -Recurse -File |
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.2 秒）。
 - JS bundle 1,830 kB / gzip 518 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33**，exit 0）：`test:sentinel` 與 `test:propernouns` 兩組。
-  **覆蓋缺口**：角色卡數值引擎、戰鬥輪次狀態機、造物專案成本公式、Fultimator 匯入匯出**仍無任何測試**。
-  最該先補的是**造物專案成本公式**（效力 × 範圍 × 使用次數、缺陷減免 25%）——純函式、有明確官方公式、錯了直接算錯錢。
+- `npm test` 通過（**60/60 + 33/33 + 94/94**，exit 0）：`test:sentinel`、`test:propernouns`、`test:projects` 三組。
+  ✅ **造物專案成本公式已於 2026-10-04 補上測試**（`test:projects`，94 項）——這是先前判定「最該先補」的一組，
+  因為它是純函式 + 官方明確公式，算錯會直接讓玩家多付或少付 zenit。
+  **剩餘覆蓋缺口**：角色卡數值引擎（`characterEngine.js`）、戰鬥輪次狀態機、Fultimator 匯入匯出。
+  下一個建議補的是**角色卡數值引擎**——它決定 HP/MP/IP 與所有衍生數值，錯了整張卡都是錯的。
 
 ---
 
@@ -520,3 +523,6 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *2026-10-04（Bonus Collection）：使用者提供第五本原書後，`CLASS_METADATA` 的**最後兩筆**（`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`）已於該書目錄逐條確認——**35 筆職業英文至此全數經官方原書核實，再無未驗項**。同時實測發現該書其餘七項特典內容（New Heroic Skills、Halloween Quirks／Characters／Heroic Skills、Arcane Whispers、三隻 Additional Bosses）在本專案**完全未涵蓋**，已記入 §6 F 待裁定。*
 *2026-10-04（譯名權威＝CHM）：使用者裁定中文譯名一律以民間漢化 CHM 為準，機制仍以英文原書為準，並指定「金手指」為 Quirk 譯名。CHM 的 `hh.exe -decompile` 解不開、7-Zip 與各 PyPI CHM/LZX 套件皆不可用，**但索引字串區未壓縮**（`/#STRINGS`，偏移 0–4410），目錄與全部術語可直接抽出——已建立可重複的抽取流程（§1.2）。比對結果：`金手指` 本專案**本來就正確**；實際不一致的是 **`高等奇幻` 應為 `高度奇幻`**（UI 書名與 `rulesData.json` 技能說明原本兩種寫法並存），已修正 4 處並同步 `GEMINI.md` 規則二.2。*
 *同日並更正敘述者自身的一項錯誤陳述：先前稱本專案把 Quirk 譯為「奇異點」——實測該詞在 `src/` 出現 **0 次**，純屬誤稱。*
+*2026-10-04（造物專案核對）：依 Core printed p.134-139 逐條核對造物專案。**公式 5 項正確、1 項錯誤**（進度換算誤用 `ceil`，官方範例 Magitech Suit 證明應為 `floor`）；**官方範例 9 筆中 8 筆正確、1 筆資料誤植**（純潔之塵效力等級寫錯）。已修，並抽出 `tinkererProjects.js` 純模組 + `test:projects`（94 項）。*
+*同日實作**「推進一天」**（使用者裁定後動工）：原書的專案是「每日結算」引擎，但本專案原本只有手動點時鐘，玩家得自己算每日進度。現已加入參與人數／其中修補匠／幫手三個步進器 + 即時合計 + 確認推進，並依原書語意處理（修補匠為「額外 +1」而非取代、修補匠人數夾在參與人數內、無人參與時高瞻遠矚不生效、超額完工顯示「一至兩小時內完成」）。*
+*同日發現死碼：`TinkererProjectTracker.jsx`（281 行）**從未被 import 或渲染**，且其手動填成本／填格數的做法與官方公式衝突（預設 500z 配 6 格，正確為 5 格）。**尚未移除，列為待辦**——它是個會誤導後續維護者的陷阱。*

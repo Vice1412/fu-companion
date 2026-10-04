@@ -14,7 +14,11 @@ import {
   PROJECT_AREA_OPTIONS,
   PROJECT_USES_OPTIONS,
   OFFICIAL_SAMPLE_PROJECTS,
-  calcProjectCost
+  calcProjectCost,
+  calcDailyProgress,
+  applyDailyProgress,
+  helperHireCost,
+  DEFAULT_DAILY_INPUT
 } from '../src/features/character-sheet/data/tinkererProjects.js';
 import { RULE_CODEX } from '../src/features/character-sheet/data/ruleCodexData.js';
 
@@ -141,6 +145,64 @@ check('組合數 = 4 × 4 × 2 = 32', combos.length, 32);
 check('所有原始成本皆為 100 的倍數', combos.every((r) => r % 100 === 0), true);
 // 32 種組合會因數值碰撞而收斂成 20 個唯一成本（例：100×4 與 200×2 同為 400）
 check('唯一成本值 = 20', raws.size, 20);
+
+// ─────────────────────────────────────────────────────────── I
+section('I. 每日推進公式（Core printed p.134 / p.211 / p.137）');
+// 最常見情境：修補匠獨自作業，無高瞻遠矚 -> 1(參與) + 1(修補匠額外) = 2
+check('獨自作業、無特技 = 2 格', calcDailyProgress({ workers: 1, tinkererWorkers: 1 }).total, 2);
+// 加上高瞻遠矚 SL3 -> 1 + 1 + 3 = 5
+check('獨自作業 + 高瞻遠矚 SL3 = 5 格', calcDailyProgress({ workers: 1, tinkererWorkers: 1, visionarySL: 3 }).total, 5);
+// 三人參與，其中一位是修補匠 -> 3 + 1 = 4
+check('三人參與、一位修補匠 = 4 格', calcDailyProgress({ workers: 3, tinkererWorkers: 1 }).total, 4);
+// 三人參與，全部都有修補匠等級 -> 3 + 3 = 6
+check('三人全為修補匠 = 6 格', calcDailyProgress({ workers: 3, tinkererWorkers: 3 }).total, 6);
+// 幫手：每位 +1
+check('兩人參與 + 2 幫手 = 4 格', calcDailyProgress({ workers: 2, tinkererWorkers: 0, helpers: 2 }).total, 4);
+
+section('I-2. 每日推進的語意細節（不得想當然）');
+check('修補匠加成是「額外 +1」而非取代（1 人 = 2 格）',
+  calcDailyProgress({ workers: 1, tinkererWorkers: 1 }).total, 2);
+check('修補匠人數不得超過參與人數（夾住）',
+  calcDailyProgress({ workers: 1, tinkererWorkers: 5 }).tinkererBonus, 1);
+check('無人參與時高瞻遠矚不生效',
+  calcDailyProgress({ workers: 0, tinkererWorkers: 0, visionarySL: 4 }).total, 0);
+check('無人參與但仍有幫手時，只算幫手',
+  calcDailyProgress({ workers: 0, tinkererWorkers: 0, visionarySL: 4, helpers: 2 }).total, 2);
+check('負數輸入視為 0', calcDailyProgress({ workers: -3, tinkererWorkers: -1, helpers: -5 }).total, 0);
+check('無參數時：1 名參與者、0 名修補匠 -> 1 格', calcDailyProgress().total, 1);
+check('DEFAULT_DAILY_INPUT 為最常見情境（修補匠獨自作業）', DEFAULT_DAILY_INPUT, { workers: 1, tinkererWorkers: 1, helpers: 0 });
+check('DEFAULT_DAILY_INPUT 代入後 = 2 格', calcDailyProgress(DEFAULT_DAILY_INPUT).total, 2);
+
+// ─────────────────────────────────────────────────────────── J
+section('J. 推進一天後的專案狀態');
+const pj = { totalClock: 10, filledClock: 4, daysWorked: 2 };
+const d2 = calcDailyProgress({ workers: 1, tinkererWorkers: 1 }); // 2 格
+const r1 = applyDailyProgress(pj, d2);
+check('4 + 2 = 6 格', r1.filledClock, 6);
+check('尚未完工', r1.completed, false);
+check('無超額', r1.overflow, 0);
+check('工作日數 +1', r1.daysWorked, 3);
+
+const d9 = calcDailyProgress({ workers: 5, tinkererWorkers: 4 }); // 5+4 = 9 格
+const r2 = applyDailyProgress(pj, d9);
+check('4 + 9 = 13 夾在 10 格', r2.filledClock, 10);
+check('已完工', r2.completed, true);
+check('超額 3 格（原書：一至兩小時內完成）', r2.overflow, 3);
+
+const done = { totalClock: 10, filledClock: 10, daysWorked: 5 };
+const r3 = applyDailyProgress(done, d2);
+check('已完工專案再推進仍停在 10', r3.filledClock, 10);
+check('已完工專案不重複計算超額', r3.overflow, 0);
+
+check('缺少 daysWorked 時視為 0 再 +1', applyDailyProgress({ totalClock: 5, filledClock: 0 }, d2).daysWorked, 1);
+check('totalClock 缺失時至少 1 格', applyDailyProgress({ filledClock: 0 }, d2).filledClock, 1);
+
+// ─────────────────────────────────────────────────────────── K
+section('K. 僱用幫手要價（Core printed p.137：總成本的一半）');
+check('6000z -> 3000z', helperHireCost(6000), 3000);
+check('1750z -> 875z', helperHireCost(1750), 875);
+check('75z -> 37z（向下取整）', helperHireCost(75), 37);
+check('0z -> 0z', helperHireCost(0), 0);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

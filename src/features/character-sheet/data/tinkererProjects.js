@@ -151,3 +151,103 @@ export const OFFICIAL_SAMPLE_PROJECTS = [
   { name: 'Sleep Gas', potency: '大', area: '小型', uses: '消耗品', hasFlaw: false, cost: 800, progress: 8 },
   { name: 'Underwater Helm', potency: '中', area: '個體', uses: '永久', hasFlaw: false, cost: 1000, progress: 10 }
 ];
+
+// ══════════════════════════════════════════════════════════════
+//  每日推進（Daily Advancement）
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * 原書每日推進規則（Core printed p.134）：
+ *
+ * > At the end of each day, the Project will advance as follows:
+ * > - **+1 progress for every Player Character who worked on the Project today.**
+ * > - **+1 extra progress for every Player Character with one or more levels in the
+ * >   Tinkerer Class who worked on the Project today.**
+ *
+ * 高瞻遠矚（VISIONARY，Core printed p.211）：
+ *
+ * > When you work on a Project, up to (SL × 100) zenit of material costs are
+ * > automatically paid; additionally, **you generate an additional (SL) progress
+ * > every day**. If multiple characters with this Skill work on the same Project,
+ * > the effects will be cumulative.
+ *
+ * 僱用幫手（HIRING HELPERS，Core printed p.137）：
+ *
+ * > **Each helper will generate 1 additional progress at the end of each day.**
+ *
+ * ## 語意細節（不得想當然）
+ *
+ * - **修補匠加成是「額外 +1」，不是取代**。一名有修補匠等級的參與者貢獻 2 格/日。
+ * - **修補匠人數不可能超過參與人數**，超出者會被夾住（防呆）。
+ * - **高瞻遠矚必須「有參與」才生效**（原文 `When you work on a Project`）；
+ *   若當日無人參與，則不產生高瞻遠矚進度。
+ *
+ * @param {object} p
+ * @param {number} [p.workers]          今日參與的玩家角色數（含自己）
+ * @param {number} [p.tinkererWorkers]  其中具修補匠等級者的人數
+ * @param {number} [p.visionarySL]      參與者中高瞻遠矚的合計 SL（可累加）
+ * @param {number} [p.helpers]          僱用的幫手數
+ * @returns {{workers:number, tinkererBonus:number, visionary:number, helpers:number, total:number}}
+ */
+export const calcDailyProgress = ({
+  workers = 1,
+  tinkererWorkers = 0,
+  visionarySL = 0,
+  helpers = 0
+} = {}) => {
+  const w = Math.max(0, Math.floor(Number(workers) || 0));
+  const t = Math.min(w, Math.max(0, Math.floor(Number(tinkererWorkers) || 0)));
+  const v = w > 0 ? Math.max(0, Math.floor(Number(visionarySL) || 0)) : 0;
+  const h = Math.max(0, Math.floor(Number(helpers) || 0));
+
+  return {
+    workers: w,
+    tinkererBonus: t,
+    visionary: v,
+    helpers: h,
+    total: w + t + v + h
+  };
+};
+
+/**
+ * 推進一天後的專案狀態。
+ *
+ * 原書（Core printed p.134）：
+ * > Once the required amount of progress is reached, the invention is created!
+ * > **If you can generate more progress in a day than what is currently needed to
+ * > complete the Project, it will be ready within one or two hours.**
+ *
+ * 故超額推進不算浪費，但也不會溢出到別的專案——進度會夾在總格數，並標記完工。
+ *
+ * @param {object} project 專案（需含 totalClock / filledClock）
+ * @param {object} daily   calcDailyProgress 的輸出
+ * @returns {{filledClock:number, completed:boolean, overflow:number, daysWorked:number}}
+ */
+export const applyDailyProgress = (project, daily) => {
+  const total = Math.max(1, Math.floor(Number(project?.totalClock) || 1));
+  const filled = Math.max(0, Math.floor(Number(project?.filledClock) || 0));
+  const add = Math.max(0, Math.floor(Number(daily?.total) || 0));
+  const wasComplete = filled >= total;
+  const raw = filled + add;
+  const clamped = Math.min(total, raw);
+
+  return {
+    filledClock: clamped,
+    completed: clamped >= total,
+    // 超額只在「本次推進才完工」時有意義（原書：一至兩小時內完成）。
+    // 已完工的專案再推進不產生新超額。
+    overflow: wasComplete ? 0 : Math.max(0, raw - total),
+    daysWorked: Math.max(0, Math.floor(Number(project?.daysWorked) || 0)) + 1
+  };
+};
+
+/** 僱用幫手的要價：原書為「總成本的一半」（Core printed p.137）。 */
+export const helperHireCost = (projectTotalCost) =>
+  Math.floor(Math.max(0, Number(projectTotalCost) || 0) / 2);
+
+/** 推進一天表單的預設值（最常見情境：修補匠自己一人動手）。 */
+export const DEFAULT_DAILY_INPUT = {
+  workers: 1,
+  tinkererWorkers: 1,
+  helpers: 0
+};

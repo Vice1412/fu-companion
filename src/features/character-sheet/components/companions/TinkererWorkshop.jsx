@@ -27,7 +27,11 @@ import {
   PROJECT_POTENCY_OPTIONS,
   PROJECT_AREA_OPTIONS,
   PROJECT_USES_OPTIONS,
-  calcProjectCost
+  calcProjectCost,
+  calcDailyProgress,
+  applyDailyProgress,
+  helperHireCost,
+  DEFAULT_DAILY_INPUT
 } from '../../data/tinkererProjects';
 
 // 官方修補匠煉金術【目標表】(Core Rulebook p. 212)
@@ -314,6 +318,13 @@ export default function TinkererWorkshop({
   const isSpecialRequired = selectedPotencyObj.needsSpecial;
 
   // ----------------------------------------------------
+  // 每日推進狀態（官方 Core p.134 / p.211 / p.137）
+  // ----------------------------------------------------
+  const [advancingId, setAdvancingId] = useState(null);
+  const [advanceInput, setAdvanceInput] = useState(DEFAULT_DAILY_INPUT);
+  const dailyPreview = calcDailyProgress({ ...advanceInput, visionarySL });
+
+  // ----------------------------------------------------
   // 煉金術狀態
   // ----------------------------------------------------
   const [rolledDice, setRolledDice] = useState([]); // [d20, d20, ...]
@@ -427,6 +438,46 @@ export default function TinkererWorkshop({
     const updated = projects.filter(p => p.id !== projId);
     updateCharacterData({ projects: updated });
     showToast('已移除造物專案');
+  };
+
+  // 開啟推進面板：帶入上次的參與設定，沒有則用最常見情境
+  const handleOpenAdvance = (proj) => {
+    setAdvanceInput({
+      workers: Math.max(1, proj.dailyWorkers ?? DEFAULT_DAILY_INPUT.workers),
+      tinkererWorkers: Math.max(0, proj.dailyTinkerers ?? DEFAULT_DAILY_INPUT.tinkererWorkers),
+      helpers: Math.max(0, proj.helpers ?? 0)
+    });
+    setAdvancingId(proj.id);
+  };
+
+  // 確認推進一天（原書：每日結束時結算）
+  const handleConfirmAdvance = (proj) => {
+    const daily = calcDailyProgress({ ...advanceInput, visionarySL });
+    if (daily.total <= 0) {
+      showToast('今日無人參與，進度不會推進。', 'warning');
+      return;
+    }
+    const next = applyDailyProgress(proj, daily);
+    const updated = projects.map(p => p.id === proj.id ? {
+      ...p,
+      filledClock: next.filledClock,
+      completed: next.completed,
+      daysWorked: next.daysWorked,
+      helpers: advanceInput.helpers,
+      dailyWorkers: advanceInput.workers,
+      dailyTinkerers: advanceInput.tinkererWorkers
+    } : p);
+    updateCharacterData({ projects: updated });
+    setAdvancingId(null);
+
+    const overflowNote = next.overflow > 0 ? '，超額 ' + next.overflow + ' 格（一至兩小時內完成）' : '';
+    if (next.completed && !proj.completed) {
+      showToast('專案【' + proj.name + '】推進了 ' + daily.total + ' 格，已完工！' + overflowNote, 'success');
+    } else if (next.completed) {
+      showToast('專案【' + proj.name + '】已完工，進度維持 ' + next.filledClock + ' / ' + proj.totalClock + ' 格。', 'info');
+    } else {
+      showToast('專案【' + proj.name + '】推進了 ' + daily.total + ' 格（' + next.filledClock + ' / ' + proj.totalClock + '）。', 'success');
+    }
   };
 
   // ----------------------------------------------------
@@ -1771,6 +1822,15 @@ export default function TinkererWorkshop({
                         <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
                           進度 {proj.filledClock} / {proj.totalClock} 格
                         </span>
+                        {!isDone && (
+                          <button
+                            type="button"
+                            onClick={() => (advancingId === proj.id ? setAdvancingId(null) : handleOpenAdvance(proj))}
+                            className="text-[10px] font-bold text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 transition-colors cursor-pointer"
+                          >
+                            {advancingId === proj.id ? '收起' : '推進一天'}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDeleteProject(proj.id)}
@@ -1779,6 +1839,82 @@ export default function TinkererWorkshop({
                           移除專案
                         </button>
                       </div>
+
+                      {/* 每日推進面板（官方 Core p.134 / p.211 / p.137） */}
+                      {advancingId === proj.id && !isDone && (
+                        <div className="mt-2 p-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200">推進一天</span>
+                            <span className="text-[11px] font-mono font-bold text-amber-900 dark:text-amber-100">
+                              每日合計 +{dailyPreview.total} 格
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                              { key: 'workers', label: '參與人數' },
+                              { key: 'tinkererWorkers', label: '其中修補匠' },
+                              { key: 'helpers', label: '幫手' }
+                            ].map(({ key, label }) => (
+                              <div key={key} className="flex flex-col items-center gap-1">
+                                <span className="text-[9px] text-amber-800 dark:text-amber-300">{label}</span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdvanceInput(v => ({ ...v, [key]: Math.max(0, v[key] - 1) }))}
+                                    className="w-5 h-5 rounded-md border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs leading-none cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-5 text-center font-mono text-xs font-bold text-amber-900 dark:text-amber-100">
+                                    {advanceInput[key]}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdvanceInput(v => ({ ...v, [key]: v[key] + 1 }))}
+                                    className="w-5 h-5 rounded-md border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs leading-none cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="text-[10px] text-amber-800 dark:text-amber-300 font-mono leading-relaxed">
+                            參與 {dailyPreview.workers} + 修補匠 {dailyPreview.tinkererBonus}
+                            {dailyPreview.visionary > 0 ? ' + 高瞻遠矚 ' + dailyPreview.visionary : ''}
+                            {dailyPreview.helpers > 0 ? ' + 幫手 ' + dailyPreview.helpers : ''}
+                            {advanceInput.helpers > 0 && (
+                              <span className="block text-amber-700 dark:text-amber-400">
+                                幫手要價：每人 {helperHireCost(proj.zenit)} z（總成本一半）
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmAdvance(proj)}
+                              className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold cursor-pointer transition-colors"
+                            >
+                              確認推進
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAdvancingId(null)}
+                              className="px-3 py-1 rounded-lg border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-[11px] font-bold cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
+                            >
+                              取消
+                            </button>
+                            {proj.daysWorked > 0 && (
+                              <span className="ml-auto text-[10px] text-amber-700 dark:text-amber-400 font-mono">
+                                已作業 {proj.daysWorked} 天
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
