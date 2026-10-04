@@ -24,9 +24,10 @@
 
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
-- **建置指令**：`npm run build`（Vite 6，實測約 6.5 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,829 kB（gzip 519 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm run test:sentinel`（實測 60/60 通過，exit 0）。
+- **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
+- **建置產物**：`dist/`，JS 1,830 kB（gzip 518 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33** 通過，exit 0）。
+  兩組測試：`npm run test:sentinel`（哨兵遷移與回歸護欄）、`npm run test:propernouns`（專有名詞對照與格式鐵律）。
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
   2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
@@ -37,9 +38,16 @@
 
 ### 1.1 官方 PDF 抽取（規則二.4 的必要工具）
 
-- **原書位置**（**專案目錄之外**）：
-  `E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf`
-- **規格**：11.8 MB、**362 頁**。
+**工作區可讀的官方原書（皆在專案目錄之外，`E:\MINGWAN\TRPG\Fabula ultima\`）**：
+
+| 書 | 檔名 | 頁數 | 用途 |
+|---|---|---|---|
+| 核心規則書 v1.1 | `最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_Rooster_Games_Fabula_Ultima_Core.pdf` | 362 | 機制最高權威 |
+| 高等奇幻手冊 | `最終幻想1.1\..._High_Fantasy_Atlas.pdf` | 202 | 拓展職業 |
+| 自然奇幻手冊 | `最終幻想1.1\..._Natural_Fantasy_Atlas.pdf` | 210 | 拓展職業 |
+| 科技奇幻手冊 | `最終幻想1.1\..._Techno_Fantasy_Atlas.pdf` | 218 | 拓展職業 |
+| 怪物圖鑑 Vol.1 | `Fabula Ultima Bestiary Vol. 1 KS_preview.pdf` | 366 | **NPC 定位（職業）來源** |
+
 - ⚠️ `read` 工具**無法**直讀 PDF；`pdftotext` / `pdftk` **皆未安裝**。
 - ✅ **`pypdf 6.19.0` 已安裝**（DSH bundled Python）。
   - 🚨 **2026-10-04 實測發現：本行原先記載的「已安裝」是假的**——`import pypdf` 直接
@@ -267,11 +275,12 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-04 實測 6.5 秒）。
-- JS bundle 1,829 kB / gzip 519 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-04 實測 4.2 秒）。
+- JS bundle 1,830 kB / gzip 518 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm run test:sentinel` 通過（60/60，exit 0）。**本專案目前僅此一組自動化測試**；
-  其餘模組（角色卡引擎、戰鬥輪次、造物專案公式）**無任何測試覆蓋**，屬已知缺口。
+- `npm test` 通過（**60/60 + 33/33**，exit 0）：`test:sentinel` 與 `test:propernouns` 兩組。
+  **覆蓋缺口**：角色卡數值引擎、戰鬥輪次狀態機、造物專案成本公式、Fultimator 匯入匯出**仍無任何測試**。
+  最該先補的是**造物專案成本公式**（效力 × 範圍 × 使用次數、缺陷減免 25%）——純函式、有明確官方公式、錯了直接算錯錢。
 
 ---
 
@@ -366,26 +375,35 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 > 階段 2 的執行流程可複用：**逐列裁決表（`emoji-cleanup-decisions.xlsx`）→ 使用者標注 → 回讀套用**。
 > 這是 `GEMINI.md` 規則四在 DSH 下對「Antigravity Artifact 標注回饋」的等效替代（本檔 §2）。
 
-### E. 職業／範本／物種的英文註釋 —— 部分可做，部分受阻（需你提供來源）
-使用者 2026-10-04 裁定：**職業／範本／物種**加英文，格式固定為「`中文 · ENGLISH`」。
+### E. 職業／範本／物種的英文註釋 —— ✅ 已於 2026-10-04 完成
+使用者裁定格式：**`中文 · ENGLISH`**（半形空格＋間隔號＋半形空格，英文**大寫**）。
+實作於 `src/utils/properNouns.js` 的 `withEn()`；已套用於 20 個渲染點、11 個檔案。
 
-**✅ 已可實作（原書 Core 有官方英文，且已逐字核對）**：
-- **物種（8 筆）**：`beast, construct, demon, elemental, humanoid, monster, plant, undead`
-  —— 出自 **Core p.302**「Choose the NPC's Species: …」。UI 本即中英並列，無需改碼。
-- **核心職業（15 筆）**：原書 `Character Classes`（p.248 起）。已抽取確認存在者：
-  `Arcanist`、`Elementalist`、`Entropist`、`Fury`、`Guardian`、`Loremaster`、`Orator`、
-  `Rogue`、`Sharpshooter`、`Spiritist`、`Tinkerer`、`Wayfarer`、`Weaponmaster`（其餘待逐頁抽取）。
+**資料來源（全部逐條核對官方英文原書，依規則二.4）**：
 
-**🚫 受阻（依規則二.4 不得臆造）**：
-- `rulesData.json` 實有 **35 筆職業**（含 `【Playtest】` 變體），其中約 20 筆來自
-  **本工作區未收錄的拓展書**：死靈術士、徽記師、魔奏者、舞者、指揮官、機師、靈能者、
-  突變體、美食家、祈喚者、植物學家、卡牌大師… **無英文原書可核**。
-- ⚠️ **NPC 定位（暴徒／獵人／法師／破壞者／衛士／輔助）在原書 Core 中根本不存在**——
-  已對全書 362 頁做全文檢索：`Brute` 僅出現於「brute military force」與身世表；
-  `Saboteur` 零命中。故此六筆**沒有官方英文可標**。
-  使用者舉例的 `ORATOR` 實為**核心職業**（吟唱者），與 NPC 定位不是同一層級。
+| 類別 | 筆數 | 來源與原文 |
+|---|---|---|
+| NPC 定位 | 6 | **Bestiary Vol. 1 p.46**：「six NPC roles (brute, hunter, mage, saboteur, sentinel, and support)」——並以各定位描述語意逐條交叉驗證（見 `properNouns.js` 註解） |
+| 物種 | 8 | **Core p.302**「Choose the NPC's Species: …」 |
+| 職業 · 核心 | 15 | **Core** Character Classes（p.182–200） |
+| 職業 · 高等奇幻 | 4 | **High Fantasy Atlas**：Chanter, Commander, Dancer, Symbolist |
+| 職業 · 自然奇幻 | 4 | **Natural Fantasy Atlas**：Floralist, Gourmet, Invoker, Merchant |
+| 職業 · 科技奇幻 | 3 | **Techno Fantasy Atlas**：Esper, Mutant, Pilot |
 
-**需要你提供**：拓展書 PDF，或直接指定那 20 筆職業與 6 筆定位的英文名。**在那之前我不會動手填。**
+> 🔑 **關鍵設計決定：不另造表。** 職業英文**早已存在**於 `sourcebookConfig.js` 的
+> `CLASS_METADATA.en`（35 筆全備，連 `卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer` 都有）。
+> 本次僅補「定位」與「物種」兩張小表，職業一律複用 `getClassInfo()`。
+> **差點造出重複的一份對照表**——這是先查源碼再動手的直接價值。
+>
+> ✅ **本次獨立驗證了既有表的正確性**：26 筆重疊項與原書**完全一致**。
+> 且 `withEn` 統一轉大寫——因為既有 `ClassPickerModal` 是用 CSS `uppercase` 顯示職業英文，
+> 若行內沿用原表的 Title Case，職業與定位會同框不一致（此不一致由冒煙測試抓到）。
+>
+> ⚠️ **仍未對書核對者（誠實標註）**：`卡牌大師 = Ace of Cards`、`死靈術士 = Necromancer`
+> 兩筆來自「**官方特典合輯**」，該文件**不在工作區內**。它們是**既有表原有的值**（非本次新增），
+> 且同表其餘 26 筆經原書核對全部正確，故予保留；但**未經獨立核實**。
+>
+> **測試**：`npm run test:propernouns`（33 項）守住「查無英文原樣回傳、不得臆造」與格式鐵律。
 
 ---
 
@@ -406,3 +424,5 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 *2026-10-04（規則三裁定）：使用者裁定「專有名詞例外」——職業／範本／物種改用「`中文 · ENGLISH`」（間隔號分隔，英文在後）。已寫入 `GEMINI.md` 規則三第 4 點，並同步清除 8 處介面英文標籤。*
 *同日另修正：① 魔加農 IP 由 3 改回 **2**（原書 `MAGICANNON (Advanced)` 逐字核對，前一次 2→3 的提交未經查證即為錯誤）；② `ErrorBoundary` 的「修復暫存並重載」補上確認對話框（原會靜默刪除整場戰鬥存檔）；③ `PROJECT_SPEC.md` 加註已過時狀態並就地更正、`PROJECT_CHANGELOG.md` 加上不實宣稱更正表。*
 *同日發現並修正本檔自身的假事實：§1.1 原記載「已安裝 pypdf」為**假**（`ModuleNotFoundError`），意即規則二.4 在此之前無法執行；已補裝並驗證。*
+*2026-10-04（英文註釋）：使用者提供四本官方原書（三本 Atlas ＋ Bestiary Vol.1）後，完成職業／定位／物種的「`中文 · ENGLISH`」註釋——**NPC 定位 6 筆 ← Bestiary p.46**、物種 8 筆 ← Core p.302、職業 26 筆 ← 三本 Atlas ＋ Core。新增 `src/utils/properNouns.js` 與 `tests/properNouns.test.mjs`（33 項）。關鍵發現：職業英文**早已存在**於 `sourcebookConfig.js` 的 `CLASS_METADATA.en`，本次僅補兩張小表、**未造重複對照表**，並順帶獨立驗證了既有表的 26 筆全部正確。*
+*同日過程失誤（已修）：匯入插入邏輯誤判「最後一條 import」為多行 import 的起始行，把 `withEn` 插進區塊中間（`AddCombatantModal`）；另一處在替換時吃掉 `className={` 的收尾大括號（`NPCWorkshop:4285`）——後者由 `npm run build` 攔下，前者由 `git HEAD` 增量比對定位。兩者皆已修正並加入掃描自查。*
