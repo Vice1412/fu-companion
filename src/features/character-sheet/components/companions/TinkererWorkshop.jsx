@@ -23,56 +23,12 @@ import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 import { calculateCharacterStats } from '../../utils/characterEngine';
 import { openRuleCodex } from '../../utils/skillFormulaEvaluator';
 import rulesData from '../../data/rulesData.json';
-
-// 官方修補匠造物專案【基礎效力表】(Core Rulebook p. 135)
-export const PROJECT_POTENCY_OPTIONS = [
-  {
-    key: '小',
-    cost: 100,
-    label: '小效力 (100z)',
-    shortLabel: '小效力',
-    desc: '提供照明、在陸地或水上運輸人員或貨物、獲得有限形式的保護（限消耗品單一抗性）。',
-    needsSpecial: false
-  },
-  {
-    key: '中',
-    cost: 200,
-    label: '中效力 (200z)',
-    shortLabel: '中效力',
-    desc: '在水下旅行、壓制某種魔法效果、傳遞聲音或語言、代替發明者執行特定操作、提供短期能量。（需特殊原料）',
-    needsSpecial: true
-  },
-  {
-    key: '大',
-    cost: 400,
-    label: '大效力 (400z)',
-    shortLabel: '大效力',
-    desc: '飛行、短時間改變一處區域性質、消除魔法效果、擁有次級智慧、能與發明者並肩作戰、提供長期能量、捕獲或固定目標。（需特殊原料）',
-    needsSpecial: true
-  },
-  {
-    key: '強',
-    cost: 800,
-    label: '強效力 (800z)',
-    shortLabel: '強效力',
-    desc: '長時間改變一處區域性質、壓制惡魔力量、防止天災浩劫、擁有完整人格與自主心智。（需特殊原料）',
-    needsSpecial: true
-  }
-];
-
-// 官方修補匠造物專案【範圍倍率表】(Core Rulebook p. 135)
-export const PROJECT_AREA_OPTIONS = [
-  { key: '個體', mult: 1, label: '個體 (×1)', shortLabel: '個體', desc: '一個人大小的生物、一扇門、一棵樹、一件武器。' },
-  { key: '小型', mult: 2, label: '小型 (×2)', shortLabel: '小型', desc: '幾個人大小的生物、一個大生物、一小塊空地、一個房間、一節車廂、一間小屋。' },
-  { key: '大型', mult: 3, label: '大型 (×3)', shortLabel: '大型', desc: '一群人、小森林、一艘飛空艇或大帆船、城堡大廳、一所房屋、一頭巨型生物。' },
-  { key: '巨型', mult: 4, label: '巨型 (×4)', shortLabel: '巨型', desc: '要塞、湖泊、山頂、村莊、城市街區。' }
-];
-
-// 官方修補匠造物專案【使用次數倍率表】(Core Rulebook p. 135)
-export const PROJECT_USES_OPTIONS = [
-  { key: '消耗品', mult: 1, label: '消耗品 (×1)', shortLabel: '消耗品', desc: '一次性使用。啟動後失去效能，除非發明家另外再製造一個複製品。' },
-  { key: '永久', mult: 5, label: '永久使用 (×5)', shortLabel: '永久使用', desc: '永久可用。在不同的情況與場景下皆能重複保持其功用。' }
-];
+import {
+  PROJECT_POTENCY_OPTIONS,
+  PROJECT_AREA_OPTIONS,
+  PROJECT_USES_OPTIONS,
+  calcProjectCost
+} from '../../data/tinkererProjects';
 
 // 官方修補匠煉金術【目標表】(Core Rulebook p. 212)
 export const ALCHEMY_TARGET_TABLE = [
@@ -340,11 +296,21 @@ export default function TinkererWorkshop({
   const selectedAreaObj = PROJECT_AREA_OPTIONS.find(a => a.key === newArea) || PROJECT_AREA_OPTIONS[0];
   const selectedUsesObj = PROJECT_USES_OPTIONS.find(u => u.key === newUses) || PROJECT_USES_OPTIONS[0];
 
-  const calcRawCost = selectedPotencyObj.cost * selectedAreaObj.mult * selectedUsesObj.mult;
-  const calcFlawDiscount = newHasFlaw ? Math.floor(calcRawCost * 0.25) : 0;
-  const calcDiscountedCost = calcRawCost - calcFlawDiscount;
-  const calcFinalPay = Math.max(0, calcDiscountedCost - freeCostDiscount);
-  const calcRequiredClock = Math.max(1, Math.ceil(calcDiscountedCost / 100));
+  // 官方三乘數模型（Core p.134-137）；進度換算為 floor，非 ceil——
+  // 依原書官方範例 Magitech Suit：1750z -> 17 格（見 tinkererProjects.js 說明）。
+  const {
+    rawCost: calcRawCost,
+    flawDiscount: calcFlawDiscount,
+    discountedCost: calcDiscountedCost,
+    finalPay: calcFinalPay,
+    requiredProgress: calcRequiredClock
+  } = calcProjectCost({
+    potencyCost: selectedPotencyObj.cost,
+    areaMult: selectedAreaObj.mult,
+    usesMult: selectedUsesObj.mult,
+    hasFlaw: newHasFlaw,
+    visionarySL
+  });
   const isSpecialRequired = selectedPotencyObj.needsSpecial;
 
   // ----------------------------------------------------

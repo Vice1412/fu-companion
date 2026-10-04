@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run test:sentinel && npm run test:propernouns",
+    "test": "npm run test:sentinel && npm run test:propernouns && npm run test:projects",
     "test:sentinel": "esbuild tests/sentinelMigration.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/sentinelMigration.mjs --log-level=warning && node .test-build/sentinelMigration.mjs",
-    "test:propernouns": "esbuild tests/properNouns.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/properNouns.mjs --log-level=warning && node .test-build/properNouns.mjs"
+    "test:propernouns": "esbuild tests/properNouns.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/properNouns.mjs --log-level=warning && node .test-build/properNouns.mjs",
+    "test:projects": "esbuild tests/tinkererProjects.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/tinkererProjects.mjs --log-level=warning && node .test-build/tinkererProjects.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
