@@ -1,4 +1,5 @@
 import React from 'react';
+import { findAffinityTokens } from './affinityText';
 
 /**
  * Fabula Ultima Official Font Icon Mapping (FabulaUltimaIcons-Regular.otf)
@@ -118,65 +119,43 @@ export default function FUIcon({ name, className = '', showLabel = false, ...pro
  * 將文本中的九大屬性傷害關鍵字動態解析並渲染為官方字型圖標與專屬色彩
  *
  * 支援樣式：
- * 1. 括號屬性：如【火】、【物理】等，替換為帶官方符號與色彩的【f火】、【p物理】
- * 2. 屬性詞綴：如「火屬性」、「暗屬性傷害」、「物理抗性」、「毒傷」等，附帶符號與顏色
- * 3. 屬性並列：如「風、電、冰傷害」、「土或火」、「暗、光或毒」等
+ * 1. 括號屬性：【火】、（火）
+ * 2. 屬性詞綴：火屬性、暗屬性傷害、物理抗性、毒系傷害、電傷
+ * 3. 屬性並列：風、電、冰傷害／土或火／暗、光或毒／1.風 2.電
+ *
+ * ※ 判定邏輯已抽到 `./affinityText`（純函式，測試共用同一份實作）。
+ * 舊版在這裡寫了一條巨型正則，靠負向後顧逐一排除例外詞，結果漏掉「魔能發電模組」，
+ * 在「發電」的「電」前面插了閃電屬性圖示。詳見 `affinityText.js` 檔頭。
  */
 export function renderTextWithAffinities(text) {
   if (!text || typeof text !== 'string') return text;
 
-  // 嚴格匹配九相，避免誤傷「中毒」(狀態)、「微光視覺」、「曲風」、「暴風」、「物理防禦」(數值)、「火器」(武器)、「焦火」、「電壓」、「疾風」、「暗影」等非傷害屬性詞彙
-  const regex = /(【(?:物理|風|電|暗|土|火|冰|光|毒)】|(?<![曲暴疾])風(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?|(?<![中劇])毒(?:屬性傷害|屬性抗性|屬性|傷害|抗性|傷)?(?![素液])|(?<!微)光(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?|(?<!黑)暗(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?(?![影])|(?:物理(?![防])|電(?![壓])|土|火(?![器焰])|冰)(?:屬性傷害|屬性抗性|屬性|傷害|抗性)?)/g;
+  const tokens = findAffinityTokens(text);
+  if (tokens.length === 0) return text;
 
   const elements = [];
   let lastIndex = 0;
-  let match;
 
-  while ((match = regex.exec(text)) !== null) {
-    const matchIndex = match.index;
-    const matchStr = match[0];
+  tokens.forEach((token) => {
+    if (token.index > lastIndex) elements.push(text.slice(lastIndex, token.index));
 
-    if (matchIndex > lastIndex) {
-      elements.push(text.slice(lastIndex, matchIndex));
-    }
+    const iconDef = FU_ICON_MAP[token.base];
+    const isBracketForm = token.raw.startsWith('【');
 
-    const cleanAff = matchStr.replace(/[【】]/g, '');
-    let matchedBaseAff = null;
-    for (const aff of ['物理', '風', '電', '暗', '土', '火', '冰', '光', '毒']) {
-      if (cleanAff.startsWith(aff)) {
-        matchedBaseAff = aff;
-        break;
-      }
-    }
+    elements.push(
+      <span key={`aff_${token.index}`} className={`inline ${iconDef.color}`}>
+        {isBracketForm && '【'}
+        <span className={`fu-icon text-xs leading-none ${isBracketForm ? 'mx-0.5' : 'mr-0.5'}`}>
+          {iconDef.char}
+        </span>
+        {isBracketForm ? `${token.base}】` : token.raw}
+      </span>
+    );
 
-    const iconDef = matchedBaseAff ? FU_ICON_MAP[matchedBaseAff] : null;
+    lastIndex = token.index + token.raw.length;
+  });
 
-    if (iconDef) {
-      if (matchStr.startsWith('【') && matchStr.endsWith('】')) {
-        elements.push(
-          <span key={`aff_${matchIndex}`} className={`inline ${iconDef.color}`}>
-            【<span className="fu-icon text-xs leading-none mx-0.5">{iconDef.char}</span>
-            {matchedBaseAff}】
-          </span>
-        );
-      } else {
-        elements.push(
-          <span key={`aff_${matchIndex}`} className={`inline ${iconDef.color}`}>
-            <span className="fu-icon text-xs leading-none mr-0.5">{iconDef.char}</span>
-            {matchStr}
-          </span>
-        );
-      }
-    } else {
-      elements.push(matchStr);
-    }
-
-    lastIndex = matchIndex + matchStr.length;
-  }
-
-  if (lastIndex < text.length) {
-    elements.push(text.slice(lastIndex));
-  }
+  if (lastIndex < text.length) elements.push(text.slice(lastIndex));
 
   return elements;
 }
