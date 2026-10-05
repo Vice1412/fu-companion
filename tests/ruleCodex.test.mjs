@@ -20,6 +20,7 @@ import {
 import {
   PILOT_FRAMES, PILOT_ARMOR_MODULES, PILOT_WEAPON_MODULES, PILOT_SUPPORT_MODULES
 } from '../src/features/character-sheet/data/pilotVehicleData.js';
+import { SET_EFFECTS } from '../src/features/character-sheet/data/aceOfCardsData.js';
 
 let pass = 0;
 let fail = 0;
@@ -190,6 +191,18 @@ check('機師：防具模組 4 種', findSection('pilot', '防具模組', 'table
 check('機師：武裝模組 17 種', findSection('pilot', '武裝模組', 'table').rows.length, 17);
 check('機師：支援模組 14 種', findSection('pilot', '支援模組', 'table').rows.length, 14);
 check('卡牌大師：效果 8 種', findSection('aceOfCards', '組合效果', 'table').rows.length, 8);
+
+// 譯名同步護欄：同一組 8 個效果在「資料層」與「速查手冊」必須逐字相同。
+// 2026-10-05 之前兩邊各有一套譯名（鬼牌／滿貫／魔法同花／炫目同花／滿貫狀態 vs
+// 小丑牌／頭獎／魔力同花順／盲目同花順／滿堂彩），使用者裁定後統一為
+// 小丑牌／四條頭獎／魔法同花順／炫目順子／狀態滿貫。此後任一邊改名都會在這裡撞牆。
+const ACE_ROWS = findSection('aceOfCards', '組合效果', 'table').rows;
+check('卡牌大師：效果名稱與資料層逐字相同（含順序）',
+  ACE_ROWS.map((r) => String(r[0]).replace('（需英雄技能）', '')),
+  SET_EFFECTS.map((e) => e.name));
+check('卡牌大師：需求欄位與資料層逐字相同（含順序）',
+  ACE_ROWS.map((r) => r[1]),
+  SET_EFFECTS.map((e) => e.requirement));
 
 // ─────────────────────────────────────────────────────────── F
 section('F. 授權合規：不得收錄畫風／敘述與具名範例作品');
