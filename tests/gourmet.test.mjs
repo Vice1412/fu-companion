@@ -22,6 +22,7 @@ import {
   formatEffectSentence,
   unusedEffects,
   composeDelicacyText,
+  buildDelicacyProse,
   detectDelicacyConflicts,
   conflictingPairKeys,
   countByTaste,
@@ -275,11 +276,14 @@ check('沒有已決定效果時有提示', composeDelicacyText('測試', ['苦�
 check('空組合清單不炸', composeDelicacyText('測試', [], cb, 1).includes('尚未決定任何效果'), true);
 check('null 組合清單不炸', composeDelicacyText('測試', null, cb, 1).includes('尚未決定任何效果'), true);
 
-section('N2. 衝突場景註記直接寫進該效果（不另加頁尾）');
-check('效果 7 會內嵌註記',
-  txtLines[2].includes('無法執行【防禦】動作（僅能在衝突場景生效）'), true);
-check('效果 3 不會有註記',
-  txtLines[2].includes('目標恢復 40 點 HP（僅能在衝突場景生效）'), false);
+section('N2. 衝突場景註記：混合時逐句標短版，全同時只註一次');
+// cb = 苦味+鹹味(7 衝突限定) + 苦味+酸味(3 非限定) → 混合
+check('衝突限定的那句標短版註記',
+  txtLines[2].includes('無法執行【防禦】動作（僅衝突場景）'), true);
+check('非衝突限定的那句不標',
+  txtLines[2].includes('目標恢復 40 點 HP（僅衝突場景）'), false);
+check('混合時不加統一註記',
+  txt.includes('以上效果僅能在衝突場景生效'), false);
 check('不再出現頁尾註解',
   txt.includes('標為效果 5～12'), false);
 check('不再出現「只能保留一個」的頁尾文字',
@@ -407,6 +411,68 @@ check('效果 2 的 choice 取眩暈', asg2['苦味+苦味'].choice, '眩暈');
 const asgMixed = assignSequence(ALL_TASTE_PAIRS.slice(0, 3), [7, 3, 12]);
 check('配對結果無重複效果', findDuplicateEffects(asgMixed), []);
 check('配對結果可算出進度', cookbookProgress(asgMixed), 3);
+
+// ─────────────────────────────────────────────────────────── R
+section('R. 句子合併與註記去重（使用者回報「有點冗長」後改版）');
+// 使用者回報的實際案例：7（封鎖防禦）+ 9（封鎖技能）+ 12（傷害轉土）
+const cbUser = {
+  '苦味+酸味': { roll: 7, choice: null },
+  '苦味+鮮味': { roll: 9, choice: null },
+  '酸味+鮮味': { roll: 12, choice: '土' }
+};
+const tUser = composeDelicacyText('', ['苦味+酸味', '苦味+鮮味', '酸味+鮮味'], cbUser, 1);
+check('使用者案例：只剩 4 行（名字/口味/效果/統一註記）', tUser.split('\n').length, 4);
+check('使用者案例：7+9 合併為一句列舉',
+  tUser.includes('無法執行【防禦】與【技能】動作'), true);
+check('使用者案例：不再逐句重複「僅能在衝突場景生效」',
+  (tUser.match(/僅能在衝突場景生效/g) || []).length, 1);
+check('使用者案例：統一註記在最後一行',
+  tUser.split('\n')[3], '（以上效果僅能在衝突場景生效）');
+
+section('R2. 7/8/9 封鎖動作合併');
+const cb789 = { a: { roll: 7 }, b: { roll: 8 }, c: { roll: 9 } };
+const p789 = buildDelicacyProse([{ roll: 7 }, { roll: 8 }, { roll: 9 }], 1);
+check('三條合成一句', p789.prose.split('。').filter(Boolean).length, 1);
+check('三項用「、」與「與」列舉',
+  p789.prose.includes('無法執行【防禦】、【咒語】與【技能】動作'), true);
+check('全為衝突限定 -> allConflictOnly', p789.allConflictOnly, true);
+check('全為衝突限定 -> 句中不含逐句註記', p789.prose.includes('僅衝突場景'), false);
+const pOnly7 = buildDelicacyProse([{ roll: 7 }], 1);
+check('只有 7 -> 單項不加「與」', pOnly7.prose, '目標在其下個回合無法執行【防禦】動作。');
+const p78 = buildDelicacyProse([{ roll: 7 }, { roll: 8 }], 1);
+check('7+8 -> 兩項用「與」', p78.prose, '目標在其下個回合無法執行【防禦】與【咒語】動作。');
+
+section('R3. 3/4 恢復 HP/MP 合併');
+const p34 = buildDelicacyProse([{ roll: 3 }, { roll: 4 }], 1);
+check('3+4 合成一句', p34.prose, '目標恢復 40 點 HP 與 MP。');
+check('拉丁字元兩側有空格（不黏成 HP與MP）', p34.prose.includes('HP與MP'), false);
+check('L30 數值提升', buildDelicacyProse([{ roll: 3 }, { roll: 4 }], 30).prose, '目標恢復 50 點 HP 與 MP。');
+check('只有 3 -> 單項', buildDelicacyProse([{ roll: 3 }], 1).prose, '目標恢復 40 點 HP。');
+check('恢復不是衝突限定', buildDelicacyProse([{ roll: 3 }], 1).allConflictOnly, false);
+
+section('R4. 註記策略：全同只註一次、混合逐句標');
+// 全部非衝突限定
+const pNone = buildDelicacyProse([{ roll: 1, choice: '眩暈' }, { roll: 3 }], 1);
+check('全非限定 -> allConflictOnly 為 false', pNone.allConflictOnly, false);
+check('全非限定 -> 句中有註記', pNone.prose.includes('僅衝突場景'), false);
+check('全非限定 -> conflictCount 為 0', pNone.conflictCount, 0);
+// 混合
+const pMixed = buildDelicacyProse([{ roll: 3 }, { roll: 7 }], 1);
+check('混合 -> allConflictOnly 為 false', pMixed.allConflictOnly, false);
+check('混合 -> conflictCount 為 1', pMixed.conflictCount, 1);
+check('混合 -> 衝突那句標短版', pMixed.prose.includes('（僅衝突場景）'), true);
+check('混合 -> 非衝突那句不標',
+  pMixed.prose.includes('目標恢復 40 點 HP（僅衝突場景）'), false);
+// 全部衝突限定
+const pAll = buildDelicacyProse([{ roll: 5, choice: '火' }, { roll: 12, choice: '冰' }], 1);
+check('全限定 -> allConflictOnly 為 true', pAll.allConflictOnly, true);
+check('全限定 -> 句中不含逐句註記', pAll.prose.includes('僅衝突場景'), false);
+check('全限定 -> conflictCount 等於句數', pAll.conflictCount, 2);
+
+section('R5. 空輸入與邊界');
+check('空陣列 -> 空 prose', buildDelicacyProse([], 1).prose, '');
+check('空陣列 -> allConflictOnly 為 false', buildDelicacyProse([], 1).allConflictOnly, false);
+check('null -> 不炸', buildDelicacyProse(null, 1).prose, '');
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

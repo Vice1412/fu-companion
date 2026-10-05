@@ -314,6 +314,92 @@ export const unusedEffects = (cookbook, level = 1) => {
  * @param {number} level 角色等級
  * @returns {string}
  */
+/**
+ * 把陣列接成「A、B與C」的中文列舉。
+ * 含拉丁字元（如 `HP`／`MP`）時在「與」兩側補空格，避免出現「HP與MP」這種黏在一起的排版。
+ */
+const joinZh = (items) => {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  const spaced = items.some((s) => /[A-Za-z0-9]/.test(s));
+  const and = spaced ? ' 與 ' : '與';
+  return `${items.slice(0, -1).join('、')}${and}${items[items.length - 1]}`;
+};
+
+/**
+ * 把一組效果組成通順的敘述文。
+ *
+ * ## 為什麼需要「合併」與「註記去重」
+ *
+ * 第一版把每個效果各寫一句、各掛一次「（僅能在衝突場景生效）」，
+ * 結果三條同類效果就讓同一句話重複三次（使用者實測回報「有點冗長」）。
+ * 現在：
+ * 1. **同結構效果合併**——效果 7／8／9 都是「無法執行【X】動作」，合成一句列舉；
+ *    效果 3／4 都是「恢復 N 點 HP／MP」，合成一句。三個效果 → 兩句、甚至一句。
+ * 2. **同一條規則只講一次**——若**全部**效果都是衝突限定，就在最後統一註一次；
+ *    只有**部分**是時，才逐句標短版「（僅衝突場景）」。
+ *
+ * @param {Array<{roll:number, choice:string|null}>} entries
+ * @param {number} level 角色等級
+ * @returns {{prose:string, allConflictOnly:boolean, conflictCount:number}}
+ */
+export const buildDelicacyProse = (entries, level = 1) => {
+  const list = entries || [];
+  const blockedActions = [];
+  const recoveries = [];
+  const others = [];
+
+  for (const e of list) {
+    if (e.roll === 7) blockedActions.push('防禦');
+    else if (e.roll === 8) blockedActions.push('咒語');
+    else if (e.roll === 9) blockedActions.push('技能');
+    else if (e.roll === 3 || e.roll === 4) recoveries.push(e.roll);
+    else others.push(e);
+  }
+
+  const parts = [];
+
+  // 效果 7／8／9：合併為「目標在其下個回合無法執行【A】與【B】動作」
+  if (blockedActions.length > 0) {
+    parts.push({
+      text: `目標在其下個回合無法執行${joinZh(blockedActions.map((a) => `【${a}】`))}動作`,
+      conflict: true
+    });
+  }
+
+  // 效果 3／4：合併為「目標恢復 N 點 HP 與 N 點 MP」
+  if (recoveries.length > 0) {
+    const amount = level >= 30 ? 50 : 40;
+    const kinds = recoveries.map((r) => (r === 3 ? 'HP' : 'MP'));
+    parts.push({
+      text: `目標恢復 ${amount} 點 ${joinZh(kinds)}`,
+      conflict: false
+    });
+  }
+
+  for (const e of others) {
+    let s = formatEffectSentence(e.roll, e.choice, level);
+    if (s.endsWith('。')) s = s.slice(0, -1);
+    parts.push({ text: s, conflict: isConflictOnly(e.roll) });
+  }
+
+  const conflictCount = parts.filter((p) => p.conflict).length;
+  const allConflictOnly = parts.length > 0 && conflictCount === parts.length;
+
+  // 空輸入直接回空字串——否則會留下一個孤立的句號
+  if (parts.length === 0) {
+    return { prose: '', allConflictOnly: false, conflictCount: 0 };
+  }
+
+  // 全部同類（全衝突限定或全都不是）→ 不逐句標記，必要時在結尾統一註一次
+  const prose =
+    allConflictOnly || conflictCount === 0
+      ? `${parts.map((p) => p.text).join('。')}。`
+      : `${parts.map((p) => p.text + (p.conflict ? '（僅衝突場景）' : '')).join('。')}。`;
+
+  return { prose, allConflictOnly, conflictCount };
+};
+
 export const composeDelicacyText = (dishName, pairKeys, cookbook, level = 1) => {
   const name = (dishName || '').trim() || '美食';
   const keys = (pairKeys || []).filter((k) => cookbook?.[k]?.roll);
@@ -324,20 +410,13 @@ export const composeDelicacyText = (dishName, pairKeys, cookbook, level = 1) => 
     (a, b) => TASTES.indexOf(a) - TASTES.indexOf(b)
   );
 
-  // 效果：合併為一段，不標示各別口味組合（使用者指定格式）。
-  // 「僅能在衝突場景生效」直接寫進該效果本身，不另加頁尾註解。
-  const prose =
-    keys
-      .map((k) => {
-        const entry = cookbook[k];
-        let s = formatEffectSentence(entry.roll, entry.choice, level);
-        if (s.endsWith('。')) s = s.slice(0, -1);
-        if (isConflictOnly(entry.roll)) s += '（僅能在衝突場景生效）';
-        return s;
-      })
-      .join('。') + '。';
+  const entries = keys.map((k) => ({ roll: cookbook[k].roll, choice: cookbook[k].choice }));
+  const { prose, allConflictOnly } = buildDelicacyProse(entries, level);
 
-  return `【${name}】\n口味：${tastes.join('＋')}\n${prose}`;
+  const lines = [`【${name}】`, `口味：${tastes.join('＋')}`, prose];
+  // 全部都是衝突限定時，統一註一次即可（逐句重複是冗長的主因）
+  if (allConflictOnly) lines.push('（以上效果僅能在衝突場景生效）');
+  return lines.join('\n');
 };
 
 /**
