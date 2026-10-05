@@ -6,7 +6,7 @@
 > `GEMINI.md` 是上位規範——那兩份才是規則本體，會自動生效。
 > **本檔只補三件它們沒有的事**：專案剛搬家、目前做到哪、以及幾個踩過會痛的坑。
 >
-> 建立：2026-10-05　｜　建立時的 HEAD：`e0a36c5`
+> 建立：2026-10-05　｜　建立時的 HEAD：`e0a36c5`（**2026-10-05 歷史改寫後為 `0454519`**，見 §8）
 
 ---
 
@@ -56,12 +56,13 @@
 |---|---|
 | 套件名 | `monogatari-techou`　｜　顯示名《物語手帳》 |
 | 分支 | `main` |
-| 工作樹 | **乾淨**（僅兩個未追蹤的暫存檔：`emoji-cleanup-decisions.xlsx`、`implementation_plan.md`） |
-| `npm run build` | exit 0，約 4.3 秒，**1,960 kB / gzip 560 kB**（chunk-size 警告為既有現象） |
+| 工作樹 | **乾淨**（全部已提交，無未追蹤檔案） |
+| `npm run build` | exit 0，約 4.3 秒，**1,971 kB / gzip 563 kB**（chunk-size 警告為既有現象） |
 | `npm test` | exit 0，**60 + 33 + 75 + 56 + 235 + 114 + 322 + 86 + 268 ＋ Emoji 掃描** |
 | 測試檔 | `tests/` 共 10 檔（emojiScan／sentinel／properNouns／tinkererProjects／classResources／gourmet／aceOfCards／characterEngine／dataLayer／ruleCodex） |
 | 資料層 | `src/data/keys.js`（7 權威鍵 + 3 舊鍵）、`src/data/store.js`、`shared/schema.js` |
-| 文件 | `docs/`：`decisions.md`（36.6 KB）、`agents-changelog.md`（35.4 KB）、`room-sync-plan.md`（11.6 KB）、`skill-coverage.md`（17.3 KB） |
+| 文件 | `docs/`：`decisions.md`、`agents-changelog.md`、`room-sync-plan.md`、`skill-coverage.md` |
+| Git 歷史 | ⚠️ **2026-10-05 改寫過**（`resources/` 徹底清除），所有 SHA 與改寫前不同，見 §8 |
 
 ---
 
@@ -173,3 +174,49 @@
 本檔**無法**傳承的是：對話過程中的摸索、我對使用者偏好的直覺、以及未寫下來的判斷。
 那些東西沒有被記錄就等於不存在——**所以新 session 該做的不是相信我寫的，而是重新實測**（規則六）。
 本檔的每個數字都是建立當下實測的，但**時間會讓它過時**。
+
+---
+
+## 8. ⚠️ Git 歷史已於 2026-10-05 改寫（接手前必讀）
+
+**這一節是為了防止新 session 撞上「查到的 commit 不存在」而寫的。**
+
+### 8.1 發生了什麼
+
+`resources/`（106 檔／92 MB 的官方原書節錄與他人漢化）原本已被 `git rm --cached` 並列入 `.gitignore`，
+但**歷史層仍完整**——116 個路徑在 3 個已推上 GitHub 的 commit 裡。使用者裁定徹底清除，做法是改寫歷史 ＋ force push。
+
+- **所有 SHA 與改寫前不同。** 文件裡引用舊 SHA 的地方已同步更正，但**其他地方的舊 SHA 一律失效**。
+- commit 數 74 → **73**（`aad5241`「只加了 style guide PDF」因挖掉後成為空 commit 而被 `--prune-empty` 剔除）。
+- `.git` 由 **77.49 MB 降至 11.21 MB**。
+
+### 8.2 本機檔案沒有受影響
+
+`resources/` 的 **106 檔／92 MB 仍在磁碟上**，且仍被 `.gitignore:35` 排除——本地照常可用，只是不再進 git。
+詳細過程見 `docs/decisions.md` §O。
+
+### 8.3 備份位置（改寫前的完整歷史）
+
+```
+scratch/pre-purge-backup.git      # mirror clone，含改寫前的 110 個 ref 與 116 個 resources 物件
+```
+
+`scratch/` 已列 `.gitignore`，**這份備份不會被推上去**。要還原舊歷史可以從這裡來。
+⚠️ 也因為如此，**不要把 `scratch/` 加進版控**。
+
+### 8.4 尚未完成的一件事
+
+force push 只讓舊 commit 變成「不可達」，**GitHub 不會立刻回收**，知道 SHA 的人短期內仍讀得到 blob。
+使用者裁定去信 **GitHub Support 請其清除不可達物件**——這件事需要由使用者在 GitHub 端確認。
+若未處理而想更徹底，備案是**刪掉 repo 重建**（`forks_count: 0`、無 star／issue／PR，損失極小）。
+
+### 8.5 給新 session 的教訓
+
+要驗證「公開 repo 有沒有不該公開的檔案」，**三個層都要查**——只查工作樹會得到錯誤的安心：
+
+```powershell
+git ls-files <path>                                      # 索引層
+git check-ignore -v <path>                               # 忽略規則
+git rev-list --objects --all | Select-String "<path>"    # 歷史層（真正會漏的那一層）
+```
+

@@ -41,9 +41,9 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 
 | 階段 | 工作 | 前置條件 | 觸發規則四文案預審 | 狀態 |
 |---|---|---|---|---|
-| 1 | **`⚡` 語意哨兵遷移**：資料層改為結構化 `isOffensive` 欄位 + localStorage 遷移 | 無 | 否（純內部結構） | ✅ **2026-10-04 完成**（`280bbb8`，測試 60/60） |
+| 1 | **`⚡` 語意哨兵遷移**：資料層改為結構化 `isOffensive` 欄位 + localStorage 遷移 | 無 | 否（純內部結構） | ✅ **2026-10-04 完成**（`cfdad94`，測試 60/60） |
 | 2 | **裝飾性 Emoji 清除**：§4 A 清單（76 行 / 145 次） | **階段 1 完成** ✅ | **是**（多為面向使用者文字） | ✅ **2026-10-04 完成**（**0 行 / 0 次**） |
-| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 | ✅ **2026-10-04 完成**（`ce85f55`，52 點） |
+| 3 | **敘事性圖示清查**：lucide 誤用於敘事圖示者改 `react-icons/gi` | 無 | 否 | ✅ **2026-10-04 完成**（`37939bf`，52 點） |
 
 > ✅ **三階段全部結案**。`src/` 現已達成零 Emoji、零敘事槽位誤用（見 §4 A、§4 B）。
 >
@@ -680,3 +680,65 @@ G 區段改為把速查的子項目名稱逐一比對定譯表（`skillSuboption
   改為比對按鈕的 `title` 後才正確——與 §L5、§M4 同一種病：**驗錯了對象等於沒驗**。
 - **兩個缺陷可以互相遮蔽。** D3 之所以潛伏至今，正是因為 D2 讓它永遠走不到會出錯的那條分支。
   **修好一個缺陷時，必須重新檢視它原本遮蔽了什麼。**
+
+---
+
+### O. `resources/` 版權曝險的徹底清除（2026-10-05，§I 結案）
+
+#### O1. 問題的真相：`.gitignore` 對已推送的歷史完全無效
+
+`resources/`（106 檔／92 MB：官方原書 PDF 節錄 ＋ 他人漢化）曾在 2026-10-04 被 `git rm -r --cached`
+並加入 `.gitignore`。當時的記載是「已移出版控，但仍在 git history」——**這句話被讀成了「已經處理好了」，
+但實際風險完全沒有降低**：
+
+| 層 | 2026-10-05 複驗結果 |
+|---|---|
+| 工作樹 / 索引 | ✅ 乾淨（`git ls-files resources` = 0） |
+| `.gitignore` | ✅ 有排除（`.gitignore:35`） |
+| **歷史層** | ❌ 116 個路徑仍在 **3 個已推送的 commit** 裡：`1a17f7f`（初始 commit）、`aad5241`、`1d84a67` |
+
+GitHub API 實測：repo **public**、`size` 76 MB（與本地 `.git` 77.5 MB 相符，證明 blob 確實在雲端）、
+`forks_count: 0`、`gh-pages` 分支 0 筆。
+
+> **教訓**：`git rm --cached` ＋ `.gitignore` 只防止**未來**再被追蹤，對**已經推出去的歷史**毫無作用。
+> 公開 repo 的「移除敏感檔案」只有一條路：**改寫歷史 ＋ force push**。
+> 記載這種狀態時必須寫清楚「工作樹已清 / 歷史未清」，否則會被讀成「已經安全了」。
+
+#### O2. 執行方式（使用者裁定：先提交 → 改寫 → force push）
+
+1. **備份**：`git clone --mirror . scratch/pre-purge-backup.git`（保留改寫前的完整歷史，含 116 個物件）。
+   `scratch/` 已列 `.gitignore`，備份不會被推上去。
+2. **提交未完成的工作**（`filter-branch` 要求乾淨工作樹）。
+3. **改寫**：`git filter-branch --index-filter "git rm -r --cached --ignore-unmatch resources" --prune-empty -- --all`
+   - 先在 mirror 複本乾跑驗證：改寫後 HEAD 的 tree 與真實 HEAD tree **完全相同**（`457f246c…`），
+     只有 `aad5241`（只加了 style guide PDF）因變成空 commit 而被剔除。
+   - `git-filter-repo` 未安裝；這個規模（74 commits）用內建 `filter-branch` 即可，86 秒完成。
+4. **真正清除本地物件**：刪 `refs/original/*` → `git reflog expire --expire=now --all` → `git gc --prune=now`。
+   ⚠️ 少了這一步，舊 blob 仍會留在本地 `.git` 裡（`refs/original` 與 reflog 都是可達路徑）。
+5. **force push**（`git push --force origin main`）。
+
+**結果**：全物件庫 `resources/` 命中 **0**；`.git` **77.49 MB → 11.21 MB**；
+磁碟上的 `resources/` **106 檔／92 MB 完整保留**，且仍被 `.gitignore` 排除（本地作業不受影響）；
+commit 數 74 → **73**。
+
+#### O3. 兩個必須知道的副作用
+
+| 副作用 | 說明 | 處置 |
+|---|---|---|
+| **所有 SHA 變號** | 改寫會重算初始 commit 之後的每個 commit 的 SHA。文件裡引用 SHA 就會被綁死 | 本輪同步更正 5 處：`ce85f55`→`37939bf`、`280bbb8`→`cfdad94`、`e0a36c5`→`0454519`（另 2 處為同值重複）。**日後引用 SHA 前先確認歷史未被改寫過** |
+| **GitHub 端仍可依 SHA 查到** | force push 只讓舊 commit 變成「不可達」，GitHub 不會立刻回收；知道 SHA 的人短期內仍讀得到 blob | 使用者裁定去信 GitHub Support 請其清除不可達物件。`forks_count: 0` 是這次能安全處理的前提——**有 fork 的話，改寫本 repo 不會動到別人的副本** |
+
+> **更徹底但未採用的選項**：刪掉 repo 重建（唯一能保證零殘留的做法，且因 `forks = 0`、`stars = 0`、
+> 無 issue／PR 而幾乎零損失；代價是要重開 GitHub Pages 並重建 `gh-pages`）。
+> 保留作日後若 Support 未處理時的備案。
+
+#### O4. 給接手 session 的檢查清單
+
+要驗證「公開 repo 有沒有不該公開的檔案」時，**三個層都要查**，只查工作樹會得到錯誤的安心：
+
+```powershell
+git ls-files <path>                      # 索引層
+git check-ignore -v <path>               # 忽略規則
+git rev-list --objects --all | Select-String "<path>"   # 歷史層（真正會漏的那一層）
+```
+

@@ -13,7 +13,7 @@
 *2026-10-03：同步使用者裁定之圖示三軌分類（敘事 → Game-Icons；功能性控件 → Unicode 豁免），並修正 `GEMINI.md` 規則五.1 之 Emoji 檢測正則。*
 *2026-10-04：稽核複驗並更新基準——§3.1 哨兵遷移完成、§4 A 殘留數更新為 76 行 / 145 次（`src/` 程式碼檔 75 個 / 38,619 行）、§4 E 補列測試現況、§6 D 階段 1 標記完成。*
 *同日完成工作區收尾：10/02 起懸置的 16 個檔案分 6 個 commit 提交；測試自未受版控的 `scratch/` 移入 `tests/` 並加入 `npm run test:sentinel`。*
-*2026-10-04（續）：完成階段 3 敘事性圖示清查（52 點，commit `ce85f55`），並將兩項裁定升格為 `GEMINI.md` 硬性條款——「lucide 僅限功能性控件」與「軌道 3 附錄符號詞彙表」。§4 B 改為分佈基準、§6 A 結清、§6 D 標記階段 3 完成並註明實證後的建議順序 1→3→2。*
+*2026-10-04（續）：完成階段 3 敘事性圖示清查（52 點，commit `37939bf`），並將兩項裁定升格為 `GEMINI.md` 硬性條款——「lucide 僅限功能性控件」與「軌道 3 附錄符號詞彙表」。§4 B 改為分佈基準、§6 A 結清、§6 D 標記階段 3 完成並註明實證後的建議順序 1→3→2。*
 *2026-10-04（終）：完成階段 2 裝飾性 Emoji 清除——`src/` 命中數由 76 行 / 145 次降至 **0 / 0**，零 Emoji 鐵律首次真正達成。執行方式為「逐列裁決表 → 使用者標注 → 回讀套用」（`emoji-cleanup-decisions.xlsx`，80 列全數採用建議）。資料層三個 emoji 退路欄位整欄移除，三處純裝飾浮水印刪除。技術債三階段全部結案。*
 *2026-10-04（規則三裁定）：使用者裁定「專有名詞例外」——職業／範本／物種改用「`中文 · ENGLISH`」（間隔號分隔，英文在後）。已寫入 `GEMINI.md` 規則三第 4 點，並同步清除 8 處介面英文標籤。*
 *同日另修正：① 魔加農 IP 由 3 改回 **2**（原書 `MAGICANNON (Advanced)` 逐字核對，前一次 2→3 的提交未經查證即為錯誤）；② `ErrorBoundary` 的「修復暫存並重載」補上確認對話框（原會靜默刪除整場戰鬥存檔）；③ `PROJECT_SPEC.md` 加註已過時狀態並就地更正、`PROJECT_CHANGELOG.md` 加上不實宣稱更正表。*
@@ -176,3 +176,12 @@
 *⑦ **測試**：`tests/characterEngine.test.mjs` 新增 **J 區段（79 項）**——bonus 三欄不再 undefined、逐項加總不變式（數字項相加必須等於總額）、標籤內容、裝備／載具構成、二選一判定矩陣（全 35 職業僅 6 個成立）、二選一實際數值、暗黑之刃【Playtest】回歸。`test:engine` 由 243 → **322 項**。*
 *⑧ **實測護欄（重要）**：另以 `react-dom/server` 做一次性渲染煙霧測試（`scratch/_render_smoke.mjs`，不進版控），確認兩個畫面與卡片都能渲染、且 `+undefined` 已消失。過程中**抓到自己的斷言寫錯**：原本用 `includes('二選一')` 判斷選擇器是否存在，但暗黑之刃【Playtest】的**免費增益原文本身**就含「（二選一）」——改為比對按鈕的 `title` 才正確。**斷言字串必須是該元素獨有的。***
 *驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + **322/322** + 86/86 + 268/268 ＋ Emoji 掃描（0 命中），exit 0；`npm run build` exit 0（1,971.86 kB / gzip 562.99 kB）；SSR 煙霧測試 18 項全過。*
+*2026-10-05（`resources/` 徹底清除：改寫歷史 ＋ force push）：使用者裁定把 `resources/`（官方原書節錄與他人漢化）從 GitHub 移除，但本地檔案要留著方便作業。*
+*① **先複驗，不憑記載**：`AGENTS.md` §6.2 I 原記「已移出版控，但仍在 git history」——複驗結果是「工作樹與索引乾淨（`git ls-files resources` = 0、`.gitignore:35` 有排除），但**歷史層仍完整**」。*
+*② **關鍵事實**：`resources/` 的 116 個路徑仍在 **3 個已推上 GitHub 的 commit** 裡——`1a17f7f`（初始 commit，162 檔）、`aad5241`（只加了 style guide PDF）、`1d84a67`（移出版控，本身只留 `.gitignore` 改動）。三者皆為 `origin/main` 的祖先。GitHub API 實測：repo **public**、`size` 76 MB（與本地 `.git` 的 77.5 MB 相符）、**`forks_count: 0`**、`gh-pages` 分支 0 筆。*
+*③ **結論：`.gitignore` 對已推送的歷史無效。** 唯一的路是改寫歷史 ＋ force push。*
+*④ **先在 mirror 複本乾跑驗證**（`scratch/rewrite-test.git`，後改為正式備份 `scratch/pre-purge-backup.git`）：改寫後 `refs/heads/main` 的 tree 與真實 HEAD tree **完全相同**（`457f246c…`），只有 `aad5241` 因挖掉後變成空 commit 而被 `--prune-empty` 正確剔除（72 → 71），`resources/` 可達物件 116 → **0**。*
+*⑤ **正式執行**：先提交兩批未提交的工作（上兩則所述的速查入口／譯名稽核，與數值構成公式；`filter-branch` 要求乾淨的工作樹），再跑 `git filter-branch --index-filter "git rm -r --cached --ignore-unmatch resources" --prune-empty -- --all`（86 秒），最後刪除 `refs/original/*`、`git reflog expire --expire=now --all`、`git gc --prune=now`。結果：全物件庫 `resources/` 命中 **0**、`.git` 由 **77.49 MB 降至 11.21 MB**、磁碟上的 `resources/` **106 檔／92 MB 完整保留**且仍被 `.gitignore` 排除。commit 數 74 → **73**。*
+*⑥ **SHA 連帶失效**：改寫讓初始 commit 之後的所有 SHA 變號，文件裡 5 處引用已同步更正（`ce85f55`→`37939bf`、`280bbb8`→`cfdad94`、`e0a36c5`→`0454519`）。**這是歷史改寫的隱形成本——文件引用 commit SHA 就會被綁死。***
+*⑦ **GitHub 端**：force push 只讓舊 commit 變成不可達，GitHub 不會立刻回收，仍可依 SHA 直接查到。使用者裁定去信 GitHub Support 請其清除。*
+*驗證：`git rev-list --objects --all` 對 `resources/` 命中 0；`git status` 乾淨；`resources/` 磁碟檔案 106 檔／92 MB 完好。*
