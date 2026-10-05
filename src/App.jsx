@@ -16,6 +16,7 @@ import FateClockPage from './features/clocks/FateClockPage';
 import DiceRollerModal from './features/dice-roller/DiceRollerModal';
 import ChapterDevWarningModal from './components/book/ChapterDevWarningModal';
 import RuleCodexDrawer from './features/character-sheet/components/RuleCodexDrawer';
+import { openRuleCodex } from './features/character-sheet/utils/skillFormulaEvaluator';
 import { playPageFlipSound } from './utils/soundEffects';
 import { STORAGE_KEYS } from './data/keys';
 import { readJSON, writeJSON } from './data/store';
@@ -68,6 +69,10 @@ export default function App() {
     setDiceModalConfig(config);
     setIsDiceModalOpen(true);
   };
+
+  // 規則概念速查抽屜為純事件驅動（監聽 fu:open-rule-codex），
+  // 不帶關鍵字即開啟於預設條目；由章節標頭的速查按鈕派送。
+  const handleOpenCodex = () => openRuleCodex();
 
   // 實際執行章節翻書切換動作
   const proceedToChapter = (chapterId) => {
@@ -281,6 +286,7 @@ export default function App() {
                   : null
             }
             onOpenDice={handleOpenDice}
+            onOpenCodex={handleOpenCodex}
             onBackup={handleFullBackup}
             onRestore={handleFullRestore}
             extraLeft={activeChapter === 'workshop' ? headerExtraLeft : null}

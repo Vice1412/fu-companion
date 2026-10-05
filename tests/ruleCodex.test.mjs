@@ -13,6 +13,13 @@
  */
 import { RULE_CODEX, findCodexRule } from '../src/features/character-sheet/data/ruleCodexData.js';
 import rulesData from '../src/features/character-sheet/data/rulesData.json';
+import {
+  DANCER_DANCES, CHANTER_DATA, ESPER_GIFTS,
+  MUTANT_THERIOFORMS, FLORIST_MAGISEEDS, SYMBOLIST_SYMBOLS
+} from '../src/features/character-sheet/data/skillSuboptionsData.js';
+import {
+  PILOT_FRAMES, PILOT_ARMOR_MODULES, PILOT_WEAPON_MODULES, PILOT_SUPPORT_MODULES
+} from '../src/features/character-sheet/data/pilotVehicleData.js';
 
 let pass = 0;
 let fail = 0;
@@ -162,25 +169,25 @@ const findSection = (id, titlePart, kind) =>
   );
 
 check('魔奏者：音量 3 級', findSection('chanter', '音量', 'table').rows.length, 3);
-check('魔奏者：音色 8 種', findSection('chanter', '音色', 'table').rows.length, 8);
-check('魔奏者：詩節 7 種', findSection('chanter', '詩節').items.length, 7);
+check('魔奏者：音調 8 種', findSection('chanter', '音調', 'table').rows.length, 8);
+check('魔奏者：曲風 7 種', findSection('chanter', '曲風').items.length, 7);
 check('舞者：舞步 17 個', findSection('dancer', '舞步', 'table').rows.length, 17);
 check('徽記師：徽記 19 個', findSection('symbolist', '徽記一覽', 'table').rows.length, 19);
 check('徽記師：特殊規則 10 條', RULE_CODEX.symbolist.sections[0].items.length, 10);
-check('植物學家：魔種條目 43 列（20 個魔種 × 各 1~3 個 T 階段）',
-  findSection('floralist', '魔種一覽', 'table').rows.length, 43);
-check('植物學家：20 個魔種',
-  new Set(findSection('floralist', '魔種一覽', 'table').rows.map((r) => r[0])).size, 20);
-check('植物學家：成長命刻 4 格',
+check('植物學家：魔法種子條目 43 列（20 顆 × 各 1~3 個 T 階段）',
+  findSection('floralist', '魔法種子一覽', 'table').rows.length, 43);
+check('植物學家：20 顆魔法種子',
+  new Set(findSection('floralist', '魔法種子一覽', 'table').rows.map((r) => r[0])).size, 20);
+check('植物學家：生長命刻 4 格',
   RULE_CODEX.floralist.sections[1].items.some((s) => s.includes('4 格')), true);
 check('美食家：口味表 6 面', findSection('gourmet', '食材口味', 'table').rows.length, 6);
 check('美食家：效果表 12 條', findSection('gourmet', '美食效果', 'table').rows.length, 12);
 check('祈喚者：祈喚 20 個', findSection('invoker', '元素源泉與祈喚', 'table').rows.length, 20);
 check('靈能者：天賦 9 個', findSection('esper', '天賦一覽', 'table').rows.length, 9);
-check('突變體：獸化 12 個', findSection('mutant', '獸化一覽', 'table').rows.length, 12);
+check('突變體：混合形態 12 個', findSection('mutant', '混合形態一覽', 'table').rows.length, 12);
 check('機師：框架 3 種', findSection('pilot', '框架', 'table').rows.length, 3);
-check('機師：裝甲模組 4 種', findSection('pilot', '裝甲模組', 'table').rows.length, 4);
-check('機師：武器模組 17 種', findSection('pilot', '武器模組', 'table').rows.length, 17);
+check('機師：防具模組 4 種', findSection('pilot', '防具模組', 'table').rows.length, 4);
+check('機師：武裝模組 17 種', findSection('pilot', '武裝模組', 'table').rows.length, 17);
 check('機師：支援模組 14 種', findSection('pilot', '支援模組', 'table').rows.length, 14);
 check('卡牌大師：效果 8 種', findSection('aceOfCards', '組合效果', 'table').rows.length, 8);
 
@@ -197,6 +204,60 @@ check('rituals 的學派不含畫風描述',
 check('機師不含具名範例載具',
   RULE_CODEX.pilot.sections.every((s) =>
     !(s.kind === 'table' && s.rows.some((r) => r[0] === '星際戰機' || r[0] === '懸浮滑板'))), true);
+
+// ─────────────────────────────────────────────────────────── G
+section('G. 譯名一致性：速查子項目名稱必須與定譯表逐字相同');
+// 定譯表來源：繁中版角色卡 Excel V2.17（`skillSuboptionsData.js`／`pilotVehicleData.js`
+// 檔頭已各自註明）。核心 6 條的定譯來源是官方核心規則漢化 PDF。
+//
+// 這道關卡是為 2026-10-05 的失誤而加：速查當時是從英文原書**自行翻譯**的，
+// 約 140 處名稱與定譯表不同（舞步 17/17、徽記 9/19、魔法種子 13/20、混合形態 12/12、
+// 心靈天賦 7/9、機師支援模組 14/14…），而既有的 A~F 區段**一項都驗不到**——
+// 它們只驗結構、數量、關鍵字唯一性與授權合規，驗不到「名稱對不對」。
+const normName = (s) => String(s).replace(/（[^）]*）/g, '').replace(/✦/g, '').trim();
+const col0 = (rows) => rows.map((r) => normName(r[0]));
+const matchNames = (label, expected, actual) => {
+  const missing = expected.filter((n) => !actual.includes(normName(n)));
+  check(`${label}：${expected.length} 個名稱全部命中定譯`, missing, []);
+};
+
+matchNames('舞者',
+  DANCER_DANCES.map((d) => d.name),
+  col0(findSection('dancer', '舞步', 'table').rows));
+matchNames('魔奏者音調',
+  CHANTER_DATA.keys.map((k) => k.name),
+  col0(findSection('chanter', '音調', 'table').rows));
+matchNames('魔奏者曲風',
+  CHANTER_DATA.tones.map((t) => t.name),
+  findSection('chanter', '曲風').items.map((i) => i.name));
+matchNames('徽記師',
+  SYMBOLIST_SYMBOLS.map((s) => s.name),
+  col0(findSection('symbolist', '徽記一覽', 'table').rows));
+matchNames('植物學家',
+  FLORIST_MAGISEEDS.map((s) => s.name),
+  col0(findSection('floralist', '魔法種子一覽', 'table').rows));
+matchNames('靈能者',
+  ESPER_GIFTS.map((g) => g.name),
+  col0(findSection('esper', '天賦一覽', 'table').rows));
+matchNames('突變體',
+  MUTANT_THERIOFORMS.map((f) => f.name),
+  col0(findSection('mutant', '混合形態一覽', 'table').rows));
+matchNames('機師框架',
+  PILOT_FRAMES.map((f) => f.name),
+  col0(findSection('pilot', '框架', 'table').rows));
+matchNames('機師防具模組',
+  PILOT_ARMOR_MODULES.map((m) => m.name),
+  col0(findSection('pilot', '防具模組', 'table').rows));
+matchNames('機師武裝模組',
+  PILOT_WEAPON_MODULES.map((m) => m.name),
+  col0(findSection('pilot', '武裝模組', 'table').rows));
+matchNames('機師支援模組',
+  PILOT_SUPPORT_MODULES.map((m) => m.name),
+  col0(findSection('pilot', '支援模組', 'table').rows));
+
+// 徽記同時維持上限＝SL + 1（已對照原書；`skillSuboptionsData` 的 quotaHint 同值）
+checkTrue('徽記師：同時維持上限為 SL+1',
+  RULE_CODEX.symbolist.sections[0].items.some((s) => s.includes('加 1')));
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

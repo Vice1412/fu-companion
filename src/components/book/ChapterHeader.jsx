@@ -77,6 +77,7 @@ export default function ChapterHeader({
   onExitToCover,
   backOverride = null,
   onOpenDice,
+  onOpenCodex,
   onBackup,
   onRestore,
   extraLeft = null,
@@ -185,6 +186,17 @@ export default function ChapterHeader({
             style={customTheme ? { backgroundColor: customTheme.border } : {}}
           />
         )}
+
+        {/* Rule Codex Button in Header */}
+        <button
+          onClick={onOpenCodex}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${customTheme ? 'shadow-sm' : theme.toolBtn}`}
+          style={customTheme ? { backgroundColor: customTheme.cardBg || '#ffffff', borderColor: customTheme.border, color: customTheme.textDark } : {}}
+          title="開啟規則概念速查（16 項官方子系統）"
+        >
+          <GiSpellBook className="w-4 h-4" style={customTheme ? { color: customTheme.accent } : {}} />
+          <span className="hidden sm:inline">規則速查</span>
+        </button>
 
         {/* Dice Roller Button in Header */}
         <button

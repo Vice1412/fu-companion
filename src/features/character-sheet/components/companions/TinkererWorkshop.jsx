@@ -671,7 +671,7 @@ export default function TinkererWorkshop({
   };
 
   const handleBuildMagcannon = () => {
-    const nextIp = consumeIp(3, '道具點');
+    const nextIp = consumeIp(2, '道具點');
     if (nextIp === null) return;
 
     const newMagcannonWeapon = {
@@ -699,7 +699,7 @@ export default function TinkererWorkshop({
       updatedAt: new Date().toISOString()
     });
 
-    showToast(`消耗 3 道具點成功製造【${newMagcannonWeapon.name}】並已裝備！剩餘 ${nextIp} 道具點。`, 'success');
+    showToast(`消耗 2 道具點成功製造【${newMagcannonWeapon.name}】並已裝備！剩餘 ${nextIp} 道具點。`, 'success');
   };
 
   const handleCastSpellOrb = (spellName) => {
@@ -1572,7 +1572,7 @@ export default function TinkererWorkshop({
                           魔加農火器製造（進階）
                         </span>
                         <span className="font-mono text-xs text-purple-700 dark:text-purple-300 font-bold">
-                          3 IP · 火器武器
+                          2 IP · 火器武器
                         </span>
                       </div>
 
@@ -1614,7 +1614,7 @@ export default function TinkererWorkshop({
                           icon={GiBroadsword}
                           onClick={handleBuildMagcannon}
                         >
-                          製造魔加農 (3 IP)
+                          製造魔加農 (2 IP)
                         </JRPGButton>
                       </div>
                     </div>

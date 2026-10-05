@@ -120,14 +120,14 @@ export default function RuleCodexDrawer({
     { id: 'projects', label: '造物專案', icon: GiGearHammer },
     { id: 'companion', label: '忠實夥伴', icon: GiPawPrint },
     { id: 'spellbooks', label: '核心法術書', icon: GiSpellBook },
-    { id: 'chanter', label: '詩節與音色', icon: GiMusicalNotes },
+    { id: 'chanter', label: '樂句與音調', icon: GiMusicalNotes },
     { id: 'dancer', label: '舞步', icon: GiSonicShoes },
     { id: 'symbolist', label: '徽記', icon: GiQuillInk },
-    { id: 'floralist', label: '花園與魔種', icon: GiFlowerPot },
+    { id: 'floralist', label: '花園與魔法種子', icon: GiFlowerPot },
     { id: 'gourmet', label: '食材與美食', icon: GiCookingPot },
     { id: 'invoker', label: '元素源泉', icon: GiStoneSphere },
     { id: 'esper', label: '天賦', icon: GiBrain },
-    { id: 'mutant', label: '獸化', icon: GiWolfHead },
+    { id: 'mutant', label: '混合形態', icon: GiWolfHead },
     { id: 'pilot', label: '個人載具', icon: GiSteeringWheel },
     { id: 'aceOfCards', label: '牌組與組合', icon: GiCardPlay }
   ];
@@ -851,7 +851,7 @@ export default function RuleCodexDrawer({
                     基礎屬性配置方案
                   </span>
                   <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-[11px]">
-                    從【d8, d8, d8, d8】、【d10, d8, d8, d6】、【d10, d10, d6, d6】或【d12, d8, d6, d6】中任選一組分配至 DEX, INS, MIG, WLP。固定為 5 級，物種可選野獸、構裝體、元素或植物。
+                    從【d8, d8, d8, d8】、【d10, d8, d8, d6】、【d10, d10, d6, d6】或【d12, d8, d6, d6】中任選一組分配至 DEX, INS, MIG, WLP。固定為 5 級，物種可選野獸、構造體、元素或植物。
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 shadow-2xs space-y-2">

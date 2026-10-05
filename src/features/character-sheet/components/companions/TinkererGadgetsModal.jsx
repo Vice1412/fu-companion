@@ -112,10 +112,10 @@ export const GADGET_TRACKS = [
         tier: 2,
         tierName: '進階益處',
         name: '魔加農火器',
-        cost: '3 IP',
+        cost: '2 IP',
         dice: '【DEX + INS】+1',
-        summary: '消耗 3 IP 製造雙手遠程火器，傷害【HR + 10】自選屬性。',
-        desc: '花費 3 點 IP 製造一把魔加農火器（摧毀舊有魔加農）。雙手遠程，命中【DEX + INS】+1，傷害【HR + 10】，可自選風/電/土/火/冰/物理屬性。'
+        summary: '消耗 2 IP 製造雙手遠程火器，傷害【HR + 10】自選屬性。',
+        desc: '花費 2 點 IP 製造一把魔加農火器（摧毀舊有魔加農）。雙手遠程，命中【DEX + INS】+1，傷害【HR + 10】，可自選風/電/土/火/冰/物理屬性。'
       },
       {
         tier: 3,

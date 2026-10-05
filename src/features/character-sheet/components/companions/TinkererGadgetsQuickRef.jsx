@@ -331,10 +331,10 @@ export default function TinkererGadgetsQuickRef({
                   <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/80 border border-teal-200/70 dark:border-slate-700 space-y-1">
                     <div className="flex justify-between items-center font-bold">
                       <span className="text-teal-950 dark:text-teal-200">高級【魔加農】</span>
-                      <span className="font-mono text-teal-700 dark:text-teal-400 font-bold text-[10px]">3 IP</span>
+                      <span className="font-mono text-teal-700 dark:text-teal-400 font-bold text-[10px]">2 IP</span>
                     </div>
                     <div className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">
-                      {renderTextWithAffinities('花費 3 IP 製造一把魔加農火器。若兩手為空，可立即裝備並進行一次自由攻擊。命中【DEX + INS】+1，傷害【HR + 10】自選屬性傷害。')}
+                      {renderTextWithAffinities('花費 2 IP 製造一把魔加農火器。若兩手為空，可立即裝備並進行一次自由攻擊。命中【DEX + INS】+1，傷害【HR + 10】自選屬性傷害。')}
                     </div>
                   </div>
                 )}
