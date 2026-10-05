@@ -1,3 +1,4 @@
+import { RULE_CODEX } from '../data/ruleCodexData';
 import React, { useState } from 'react';
 import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 
@@ -12,25 +13,16 @@ import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
  * 4. 支援點擊非通用專屬規則關鍵詞（阿爾卡納、儀式學派、小工具、造物專案、忠實夥伴等），平滑開啟規則速查手冊。
  */
 
-// 支援的專有規則速查關鍵詞（依字元長度降序排列，避免短詞覆蓋長詞）
+/**
+ * 支援的專有規則速查關鍵詞。
+ *
+ * **由 `RULE_CODEX` 自動產生**，不再手動維護——否則新增速查條目時，
+ * 這裡的靜態清單會與資料脫鉤（該清單原本只涵蓋核心手冊的 6 條）。
+ * 依字元長度降序排列，避免短詞覆蓋長詞（例如「儀式」蓋掉「秘儀學派儀式」）。
+ */
 const CODEX_KEYWORDS = [
-  '造物專案',
-  '秘儀學派儀式',
-  '嵌合學派儀式',
-  '元素學派儀式',
-  '熵系學派儀式',
-  '靈魂學派儀式',
-  '儀式學派',
-  '純粹儀式',
-  '阿爾卡納',
-  '小工具',
-  '造物',
-  '忠實夥伴',
-  '元素魔法',
-  '熵系魔法',
-  '靈魂魔法',
-  '儀式'
-];
+  ...new Set(Object.values(RULE_CODEX).flatMap((r) => r.keywords || []))
+].sort((a, b) => b.length - a.length);
 
 export function parseSkillFormulaSegments(text, sl = 0) {
   if (!text) return [];

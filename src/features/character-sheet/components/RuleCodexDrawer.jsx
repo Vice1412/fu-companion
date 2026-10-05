@@ -12,6 +12,18 @@ import {
   GiBroadsword
 } from 'react-icons/gi';
 import { X, Search } from 'lucide-react';
+import {
+  GiMusicalNotes,
+  GiSonicShoes,
+  GiQuillInk,
+  GiFlowerPot,
+  GiCookingPot,
+  GiStoneSphere,
+  GiBrain,
+  GiWolfHead,
+  GiSteeringWheel,
+  GiCardPlay
+} from 'react-icons/gi';
 import { RULE_CODEX, findCodexRule } from '../data/ruleCodexData';
 import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 
@@ -100,13 +112,24 @@ export default function RuleCodexDrawer({
 
   const currentRule = RULE_CODEX[activeRuleId] || RULE_CODEX.arcana;
 
+  // 分頁順序＝原書的章節順序（核心 → 高度 → 自然 → 科技 → 特典）。
   const navItems = [
     { id: 'arcana', label: '阿爾卡納', icon: GiSparkles },
     { id: 'rituals', label: '儀式', icon: GiScrollQuill },
     { id: 'gadgets', label: '小工具', icon: GiCauldron },
     { id: 'projects', label: '造物專案', icon: GiGearHammer },
     { id: 'companion', label: '忠實夥伴', icon: GiPawPrint },
-    { id: 'spellbooks', label: '核心法術書', icon: GiSpellBook }
+    { id: 'spellbooks', label: '核心法術書', icon: GiSpellBook },
+    { id: 'chanter', label: '詩節與音色', icon: GiMusicalNotes },
+    { id: 'dancer', label: '舞步', icon: GiSonicShoes },
+    { id: 'symbolist', label: '徽記', icon: GiQuillInk },
+    { id: 'floralist', label: '花園與魔種', icon: GiFlowerPot },
+    { id: 'gourmet', label: '食材與美食', icon: GiCookingPot },
+    { id: 'invoker', label: '元素源泉', icon: GiStoneSphere },
+    { id: 'esper', label: '天賦', icon: GiBrain },
+    { id: 'mutant', label: '獸化', icon: GiWolfHead },
+    { id: 'pilot', label: '個人載具', icon: GiSteeringWheel },
+    { id: 'aceOfCards', label: '牌組與組合', icon: GiCardPlay }
   ];
 
   const modalContent = (
@@ -199,6 +222,82 @@ export default function RuleCodexDrawer({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* 通用區塊渲染（擴充手冊的 10 個子系統） */}
+          {currentRule.sections && (
+            <div className="space-y-5">
+              {currentRule.sections.map((sec, si) => (
+                <div key={si} className="space-y-2">
+                  <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
+                    {sec.title}
+                  </h3>
+
+                  {sec.kind === 'rules' && (
+                    <ul className="list-disc list-inside space-y-1.5 text-xs text-stone-700 dark:text-stone-300 pl-1 leading-relaxed">
+                      {sec.items.map((r, ri) => (
+                        <li key={ri}>{renderTextWithAffinities(r)}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {sec.kind === 'table' && (
+                    <div className="overflow-x-auto rounded-xl border border-[#ded2be] dark:border-slate-700 shadow-2xs">
+                      <table className="w-full text-left text-xs bg-white dark:bg-slate-800">
+                        <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
+                          <tr>
+                            {sec.columns.map((c, ci) => (
+                              <th key={ci} className="p-2.5 whitespace-nowrap">{c}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
+                          {sec.rows.map((row, ri) => (
+                            <tr key={ri} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50 align-top">
+                              {row.map((cell, ci) => (
+                                <td
+                                  key={ci}
+                                  className={
+                                    ci === 0
+                                      ? 'p-2.5 font-bold text-stone-900 dark:text-stone-100 whitespace-nowrap align-top'
+                                      : 'p-2.5 text-stone-600 dark:text-stone-400 leading-relaxed align-top'
+                                  }
+                                >
+                                  {renderTextWithAffinities(cell)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {sec.kind === 'cards' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                      {sec.items.map((it, ii) => (
+                        <div
+                          key={ii}
+                          className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between gap-2 border-b border-stone-100 dark:border-slate-700 pb-1">
+                            <strong className="text-stone-900 dark:text-stone-100">{it.name}</strong>
+                            {it.meta && (
+                              <span className="text-[10px] font-mono text-amber-800 dark:text-amber-400 font-bold whitespace-nowrap">
+                                {it.meta}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">
+                            {renderTextWithAffinities(it.body)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

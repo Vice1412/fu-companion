@@ -25,23 +25,29 @@
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,914 kB（gzip 546 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描** 通過，exit 0）。
-  五組測試 ＋ 一道自動關卡：
-  - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）
+- **建置產物**：`dist/`，JS 1,960 kB（gzip 560 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描** 通過，exit 0）。
+  八組測試 ＋ 一道自動關卡：
+  - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
   - `npm run test:propernouns` —— 專有名詞對照與格式鐵律
   - `npm run test:projects` —— 造物專案成本與每日推進公式（對照原書官方範例）
   - `npm run test:resources` —— 職業資源池（上限公式與重置規則，對照原書）
   - `npm run test:gourmet` —— 美食家食材／食譜書（口味組合、d12 效果表、等級縮放，對照原書）
   - `npm run test:cards` —— 卡牌大師牌組與組合結算（30 張組成、7 種效果的精確比對、鬼牌指定、等級加成）
+  - `npm run test:engine` —— 角色卡數值引擎（HP/MP/IP/危機/DEF/M.DEF，對照原書 p.163–164）
+  - `npm run test:datalayer` —— 鍵註冊表、存取層、舊鍵遷移、房間同步契約
+  - `npm run test:codex` —— 規則概念速查（16 條覆蓋率、關鍵字唯一性、授權合規）
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
   2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
 - **樣式系統**：Tailwind 3。全站為**羊皮紙暖色調**（`#fbf7ee` / `#3c2415` / `#d6c7ab`），**非**深色石板底。
-- **資料層**：純 localStorage，四個 key：
-  `fu_companion_npc_library`、`fu_companion_character_roster`、
-  `fu_companion_active_combat`、`fu_companion_fate_clocks`
+- **資料層**：純 localStorage，但**已收斂為單一存取層**（2026-10-04，見 §6 L）：
+  - 鍵註冊表 `src/data/keys.js`：**7 個權威鍵 + 3 個舊鍵**
+  - 存取層 `src/data/store.js`：`readJSON`／`writeJSON`／`readRaw`／`writeRaw`／`subscribe`／`migrateLegacyStorage`
+  - **全站不得再直接呼叫 `localStorage`**（`src/` 內已零殘留，僅註解提及）
+  - 舊鍵遷移於 `main.jsx` 首次渲染前執行；**冪等、不覆寫、不刪除舊鍵**
+  - 房間同步契約 `shared/schema.js`（前端與未來的 Worker 共用）
 
 ### 1.1 官方 PDF 抽取（規則二.4 的必要工具）
 
@@ -369,15 +375,20 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-04 實測 4.2 秒）。
-- JS bundle 1,914 kB / gzip 546 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-04 實測 4.32 秒）。
+- JS bundle 1,960 kB / gzip 560 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
-  哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）。
-  **剩餘覆蓋缺口**：角色卡數值引擎（`characterEngine.js`）、戰鬥輪次狀態機、Fultimator 匯入匯出。
-  下一個建議補的是**角色卡數值引擎**——它決定 HP/MP/IP 與所有衍生數值，錯了整張卡都是錯的。
+  哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
+  **角色卡數值引擎（`test:engine`，2026-10-04 補上）**、**資料層與房間契約（`test:datalayer`）**。
+  **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
+  > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`，243 項）。
+  > 官方 Camilla 向量已 1:1 還原（原書 p.163–164：等級 5、Might d6、Willpower d8
+  > → HP 40／MP 50／危機 20／IP 6／DEF 8／M.DEF 10）。
+  > 並確立兩條不變式：**HP/MP 用基礎骰**、**DEF/M.DEF 用當前骰**（狀態減值只影響後者）。
+  > 該次同時以測試記錄了四個**既有缺陷**，見 §6 L。
 
 ---
 
@@ -751,6 +762,159 @@ value will not match the requirements of Jackpot; it has to be composed of exact
 > `aceOfCardsData.js`、`AceOfCardsTable.jsx`。
 > **同一個失誤重複五次，說明這不是「一時疏忽」，而是我的預設書寫習慣有問題——
 > 這正是把它做成自動關卡（而不是靠自律）的價值。**
+
+### K7. 規則概念速查：授權合規清理 ＋ 補齊 10 個職業 —— ✅ 2026-10-05
+
+#### 一、授權依據（Fabula Ultima Third-Party Tabletop License 1.0）
+
+- **§1 保留材料**：商標、名稱、**美術、文字（text）、素材、商業外觀**皆為 NDG/EG 保留材料，不得重製或收錄。
+- **§3 唯一的例外**：可引用規則、文字與機制，**包括「使用完全相同的術語與完整擴充條目與描述」**——
+  但**僅限 7 類**：(i) 基礎武器 (ii) 基礎防具與盾牌 (iii) 預設庫存物品
+  **(iv) 各職業的規則與機制（例如職業特技）** (v) 英雄技能 (vi) 稀有物品特性 (vii) **NPC 咒語**。
+- **§1 亦明文把「character generators」列為許可的作品形式** ← 本專案正是這一類。
+- **§6 強制聲明**：非背書／需官方核心書／AI 生成內容聲明／附授權連結。
+- **§8 標題禁用** "Fabula"、"Fabula Ultima"。
+
+> **關鍵判斷**：職業的「額外子系統章節」（阿爾卡納、徽記、舞步、花園、源泉、天賦、獸化、載具、牌組…）
+> **不在 §3 的 7 類清單內**。§3(iv) 用 `e.g. Class Skills`，可寬鬆解讀為涵蓋它們——**但那是推測，不是白紙黑字**。
+> 故採**唯一不需要靠解讀的作法：只收錄機制，不收錄任何畫風／敘述文字。**
+
+**判準**：**「移掉之後玩家還能不能用這條規則」**。
+- **保留**：效力／範圍的校準清單——沒有它們，GM 無法判斷「這算小型還是大型」，屬機制而非畫風。
+- **移除**：世界觀描述、敘事範例故事、具名範例作品的專有名稱與敘述、原書的畫風舉例。
+
+#### 二、已清理的內容（既有 6 條）
+
+| 位置 | 內容 | 處置 |
+|---|---|---|
+| `arcana.summary` | 「阿爾卡納是屬於神話實體或古代英靈的物質化身」「毀天滅地」 | 移除 |
+| `rituals.disciplines[].desc` | 六學派的敘事範例（「在水上行走、塑石造岩…」） | 整欄移除（公式即為機制；學派範圍由 GM 裁定） |
+| `rituals.examples[]` | 4 條儀式敘事故事 | 整段移除 |
+| `gadgets.alchemy/magitech.desc` | 畫風描述 | 移除 |
+| `projects.steps[2].desc` | 「例如裝備大炮的魔科技摩托車」 | 改為中性敘述 |
+| `projects.samples[]` | 9 筆具名範例作品（含官方專有名稱與敘述） | 整段移除 |
+| `RuleCodexDrawer` | 畫風註腳、「你可以…」欄 | 移除 |
+
+> **附帶發現**：`projects.samples` 與 `tinkererProjects.js` 的 `OFFICIAL_SAMPLE_PROJECTS` **重複**，
+> 而 `test:projects` 的 B 區段已在驗證後者——故移除不損失任何功能。
+> 該測試的 G 區段改為**合規護欄**（斷言 codex 不含具名範例與敘事範例），並保留「效力等級誤植」的回歸防線。
+
+#### 三、§6 聲明補強（`BookCoverHub.jsx`）
+
+- 「not affiliated」→ **「not endorsed or sponsored in any way」**（對齊 §6 用語）。
+- **新增明示的 AI 生成內容聲明**（§6 明文要求）。
+- 新增「本工具僅重製機制、不重製畫風」的說明。
+
+#### 四、補齊 10 個職業（覆蓋率 6 → 16）
+
+**方法**：用各書**目錄的頁碼間距**推每個職業分到幾頁（基準 2 頁），多出來的就是額外章節，再**逐頁翻開確認**。
+這個方法也濾掉一個假陽性：元素師／熵師／靈魂術士都是 4 頁，但多出來的是**法術列表**，不是新機制。
+
+| 書 | 職業 | 額外章節 | 頁 | 規模 |
+|---|---|---|---|---|
+| 高度 | 魔奏者 | 詩節與音色 | 138–139 | 3 音量 × 8 音色 × 7 詩節 |
+| 高度 | 舞者 | 舞步 | 144–145 | 17 舞步 |
+| 高度 | 徽記師 | 徽記 | 148–151 | 10 規則 + 19 徽記 |
+| 自然 | 植物學家 | 花園與魔種 | 140–147 | 花園 + 4 格成長命刻 + 20 魔種 |
+| 自然 | 美食家 | 食材與美食 | 150–153 | d6 口味 + d12 效果 + 特殊規則 |
+| 自然 | 祈喚者 | 元素源泉 | 156–157 | 5 源泉 × 4 = 20 祈喚 |
+| 科技 | 靈能者 | 天賦 | 152–153 | 4 格腦波命刻 + 9 天賦 |
+| 科技 | 突變體 | 獸化 | 156–157 | 12 獸化 |
+| 科技 | 機師 | 個人載具 | 160–169 | 3 框架 + 17 武器 + 4 裝甲 + 14 支援模組 |
+| 特典 | 卡牌大師 | 牌組與組合 | 8–9 | 30 張牌組 + 8 組合效果 |
+
+**確認「不需要」的**：核心 12 個（2 頁）、元素師／熵師／靈魂術士（多的**是法術列表**）、
+指揮官、商人、死靈術士（資源寫在技能裡，非獨立章節）。
+
+**架構決定**：
+- 新條目放在 `data/ruleCodexExpansion.js`，與核心 6 條分檔；`RULE_CODEX` 為合併後的匯出。
+- 新條目用**通用的 `sections` 陣列**（`rules`／`table`／`cards` 三種），由抽屜的通用渲染器呈現；
+  核心 6 條的專屬 UI **完全不動**（降低回歸風險）。
+- **`CODEX_KEYWORDS` 改為由 `RULE_CODEX` 自動產生**——原本是寫死的清單，只涵蓋核心 6 條，
+  新增條目時必然與資料脫鉤。現在是單一事實來源。
+
+**關鍵字衝突**：`秘儀學派儀式` 同時屬於「阿爾卡納」與「儀式魔法」，而 `findCodexRule` 只回第一個。
+已從阿爾卡納移除（保留在儀式魔法——玩家點該技能時要的是儀式規則）。
+
+> **誤傷檢查**：有 33 筆「跨職業命中」，逐一檢視後**全部是正確的交叉引用**，不是巧合：
+> 商人【過期食品】寫「美食（見第 151 頁）」、靈能者【領航員】寫「效果屬於儀式學派的儀式魔法」、
+> 機師【壓縮技術】提到魔科技、修補匠【小工具】提到煉金術／灌注術。**這些連結本來就該存在。**
+
+**測試**：`npm run test:codex`（256 項）——覆蓋率、關鍵字唯一性、資料結構、關鍵數據抽查、授權合規。
+
+> **環境副作用（需知悉）**：抽取機師模組表時，子代理為做字元座標驗證，
+> 在 DSH bundled Python 安裝了 `cryptography`、`pdfminer.six`（+ `cffi`、`pycparser`、`charset-normalizer`）。
+> 屬開發期工具，不影響執行期。
+
+### L. 資料層收斂與既有缺陷 —— ✅ 2026-10-04 完成（階段 0）
+
+**背景**：使用者要求「全團登入房間、HP/MP 即時同步」的連線功能。動工前先做前置：把散落的
+localStorage 呼叫收斂成單一存取層。**這一步不是為了伺服器才做的**——它同時修好了一個
+使用者**當時正在承受**的 bug。
+
+#### L1. 已修的 bug：NPC 檔案庫三鍵不一致
+
+**症狀**：戰鬥追蹤器的「從怪物庫派兵」永遠是空的；全站備份也備不到真正的 NPC 庫。
+
+**根因**：NPC 檔案庫同時存在三個互不相通的鍵——
+
+| 鍵 | 讀取端 | 寫入端 |
+|---|---|---|
+| `fabula-npc-library-v2` | `NPCWorkshop.jsx`（唯一） | `NPCWorkshop.jsx`（唯一） |
+| `fu_companion_npc_library` | `App.jsx` 備份、`CombatTracker.jsx` | **只有** `App.jsx` 還原備份時 |
+| `fu_npc_library` | **無** | `NPCWorkshop.jsx` 匯入時 |
+
+NPC 工坊寫的是第一個，戰鬥追蹤器讀的是第二個 → **兩者永遠對不上**。
+
+**修法**：權威鍵統一為 `fu_companion_npc_library`（與其餘三個權威鍵命名一致，
+且與本檔 §1 原記載相符）。舊鍵降級為 `LEGACY_KEYS`，由 `store.migrateLegacyStorage()`
+在 `main.jsx` 首次渲染前搬移。遷移策略刻意保守：**權威鍵為空才複製、不覆寫、不刪除舊鍵**，
+因此冪等且完全可逆。
+
+#### L2. 資料層現況（全站唯一入口）
+
+| 檔案 | 職責 |
+|---|---|
+| `src/data/keys.js` | 7 個權威鍵 + 3 個舊鍵；**唯一事實來源** |
+| `src/data/store.js` | `readJSON`／`writeJSON`／`readRaw`／`writeRaw`／`subscribe`／`removeKey`／`clearAll`／`migrateLegacyStorage` |
+| `shared/schema.js` | 房間同步契約（前端與未來的 Worker 共用） |
+
+**關鍵區分**：`npcCardTheme` 與 `soundEnabled` 存的是**原始字串**（`'amber'`／`'true'`），
+其餘是 JSON。故 store 同時提供 `readRaw`／`writeRaw` 與 `readJSON`／`writeJSON` 兩組 API。
+混用會直接壞掉（把 `amber` 當 JSON 解析會拋錯）。
+
+**驗證**：`src/` 內直接呼叫 `localStorage` 的次數 = **0**（僅註解提及）。
+
+#### L3. 同步邊界（決定未來免費額度）
+
+`shared/schema.js` 的 `toCombatantSnapshot()` 把參戰者壓縮成可廣播的最小欄位集，
+**刻意剝除 `skills`、`rawCharData`、`avatar`**——`rawCharData` 是整張角色卡的複本，
+`avatar` 是 base64（可達數百 KB）。不剝除的話，每次廣播都在送整張卡。
+
+**已知正確行為**：NPC 的 `ip` 為 `null`——官方規則中 NPC 不持有行囊點數。
+
+#### L4. 角色卡引擎的四個既有缺陷（已以測試記錄，**尚未修**）
+
+`npm run test:engine`（243 項）在驗證官方 Camilla 向量時，順帶發現四個既有缺陷。
+**皆以 `// TODO(bug):` 標註在測試中，未改動 `src/`**：
+
+| # | 位置 | 問題 |
+|---|---|---|
+| 1 | `characterEngine.js:349-358` | `applyLevelUp` 遇到不存在的職業名仍會扣 10 EXP 並升級，但 `classes` 完全不變——玩家付出 EXP 卻什麼都沒得到 |
+| 2 | `characterEngine.js:524` | `fabulaPoints: char.fabulaPoints \|\| 3`——物語點合法可為 0，導出時卻被還原成 3 |
+| 3 | `characterEngine.js:127` | 等級被 `Math.max(5, ...)` 夾住，等級 1~4 的角色 HP/MP 會偏高（等級 1 實測 HP 50，原書公式應為 46）。此路徑可達——`fultimatorConverter.js:88` 可匯入 lvl < 5 |
+| 4 | `characterEngine.js:232-233` | 防具／盾牌找不到時回退到 `armors[0]`／`shields[0]`，語意錯誤。目前因索引 0 恰為中性（無裝甲／無盾牌）而無數值偏差，屬**潛伏**缺陷 |
+
+> **需使用者裁定是否修**。缺陷 1 與 3 有實際數值／資源損失，建議優先；
+> 缺陷 4 一旦 `armors[0]` 換成帶加值的防具就會靜默影響所有未指定防具的角色。
+
+#### L5. 測試
+
+新增 `npm run test:engine`（243 項）與 `npm run test:datalayer`（86 項）。
+`test:emoji` 的掃描範圍同步**擴及 `shared/`**（原本只掃 `src/`，
+會漏掉寫在 `shared/schema.js` 的 emoji）。
+
+> **教訓：新增原始碼目錄時，別忘了同步掃描範圍**——否則新目錄成為零 Emoji 鐵律的盲區。
 
 ---
 

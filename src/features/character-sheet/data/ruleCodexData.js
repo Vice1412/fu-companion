@@ -1,3 +1,5 @@
+import { EXPANSION_CODEX } from './ruleCodexExpansion';
+
 /**
  * 官方非通用專有規則手冊數據庫 (Rule Codex Database)
  * 收錄《Fabula Ultima》各手冊中，職業技能之後附有獨立章節與特殊子系統之規則：
@@ -21,12 +23,12 @@
  * 遵循「純中文顯示鐵律」：禁絕中英夾雜與括號英文。
  */
 
-export const RULE_CODEX = {
+const CORE_CODEX = {
   arcana: {
     id: 'arcana',
     title: '阿爾卡納',
     page: '核心手冊 178~182 頁',
-    keywords: ['阿爾卡納', '阿爾卡納圓環', '綁定和召喚', '緊急秘儀', '秘儀學派儀式', '阿爾卡納再生'],
+    keywords: ['阿爾卡納', '阿爾卡納圓環', '綁定和召喚', '緊急秘儀', '阿爾卡納再生'],
     summary: '秘儀師可花費 40 點 MP 召喚一個已綁定的阿爾卡納，獲得常駐連結增益；自願解除時可啟動其解除效果。',
     rules: [
       '你可以使用一個動作並花費 40 點 MP 來召喚一個你已經綁定的阿爾卡納。',
@@ -374,6 +376,17 @@ export const RULE_CODEX = {
       }
     ]
   }
+};
+
+/**
+ * 合併後的完整速查表：核心手冊 6 條 ＋ 擴充手冊 10 條。
+ *
+ * 核心 6 條使用各自的專屬欄位與 UI；擴充 10 條使用通用的 `sections` 陣列
+ * （見 `ruleCodexExpansion.js` 檔頭說明）。兩者形狀不同但共用同一個抽屜。
+ */
+export const RULE_CODEX = {
+  ...CORE_CODEX,
+  ...EXPANSION_CODEX
 };
 
 export function findCodexRule(term) {
