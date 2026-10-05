@@ -48,6 +48,7 @@ import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererWorkshop from './companions/TinkererWorkshop';
+import GourmetCookbook from './companions/GourmetCookbook';
 import ClassResourceStrip from './ClassResourceStrip';
 import TinkererGadgetsQuickRef from './companions/TinkererGadgetsQuickRef';
 import SuboptionDetailsList from './SuboptionDetailsList';
@@ -1749,6 +1750,16 @@ export default function CharacterPlayHUD({
                         character={character}
                         onChange={onChange}
                         onOpenDice={onOpenDice}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '美食家' && (cl.skills || []).some(s => s.name === '烹飪' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <GourmetCookbook
+                        character={character}
+                        onChange={onChange}
                         showToast={showToast}
                       />
                     </div>
