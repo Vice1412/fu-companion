@@ -49,6 +49,7 @@ import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererWorkshop from './companions/TinkererWorkshop';
 import GourmetCookbook from './companions/GourmetCookbook';
+import AceOfCardsTable from './companions/AceOfCardsTable';
 import ClassResourceStrip from './ClassResourceStrip';
 import TinkererGadgetsQuickRef from './companions/TinkererGadgetsQuickRef';
 import SuboptionDetailsList from './SuboptionDetailsList';
@@ -1760,6 +1761,17 @@ export default function CharacterPlayHUD({
                       <GourmetCookbook
                         character={character}
                         onChange={onChange}
+                        showToast={showToast}
+                      />
+                    </div>
+                  )}
+
+                  {cl.className === '卡牌大師' && (cl.skills || []).some(s => s.name === '魔力套牌' && s.sl > 0) && (
+                    <div className="mt-3">
+                      <AceOfCardsTable
+                        character={character}
+                        onChange={onChange}
+                        onConsumeMp={(mpCost) => adjustMp(-mpCost)}
                         showToast={showToast}
                       />
                     </div>

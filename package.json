@@ -7,13 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run test:emoji && npm run test:sentinel && npm run test:propernouns && npm run test:projects && npm run test:resources && npm run test:gourmet",
+    "test": "npm run test:emoji && npm run test:sentinel && npm run test:propernouns && npm run test:projects && npm run test:resources && npm run test:gourmet && npm run test:cards",
     "test:emoji": "esbuild tests/emojiScan.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/emojiScan.mjs --log-level=warning && node .test-build/emojiScan.mjs",
     "test:gourmet": "esbuild tests/gourmet.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/gourmet.mjs --log-level=warning && node .test-build/gourmet.mjs",
     "test:sentinel": "esbuild tests/sentinelMigration.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/sentinelMigration.mjs --log-level=warning && node .test-build/sentinelMigration.mjs",
     "test:propernouns": "esbuild tests/properNouns.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/properNouns.mjs --log-level=warning && node .test-build/properNouns.mjs",
     "test:projects": "esbuild tests/tinkererProjects.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/tinkererProjects.mjs --log-level=warning && node .test-build/tinkererProjects.mjs",
-    "test:resources": "esbuild tests/classResources.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/classResources.mjs --log-level=warning && node .test-build/classResources.mjs"
+    "test:resources": "esbuild tests/classResources.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/classResources.mjs --log-level=warning && node .test-build/classResources.mjs",
+    "test:cards": "esbuild tests/aceOfCards.test.mjs --bundle --platform=node --format=esm --outfile=.test-build/aceOfCards.mjs --log-level=warning && node .test-build/aceOfCards.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

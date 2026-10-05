@@ -25,8 +25,8 @@
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,888 kB（gzip 537 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 94/94 + 56/56 + 235/235 ＋ Emoji 掃描** 通過，exit 0）。
+- **建置產物**：`dist/`，JS 1,909 kB（gzip 544 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描** 通過，exit 0）。
   五組測試 ＋ 一道自動關卡：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
@@ -34,6 +34,7 @@
   - `npm run test:projects` —— 造物專案成本與每日推進公式（對照原書官方範例）
   - `npm run test:resources` —— 職業資源池（上限公式與重置規則，對照原書）
   - `npm run test:gourmet` —— 美食家食材／食譜書（口味組合、d12 效果表、等級縮放，對照原書）
+  - `npm run test:cards` —— 卡牌大師牌組與組合結算（30 張組成、7 種效果的精確比對、鬼牌指定、等級加成）
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
   2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
@@ -369,9 +370,9 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ### E. 建置與測試
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.2 秒）。
-- JS bundle 1,888 kB / gzip 537 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- JS bundle 1,909 kB / gzip 544 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 94/94 + 56/56 + 235/235 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）。
@@ -690,6 +691,39 @@ E:\MINGWAN\TRPG\Fabula ultima\最終幻想1.1\Fabula_Ultima_TTJRPG_Need_Games,_R
 > 測試涵蓋六種組合（全限定／混合／全非限定／7+8+9／3+4／空輸入）。
 > 過程中抓到一個真 bug：空輸入會回傳一個孤立的句號（`'。'`），已修。
 > 另修正 `HP與MP` 黏在一起的排版（拉丁字元兩側補空格）。
+
+#### K6. 卡牌大師牌組 —— ✅ 2026-10-04 完成（分析報告順位 6）
+
+`docs/skill-coverage.md` 指出的**最大工程**，也是唯一「不做就完全玩不了」的職業。
+資料來源為官方特典合輯 **p.7–p.11**（逐條核對）。
+
+**為什麼它是最大的一個**：其他職業的資源是「一個數字」（墳墓點、貿易點數），
+卡牌大師要的是**一整套牌組狀態機**（牌庫／手牌／棄牌堆／先鋒卡），
+而且組合效果是**精確比對**的——原書 p.8 明例：「resolving a set of 5 cards with the same
+value will not match the requirements of Jackpot; it has to be composed of exactly 4 cards」。
+
+**資料層** `data/aceOfCardsData.js`（純模組，可測）：
+- `createDeck()` —— 恰好 30 張 = 2 鬼牌 + 4 花色 × 7 張（數值 1–7）
+- `drawCards()` —— 牌庫不足時**自動把棄牌堆洗回**（原書 p.8）
+- `expandJokers()` —— 鬼牌可指定任意花色與數值，故判定時要問「**是否存在**一種指定讓它符合」
+- `detectSets()` —— 8 種效果（7 個基本 + 禁忌君王），回傳**所有**符合者（原書要求玩家選一個）
+- `maxSetSizeForSL()` / `mpCostForSet()` / `maxMpForSL()` —— 每 5 MP 換 1 張，上限 `10 + SL×5`
+
+**UI** `components/companions/AceOfCardsTable.jsx`：花色對應設定、牌庫／手牌／棄牌堆計數、
+點擊選牌、符合效果清單（多個時要求選一個）、結算（付 MP → 打出 → 補抽）、再調度、衝突開始／結束。
+
+> **兩處解讀判斷（可一行改回）**：
+> ① **兩組數值必須不同**——「2 張同值 + 2 張同值」與「3 張同值 + 2 張同值」採撲克 two pair／
+> full house 的讀法（4 張同值**不算**雙重麻煩、5 張同值**不算**滿貫狀態）。
+> ② **花色顯示用中文名**（黑桃／紅心／方塊／梅花），符號僅供對照實體撲克牌——
+> 因為 `♥`／`♦` 在部分平台會渲染成彩色 emoji，與軌道 3 衝突。
+
+> 測試 `test:cards` **114 項**，含原書明例（5 張同值不符合滿貫）、鬼牌展開（1 張 28 種、
+> 2 張 784 種）、同花必然同時符合魔法同花與炫目同花（這是「只能選一個」規則的來源）、
+> 等級加成邊界（L19/L20/L39/L40）。
+>
+> **規則五.1 自動關卡第 4 次攔下我的 `⚠️`**——這次是在 `aceOfCardsData.js` 的註解裡，
+> 在宣稱完成之前就被 `npm run test:emoji` 擋下。**這個關卡已經證明自己值 4 次。**
 
 ---
 
