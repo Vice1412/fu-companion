@@ -8,6 +8,7 @@
  */
 import {
   TASTES,
+  TASTE_SHORT,
   TASTE_ROLL,
   ALL_TASTE_PAIRS,
   tastePairKey,
@@ -18,6 +19,9 @@ import {
   DELICACY_EFFECTS,
   isConflictOnly,
   formatEffect,
+  formatEffectSentence,
+  unusedEffects,
+  composeDelicacyText,
   effectSignature,
   findDuplicateEffects,
   cookbookProgress,
@@ -118,7 +122,7 @@ section('F2. 需要選擇的效果（原書：5/6/10/11/12 選屬性；1/2 選�
 const withChoice = Object.values(DELICACY_EFFECTS).filter((e) => e.choice).map((e) => e.roll).sort((a, b) => a - b);
 check('需選擇的效果編號', withChoice, [1, 2, 5, 6, 10, 11, 12]);
 check('效果 1 可選 6 種狀態', DELICACY_EFFECTS[1].choice.options, STATUS_CHOICES);
-check('效果 2 只能選 4 種狀態（不含憤怒與中毒）', DELICACY_EFFECTS[2].choice.options, ['眩暈', '動搖', '緩速', '虛弱']);
+check('效果 2 只能選 4 種狀態（不含憤怒與中毒）', DELICACY_EFFECTS[2].choice.options, ['眩暈', '動搖', '緩慢', '虛弱']);
 check('效果 5 可選 6 種屬性', DELICACY_EFFECTS[5].choice.options, DAMAGE_CHOICES);
 check('效果 11 可選四維', DELICACY_EFFECTS[11].choice.options, ATTRIBUTE_CHOICES);
 check('屬性選項 = 風電土火冰毒', DAMAGE_CHOICES, ['風', '電', '土', '火', '冰', '毒']);
@@ -190,6 +194,81 @@ check('效果3 在 L40 仍是 50（不是 CHM 的 L40→50 以外的值）', for
 // CHM 把防禦/咒語/技能合併為一個效果；正式版是三個
 check('封鎖動作是三個獨立效果（7/8/9）',
   [7, 8, 9].every((r) => DELICACY_EFFECTS[r] && !DELICACY_EFFECTS[r].choice), true);
+
+// ─────────────────────────────────────────────────────────── K
+section('K. 口味單字縮寫（供 5×5 表格表頭）');
+check('5 個口味都有縮寫', Object.keys(TASTE_SHORT).length, 5);
+check('苦味 -> 苦', TASTE_SHORT['苦味'], '苦');
+check('鹹味 -> 鹹', TASTE_SHORT['鹹味'], '鹹');
+check('酸味 -> 酸', TASTE_SHORT['酸味'], '酸');
+check('甜味 -> 甜', TASTE_SHORT['甜味'], '甜');
+check('鮮味 -> 鮮', TASTE_SHORT['鮮味'], '鮮');
+check('縮寫皆為單字', Object.values(TASTE_SHORT).every((s) => s.length === 1), true);
+check('每個口味都有縮寫', TASTES.every((t) => !!TASTE_SHORT[t]), true);
+
+// ─────────────────────────────────────────────────────────── L
+section('L. 完整句子（烹飪時複製給 GM／隊友）');
+check('每個效果都有 sentence', Object.values(DELICACY_EFFECTS).every((e) => typeof e.sentence === 'function'), true);
+check('效果1 句子', formatEffectSentence(1, '眩暈', 1), '目標從【眩暈】狀態恢復。');
+check('效果2 句子', formatEffectSentence(2, '動搖', 1), '目標陷入【動搖】狀態。');
+check('效果3 句子', formatEffectSentence(3, null, 1), '目標恢復 40 點 HP。');
+check('效果3 句子 L30', formatEffectSentence(3, null, 30), '目標恢復 50 點 HP。');
+check('效果4 句子', formatEffectSentence(4, null, 1), '目標恢復 40 點 MP。');
+check('效果5 句子', formatEffectSentence(5, '火', 1), '目標受到 20 點【火】屬性傷害。');
+check('效果5 句子 L30', formatEffectSentence(5, '火', 30), '目標受到 30 點【火】屬性傷害。');
+check('效果6 句子', formatEffectSentence(6, '電', 1),
+  '直到你的下回合結束前，所有【電】屬性的傷害來源對目標額外造成 5 點傷害。');
+check('效果7 句子（下回合句式）', formatEffectSentence(7, null, 1), '目標在其下個回合無法執行【防禦】動作。');
+check('效果8 句子', formatEffectSentence(8, null, 1), '目標在其下個回合無法執行【咒語】動作。');
+check('效果9 句子', formatEffectSentence(9, null, 1), '目標在其下個回合無法執行【技能】動作。');
+check('效果10 句子', formatEffectSentence(10, '冰', 1), '目標獲得【冰】屬性傷害抗性，直到你的下回合結束。');
+check('效果11 句子', formatEffectSentence(11, 'WLP', 1),
+  '目標的【WLP】視為高 1 階骰（上限 d12），直到你的下回合結束。');
+check('效果12 句子', formatEffectSentence(12, '毒', 1),
+  '目標在其下個回合造成的所有傷害轉為【毒】屬性，且無法改變。');
+check('未選維度時取第一個選項', formatEffectSentence(5, null, 1), '目標受到 20 點【風】屬性傷害。');
+check('無效編號 -> 空字串', formatEffectSentence(99, null, 1), '');
+check('每個句子都以句號結尾', Object.keys(DELICACY_EFFECTS).every((r) => formatEffectSentence(Number(r), null, 1).endsWith('。')), true);
+// 不強制以「目標」開頭——效果 6 以時間子句開頭（「直到你的下回合結束前…」）讀起來更順，
+// 但每個句子都必須明確指出作用對象是「目標」。
+check('每個句子都提及「目標」', Object.keys(DELICACY_EFFECTS).every((r) => formatEffectSentence(Number(r), null, 1).includes('目標')), true);
+
+// ─────────────────────────────────────────────────────────── M
+section('M. 尚未骰出的效果（食譜書進度參考）');
+check('空食譜 -> 12 個全未用', unusedEffects({}).length, 12);
+check('空食譜的編號', unusedEffects({}).map((e) => e.roll), [1,2,3,4,5,6,7,8,9,10,11,12]);
+check('用掉 3 號 -> 剩 11 個', unusedEffects({ a: { roll: 3 } }).length, 11);
+check('3 號不在清單中', unusedEffects({ a: { roll: 3 } }).some((e) => e.roll === 3), false);
+check('用掉 3 與 7 -> 剩 10 個', unusedEffects({ a: { roll: 3 }, b: { roll: 7 } }).length, 10);
+check('未決定的組合不計入', unusedEffects({ a: {} }).length, 12);
+check('同骰值重複使用只算一次', unusedEffects({ a: { roll: 5 }, b: { roll: 5 } }).length, 11);
+check('全滿 -> 0 個', unusedEffects(Object.fromEntries(ALL_TASTE_PAIRS.map((k, i) => [k, { roll: (i % 12) + 1 }]))).length, 0);
+check('每項都有 roll / label / text',
+  unusedEffects({}).every((e) => typeof e.roll === 'number' && !!e.label && !!e.text), true);
+check('text 與 formatEffect 一致', unusedEffects({})[2].text, formatEffect(3, null, 1));
+
+// ─────────────────────────────────────────────────────────── N
+section('N. 美食全文組裝（複製用）');
+const cb = {
+  '苦味+鹹味': { roll: 7, choice: null },
+  '苦味+酸味': { roll: 3, choice: null }
+};
+const txt = composeDelicacyText('石化蜂蜜燉菇', ['苦味+鹹味', '苦味+酸味'], cb, 1);
+check('含美食名', txt.includes('【石化蜂蜜燉菇】'), true);
+check('含第一個效果', txt.includes('目標在其下個回合無法執行【防禦】動作。'), true);
+check('含第二個效果', txt.includes('目標恢復 40 點 HP。'), true);
+check('含組合標示', txt.includes('苦味＋鹹味'), true);
+check('未命名時用預設名', composeDelicacyText('', ['苦味+鹹味'], cb, 1).startsWith('【美食】'), true);
+check('只有空白也算未命名', composeDelicacyText('   ', ['苦味+鹹味'], cb, 1).startsWith('【美食】'), true);
+check('沒有已決定效果時有提示', composeDelicacyText('測試', ['苦味+鹹味'], {}, 1).includes('尚未決定任何效果'), true);
+check('衝突限定效果會加註', composeDelicacyText('測試', ['苦味+鹹味'], cb, 1).includes('僅能在衝突場景生效'), true);
+check('非衝突限定時不加註', composeDelicacyText('測試', ['苦味+酸味'], cb, 1).includes('僅能在衝突場景生效'), false);
+check('空組合清單不炸', composeDelicacyText('測試', [], cb, 1).includes('尚未決定任何效果'), true);
+check('null 組合清單不炸', composeDelicacyText('測試', null, cb, 1).includes('尚未決定任何效果'), true);
+// 兩個衝突限定效果（5 與 12）要提示只能各留一個
+const cb2 = { '苦味+鹹味': { roll: 5, choice: '火' }, '苦味+酸味': { roll: 12, choice: '冰' } };
+check('多個衝突限定效果會提示取捨',
+  composeDelicacyText('測試', ['苦味+鹹味', '苦味+酸味'], cb2, 1).includes('只能保留一個'), true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

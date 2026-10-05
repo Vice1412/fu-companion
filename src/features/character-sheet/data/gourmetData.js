@@ -118,9 +118,9 @@ export const ATTRIBUTE_CHOICES = ['DEX', 'INS', 'MIG', 'WLP'];
  * 狀態選項。**沿用 App 既有詞彙**（`sourcebookConfig.js` 的 `STATUS_AFFLICTIONS`），
  * 以確保美食效果與狀態面板指向同一組詞。
  *
- * 已知差異：CHM 用「緩慢」，本專案全站用「緩速」。此為既有不一致，待使用者裁定。
+ * 2026-10-04 使用者裁定：統一為「緩慢」（原 CHM 譯法）。全站原用「緩速」的 7 處已一併更正。
  */
-export const STATUS_CHOICES = ['眩暈', '憤怒', '中毒', '動搖', '緩速', '虛弱'];
+export const STATUS_CHOICES = ['眩暈', '憤怒', '中毒', '動搖', '緩慢', '虛弱'];
 
 /**
  * d12 效果表（原書 p.152，逐條核對）。
@@ -133,73 +133,85 @@ export const DELICACY_EFFECTS = {
     roll: 1,
     label: '解除狀態',
     choice: { label: '狀態', options: STATUS_CHOICES },
-    build: (c) => `從【${c}】狀態恢復`
+    build: (c) => `從【${c}】狀態恢復`,
+    sentence: (c) => `目標從【${c}】狀態恢復。`
   },
   2: {
     roll: 2,
     label: '施加狀態',
-    choice: { label: '狀態', options: ['眩暈', '動搖', '緩速', '虛弱'] },
-    build: (c) => `陷入【${c}】狀態`
+    choice: { label: '狀態', options: ['眩暈', '動搖', '緩慢', '虛弱'] },
+    build: (c) => `陷入【${c}】狀態`,
+    sentence: (c) => `目標陷入【${c}】狀態。`
   },
   3: {
     roll: 3,
     label: '恢復 HP',
     choice: null,
-    build: (_c, lv) => `恢復 ${lv >= 30 ? 50 : 40} 點 HP`
+    build: (_c, lv) => `恢復 ${lv >= 30 ? 50 : 40} 點 HP`,
+    sentence: (_c, lv) => `目標恢復 ${lv >= 30 ? 50 : 40} 點 HP。`
   },
   4: {
     roll: 4,
     label: '恢復 MP',
     choice: null,
-    build: (_c, lv) => `恢復 ${lv >= 30 ? 50 : 40} 點 MP`
+    build: (_c, lv) => `恢復 ${lv >= 30 ? 50 : 40} 點 MP`,
+    sentence: (_c, lv) => `目標恢復 ${lv >= 30 ? 50 : 40} 點 MP。`
   },
   5: {
     roll: 5,
     label: '造成傷害',
     choice: { label: '屬性', options: DAMAGE_CHOICES },
-    build: (c, lv) => `受到 ${lv >= 30 ? 30 : 20} 點【${c}】屬性傷害`
+    build: (c, lv) => `受到 ${lv >= 30 ? 30 : 20} 點【${c}】屬性傷害`,
+    sentence: (c, lv) => `目標受到 ${lv >= 30 ? 30 : 20} 點【${c}】屬性傷害。`
   },
   6: {
     roll: 6,
     label: '增傷',
     choice: { label: '屬性', options: DAMAGE_CHOICES },
-    build: (c) => `到你的下回合結束前，所有【${c}】屬性傷害來源額外造成 5 點傷害`
+    build: (c) => `到你的下回合結束前，所有【${c}】屬性傷害來源額外造成 5 點傷害`,
+    sentence: (c) => `直到你的下回合結束前，所有【${c}】屬性的傷害來源對目標額外造成 5 點傷害。`
   },
   7: {
     roll: 7,
     label: '封鎖防禦',
     choice: null,
-    build: () => '下回合無法執行【防禦】動作'
+    build: () => '下回合無法執行【防禦】動作',
+    sentence: () => '目標在其下個回合無法執行【防禦】動作。'
   },
   8: {
     roll: 8,
     label: '封鎖咒語',
     choice: null,
-    build: () => '下回合無法執行【咒語】動作'
+    build: () => '下回合無法執行【咒語】動作',
+    sentence: () => '目標在其下個回合無法執行【咒語】動作。'
   },
   9: {
     roll: 9,
     label: '封鎖技能',
     choice: null,
-    build: () => '下回合無法執行【技能】動作'
+    build: () => '下回合無法執行【技能】動作',
+    sentence: () => '目標在其下個回合無法執行【技能】動作。'
   },
   10: {
     roll: 10,
     label: '獲得抗性',
     choice: { label: '屬性', options: DAMAGE_CHOICES },
-    build: (c) => `獲得【${c}】屬性傷害抗性直到你的下回合結束`
+    build: (c) => `獲得【${c}】屬性傷害抗性直到你的下回合結束`,
+    sentence: (c) => `目標獲得【${c}】屬性傷害抗性，直到你的下回合結束。`
   },
   11: {
     roll: 11,
     label: '提升屬性骰',
     choice: { label: '屬性', options: ATTRIBUTE_CHOICES },
-    build: (c) => `【${c}】視為高 1 階骰（上限 d12）直到你的下回合結束`
+    build: (c) => `【${c}】視為高 1 階骰（上限 d12）直到你的下回合結束`,
+    sentence: (c) => `目標的【${c}】視為高 1 階骰（上限 d12），直到你的下回合結束。`
   },
   12: {
     roll: 12,
     label: '轉換傷害類型',
     choice: { label: '屬性', options: DAMAGE_CHOICES },
-    build: (c) => `下回合造成的所有傷害轉為【${c}】屬性且無法改變`
+    build: (c) => `下回合造成的所有傷害轉為【${c}】屬性且無法改變`,
+    sentence: (c) => `目標在其下個回合造成的所有傷害轉為【${c}】屬性，且無法改變。`
   }
 };
 
@@ -249,3 +261,83 @@ export const cookbookProgress = (cookbook) =>
  * 為一份食材產生可讀名稱。原書要求玩家自行命名，故未命名時給一個中性預設。
  */
 export const defaultIngredientName = (taste, index) => `${taste}食材 ${index + 1}`;
+
+/** 口味的單字縮寫（供 5×5 表格的表頭使用）。 */
+export const TASTE_SHORT = {
+  苦味: '苦',
+  鹹味: '鹹',
+  酸味: '酸',
+  甜味: '甜',
+  鮮味: '鮮'
+};
+
+/**
+ * 產生效果的**通順完整句子**（供烹飪時複製給 GM／隊友）。
+ * @param {number} roll 1～12
+ * @param {string|null} choice 該效果所選的維度值
+ * @param {number} level 角色等級
+ */
+export const formatEffectSentence = (roll, choice, level = 1) => {
+  const def = DELICACY_EFFECTS[roll];
+  if (!def) return '';
+  return def.sentence(choice || (def.choice ? def.choice.options[0] : null), level);
+};
+
+/**
+ * 尚未被任何口味組合使用過的 d12 效果（原書要求每格效果不得重複，
+ * 故此清單即「還能骰出什麼」的參考）。
+ * @param {Object} cookbook
+ * @returns {Array<{roll:number,label:string,text:string}>}
+ */
+export const unusedEffects = (cookbook, level = 1) => {
+  const used = new Set(
+    Object.values(cookbook || {})
+      .filter((e) => e && e.roll)
+      .map((e) => Number(e.roll))
+  );
+  return Object.keys(DELICACY_EFFECTS)
+    .map(Number)
+    .filter((roll) => !used.has(roll))
+    .sort((a, b) => a - b)
+    .map((roll) => ({
+      roll,
+      label: DELICACY_EFFECTS[roll].label,
+      text: formatEffect(roll, null, level)
+    }));
+};
+
+/**
+ * 組裝一份美食的完整說明文字（供複製）。
+ * @param {string} dishName 玩家取的美食名
+ * @param {string[]} pairKeys 這份美食產生的口味組合鍵
+ * @param {Object} cookbook 食譜書
+ * @param {number} level 角色等級
+ * @returns {string}
+ */
+export const composeDelicacyText = (dishName, pairKeys, cookbook, level = 1) => {
+  const name = (dishName || '').trim() || '美食';
+  const lines = [`【${name}】`];
+  const effects = [];
+  const conflicts = [];
+
+  for (const key of pairKeys || []) {
+    const entry = cookbook?.[key];
+    if (!entry || !entry.roll) continue;
+    const [a, b] = parseTastePairKey(key);
+    effects.push(`・${a}＋${b}：${formatEffectSentence(entry.roll, entry.choice, level)}`);
+    if (isConflictOnly(entry.roll)) conflicts.push(entry.roll);
+  }
+
+  if (effects.length === 0) return `${lines[0]}\n（尚未決定任何效果）`;
+
+  lines.push(...effects);
+
+  if (conflicts.length > 0) {
+    lines.push('');
+    lines.push('（標為效果 5～12 者僅能在衝突場景生效）');
+  }
+  if (conflicts.length > 1) {
+    lines.push('※ 同一份美食只能保留一個「造成傷害」效果與一個「轉換傷害類型」效果。');
+  }
+  return lines.join('\n');
+};

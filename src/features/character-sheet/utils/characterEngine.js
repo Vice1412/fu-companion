@@ -48,7 +48,7 @@ export const createNewCharacter = (overrides = {}) => {
       enraged: false,  // 憤怒: DEX & INS 降一階
       poisoned: false, // 中毒: MIG & WLP 降一階
       shaken: false,   // 動搖: WLP 降一階
-      slow: false,     // 緩速: DEX 降一階
+      slow: false,     // 緩慢: DEX 降一階
       weak: false      // 虛弱: MIG 降一階
     },
 

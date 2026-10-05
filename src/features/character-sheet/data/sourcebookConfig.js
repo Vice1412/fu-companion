@@ -431,8 +431,8 @@ export const STATUS_AFFLICTIONS = {
   },
   slow: {
     id: 'slow',
-    name: '緩速',
-    short: '緩速',
+    name: '緩慢',
+    short: '緩慢',
     affectedStats: ['dex'],
     desc: '敏捷 骰階下降 1 級 (最低降至 d6)'
   },
