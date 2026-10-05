@@ -22,6 +22,8 @@ import {
   formatEffectSentence,
   unusedEffects,
   composeDelicacyText,
+  detectDelicacyConflicts,
+  conflictingPairKeys,
   effectSignature,
   findDuplicateEffects,
   cookbookProgress,
@@ -248,27 +250,73 @@ check('每項都有 roll / label / text',
 check('text 與 formatEffect 一致', unusedEffects({})[2].text, formatEffect(3, null, 1));
 
 // ─────────────────────────────────────────────────────────── N
-section('N. 美食全文組裝（複製用）');
+section('N. 美食全文組裝（使用者指定格式）');
+// 格式：【名字】 / 口味：x＋y＋z / 一段合併的效果文
 const cb = {
   '苦味+鹹味': { roll: 7, choice: null },
   '苦味+酸味': { roll: 3, choice: null }
 };
 const txt = composeDelicacyText('石化蜂蜜燉菇', ['苦味+鹹味', '苦味+酸味'], cb, 1);
-check('含美食名', txt.includes('【石化蜂蜜燉菇】'), true);
-check('含第一個效果', txt.includes('目標在其下個回合無法執行【防禦】動作。'), true);
+const txtLines = txt.split('\n');
+check('第 1 行是【名字】', txtLines[0], '【石化蜂蜜燉菇】');
+check('第 2 行是口味列', txtLines[1], '口味：苦味＋鹹味＋酸味');
+check('第 3 行是合併後的效果文', txtLines.length, 3);
+check('效果文中不含各別口味標示', txt.includes('苦味＋鹹味：'), false);
+check('含第一個效果', txt.includes('目標在其下個回合無法執行【防禦】動作'), true);
 check('含第二個效果', txt.includes('目標恢復 40 點 HP。'), true);
-check('含組合標示', txt.includes('苦味＋鹹味'), true);
+check('兩個效果合併為同一段', txtLines[2].includes('。目標恢復 40 點 HP。'), true);
 check('未命名時用預設名', composeDelicacyText('', ['苦味+鹹味'], cb, 1).startsWith('【美食】'), true);
 check('只有空白也算未命名', composeDelicacyText('   ', ['苦味+鹹味'], cb, 1).startsWith('【美食】'), true);
 check('沒有已決定效果時有提示', composeDelicacyText('測試', ['苦味+鹹味'], {}, 1).includes('尚未決定任何效果'), true);
-check('衝突限定效果會加註', composeDelicacyText('測試', ['苦味+鹹味'], cb, 1).includes('僅能在衝突場景生效'), true);
-check('非衝突限定時不加註', composeDelicacyText('測試', ['苦味+酸味'], cb, 1).includes('僅能在衝突場景生效'), false);
 check('空組合清單不炸', composeDelicacyText('測試', [], cb, 1).includes('尚未決定任何效果'), true);
 check('null 組合清單不炸', composeDelicacyText('測試', null, cb, 1).includes('尚未決定任何效果'), true);
-// 兩個衝突限定效果（5 與 12）要提示只能各留一個
-const cb2 = { '苦味+鹹味': { roll: 5, choice: '火' }, '苦味+酸味': { roll: 12, choice: '冰' } };
-check('多個衝突限定效果會提示取捨',
-  composeDelicacyText('測試', ['苦味+鹹味', '苦味+酸味'], cb2, 1).includes('只能保留一個'), true);
+
+section('N2. 衝突場景註記直接寫進該效果（不另加頁尾）');
+check('效果 7 會內嵌註記',
+  txtLines[2].includes('無法執行【防禦】動作（僅能在衝突場景生效）'), true);
+check('效果 3 不會有註記',
+  txtLines[2].includes('目標恢復 40 點 HP（僅能在衝突場景生效）'), false);
+check('不再出現頁尾註解',
+  txt.includes('標為效果 5～12'), false);
+check('不再出現「只能保留一個」的頁尾文字',
+  txt.includes('同一份美食只能保留一個'), false);
+
+// ─────────────────────────────────────────────────────────── O
+section('O. 衝突偵測（原書 p.153：效果 5 與 12 各只能有一個）');
+check('無衝突時回傳空', detectDelicacyConflicts(['苦味+鹹味'], cb).damage, []);
+check('無衝突時 typeChange 也空', detectDelicacyConflicts(['苦味+鹹味'], cb).typeChange, []);
+// 兩個效果 5（造成傷害）
+const cbTwoDamage = {
+  '苦味+鹹味': { roll: 5, choice: '火' },
+  '苦味+酸味': { roll: 5, choice: '冰' }
+};
+check('兩個效果 5 -> 偵測到 damage 衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbTwoDamage).damage.length, 2);
+check('兩個效果 5 -> typeChange 不衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbTwoDamage).typeChange, []);
+// 兩個效果 12（轉換傷害類型）
+const cbTwoTypeChange = {
+  '苦味+鹹味': { roll: 12, choice: '火' },
+  '苦味+酸味': { roll: 12, choice: '冰' }
+};
+check('兩個效果 12 -> 偵測到 typeChange 衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbTwoTypeChange).typeChange.length, 2);
+check('兩個效果 12 -> damage 不衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbTwoTypeChange).damage, []);
+// 一個 5 一個 12 -> 各自都只有一個，不衝突
+const cbMixed = {
+  '苦味+鹹味': { roll: 5, choice: '火' },
+  '苦味+酸味': { roll: 12, choice: '冰' }
+};
+check('一個 5 一個 12 -> 無衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbMixed).damage.length, 0);
+check('一個 5 一個 12 -> typeChange 也無衝突',
+  detectDelicacyConflicts(['苦味+鹹味', '苦味+酸味'], cbMixed).typeChange.length, 0);
+check('未決定的組合不列入', detectDelicacyConflicts(['苦味+鹹味'], {}).damage, []);
+check('conflictingPairKeys 彙整兩類',
+  conflictingPairKeys(['苦味+鹹味', '苦味+酸味'], cbTwoDamage).length, 2);
+check('無衝突時 conflictingPairKeys 為空',
+  conflictingPairKeys(['苦味+鹹味'], cb), []);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

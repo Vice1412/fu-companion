@@ -316,28 +316,56 @@ export const unusedEffects = (cookbook, level = 1) => {
  */
 export const composeDelicacyText = (dishName, pairKeys, cookbook, level = 1) => {
   const name = (dishName || '').trim() || '美食';
-  const lines = [`【${name}】`];
-  const effects = [];
-  const conflicts = [];
+  const keys = (pairKeys || []).filter((k) => cookbook?.[k]?.roll);
+  if (keys.length === 0) return `【${name}】\n（尚未決定任何效果）`;
 
+  // 口味列：依官方口味順序（苦→鹹→酸→甜→鮮）列出這份美食用到的口味
+  const tastes = [...new Set(keys.flatMap((k) => parseTastePairKey(k)))].sort(
+    (a, b) => TASTES.indexOf(a) - TASTES.indexOf(b)
+  );
+
+  // 效果：合併為一段，不標示各別口味組合（使用者指定格式）。
+  // 「僅能在衝突場景生效」直接寫進該效果本身，不另加頁尾註解。
+  const prose =
+    keys
+      .map((k) => {
+        const entry = cookbook[k];
+        let s = formatEffectSentence(entry.roll, entry.choice, level);
+        if (s.endsWith('。')) s = s.slice(0, -1);
+        if (isConflictOnly(entry.roll)) s += '（僅能在衝突場景生效）';
+        return s;
+      })
+      .join('。') + '。';
+
+  return `【${name}】\n口味：${tastes.join('＋')}\n${prose}`;
+};
+
+/**
+ * 檢查這份美食是否違反原書 p.153 的兩條唯一性限制：
+ * - 一份美食只能有一個「造成傷害」效果（效果 5）
+ * - 一份美食只能有一個「轉換傷害類型」效果（效果 12）
+ *
+ * @param {string[]} pairKeys 這份美食產生的口味組合鍵
+ * @param {Object} cookbook 食譜書
+ * @returns {{damage: string[], typeChange: string[]}} 超額的組合鍵（未超額時為空陣列）
+ */
+export const detectDelicacyConflicts = (pairKeys, cookbook) => {
+  const damage = [];
+  const typeChange = [];
   for (const key of pairKeys || []) {
     const entry = cookbook?.[key];
     if (!entry || !entry.roll) continue;
-    const [a, b] = parseTastePairKey(key);
-    effects.push(`・${a}＋${b}：${formatEffectSentence(entry.roll, entry.choice, level)}`);
-    if (isConflictOnly(entry.roll)) conflicts.push(entry.roll);
+    if (Number(entry.roll) === 5) damage.push(key);
+    if (Number(entry.roll) === 12) typeChange.push(key);
   }
+  return {
+    damage: damage.length > 1 ? damage : [],
+    typeChange: typeChange.length > 1 ? typeChange : []
+  };
+};
 
-  if (effects.length === 0) return `${lines[0]}\n（尚未決定任何效果）`;
-
-  lines.push(...effects);
-
-  if (conflicts.length > 0) {
-    lines.push('');
-    lines.push('（標為效果 5～12 者僅能在衝突場景生效）');
-  }
-  if (conflicts.length > 1) {
-    lines.push('※ 同一份美食只能保留一個「造成傷害」效果與一個「轉換傷害類型」效果。');
-  }
-  return lines.join('\n');
+/** 該份美食中「與其他組合衝突」的口味組合鍵（供 UI 標紅）。 */
+export const conflictingPairKeys = (pairKeys, cookbook) => {
+  const c = detectDelicacyConflicts(pairKeys, cookbook);
+  return [...c.damage, ...c.typeChange];
 };
