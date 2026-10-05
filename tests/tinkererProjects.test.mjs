@@ -103,33 +103,20 @@ check('有缺陷減免 1500', withFlaw.flawDiscount, 1500);
 check('有缺陷折後 4500', withFlaw.discountedCost, 4500);
 
 // ─────────────────────────────────────────────────────────── G
-section('G. 規則速查表的顯示資料必須與公式一致（回歸：曾誤植效力等級）');
-const codexSamples = (RULE_CODEX.projects?.samples) || [];
-check('速查表範例數 = 9', codexSamples.length, 9);
+section('G. 授權合規：速查表不得收錄具名範例作品與敘事範例');
+// 官方範例作品的名稱與敘述屬 Fabula Ultima Third-Party Tabletop License §1 的保留材料。
+// 其數值本身已由 B 區段的 OFFICIAL_SAMPLE_PROJECTS 驗證，速查表無需（也不應）重複收錄。
+check('projects 不含具名範例作品', RULE_CODEX.projects?.samples, undefined);
+check('rituals 不含敘事範例', RULE_CODEX.rituals?.examples, undefined);
 
-const POTENCY_ZH = { 小效力: '小', 中效力: '中', 大效力: '大', 強效力: '強' };
-let parsed = 0;
-for (const s of codexSamples) {
-  // 形如：大效力 (400z) × 小型 (×2) × 消耗品 (×1)
-  const m = s.formula.match(/^(\S+?)\s*\((\d+)z\)\s*×\s*(\S+?)\s*\(×(\d+)\)\s*×\s*(\S+?)\s*\(×(\d+)\)$/);
-  if (!m) {
-    lines.push(`  SKIP  ${s.name}（複合專案，無單一公式：${s.formula}）`);
-    continue;
-  }
-  parsed += 1;
-  const [, potZh, potZ, , areaM, , usesM] = m;
-  const expectCost = Number(potZ) * Number(areaM) * Number(usesM);
-  const hasFlaw = s.flaw.includes('有');
-  const expectFinal = hasFlaw ? expectCost - Math.floor(expectCost * 0.25) : expectCost;
-  const statedCost = Number(String(s.cost).replace(/[^\d]/g, ''));
-  const statedProgress = Number(String(s.progress).replace(/[^\d]/g, ''));
-
-  check(`${s.name}：成本 ${s.cost}`, statedCost, expectFinal);
-  check(`${s.name}：進度 ${s.progress}`, statedProgress, Math.max(1, Math.floor(expectFinal / 100)));
-  // 效力中文名必須與公式裡的 z 值相符
-  check(`${s.name}：效力名「${potZh}」對應 ${potZ}z`, POTENCY_ZH[potZh] && opt(PROJECT_POTENCY_OPTIONS, POTENCY_ZH[potZh]).cost, Number(potZ));
+section('G2. 速查表的效力表必須與常數一致（回歸：曾誤植效力等級）');
+const codexPotency = RULE_CODEX.projects?.potencyTable || [];
+check('效力表 4 級', codexPotency.length, 4);
+for (const p of codexPotency) {
+  const c = opt(PROJECT_POTENCY_OPTIONS, p.tier);
+  check(`效力「${p.tier}」成本 = ${c.cost}z`,
+    Number(String(p.cost).replace(/[^\d]/g, '')), c.cost);
 }
-check('可解析的單一公式範例數 = 8（1 筆為複合專案）', parsed, 8);
 
 // ─────────────────────────────────────────────────────────── H
 section('H. 邊界：所有可能組合皆為 100 的倍數（缺陷前），故 25% 必為整數');

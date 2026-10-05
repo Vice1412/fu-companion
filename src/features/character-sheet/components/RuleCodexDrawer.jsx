@@ -207,7 +207,7 @@ export default function RuleCodexDrawer({
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                  9 大官方阿爾卡納圖鑑目錄
+                  9 大阿爾卡納目錄
                 </h3>
                 <div className="relative">
                   <input
@@ -264,8 +264,7 @@ export default function RuleCodexDrawer({
                     <thead className="bg-[#f5ecdf] dark:bg-slate-950 text-stone-700 dark:text-stone-300 font-bold border-b border-[#ded2be] dark:border-slate-700">
                       <tr>
                         <th className="p-2.5 w-20">學派</th>
-                        <th className="p-2.5 w-52">施法檢定</th>
-                        <th className="p-2.5">你可以...</th>
+                        <th className="p-2.5">施法檢定</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100 dark:divide-slate-700">
@@ -273,7 +272,6 @@ export default function RuleCodexDrawer({
                         <tr key={dIdx} className="hover:bg-amber-50/40 dark:hover:bg-slate-700/50">
                           <td className="p-2.5 font-bold text-stone-900 dark:text-stone-100 whitespace-nowrap">{d.name}</td>
                           <td className="p-2.5 font-mono font-bold text-amber-800 dark:text-amber-400 whitespace-nowrap">{d.formula}</td>
-                          <td className="p-2.5 text-stone-600 dark:text-stone-400 leading-relaxed">{d.desc}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -291,9 +289,6 @@ export default function RuleCodexDrawer({
                     <li key={rIdx}>{r}</li>
                   ))}
                 </ul>
-                <p className="text-[11px] text-stone-500 italic pt-1 border-t border-amber-200 dark:border-amber-900/50">
-                  除此之外，大多數儀式都是公平的——但你追求的效果越強，如果你的儀式出錯，後果就越悲慘。
-                </p>
               </div>
 
               {/* 施法三步驟與計算表 */}
@@ -401,24 +396,6 @@ export default function RuleCodexDrawer({
                 </ol>
               </div>
 
-              {/* 官方範例 */}
-              <div className="space-y-2">
-                <h3 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                  儀式的例子（官方裁定指導）
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                  {currentRule.examples.map((ex, exIdx) => (
-                    <div key={exIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1 shadow-2xs">
-                      <span className="font-bold text-amber-800 dark:text-amber-400 block border-b border-stone-100 dark:border-slate-700 pb-0.5">
-                        {ex.school}學派範例
-                      </span>
-                      <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-[11px] pt-0.5">
-                        {ex.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
@@ -760,27 +737,6 @@ export default function RuleCodexDrawer({
                 </div>
               </div>
 
-              {/* 官方經典範例名錄 */}
-              <div className="space-y-2.5">
-                <h4 className="font-bold text-amber-900 dark:text-amber-300 text-xs sm:text-sm">
-                  官方經典造物範例名錄（核心手冊 138~139 頁）
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
-                  {currentRule.samples.map((sm, smIdx) => (
-                    <div key={smIdx} className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-[#ded2be] dark:border-slate-700 space-y-1.5 shadow-2xs">
-                      <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-700 pb-1">
-                        <strong className="text-stone-900 dark:text-stone-100">{sm.name}</strong>
-                        <span className="text-[10px] font-mono text-amber-800 dark:text-amber-400 font-bold">{sm.cost} (進度: {sm.progress})</span>
-                      </div>
-                      <div className="text-[10px] font-mono text-stone-500">
-                        <span>規格：{sm.formula}</span>
-                        {sm.flaw !== '無' && <span className="ml-1.5 text-rose-600 font-bold">[{sm.flaw}]</span>}
-                      </div>
-                      <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed">{renderTextWithAffinities(sm.desc)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 

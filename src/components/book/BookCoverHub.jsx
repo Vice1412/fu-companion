@@ -309,11 +309,20 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
       >
         <img src={modLogo} alt="Fabula Ultima Mod Logo" className="h-7 object-contain mx-auto opacity-75" />
         <div className="text-[11px] text-slate-600 leading-relaxed">
-          <p><span className="font-bold text-slate-800">FU Companion</span> is an independent production (developed with assistance from Antigravity) by <span className="font-bold text-slate-800">ScarletVice</span>.</p>
-          <p>It is not affiliated with Need Games or Rooster Games.</p>
+          <p><span className="font-bold text-slate-800">FU Companion</span> is an independent production by <span className="font-bold text-slate-800">ScarletVice</span>.</p>
+          <p>It is <span className="font-bold text-slate-800">not endorsed or sponsored in any way</span> by Need Games or Rooster Games.</p>
           <p>Published under the <a href="https://need.games/wp-content/uploads/2024/06/Fabula-Ultima-Third-Party-Tabletop-License-1.0.pdf" target="_blank" rel="noopener noreferrer" className="text-sky-800 hover:text-sky-600 underline underline-offset-2 transition-colors">Fabula Ultima Third-Party Tabletop License 1.0</a>.</p>
           <p>Fabula Ultima is &copy; Emanuele Galletto, Need Games and Rooster Games.</p>
           <p>This tool requires the <span className="font-bold text-slate-800">Fabula Ultima Core Rulebook</span>.</p>
+          <p className="pt-1 border-t border-slate-300/60 mt-1">
+            <span className="font-bold text-slate-800">AI 生成內容聲明：</span>
+            本工具的介面文案、規則文本整理與程式碼均由 AI 輔助產出，並經人工校對。
+            規則數值一律逐條核對官方原書。
+          </p>
+          <p>
+            本工具僅重製官方規則的<span className="font-bold text-slate-800">機制</span>部分（數值、公式、費用、效果、表格），
+            不重製官方原書的美術、世界觀敘述與畫風文字。
+          </p>
         </div>
         <div className="text-[10px] text-sky-900/60 font-serif pt-1">
           FU Companion 《物語助手》 · 純前端零伺服器架構 · 數據即時保存於瀏覽器
