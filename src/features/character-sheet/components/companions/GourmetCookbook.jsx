@@ -29,7 +29,9 @@ import {
   composeDelicacyText,
   conflictingPairKeys,
   findDuplicateEffects,
-  cookbookProgress
+  cookbookProgress,
+  countByTaste,
+  groupByTaste
 } from '../../data/gourmetData';
 
 /**
@@ -43,19 +45,19 @@ import {
  * - 未決定的格子提供兩種寫入方式：**骰 d12** 或**手動指定骰值**（給在實體桌面擲骰的玩家）。
  * - 骰出後先進「待確認」狀態，讓玩家**先選好屬性／體質再寫入**，避免一寫就鎖死成預設值。
  *
- * ## 呈現設計
+ * ## 食材的口味呈現（2026-10-04 使用者回饋）
  *
- * - **食譜書用 5×5 三角表格**：只畫上三角共 15 格，表頭用單字，格子內只放骰值數字；
- *   完整效果改為「點格子 → 下方顯示」。每列最多 6 欄，360px 手機每格約 55×44px。
- * - **烹飪時可直接選屬性／體質**，不必回到食譜書。
- * - **衝突以紅格警告**：一份美食只能有一個「造成傷害」（效果 5）與一個
- *   「轉換傷害類型」（效果 12）效果，超出時直接在該組合上標紅。
+ * 需求是兩件事：① 一眼看出每種口味**還剩多少** ② 清單本身要好找。
+ * 方案是**統計列（同時是篩選器）＋ 分組清單**：
+ * - **統計列**直接回答「剩多少」，不必互動就看得到；同時它本身就是篩選控制項——
+ *   一份空間做兩件事，不浪費。
+ * - **分組清單**回答「哪個是哪個」，依官方口味順序（苦→鹹→酸→甜→鮮）分組。
  *
- * ## 已修掉的 bug（2026-10-04 使用者回報）
- *
- * 原本骰 d6 到 6（由你決定）時只跳提示就 return，**不新增任何東西**——
- * 導致玩家「永遠沒看過骰到 6」。`Math.random()` 本身是均勻的，問題出在這個分支
- * 沒有任何可見結果。現在骰到 6 會以玩家選定的口味直接新增，並在提示中說明。
+ * **手機／電腦兼顧**（使用者提問）：
+ * - 統計列 `grid-cols-3 sm:grid-cols-6`——手機排成 **2 列各 3 個**（每個約 110px，好按），
+ *   電腦排成 **1 列 6 個**（省高度）。這是關鍵：六個擠成一列在手機上會太小。
+ * - 清單維持手機 1 欄（食材名稱讀得清楚）、電腦 2 欄；群組標題橫跨整列。
+ * - 烹飪分頁的選料區套用同一套分組，因為組口味時你正是**照口味在找食材**。
  */
 
 const TASTE_COLOR = {
@@ -64,6 +66,15 @@ const TASTE_COLOR = {
   酸味: 'bg-lime-50 border-lime-300 text-lime-900',
   甜味: 'bg-pink-50 border-pink-300 text-pink-900',
   鮮味: 'bg-amber-50 border-amber-300 text-amber-900'
+};
+
+/** 群組標題用的小圓點色（與 TASTE_COLOR 同色系）。 */
+const TASTE_DOT = {
+  苦味: 'bg-emerald-500',
+  鹹味: 'bg-sky-500',
+  酸味: 'bg-lime-500',
+  甜味: 'bg-pink-500',
+  鮮味: 'bg-amber-500'
 };
 
 const SUB_TABS = [
@@ -106,10 +117,11 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   const [renamingId, setRenamingId] = useState(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [selectedPair, setSelectedPair] = useState(null);
-  // 待確認的骰值：{ key, roll, choice } —— 尚未寫入食譜，可重骰或取消
   const [pending, setPending] = useState(null);
   const [picked, setPicked] = useState([]);
   const [dishName, setDishName] = useState('');
+  /** 口味篩選：null = 全部。食材與烹飪分頁共用（你在兩邊找的是同一批東西）。 */
+  const [tasteFilter, setTasteFilter] = useState(null);
 
   const data = character?.gourmetData || {};
   const ingredients = data.ingredients || [];
@@ -126,6 +138,7 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   const duplicates = useMemo(() => findDuplicateEffects(cookbook), [cookbook]);
   const progress = cookbookProgress(cookbook);
   const remaining = useMemo(() => unusedEffects(cookbook, level), [cookbook, level]);
+  const tasteCounts = useMemo(() => countByTaste(ingredients), [ingredients]);
 
   const write = (patch) => {
     onChange({
@@ -136,6 +149,11 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   };
 
   if (cookingSL <= 0) return null;
+
+  const visibleIngredients = tasteFilter
+    ? ingredients.filter((i) => i.taste === tasteFilter)
+    : ingredients;
+  const groups = groupByTaste(visibleIngredients);
 
   // ── 食材 ────────────────────────────────────────────────
   const addIngredient = (taste, name) => {
@@ -171,10 +189,7 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
     setRenameDraft('');
   };
 
-  /**
-   * 骰 d6 決定口味。
-   * 骰到 6（由你決定）時，**以玩家目前選定的口味直接新增**，並在提示中說明。
-   */
+  /** 骰 d6 決定口味。骰到 6（由你決定）時以玩家選定的口味直接新增。 */
   const rollIngredient = () => {
     const d6 = Math.floor(Math.random() * 6) + 1;
     const taste = TASTE_ROLL[d6];
@@ -194,7 +209,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   };
 
   // ── 食譜書 ──────────────────────────────────────────────
-  /** 開始一次待確認的骰值（尚未寫入食譜）。 */
   const startPending = (key, roll) => {
     const def = DELICACY_EFFECTS[roll];
     setPending({ key, roll, choice: def.choice ? def.choice.options[0] : null });
@@ -203,7 +217,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
 
   const rollPair = (key) => startPending(key, Math.floor(Math.random() * 12) + 1);
 
-  /** 把待確認的骰值寫入食譜（此後固定）。 */
   const commitPending = () => {
     if (!pending) return;
     const { key, roll, choice } = pending;
@@ -238,7 +251,80 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   const dishText = composeDelicacyText(dishName, cookPairs, cookbook, level);
   const conflicts = conflictingPairKeys(cookPairs, cookbook);
 
-  /** 共用的「待確認骰值」編輯面板（食譜書與烹飪共用）。 */
+  // ── 共用區塊 ────────────────────────────────────────────
+
+  /** 口味統計列（同時是篩選器）。 */
+  const renderTasteBar = () => (
+    <div className="p-2.5 rounded-xl bg-[#f5efdf] border border-[#d6c7ab]">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="text-[11px] font-bold text-[#3c2415]">口味分布</span>
+        <span className="text-[10px] font-mono text-[#6b5a4b]">點口味可只看該類</span>
+      </div>
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+        <button
+          type="button"
+          onClick={() => setTasteFilter(null)}
+          className={`flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+            tasteFilter === null
+              ? 'bg-[#3c2415] border-[#3c2415] text-[#fbf7ee] ring-2 ring-amber-500'
+              : 'bg-white border-[#d6c7ab] text-[#3c2415] hover:bg-[#ebdcc4]'
+          }`}
+        >
+          <span>全部</span>
+          <span className="text-[13px] font-black">{ingredients.length}</span>
+        </button>
+        {TASTES.map((t) => {
+          const n = tasteCounts[t] || 0;
+          const on = tasteFilter === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              disabled={n === 0}
+              onClick={() => setTasteFilter(on ? null : t)}
+              title={n === 0 ? `沒有${t}食材` : `只看${t}（${n} 份）`}
+              className={`flex items-center justify-center gap-1 px-1.5 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
+                n === 0
+                  ? 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed'
+                  : on
+                    ? 'ring-2 ring-amber-500 ' + (TASTE_COLOR[t] || '')
+                    : TASTE_COLOR[t] + ' hover:brightness-95 cursor-pointer'
+              }`}
+            >
+              <span>{TASTE_SHORT[t]}</span>
+              <span className="text-[13px] font-black">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  /** 依口味分組的清單。`renderItem` 決定每筆怎麼呈現。 */
+  const renderGrouped = (renderItem) => {
+    if (ingredients.length === 0) {
+      return <p className="text-xs text-slate-400 text-center py-4">尚無食材</p>;
+    }
+    if (groups.length === 0) {
+      return <p className="text-xs text-slate-400 text-center py-4">這個口味沒有食材</p>;
+    }
+    return (
+      <div className="space-y-2.5">
+        {groups.map((g) => (
+          <div key={g.taste}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${TASTE_DOT[g.taste] || 'bg-slate-400'}`} />
+              <span className="text-[11px] font-bold text-[#3c2415]">{g.taste}</span>
+              <span className="text-[10px] font-mono text-[#6b5a4b]">（{g.items.length}）</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">{g.items.map(renderItem)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  /** 待確認骰值的編輯面板（食譜書與烹飪共用）。 */
   const renderPendingEditor = (key) => {
     if (!pending || pending.key !== key) return null;
     const def = DELICACY_EFFECTS[pending.roll];
@@ -292,7 +378,7 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
     );
   };
 
-  /** 未決定格子的操作區：骰 d12 或手動指定（給在實體桌面擲骰的玩家）。 */
+  /** 未決定格子的操作區：骰 d12 或手動指定。 */
   const renderUndecidedActions = (key) => (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -407,6 +493,9 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
               )}
             </div>
 
+            {/* 口味分布（同時是篩選器） */}
+            {renderTasteBar()}
+
             {/* 新增食材 */}
             <div className="flex items-end gap-2 flex-wrap p-2.5 rounded-xl bg-white border border-[#d6c7ab]">
               <label className="flex flex-col gap-1 text-[11px] font-bold text-[#6b5a4b]">
@@ -454,58 +543,52 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
               ・休息於定居點可獲 {cookingSL} 份
             </p>
 
-            {ingredients.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">尚無食材</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {ingredients.map((ing) => (
-                  <div
-                    key={ing.id}
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs ${TASTE_COLOR[ing.taste] || 'bg-slate-50 border-slate-200'}`}
-                  >
-                    <GiMushroom className="w-3.5 h-3.5 shrink-0" />
-                    {renamingId === ing.id ? (
-                      <>
-                        <input
-                          type="text"
-                          autoFocus
-                          value={renameDraft}
-                          onChange={(e) => setRenameDraft(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitRename(ing.id);
-                            if (e.key === 'Escape') setRenamingId(null);
-                          }}
-                          className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-current bg-white text-xs font-bold"
-                        />
-                        <button type="button" onClick={() => commitRename(ing.id)} title="確定" className="shrink-0 cursor-pointer">
-                          <GiCheckMark className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => { setRenamingId(ing.id); setRenameDraft(ing.name); }}
-                          title="點擊改名"
-                          className="font-bold truncate flex-1 text-left cursor-pointer hover:underline"
-                        >
-                          {ing.name}
-                        </button>
-                        <span className="text-[10px] font-mono shrink-0 opacity-80">{ing.taste}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeIngredient(ing.id)}
-                          title="丟棄"
-                          className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer"
-                        >
-                          <GiTrashCan className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
+            {/* 依口味分組的食材清單 */}
+            {renderGrouped((ing) => (
+              <div
+                key={ing.id}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs ${TASTE_COLOR[ing.taste] || 'bg-slate-50 border-slate-200'}`}
+              >
+                <GiMushroom className="w-3.5 h-3.5 shrink-0" />
+                {renamingId === ing.id ? (
+                  <>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename(ing.id);
+                        if (e.key === 'Escape') setRenamingId(null);
+                      }}
+                      className="flex-1 min-w-0 px-1.5 py-0.5 rounded border border-current bg-white text-xs font-bold"
+                    />
+                    <button type="button" onClick={() => commitRename(ing.id)} title="確定" className="shrink-0 cursor-pointer">
+                      <GiCheckMark className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setRenamingId(ing.id); setRenameDraft(ing.name); }}
+                      title="點擊改名"
+                      className="font-bold truncate flex-1 text-left cursor-pointer hover:underline"
+                    >
+                      {ing.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeIngredient(ing.id)}
+                      title="丟棄"
+                      className="shrink-0 opacity-60 hover:opacity-100 cursor-pointer"
+                    >
+                      <GiTrashCan className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
-            )}
+            ))}
           </>
         )}
 
@@ -521,7 +604,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
               </div>
             )}
 
-            {/* 5×5 三角表格 */}
             <div>
               <div className="text-[11px] font-bold text-[#3c2415] mb-1.5">
                 點格子看效果（數字＝該組合骰出的 d12）
@@ -569,7 +651,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
               </div>
             </div>
 
-            {/* 選中格子的詳情 */}
             {selectedPair && (
               <div className="p-2.5 rounded-xl bg-[#f5efdf] border border-[#d6c7ab] space-y-1.5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -612,7 +693,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
               </div>
             )}
 
-            {/* 尚未骰出的效果 */}
             <div className="p-2.5 rounded-xl bg-white border border-[#d6c7ab]">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#3c2415] mb-1.5">
                 <GiScrollUnfurled className="w-3.5 h-3.5 text-amber-700" />
@@ -640,31 +720,31 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
         {/* ══════════ 烹飪 ══════════ */}
         {subTab === 'cook' && (
           <>
+            {renderTasteBar()}
+
             <div className="text-[11px] font-bold text-[#6b5a4b]">
               選擇 2～3 份食材（已選 {pickedIngredients.length} 份）
             </div>
-            {ingredients.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">尚無食材可組合</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                {ingredients.map((ing) => {
-                  const on = picked.includes(ing.id);
-                  return (
-                    <button
-                      key={ing.id}
-                      type="button"
-                      onClick={() => togglePick(ing.id)}
-                      className={`px-2 py-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer text-left ${
-                        on ? 'ring-2 ring-amber-500 ' + (TASTE_COLOR[ing.taste] || '') : TASTE_COLOR[ing.taste] || 'bg-slate-50 border-slate-200'
-                      }`}
-                    >
-                      <span className="block truncate">{ing.name}</span>
-                      <span className="block text-[10px] font-mono opacity-80">{ing.taste}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+
+            {/* 依口味分組的選料區——組口味時正是照口味在找食材 */}
+            {renderGrouped((ing) => {
+              const on = picked.includes(ing.id);
+              return (
+                <button
+                  key={ing.id}
+                  type="button"
+                  onClick={() => togglePick(ing.id)}
+                  className={`px-2 py-1.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer text-left ${
+                    on
+                      ? 'ring-2 ring-amber-500 ' + (TASTE_COLOR[ing.taste] || '')
+                      : TASTE_COLOR[ing.taste] || 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <span className="block truncate">{ing.name}</span>
+                  <span className="block text-[10px] font-mono opacity-80">{ing.taste}</span>
+                </button>
+              );
+            })}
 
             {canCook && (
               <div className="p-2.5 rounded-xl bg-[#f5efdf] border border-[#d6c7ab] space-y-2">
@@ -722,7 +802,6 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
                   })}
                 </div>
 
-                {/* 可複製的全文 */}
                 <div className="p-2 rounded-lg bg-white border border-[#d6c7ab]">
                   <pre className="text-[11px] text-[#3c2415] whitespace-pre-wrap font-sans leading-relaxed m-0">
                     {dishText}

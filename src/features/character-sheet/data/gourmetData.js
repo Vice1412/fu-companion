@@ -369,3 +369,29 @@ export const conflictingPairKeys = (pairKeys, cookbook) => {
   const c = detectDelicacyConflicts(pairKeys, cookbook);
   return [...c.damage, ...c.typeChange];
 };
+
+/**
+ * 依口味統計食材數量（永遠回傳全部 5 種口味，沒有的為 0）。
+ * 供「口味統計列」顯示「每種口味還剩多少」。
+ * @param {Array<{taste:string}>} ingredients
+ * @returns {Object<string, number>} 例：`{ 苦味: 3, 鹹味: 0, ... }`
+ */
+export const countByTaste = (ingredients) => {
+  const counts = Object.fromEntries(TASTES.map((t) => [t, 0]));
+  for (const ing of ingredients || []) {
+    if (counts[ing?.taste] !== undefined) counts[ing.taste] += 1;
+  }
+  return counts;
+};
+
+/**
+ * 依口味把食材分組，**只回傳有食材的口味**，並依官方口味順序（苦→鹹→酸→甜→鮮）。
+ * 空的口味不產生空群組——統計列已經顯示 0，清單再列一次只是噪音。
+ * @param {Array<{taste:string}>} ingredients
+ * @returns {Array<{taste:string, items:Array}>}
+ */
+export const groupByTaste = (ingredients) =>
+  TASTES.map((taste) => ({
+    taste,
+    items: (ingredients || []).filter((i) => i?.taste === taste)
+  })).filter((g) => g.items.length > 0);

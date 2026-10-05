@@ -24,6 +24,8 @@ import {
   composeDelicacyText,
   detectDelicacyConflicts,
   conflictingPairKeys,
+  countByTaste,
+  groupByTaste,
   effectSignature,
   findDuplicateEffects,
   cookbookProgress,
@@ -317,6 +319,43 @@ check('conflictingPairKeys 彙整兩類',
   conflictingPairKeys(['苦味+鹹味', '苦味+酸味'], cbTwoDamage).length, 2);
 check('無衝突時 conflictingPairKeys 為空',
   conflictingPairKeys(['苦味+鹹味'], cb), []);
+
+// ─────────────────────────────────────────────────────────── P
+section('P. 口味統計（供統計列顯示「每種口味還剩多少」）');
+check('空清單 -> 5 種口味皆為 0',
+  countByTaste([]), { 苦味: 0, 鹹味: 0, 酸味: 0, 甜味: 0, 鮮味: 0 });
+check('永遠回傳全部 5 種口味（沒有的為 0）', Object.keys(countByTaste([])).length, 5);
+check('單一食材',
+  countByTaste([{ taste: '苦味' }]), { 苦味: 1, 鹹味: 0, 酸味: 0, 甜味: 0, 鮮味: 0 });
+check('多筆統計',
+  countByTaste([{ taste: '苦味' }, { taste: '苦味' }, { taste: '鹹味' }]),
+  { 苦味: 2, 鹹味: 1, 酸味: 0, 甜味: 0, 鮮味: 0 });
+check('全 5 種各一',
+  countByTaste(TASTES.map((t) => ({ taste: t }))),
+  { 苦味: 1, 鹹味: 1, 酸味: 1, 甜味: 1, 鮮味: 1 });
+check('非法口味被忽略',
+  countByTaste([{ taste: '不存在的口味' }]),
+  { 苦味: 0, 鹹味: 0, 酸味: 0, 甜味: 0, 鮮味: 0 });
+check('null 食材不炸', countByTaste([null, { taste: '甜味' }])['甜味'], 1);
+check('undefined 清單不炸', countByTaste(undefined)['苦味'], 0);
+
+section('P2. 口味分組（依官方順序，空的不產生空群組）');
+check('空清單 -> 0 組', groupByTaste([]).length, 0);
+check('單一口味 -> 1 組', groupByTaste([{ taste: '苦味' }]).length, 1);
+check('群組順序為官方口味順序',
+  groupByTaste([{ taste: '鮮味' }, { taste: '苦味' }, { taste: '甜味' }]).map((g) => g.taste),
+  ['苦味', '甜味', '鮮味']);
+check('同口味歸在同一組',
+  groupByTaste([{ taste: '苦味' }, { taste: '苦味' }])[0].items.length, 2);
+check('沒有食材的口味不產生群組',
+  groupByTaste([{ taste: '苦味' }]).some((g) => g.taste === '鹹味'), false);
+check('每組都有 taste 與 items',
+  groupByTaste([{ taste: '苦味' }]).every((g) => !!g.taste && Array.isArray(g.items)), true);
+check('非法口味不產生群組',
+  groupByTaste([{ taste: '不存在的口味' }]).length, 0);
+check('分組後總數不變',
+  groupByTaste([{ taste: '苦味' }, { taste: '鹹味' }, { taste: '苦味' }])
+    .reduce((n, g) => n + g.items.length, 0), 3);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
