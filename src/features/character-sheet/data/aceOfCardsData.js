@@ -31,8 +31,11 @@
 // ─────────────────────────────────────────────────────────
 
 /**
- * 四花色。`symbol` 僅供玩家對照實體撲克牌，顯示一律用中文名（規則三）。
- * `defaultType` 為原書 p.9 建議的對應：風(♦)、土(♣)、火(♥)、冰(♠)。
+ * 四花色。`defaultType` 為原書 p.9 建議的對應：風(♦)、土(♣)、火(♥)、冰(♠)。
+ *
+ * `symbol` 是**對照實體撲克牌用的參考資料**，不是顯示字元——UI 一律用
+ * Game-Icons 的 `GiSpades`／`GiHearts`／`GiDiamonds`／`GiClubs` 繪製
+ * （`♠♥♦♣` 在部分平台會渲染成彩色 emoji，與規則一軌道 3 衝突）。
  */
 export const SUITS = [
   { key: 'diamond', name: '方塊', symbol: '♦', defaultType: '風' },

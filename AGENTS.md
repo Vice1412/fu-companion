@@ -25,7 +25,7 @@
 - **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,909 kB（gzip 544 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **建置產物**：`dist/`，JS 1,914 kB（gzip 546 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
 - **測試指令**：`npm test`（實測 **60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描** 通過，exit 0）。
   五組測試 ＋ 一道自動關卡：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）
@@ -370,7 +370,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ### E. 建置與測試
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.2 秒）。
-- JS bundle 1,909 kB / gzip 544 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- JS bundle 1,914 kB / gzip 546 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
 - `npm test` 通過（**60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
@@ -712,18 +712,45 @@ value will not match the requirements of Jackpot; it has to be composed of exact
 **UI** `components/companions/AceOfCardsTable.jsx`：花色對應設定、牌庫／手牌／棄牌堆計數、
 點擊選牌、符合效果清單（多個時要求選一個）、結算（付 MP → 打出 → 補抽）、再調度、衝突開始／結束。
 
-> **兩處解讀判斷（可一行改回）**：
-> ① **兩組數值必須不同**——「2 張同值 + 2 張同值」與「3 張同值 + 2 張同值」採撲克 two pair／
-> full house 的讀法（4 張同值**不算**雙重麻煩、5 張同值**不算**滿貫狀態）。
-> ② **花色顯示用中文名**（黑桃／紅心／方塊／梅花），符號僅供對照實體撲克牌——
-> 因為 `♥`／`♦` 在部分平台會渲染成彩色 emoji，與軌道 3 衝突。
+> **解讀判斷（可一行改回）**：**兩組數值必須不同**——「2 張同值 + 2 張同值」與
+> 「3 張同值 + 2 張同值」採撲克 two pair／full house 的讀法
+> （4 張同值**不算**雙重麻煩、5 張同值**不算**滿貫狀態）。
+
+##### 花色圖示：Game-Icons 有完整的一組 —— ✅ 2026-10-04
+
+使用者提問「花色的符號如果 game-icons 有沒有適合的」。**有，而且是同一組風格的四個：**
+
+| 花色 | 圖示 | 判定 |
+|---|---|---|
+| 黑桃 | **`GiSpades`** | ✅ 兩瓣＋莖＋尖，正是花色 |
+| 紅心 | **`GiHearts`** | ✅ |
+| 方塊 | **`GiDiamonds`** | ✅ |
+| 梅花 | **`GiClubs`** | ✅ |
+| （陷阱）| `GiSpade`（**單數**）| ❌ **鏟子**（挖土工具），不是花色 |
+
+**怎麼驗的**：不靠命名推測，而是**把 SVG 實際畫出來目視確認**。
+`scratch/render_gi_icons.py` 是自製的 SVG path 光柵化器（支援 M/L/H/V/C/S/Q/T/A/Z），
+把候選圖示畫成 PNG 後逐一看過。
+
+> ⚠️ 該腳本**改了兩次才對**：第一版 tokenizer 只讀緊跟指令後的第一個數字，其餘座標全被跳過；
+> 第二版補了數字續讀但**缺 `S`（平滑曲線簡寫）與 `A`（圓弧）**，導致紅心與梅花殘缺。
+> **「畫出來不對」不等於「圖示不對」——先確認工具本身是對的。**
+>
+> 這是本專案第一次用「渲染後目視」驗證圖示選擇，比對照命名可靠得多。
+
+**附帶好處**：`♠♥♦♣` 字元在部分平台會渲染成彩色 emoji，與軌道 3 衝突；改用圖示後這個風險完全消失。
+`SUITS[].symbol` 保留為**對照實體撲克牌用的參考資料**，不再是顯示字元。
 
 > 測試 `test:cards` **114 項**，含原書明例（5 張同值不符合滿貫）、鬼牌展開（1 張 28 種、
 > 2 張 784 種）、同花必然同時符合魔法同花與炫目同花（這是「只能選一個」規則的來源）、
 > 等級加成邊界（L19/L20/L39/L40）。
 >
-> **規則五.1 自動關卡第 4 次攔下我的 `⚠️`**——這次是在 `aceOfCardsData.js` 的註解裡，
-> 在宣稱完成之前就被 `npm run test:emoji` 擋下。**這個關卡已經證明自己值 4 次。**
+> **規則五.1 自動關卡第 4、5 次攔下我的 `⚠️`**——分別在 `aceOfCardsData.js` 與
+> `AceOfCardsTable.jsx` 的註解裡，兩次都在宣稱完成之前就被 `npm run test:emoji` 擋下。
+> 累計五次分別是 `properNouns.js`、`tinkererProjects.js`、`classResources.js`、
+> `aceOfCardsData.js`、`AceOfCardsTable.jsx`。
+> **同一個失誤重複五次，說明這不是「一時疏忽」，而是我的預設書寫習慣有問題——
+> 這正是把它做成自動關卡（而不是靠自律）的價值。**
 
 ---
 

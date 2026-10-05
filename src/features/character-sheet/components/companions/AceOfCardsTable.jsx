@@ -4,6 +4,11 @@ import {
   GiCardRandom,
   GiCardPickup,
   GiCardDiscard,
+  GiCardJoker,
+  GiSpades,
+  GiHearts,
+  GiDiamonds,
+  GiClubs,
   GiScrollUnfurled,
   GiHazardSign,
   GiCheckMark,
@@ -20,7 +25,6 @@ import {
   shuffle,
   drawCards,
   cardLabel,
-  suitByKey,
   detectSets,
   maxSetSizeForSL,
   mpCostForSet,
@@ -53,6 +57,23 @@ const T = {
 
 /** 傷害類型選項（原書 p.9 建議：風(♦)、土(♣)、火(♥)、冰(♠)）。 */
 const DAMAGE_TYPES = ['風', '土', '火', '冰'];
+
+/**
+ * 花色 → Game-Icons 圖示。
+ *
+ * **不要用 `GiSpade`（單數）**——那是**鏟子**（工具），不是花色。
+ * 四個花色一律是複數：`GiSpades`／`GiHearts`／`GiDiamonds`／`GiClubs`
+ * （已實際把 SVG 畫出來逐一目視確認，見 `scratch/render_gi_icons.py`）。
+ *
+ * 用圖示取代 `♠♥♦♣` 字元還有個附帶好處：`♥`／`♦` 在部分平台會渲染成彩色 emoji，
+ * 與規則一軌道 3（零 Emoji）衝突。圖示沒有這個問題。
+ */
+const SUIT_ICON = {
+  spade: GiSpades,
+  heart: GiHearts,
+  diamond: GiDiamonds,
+  club: GiClubs
+};
 
 /** 花色 → 顏色（用於牌面辨識，非裝飾）。 */
 const SUIT_STYLE = {
@@ -175,6 +196,7 @@ export default function AceOfCardsTable({ character, onChange, onConsumeMp = () 
       ? 'bg-amber-100 border-amber-400 text-amber-900'
       : SUIT_STYLE[card.suit] || 'bg-white border-slate-300';
     const type = !card.joker && suitTypes[card.suit] ? suitTypes[card.suit] : null;
+    const SuitIcon = card.joker ? GiCardJoker : SUIT_ICON[card.suit];
     return (
       <button
         key={card.id}
@@ -187,9 +209,7 @@ export default function AceOfCardsTable({ character, onChange, onConsumeMp = () 
         } ${base} ${on ? 'ring-2 ring-amber-500 -translate-y-1' : ''}`}
       >
         <span className="block text-[13px] font-black">{card.joker ? '鬼' : card.value}</span>
-        <span className="block text-[10px] font-mono opacity-80">
-          {card.joker ? '牌' : suitByKey(card.suit)?.symbol}
-        </span>
+        {SuitIcon && <SuitIcon className="w-3.5 h-3.5 mx-auto opacity-80" />}
         {type && <span className="block text-[9px] opacity-70">{type}</span>}
       </button>
     );
@@ -224,21 +244,24 @@ export default function AceOfCardsTable({ character, onChange, onConsumeMp = () 
             花色對應傷害類型（建立角色時指定，之後固定）
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-            {SUITS.map((s) => (
-              <label key={s.key} className="flex items-center gap-1.5 text-[11px] font-bold">
-                <span className={T.text}>{s.name}</span>
-                <span className={`font-mono ${T.sub}`}>{s.symbol}</span>
-                <select
-                  value={suitTypes[s.key] || s.defaultType}
-                  onChange={(e) => write({ suitTypes: { ...suitTypes, [s.key]: e.target.value } })}
-                  className={`flex-1 px-1 py-0.5 rounded border ${T.border} bg-white text-[11px] ${T.text} cursor-pointer`}
-                >
-                  {DAMAGE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-            ))}
+            {SUITS.map((s) => {
+              const SuitIcon = SUIT_ICON[s.key];
+              return (
+                <label key={s.key} className="flex items-center gap-1.5 text-[11px] font-bold">
+                  {SuitIcon && <SuitIcon className="w-3.5 h-3.5 shrink-0" />}
+                  <span className={T.text}>{s.name}</span>
+                  <select
+                    value={suitTypes[s.key] || s.defaultType}
+                    onChange={(e) => write({ suitTypes: { ...suitTypes, [s.key]: e.target.value } })}
+                    className={`flex-1 px-1 py-0.5 rounded border ${T.border} bg-white text-[11px] ${T.text} cursor-pointer`}
+                  >
+                    {DAMAGE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
           </div>
         </div>
 
@@ -366,16 +389,20 @@ export default function AceOfCardsTable({ character, onChange, onConsumeMp = () 
                   <span>棄牌堆（{discard.length} 張，順序不可改，任何人可查看）</span>
                 </div>
                 <div className="flex items-center gap-1 flex-wrap">
-                  {discard.map((c) => (
-                    <span
-                      key={c.id}
-                      className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${
-                        c.joker ? 'bg-amber-100 border-amber-400 text-amber-900' : SUIT_STYLE[c.suit] || 'bg-white border-slate-300'
-                      }`}
-                    >
-                      {c.joker ? '鬼牌' : `${suitByKey(c.suit)?.symbol}${c.value}`}
-                    </span>
-                  ))}
+                  {discard.map((c) => {
+                    const SuitIcon = c.joker ? GiCardJoker : SUIT_ICON[c.suit];
+                    return (
+                      <span
+                        key={c.id}
+                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-bold ${
+                          c.joker ? 'bg-amber-100 border-amber-400 text-amber-900' : SUIT_STYLE[c.suit] || 'bg-white border-slate-300'
+                        }`}
+                      >
+                        {SuitIcon && <SuitIcon className="w-2.5 h-2.5" />}
+                        <span>{c.joker ? '鬼牌' : c.value}</span>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
