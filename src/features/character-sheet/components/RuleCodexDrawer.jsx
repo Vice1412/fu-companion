@@ -27,6 +27,12 @@ import {
 import { RULE_CODEX, findCodexRule } from '../data/ruleCodexData';
 import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 
+/**
+ * 分頁所屬的原書 —— 直接由 `RULE_CODEX[id].page` 推導
+ * （例：「高度奇幻手冊 138~139 頁」→「高度奇幻手冊」），不另外維護對照表，免得新增條目時漏改。
+ */
+const bookOfCodex = (id) => String(RULE_CODEX[id]?.page || '').split(/\s+/)[0];
+
 export default function RuleCodexDrawer({
   isOpen: propIsOpen,
   onClose: propOnClose,
@@ -37,6 +43,7 @@ export default function RuleCodexDrawer({
   const [activeRuleId, setActiveRuleId] = useState('arcana');
   const [searchTerm, setSearchTerm] = useState('');
   const contentScrollRef = useRef(null);
+  const activeTabRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -48,6 +55,21 @@ export default function RuleCodexDrawer({
       contentScrollRef.current.scrollTop = 0;
     }
   }, [activeRuleId, internalIsOpen]);
+
+  // 由技能關鍵詞深連結開啟時（例：點技能裡的「魔法種子」跳到花園），把當前分頁捲進視野——
+  // 窄視窗的分頁列仍是橫向滑動的，不捲的話使用者看不到自己被切到哪一頁。
+  useEffect(() => {
+    if (!internalIsOpen) return;
+    activeTabRef.current?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
+  }, [internalIsOpen, activeRuleId]);
+
+  // 分頁列在窄視窗仍需橫向捲動時，讓滑鼠滾輪直接左右滑（原本只能去拖那條細捲軸）。
+  const handleTabStripWheel = (e) => {
+    const el = e.currentTarget;
+    if (el.scrollWidth <= el.clientWidth) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    el.scrollLeft += e.deltaY;
+  };
 
   // 支援全域事件 fu:open-rule-codex
   useEffect(() => {
@@ -171,28 +193,44 @@ export default function RuleCodexDrawer({
           </button>
         </div>
 
-        {/* 類別切換標籤頁 (Tabs) */}
-        <div className="flex items-center space-x-1 p-2 bg-[#f4ece1] dark:bg-slate-950 border-b border-[#e2d5c3] dark:border-slate-800 overflow-x-auto scrollbar-none shrink-0">
-          {navItems.map((item) => {
+        {/* 類別切換標籤頁 (Tabs)
+            16 個分頁在 max-w-3xl 的面板裡排不進一列。sm 以上改成自動換行（全部可見、零橫向捲動，
+            並以細分隔線標出原書分界）；手機維持單列橫向滑動，另讓滑鼠滾輪也能左右滑。 */}
+        <div
+          className="flex flex-nowrap sm:flex-wrap items-center gap-1 p-2 bg-[#f4ece1] dark:bg-slate-950 border-b border-[#e2d5c3] dark:border-slate-800 overflow-x-auto sm:overflow-x-visible shrink-0"
+          onWheel={handleTabStripWheel}
+        >
+          {navItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive = activeRuleId === item.id;
+            const book = bookOfCodex(item.id);
+            const startsBook = idx > 0 && book !== bookOfCodex(navItems[idx - 1].id);
             return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setActiveRuleId(item.id);
-                  setSearchTerm('');
-                }}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-stone-700 dark:text-stone-300 hover:bg-[#eae0d2] dark:hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="text-sm" />
-                <span>{item.label}</span>
-              </button>
+              <React.Fragment key={item.id}>
+                {startsBook && (
+                  <span
+                    aria-hidden
+                    className="shrink-0 w-px self-stretch my-1 mx-1 bg-[#d9cbb4] dark:bg-slate-700"
+                  />
+                )}
+                <button
+                  type="button"
+                  ref={isActive ? activeTabRef : undefined}
+                  title={RULE_CODEX[item.id]?.page}
+                  onClick={() => {
+                    setActiveRuleId(item.id);
+                    setSearchTerm('');
+                  }}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-stone-700 dark:text-stone-300 hover:bg-[#eae0d2] dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="text-sm" />
+                  <span>{item.label}</span>
+                </button>
+              </React.Fragment>
             );
           })}
         </div>
