@@ -192,6 +192,56 @@ export const expandJokers = (cards) => {
   return out;
 };
 
+/**
+ * 依玩家的指定，把小丑牌填成具體牌（未指定的維持原樣）。
+ *
+ * 原書 p.8：「When you resolve a set that includes jokers, **you** choose their suit and value
+ * (1 to 7)」——指定權在玩家手上，而且**花色會決定傷害類型**（魔法同花／雙重麻煩），
+ * 所以不能只讓程式自己挑第一個成立的組合。
+ *
+ * @param {Array} cards
+ * @param {Object} assignment `{ [cardId]: { suit, value } }`
+ */
+export const applyJokerAssignment = (cards, assignment) =>
+  (cards || []).map((c) => {
+    if (!c?.joker) return c;
+    const a = assignment?.[c.id];
+    return a ? { ...c, suit: a.suit, value: a.value } : c;
+  });
+
+/** 這組牌中的小丑牌是否都已由玩家指定花色與數值。 */
+export const isFullyAssigned = (cards, assignment) =>
+  (cards || []).every((c) => !c.joker || !!assignment?.[c.id]);
+
+/**
+ * 建議一組小丑牌指定：找出第一個能成立的效果，回傳它的指定方式。
+ *
+ * 用於「套用建議」按鈕——玩家若不想自己算，可以一鍵採用程式找到的第一組可行指定，
+ * 但**畫面上仍會顯示指定的內容**，玩家看得到自己送出了什麼（而不是黑箱自動判定）。
+ *
+ * @returns {Object|null} `{ [cardId]: { suit, value } }`；找不到可行組合時為 null
+ */
+export const suggestJokerAssignment = (cards, level = 1, opts = {}) => {
+  const list = cards || [];
+  if (!list.some((c) => c.joker)) return null;
+  const known = opts.knownHeroicSkills || [];
+
+  for (const def of SET_EFFECTS) {
+    if (def.heroic && !known.includes(def.heroic)) continue;
+    const matcher = STRUCTURE[def.id];
+    if (!matcher) continue;
+    for (const a of expandJokers(list)) {
+      if (!matcher(a, list)) continue;
+      const out = {};
+      a.forEach((c, i) => {
+        if (list[i].joker) out[list[i].id] = { suit: c.suit, value: c.value };
+      });
+      return out;
+    }
+  }
+  return null;
+};
+
 /** 各效果的「結構判定」。全部以「展開小丑牌後的具體牌」為輸入。 */
 const STRUCTURE = {
   /** 4 張同值，且都不是小丑牌（原書明示 none of which is a joker）。 */
@@ -340,7 +390,10 @@ export const levelDamageBonus = (level) => {
  *
  * @param {Array} rawCards 玩家選出的牌（原樣，可能含小丑牌）
  * @param {number} level 角色等級
- * @param {{knownHeroicSkills?:string[]}} opts
+ * @param {{knownHeroicSkills?:string[], jokerAssignment?:Object}} opts
+ *   `jokerAssignment` 是玩家為小丑牌指定的花色與數值（`{ [cardId]: { suit, value } }`）。
+ *   **全部指定完**才用它判定；否則退回「窮舉所有指定、取第一個成立者」的相容行為
+ *   （此時畫面上應提示「自動判定」，讓玩家知道這不是他自己選的）。
  * @returns {Array} 符合的效果（含已算好的描述文字）。可能多於一個——原書要求玩家選一個套用。
  */
 export const detectSets = (rawCards, level = 1, opts = {}) => {
@@ -348,7 +401,8 @@ export const detectSets = (rawCards, level = 1, opts = {}) => {
   if (cards.length < 2 || cards.length > MAX_SET_SIZE) return [];
 
   const known = opts.knownHeroicSkills || [];
-  const assignments = expandJokers(cards);
+  const assigned = applyJokerAssignment(cards, opts.jokerAssignment);
+  const assignments = isFullyAssigned(cards, opts.jokerAssignment) ? [assigned] : expandJokers(cards);
   const bonus = levelDamageBonus(level);
 
   const found = [];
@@ -579,3 +633,42 @@ export const FULL_STATUS_CHOICES = ['dazed', 'shaken', 'slow', 'weak'];
 
 /** 結算時寫入的每回合使用記錄（原書：再調度與陷阱卡都各自受限）。 */
 export const emptyTurnUsage = () => ({ mulligan: false, trap: false });
+
+// ─────────────────────────────────────────────────────────
+// 牌桌狀態
+// ─────────────────────────────────────────────────────────
+
+/**
+ * 牌組是否處於「衝突中」。
+ *
+ * ## 為什麼要抽成純函式（2026-10-05 修正）
+ *
+ * 舊版 UI 用 `deck.length > 0 || hand.length > 0 || discard.length > 0` 當判準。
+ * 但【衝突結束】的規則是「把全部 30 張洗回牌庫並收起來」——收起來之後**牌庫裡有 30 張**，
+ * 於是舊判準永遠為 true：牌桌停在「手牌已空」的畫面，而「衝突開始」按鈕是 `!inConflict`
+ * 才顯示，**再也回不去**。使用者回報的「點衝突結束之後就再也抽不了卡」就是這個。
+ *
+ * 正確的判準是 `active` 旗標（衝突開始時設 true、結束時設 false）；
+ * 舊存檔沒有這個欄位，故以「牌庫不滿 30 張或手牌／棄牌堆非空」作為相容推斷
+ * （衝突中手牌＋棄牌堆＋牌庫恆為 30，牌庫恰好 30 張只可能是收起來的狀態）。
+ */
+export const isDeckInConflict = (data) => {
+  if (data?.active === true) return true;
+  if (data?.active === false) return false;
+  const deck = data?.deck || [];
+  const hand = data?.hand || [];
+  const discard = data?.discard || [];
+  // 牌庫為 0 是「還沒建立牌組」（全新角色），不是「衝突中」——不能寫成 deck.length < DECK_SIZE。
+  return hand.length > 0 || discard.length > 0 || (deck.length > 0 && deck.length < DECK_SIZE);
+};
+
+/** 衝突結束後的牌組狀態：30 張收起來、手牌與棄牌堆清空、回合狀態歸零。 */
+export const idleDeckState = () => ({
+  active: false,
+  deck: createDeck(),
+  hand: [],
+  discard: [],
+  vanguard: [],
+  highOrLow: null,
+  usedThisTurn: emptyTurnUsage()
+});

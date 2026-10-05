@@ -32,8 +32,8 @@
   本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 2,019 kB（gzip 572 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 172/172 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描** 通過，exit 0）。
+- **建置產物**：`dist/`，JS 2,023 kB（gzip 574 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描** 通過，exit 0）。
   十組測試 ＋ 兩道自動關卡：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:affinity` —— 九相屬性標記（誤標表、正標表、資料層掃描、渲染器同步；見 §4 F）
@@ -396,9 +396,9 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ### E. 建置與測試
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.32 秒）。
-- JS bundle 2,019 kB / gzip 572 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- JS bundle 2,023 kB / gzip 574 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 172/172 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
@@ -526,6 +526,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | Q | 九相屬性標記誤植（「魔能發電模組」→「魔能發 ⚡ 電模組」） | 判定由**黑名單正則**改為**情境白名單 ＋ 夾字否決**（`affinityText.js`）；全資料層稽核出 **317 處誤標**、修後保留 1,030 處正確標記；新增 `test:affinity`（176 項）與 `audit:affinity`；見 §4 F | 2026-10-05 |
 | R | 卡牌大師非英雄技能補完（陷阱卡／牌運亨通／再調度） | `陷阱卡` 文字原為 CHM 測試版機制（MP 上限 `SL×10`、宣告花色翻牌庫底部）→ 官方正式版 `SL×5`、棄 `SL+1` 張花色對應動作的牌（**文字於 §S 落地**，首輪只改了 UI／行為）；新增陷阱卡／牌運亨通／再調度三套 UI；再調度改為**玩家自選牌**（原為程式代丟手牌前 N 張）；結算回寫自身 HP/MP 與狀態滿貫；速查表補上 8 條效果；花色對應加互異檢查。**英雄技能（黑與白／先鋒卡／決鬥大師／禁忌儀式）依使用者指示延後**——需精通職業（Lv 10）才可習得；`test:cards` 114 → 172 項 | 2026-10-05 |
 | S | 卡牌大師譯名統一（使用者裁定） | 裁定 **小丑牌／四條頭獎／魔法同花順／炫目順子／狀態滿貫**（三重支援／雙重麻煩／魔法對子／禁忌君王 沿用）。改了 `aceOfCardsData.js`、`AceOfCardsTable.jsx`（牌面字樣「鬼」→「丑」）、`rulesData.json`（牌運亨通＋陷阱卡文字）、`ruleCodexExpansion.js`、測試標籤；新增 `test:codex` 護欄比對速查手冊與 `SET_EFFECTS` 逐字相同（268 → 270 項）。⚠️ 批次置換順序踩坑：16 處誤成「狀態四條頭獎」 | 2026-10-05 |
+| T | 卡牌大師：小丑牌指定 ＋ 撲克牌面 ＋ 衝突結束卡死（使用者回報） | ① 修 **bug**：舊判準 `deck.length > 0` 讓【衝突結束】把 30 張收回後永遠判定「衝突中」，再也回不到「衝突開始」；改為 `isDeckInConflict()`（`active` 旗標 ＋ 舊存檔啟發式）＋ `idleDeckState()`。② 新增**小丑牌指定**（原書 p.8 由玩家指定花色與數值，花色會決定傷害類型）：`applyJokerAssignment`／`suggestJokerAssignment`／`detectSets({ jokerAssignment })`。③ 牌面改為**撲克牌樣式**（白底長方形、數字與花色同尺寸並排、花色著色）。`test:cards` 172 → **211 項**（含 R 小丑牌指定、S 衝突狀態回歸、T 渲染器同步原始碼護欄） | 2026-10-05 |
 
 ## 7. 本檔維護
 

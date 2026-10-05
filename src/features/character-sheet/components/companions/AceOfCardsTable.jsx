@@ -22,12 +22,14 @@ import { STATUS_AFFLICTIONS } from '../../data/sourcebookConfig';
 import {
   SUITS,
   SUIT_KEYS,
+  CARDS_PER_SUIT,
   DECK_SIZE,
   STARTING_HAND,
   MAX_VANGUARD,
   DAMAGE_TYPES,
   DEFAULT_SUIT_TYPES,
   isValidSuitAssignment,
+  suitName,
   createDeck,
   shuffle,
   drawCards,
@@ -51,7 +53,11 @@ import {
   castableTrapSpells,
   selfBenefitForEffect,
   FULL_STATUS_CHOICES,
-  emptyTurnUsage
+  emptyTurnUsage,
+  isFullyAssigned,
+  suggestJokerAssignment,
+  isDeckInConflict,
+  idleDeckState
 } from '../../data/aceOfCardsData';
 
 /**
@@ -100,12 +106,27 @@ const SUIT_ICON = {
   club: GiClubs
 };
 
-/** 花色 → 顏色（用於牌面辨識，非裝飾）。 */
-const SUIT_STYLE = {
-  diamond: 'bg-red-50 border-red-300 text-red-900',
-  heart: 'bg-red-50 border-red-300 text-red-900',
-  club: 'bg-slate-100 border-slate-400 text-slate-900',
-  spade: 'bg-slate-100 border-slate-400 text-slate-900'
+/**
+ * 花色 → 牌面顏色。
+ *
+ * 撲克牌的慣例：紅心／方塊為紅，黑桃／梅花為黑。這是**辨識用的既有慣例**，不是裝飾，
+ * 所以即使全站是羊皮紙色調也保留（參考 888poker 的 hand rankings 表）。
+ */
+const SUIT_TEXT = {
+  diamond: 'text-red-600',
+  heart: 'text-red-600',
+  club: 'text-slate-900',
+  spade: 'text-slate-900'
+};
+
+/** 小丑牌未指定花色與數值時的顏色。 */
+const JOKER_TEXT = 'text-amber-700';
+
+/** 牌面尺寸：`md` 手牌、`sm` 其他小區塊、`xs` 棄牌堆。 */
+const CARD_SIZE = {
+  md: { box: 'min-w-[44px] px-1.5 py-1 rounded-[5px]', glyph: 'text-[17px]', icon: 'w-[17px] h-[17px]' },
+  sm: { box: 'min-w-[38px] px-1.5 py-1 rounded-[5px]', glyph: 'text-[15px]', icon: 'w-[15px] h-[15px]' },
+  xs: { box: 'min-w-[30px] px-1 py-0.5 rounded-[4px]', glyph: 'text-[12px]', icon: 'w-[12px] h-[12px]' }
 };
 
 /** 小顆的區塊標題。 */
@@ -143,6 +164,8 @@ export default function AceOfCardsTable({
   const [trapActionKey, setTrapActionKey] = useState(null);
   const [trapPicked, setTrapPicked] = useState([]);
   const [trapDiscarded, setTrapDiscarded] = useState(false);
+  /** 玩家為小丑牌指定的花色與數值：`{ [cardId]: { suit, value } }`（原書 p.8）。 */
+  const [jokerAssign, setJokerAssign] = useState({});
 
   const aceClass = (character?.classes || []).find((c) => c.className === '卡牌大師');
   const skillSL = (name) =>
@@ -171,13 +194,17 @@ export default function AceOfCardsTable({
   // 未習得【魔力套牌】就完全不渲染
   if (magicCardsSL <= 0) return null;
 
-  const inConflict = deck.length > 0 || hand.length > 0 || discard.length > 0;
+  // 牌桌狀態判準抽在資料層（`isDeckInConflict`）——舊版用 `deck.length > 0`，
+  // 導致【衝突結束】把 30 張收回牌庫後判準永遠為 true，再也回不到「衝突開始」。
+  const inConflict = isDeckInConflict(data);
   const maxCards = maxSetSizeForSL(magicCardsSL);
   const mpCap = maxMpForSL(magicCardsSL);
   const suitOk = isValidSuitAssignment(suitTypes);
 
   const pickedCards = picked.map((id) => hand.find((c) => c.id === id)).filter(Boolean);
-  const matches = detectSets(pickedCards, level, { knownHeroicSkills });
+  const pickedJokers = pickedCards.filter((c) => c.joker);
+  const jokersAssigned = isFullyAssigned(pickedCards, jokerAssign);
+  const matches = detectSets(pickedCards, level, { knownHeroicSkills, jokerAssignment: jokerAssign });
   const effective = matches.find((m) => m.id === chosenEffect) || matches[0] || null;
   const mpCost = mpCostForSet(pickedCards.length);
   const enoughMp = mpCost <= currentMp;
@@ -198,12 +225,14 @@ export default function AceOfCardsTable({
     setTrapActionKey(null);
     setTrapPicked([]);
     setTrapDiscarded(false);
+    setJokerAssign({});
   };
 
   const startConflict = () => {
     const fresh = shuffle(createDeck());
     const r = drawCards(fresh, [], STARTING_HAND);
     write({
+      active: true,
       deck: r.deck,
       hand: r.drawn,
       discard: [],
@@ -216,16 +245,9 @@ export default function AceOfCardsTable({
   };
 
   const endConflict = () => {
-    write({
-      deck: createDeck(),
-      hand: [],
-      discard: [],
-      vanguard: [],
-      highOrLow: null,
-      usedThisTurn: emptyTurnUsage()
-    });
+    write(idleDeckState());
     resetTable();
-    showToast('衝突結束：30 張全部洗回牌庫', 'info');
+    showToast('衝突結束：30 張全部洗回牌庫並收起來', 'info');
   };
 
   const startTurn = () => {
@@ -328,6 +350,7 @@ export default function AceOfCardsTable({
     setPicked([]);
     setChosenEffect(null);
     setStatusPicked([]);
+    setJokerAssign({});
   };
 
   /** 再調度：玩家自選至多 SL+1 張棄掉後補抽等量（每回合一次）。 */
@@ -412,29 +435,79 @@ export default function AceOfCardsTable({
     showToast('已套用建議對應：方塊風、梅花土、紅心火、黑桃冰', 'info');
   };
 
+  // ── 小丑牌指定（原書 p.8：由玩家指定花色與數值） ──────────
+  const setJokerSuit = (cardId, suit) => {
+    setChosenEffect(null);
+    setJokerAssign((prev) => ({ ...prev, [cardId]: { suit, value: prev[cardId]?.value ?? 1 } }));
+  };
+
+  const setJokerValue = (cardId, value) => {
+    setChosenEffect(null);
+    setJokerAssign((prev) => ({ ...prev, [cardId]: { suit: prev[cardId]?.suit ?? SUIT_KEYS[0], value } }));
+  };
+
+  const applySuggestedJokers = () => {
+    const s = suggestJokerAssignment(pickedCards, level, { knownHeroicSkills });
+    if (!s) {
+      showToast('這組牌無論怎麼指定小丑牌都湊不出效果', 'warning');
+      return;
+    }
+    setChosenEffect(null);
+    setJokerAssign((prev) => ({ ...prev, ...s }));
+    showToast('已套用建議指定', 'info');
+  };
+
+  const clearJokerAssign = () => {
+    setChosenEffect(null);
+    setJokerAssign((prev) => {
+      const next = { ...prev };
+      pickedJokers.forEach((c) => { delete next[c.id]; });
+      return next;
+    });
+  };
+
   // ── 顯示 ────────────────────────────────────────────────
-  const renderCard = (card, { selectable = true, selected = false, onToggle, dim = false } = {}) => {
-    const base = card.joker
-      ? 'bg-amber-100 border-amber-400 text-amber-900'
-      : SUIT_STYLE[card.suit] || 'bg-white border-slate-300';
-    const type = !card.joker && suitTypes[card.suit] ? suitTypes[card.suit] : null;
-    const SuitIcon = card.joker ? GiCardJoker : SUIT_ICON[card.suit];
+  /**
+   * 牌面（撲克牌樣式）。
+   *
+   * 參考 888poker 的 hand rankings 表：**白底圓角長方形，數字與花色並排且一樣大**，
+   * 顏色依花色（紅心／方塊紅、黑桃／梅花黑）。小丑牌在指定花色與數值後，
+   * 牌面直接顯示指定的內容——玩家看得到自己送出了什麼。
+   */
+  const renderCard = (card, { selectable = true, selected = false, onToggle, dim = false, size = 'md' } = {}) => {
+    const s = CARD_SIZE[size] || CARD_SIZE.md;
+    const assigned = card.joker ? jokerAssign[card.id] : null;
+    const suit = card.joker ? assigned?.suit : card.suit;
+    const value = card.joker ? assigned?.value : card.value;
+    const SuitIcon = suit ? SUIT_ICON[suit] : GiCardJoker;
+    const tone = suit ? SUIT_TEXT[suit] || JOKER_TEXT : JOKER_TEXT;
+    const type = suit && suitTypes[suit] ? suitTypes[suit] : null;
+    const label = card.joker
+      ? assigned
+        ? `小丑牌 → ${suitName(assigned.suit)} ${assigned.value}${type ? `（${type}）` : ''}`
+        : '小丑牌（尚未指定花色與數值）'
+      : type
+        ? `${cardLabel(card)}（${type}）`
+        : cardLabel(card);
+
     return (
       <button
         key={card.id}
         type="button"
         disabled={!selectable}
         onClick={() => selectable && onToggle && onToggle(card.id)}
-        title={type ? `${cardLabel(card)}（${type}）` : cardLabel(card)}
-        className={`px-1.5 py-2 rounded-lg border-2 text-[11px] font-bold leading-tight transition-all ${
+        title={label}
+        aria-label={label}
+        className={`bg-white border border-slate-300 shadow-sm flex items-center justify-center gap-[3px] leading-none transition-all ${s.box} ${
           selectable ? 'cursor-pointer' : 'cursor-default'
-        } ${base} ${selected ? 'ring-2 ring-amber-500 -translate-y-1' : ''} ${
-          dim ? 'opacity-35' : ''
+        } ${selected ? 'ring-2 ring-amber-500 -translate-y-0.5' : ''} ${
+          dim ? 'opacity-30 grayscale' : ''
         }`}
       >
-        <span className="block text-[13px] font-black">{card.joker ? '丑' : card.value}</span>
-        {SuitIcon && <SuitIcon className="w-3.5 h-3.5 mx-auto opacity-80" />}
-        {type && <span className="block text-[9px] opacity-70">{type}</span>}
+        <span className={`${s.glyph} font-black ${tone}`}>
+          {card.joker && !assigned ? '丑' : value}
+        </span>
+        {SuitIcon && <SuitIcon className={`${s.icon} ${tone} shrink-0`} />}
       </button>
     );
   };
@@ -562,6 +635,83 @@ export default function AceOfCardsTable({
                 </div>
               )}
             </div>
+
+            {/* 小丑牌指定 */}
+            {pickedJokers.length > 0 && (
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300">
+                <SectionTitle
+                  icon={GiCardJoker}
+                  right={
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={applySuggestedJokers}
+                        className="px-2 py-0.5 rounded-lg border border-amber-400 bg-white text-[10px] font-bold text-amber-900 cursor-pointer"
+                      >
+                        套用建議
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearJokerAssign}
+                        className="px-2 py-0.5 rounded-lg border border-amber-300 bg-white text-[10px] font-bold text-amber-800 cursor-pointer"
+                      >
+                        清除指定
+                      </button>
+                    </div>
+                  }
+                >
+                  小丑牌指定（原書：結算含小丑牌的組合時，由你指定其花色與數值 1～7）
+                </SectionTitle>
+                <div className="space-y-1.5">
+                  {pickedJokers.map((c) => {
+                    const a = jokerAssign[c.id];
+                    return (
+                      <div key={c.id} className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-bold text-amber-900">小丑牌</span>
+                        <select
+                          value={a?.suit || ''}
+                          onChange={(e) => e.target.value && setJokerSuit(c.id, e.target.value)}
+                          className="px-1 py-0.5 rounded border border-amber-300 bg-white text-[11px] text-[#3c2415] cursor-pointer"
+                        >
+                          <option value="">花色…</option>
+                          {SUITS.map((s) => (
+                            <option key={s.key} value={s.key}>{s.name}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={a?.value ?? ''}
+                          onChange={(e) => e.target.value && setJokerValue(c.id, Number(e.target.value))}
+                          className="px-1 py-0.5 rounded border border-amber-300 bg-white text-[11px] text-[#3c2415] cursor-pointer"
+                        >
+                          <option value="">數值…</option>
+                          {Array.from({ length: CARDS_PER_SUIT }, (_, i) => i + 1).map((v) => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                        </select>
+                        {a && (
+                          <span className="text-[10px] font-mono text-amber-900">
+                            → {suitName(a.suit)} {a.value}
+                            {suitTypes[a.suit] ? `（${suitTypes[a.suit]}屬性）` : ''}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[10px] font-bold text-amber-900 flex items-start gap-1">
+                  {jokersAssigned ? (
+                    <GiCheckMark className="w-3 h-3 mt-0.5 shrink-0" />
+                  ) : (
+                    <GiHazardSign className="w-3 h-3 mt-0.5 shrink-0" />
+                  )}
+                  <span>
+                    {jokersAssigned
+                      ? '已指定——效果以你指定的花色與數值結算'
+                      : '尚未全部指定——目前由程式窮舉所有可能（每張 28 種）自動判定；指定後花色才會影響傷害類型'}
+                  </span>
+                </p>
+              </div>
+            )}
 
             {/* 符合的效果 */}
             {pickedCards.length >= 2 && (
@@ -854,20 +1004,7 @@ export default function AceOfCardsTable({
                   棄牌堆（{discard.length} 張，順序不可改，任何人可查看）
                 </SectionTitle>
                 <div className="flex items-center gap-1 flex-wrap">
-                  {discard.map((c) => {
-                    const SuitIcon = c.joker ? GiCardJoker : SUIT_ICON[c.suit];
-                    return (
-                      <span
-                        key={c.id}
-                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-bold ${
-                          c.joker ? 'bg-amber-100 border-amber-400 text-amber-900' : SUIT_STYLE[c.suit] || 'bg-white border-slate-300'
-                        }`}
-                      >
-                        {SuitIcon && <SuitIcon className="w-2.5 h-2.5" />}
-                        <span>{c.joker ? '小丑牌' : c.value}</span>
-                      </span>
-                    );
-                  })}
+                  {discard.map((c) => renderCard(c, { selectable: false, size: 'xs' }))}
                 </div>
               </div>
             )}

@@ -5,6 +5,8 @@
  *
  * 全部期望值取自官方特典合輯 **p.7–p.11**（印刷頁碼，該書偏移為 0）。
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   SUITS,
   SUIT_KEYS,
@@ -45,7 +47,12 @@ import {
   castableTrapSpells,
   selfBenefitForEffect,
   FULL_STATUS_CHOICES,
-  emptyTurnUsage
+  emptyTurnUsage,
+  applyJokerAssignment,
+  isFullyAssigned,
+  suggestJokerAssignment,
+  isDeckInConflict,
+  idleDeckState
 } from '../src/features/character-sheet/data/aceOfCardsData.js';
 
 let pass = 0;
@@ -63,6 +70,7 @@ const check = (label, actual, expected) => {
   );
 };
 const section = (t) => lines.push(`\n=== ${t} ===`);
+const checkTrue = (label, cond) => check(label, !!cond, true);
 
 /** 造牌的小工具。 */
 const C = (suit, value) => ({ id: `${suit}_${value}`, suit, value, joker: false });
@@ -422,6 +430,107 @@ check('每個效果都有靜態速查文字',
 check('狀態滿貫的動態敘述列出 4 種狀態',
   detectSets([C('spade', 4), C('heart', 4), C('club', 4), C('diamond', 2), C('spade', 2)], 1)
     .find((s) => s.id === 'fullStatus').describe.includes('眩暈、動搖、緩慢、虛弱'), true);
+
+// ─────────────────────────────────────────────────────────── R
+section('R. 小丑牌指定：由玩家指定花色與數值（原書 p.8「you choose their suit and value」）');
+check('指定後小丑牌被填成具體牌',
+  applyJokerAssignment([C('spade', 3), J()], { joker_1: { suit: 'heart', value: 6 } })
+    .map((c) => `${c.suit}:${c.value}`),
+  ['spade:3', 'heart:6']);
+check('未指定的小丑牌維持原樣',
+  applyJokerAssignment([J()], {}).map((c) => c.joker),
+  [true]);
+check('非小丑牌不受影響',
+  applyJokerAssignment([C('spade', 3)], { spade_3: { suit: 'heart', value: 6 } })[0].suit,
+  'spade');
+check('isFullyAssigned：全部指定 -> true',
+  isFullyAssigned([C('spade', 3), J()], { joker_1: { suit: 'heart', value: 6 } }), true);
+check('isFullyAssigned：部分指定 -> false',
+  isFullyAssigned([J(1), J(2)], { joker_1: { suit: 'heart', value: 6 } }), false);
+check('isFullyAssigned：沒有小丑牌 -> true', isFullyAssigned([C('spade', 3)], {}), true);
+
+// ★ 指定值會改變判定結果
+check('3,3+小丑牌指定為 3 -> 三重支援',
+  ids([C('spade', 3), C('heart', 3), J()], 1, { jokerAssignment: { joker_1: { suit: 'club', value: 3 } } })
+    .includes('tripleSupport'), true);
+check('3,3+小丑牌指定為 5 -> 無效果（不再是三重支援）',
+  ids([C('spade', 3), C('heart', 3), J()], 1, { jokerAssignment: { joker_1: { suit: 'club', value: 5 } } })
+    .length, 0);
+check('★ 花色會決定傷害類型：指定黑桃 -> 魔法同花順（冰）',
+  detectSets([C('spade', 3), C('spade', 4), C('spade', 5), J()], 1, {
+    jokerAssignment: { joker_1: { suit: 'spade', value: 6 } }
+  }).map((s) => s.id).sort(),
+  ['blindingFlush', 'magicFlush']);
+check('★ 同一組牌改指定紅心 -> 只剩炫目順子（不同花色）',
+  detectSets([C('spade', 3), C('spade', 4), C('spade', 5), J()], 1, {
+    jokerAssignment: { joker_1: { suit: 'heart', value: 6 } }
+  }).map((s) => s.id),
+  ['blindingFlush']);
+check('指定黑桃時傷害類型為冰',
+  detectSets([C('spade', 3), C('spade', 4), C('spade', 5), J()], 1, {
+    jokerAssignment: { joker_1: { suit: 'spade', value: 6 } }
+  }).find((s) => s.id === 'magicFlush').describe.includes('冰'), true);
+check('只指定部分小丑牌 -> 退回窮舉（仍找得到效果）',
+  ids([C('spade', 3), C('heart', 3), J(1), J(2)], 1, { jokerAssignment: { joker_1: { suit: 'club', value: 3 } } })
+    .length > 0, true);
+
+// 建議指定
+check('建議指定：3,3+小丑牌 -> 梅花? 不，取展開順序第一組（方塊 3）',
+  suggestJokerAssignment([C('spade', 3), C('heart', 3), J()], 1),
+  { joker_1: { suit: 'diamond', value: 3 } });
+check('建議指定：1,2,4+小丑牌 -> 補成連續（方塊 3）',
+  suggestJokerAssignment([C('spade', 1), C('heart', 2), C('club', 4), J()], 1),
+  { joker_1: { suit: 'diamond', value: 3 } });
+check('建議指定：沒有小丑牌 -> null', suggestJokerAssignment([C('spade', 3), C('heart', 3)], 1), null);
+check('建議指定：湊不出效果 -> null', suggestJokerAssignment([C('spade', 1), C('heart', 3), C('club', 5), J()], 1), null);
+
+// ─────────────────────────────────────────────────────────── S
+section('S. 牌桌狀態：衝突結束後必須回得到「衝突開始」（使用者回報的 bug）');
+const idle = idleDeckState();
+check('衝突結束狀態：active=false', idle.active, false);
+check('衝突結束狀態：牌庫 30 張', idle.deck.length, DECK_SIZE);
+check('衝突結束狀態：手牌清空', idle.hand.length, 0);
+check('衝突結束狀態：棄牌堆清空', idle.discard.length, 0);
+check('衝突結束狀態：牌運亨通狀態清空', idle.highOrLow, null);
+check('衝突結束狀態：每回合記錄歸零', idle.usedThisTurn, { mulligan: false, trap: false });
+// ★ 這兩條就是「再也抽不了卡」的回歸護欄
+check('★ 衝突結束後 -> 不在衝突中（舊版判準 deck.length > 0 會誤判為 true）',
+  isDeckInConflict(idle), false);
+check('★ 舊存檔（無 active 欄位、30 張在牌庫、手牌空）-> 不在衝突中',
+  isDeckInConflict({ deck: createDeck(), hand: [], discard: [] }), false);
+check('衝突開始後（active=true）-> 在衝突中',
+  isDeckInConflict({ active: true, deck: createDeck(), hand: [], discard: [] }), true);
+check('衝突中（牌庫 25 + 手牌 5）-> 在衝突中',
+  isDeckInConflict({ deck: createDeck().slice(0, 25), hand: createDeck().slice(25) }), true);
+check('棄牌堆非空 -> 在衝突中',
+  isDeckInConflict({ deck: createDeck().slice(0, 28), hand: [], discard: createDeck().slice(28) }), true);
+check('空物件 -> 不在衝突中', isDeckInConflict({}), false);
+check('undefined -> 不在衝突中', isDeckInConflict(undefined), false);
+check('active=false 優先於啟發式（牌庫不足 30 仍視為已收起）',
+  isDeckInConflict({ active: false, deck: createDeck().slice(0, 10), hand: [] }), false);
+check('★ 結束 -> 開始 -> 結束 的往返不卡死',
+  (() => {
+    const a = idleDeckState();
+    const b = { ...a, active: true, deck: a.deck.slice(0, 25), hand: a.deck.slice(25) };
+    return [isDeckInConflict(a), isDeckInConflict(b), isDeckInConflict(idleDeckState())];
+  })(),
+  [false, true, false]);
+
+// ─────────────────────────────────────────────────────────── T
+section('T. 渲染器同步：牌桌必須走共用判準，不得長回舊寫法');
+const tableSource = fs.readFileSync(
+  path.join(process.cwd(), 'src/features/character-sheet/components/companions/AceOfCardsTable.jsx'),
+  'utf8'
+);
+checkTrue('牌桌使用 isDeckInConflict 判準', tableSource.includes('isDeckInConflict(data)'));
+check('牌桌已無舊判準（deck.length > 0 當衝突中）',
+  /const inConflict = deck\.length/.test(tableSource), false);
+checkTrue('衝突開始會寫 active: true', tableSource.includes('active: true'));
+checkTrue('衝突結束會寫 idleDeckState()', tableSource.includes('idleDeckState()'));
+checkTrue('結算把小丑牌指定傳進 detectSets', tableSource.includes('jokerAssignment: jokerAssign'));
+checkTrue('有小丑牌指定面板', tableSource.includes('小丑牌指定'));
+checkTrue('牌面數字與花色同尺寸', tableSource.includes("glyph: 'text-[17px]'") && tableSource.includes("icon: 'w-[17px] h-[17px]'"));
+check('已無舊的彩色底牌面（SUIT_STYLE）', tableSource.includes('SUIT_STYLE'), false);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

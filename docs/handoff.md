@@ -57,8 +57,8 @@
 | 套件名 | `monogatari-techou`　｜　顯示名《物語手帳》 |
 | 分支 | `main` |
 | 工作樹 | **乾淨**（全部已提交，無未追蹤檔案） |
-| `npm run build` | exit 0，約 7.5 秒，**2,019 kB / gzip 572 kB**（chunk-size 警告為既有現象） |
-| `npm test` | exit 0，**60 + 33 + 75 + 56 + 235 + 172 + 322 + 86 + 99 + 268 ＋ Emoji 掃描** |
+| `npm run build` | exit 0，約 4.6 秒，**2,023 kB / gzip 574 kB**（chunk-size 警告為既有現象） |
+| `npm test` | exit 0，**60 + 33 + 75 + 56 + 235 + 211 + 322 + 86 + 99 + 270 ＋ Emoji 掃描** |
 | 測試檔 | `tests/` 共 11 檔（emojiScan／sentinel／properNouns／tinkererProjects／classResources／gourmet／aceOfCards／characterEngine／dataLayer／starterPresets／ruleCodex） |
 | 資料層 | `src/data/keys.js`（7 權威鍵 + 3 舊鍵）、`src/data/store.js`、`shared/schema.js` |
 | 文件 | `docs/`：`decisions.md`、`agents-changelog.md`、`room-sync-plan.md`、`skill-coverage.md` |
