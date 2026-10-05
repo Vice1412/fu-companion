@@ -1880,7 +1880,14 @@ export default function CharacterPlayHUD({
                       <AceOfCardsTable
                         character={character}
                         onChange={onChange}
-                        onConsumeMp={(mpCost) => adjustMp(-mpCost)}
+                        onAdjustHp={(delta) => adjustHp(delta)}
+                        onAdjustMp={(delta) => adjustMp(delta)}
+                        onClearStatuses={(keys) => {
+                          const cur = character.statusAfflictions || {};
+                          const next = { ...cur };
+                          (keys || []).forEach(k => { next[k] = false; });
+                          updateField('statusAfflictions', next);
+                        }}
                         showToast={showToast}
                       />
                     </div>
