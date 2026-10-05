@@ -7,6 +7,10 @@
 > Antigravity / Gemini 讀 `GEMINI.md`；DSH 讀本檔，且**以 `GEMINI.md` 為上位規範**。
 > 兩份文件並存，互不覆寫。
 
+> **接手的 session 請先讀 [`docs/handoff.md`](docs/handoff.md)。**
+> 本檔是規範本體（會被 harness 自動注入），但**不含**「專案剛搬到哪、目前做到哪、哪些坑踩過」——
+> 那些在交接簡報裡。規範自動生效，狀態要另外讀。
+
 ---
 
 ## 0. 規範優先序
@@ -22,11 +26,14 @@
 
 ## 1. 環境事實（DSH 專用）
 
-- **工作目錄**：`E:\MINGWAN\Projects\FU Companion`
+- **工作目錄**：`E:\MINGWAN\Projects\monogatari-techou`（2026-10-05 由 `FU Companion` 更名）
+  ⚠️ **此為舊路徑。** 專案已更名《物語手帳》（套件名 `monogatari-techou`）並正在搬遷。
+  **一律以 harness 回報的實際工作目錄為準**，接手後請把本行更新為新路徑（見 `docs/handoff.md` §1）。
+  本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
 - **建置產物**：`dist/`，JS 1,960 kB（gzip 560 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描** 通過，exit 0）。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 268/268 ＋ Emoji 掃描** 通過，exit 0）。
   八組測試 ＋ 一道自動關卡：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
@@ -37,7 +44,7 @@
   - `npm run test:cards` —— 卡牌大師牌組與組合結算（30 張組成、7 種效果的精確比對、鬼牌指定、等級加成）
   - `npm run test:engine` —— 角色卡數值引擎（HP/MP/IP/危機/DEF/M.DEF，對照原書 p.163–164）
   - `npm run test:datalayer` —— 鍵註冊表、存取層、舊鍵遷移、房間同步契約
-  - `npm run test:codex` —— 規則概念速查（16 條覆蓋率、關鍵字唯一性、授權合規）
+  - `npm run test:codex` —— 規則概念速查（16 條覆蓋率、關鍵字唯一性、授權合規、**譯名與定譯表逐字比對**）
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
   2026-10-03 的舊 `stage1.bundle.mjs` 即因早於源碼 40 秒打包，執行後產生 1 筆假失敗。**測試一律放 `tests/`。**
@@ -175,8 +182,11 @@ CHM 旁的 `.html` 只是 301 bytes 的空殼 frameset，**無用**；真正的�
 - 官方英文 Core v1.1 為機制最高權威；民間漢化為中文譯名標準；衝突時官方英文優先。
 - ✅ **官方原書可讀**（位置與抽取方式見 §1.1）。涉及《FU》專有子系統的實作前，
   **必須先抽取對應章節逐條核對**，嚴禁憑記憶編造等級階級、檢定或數值。
-- ✅ **譯名權威＝CHM（2026-10-04 使用者裁定）**：中文譯名一律以《Fabula Ultima 最終物語》全擴展不全書 V1.0 為準。
-  **只管譯名，不管機制**——CHM 決定「中文怎麼寫」，英文原書決定「規則是什麼」，兩者職責不可互換。抽取方式見 §1.2。
+- ✅ **譯名權威（2026-10-05 修訂，見 `docs/decisions.md` §M2）**：**只管譯名，不管機制**——
+  譯名決定「中文怎麼寫」，**官方英文正式版**決定「規則是什麼」，兩者職責不可互換。
+  - **核心手冊**（阿爾卡納／儀式／小工具／造物／忠實夥伴／咒語）→ 官方核心規則漢化 PDF
+  - **三大奇幻手冊與特典**（10 個職業子系統）→ 繁中版角色卡 Excel V2.17
+  - ⚠️ **CHM 是測試版**：凡機制與 CHM 衝突者一律以英文正式版為準。抽取方式見 §1.2。
 - **「職業」定譯鐵律**：Martial 系列一律譯「職業」（職業近戰武器／職業遠程武器／職業防具／職業盾牌），**嚴禁「軍用」**。
 
 ### 規則三：純中文顯示鐵律
@@ -378,13 +388,14 @@ Get-ChildItem -Path "src" -Recurse -File |
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.32 秒）。
 - JS bundle 1,960 kB / gzip 560 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 268/268 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
   **角色卡數值引擎（`test:engine`，2026-10-04 補上）**、**資料層與房間契約（`test:datalayer`）**。
   **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
-  > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`，243 項）。
+  > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`；2026-10-05 擴充至 **322 項**
+  > ＝ 243 項基礎向量 ＋ 79 項數值構成公式與免費增益二選一，見 `docs/decisions.md` §N）。
   > 官方 Camilla 向量已 1:1 還原（原書 p.163–164：等級 5、Might d6、Willpower d8
   > → HP 40／MP 50／危機 20／IP 6／DEF 8／M.DEF 10）。
   > 並確立兩條不變式：**HP/MP 用基礎骰**、**DEF/M.DEF 用當前骰**（狀態減值只影響後者）。
@@ -451,7 +462,8 @@ Get-ChildItem -Path "src" -Recurse -File |
 | 金手指來源標記 | `（高奇）`／`（自奇）`／`（科奇）` 標記不完整；`quirks` 無 `source` 欄位，手冊開關對金手指完全失效 | ⏸️ 使用者裁定暫緩 |
 | Bonus Collection 其餘 7 項 | New Heroic Skills／Halloween 系列／Arcane Whispers／三隻 Additional Bosses | 待裁定優先序 |
 | 角色卡引擎四個既有缺陷 | `characterEngine.js` 的 `applyLevelUp` 空扣 EXP、`fabulaPoints` 0 被還原成 3、等級夾在 5、防具回退語意錯誤 | 待裁定是否修 |
-| GitHub repo 改名 | 已決定改，指令待執行 | 待執行 |
+| ~~GitHub repo 改名~~ | **實測 `git remote -v` 已是 `https://github.com/Vice1412/monogatari-techou.git`——改名早已完成。** 原記「待執行」為過時記述（2026-10-05 複驗更正） | ✅ 已結案 |
+| 本機路徑搬遷 | 專案由 `FU Companion` 更名《物語手帳》並搬遷本機目錄；§1 的工作目錄已加註，接手後請更新為新路徑 | 待執行 |
 
 ### 6.2 已結案（索引）
 
@@ -473,6 +485,8 @@ Get-ChildItem -Path "src" -Recurse -File |
 | K7 | 規則概念速查授權合規 ＋ 補齊 10 職業 | 只收機制、不收畫風；覆蓋率 6 → 16 | 2026-10-05 |
 | K8 | 應用名稱改為《物語手帳》 | 授權 §8 避險；localStorage 鍵名刻意不改 | 2026-10-05 |
 | L | 資料層收斂 | 7 權威鍵 + 3 舊鍵；全站零直接 `localStorage` 呼叫 | 2026-10-04 |
+| M | 規則概念速查譯名稽核 | 約 140 處改回定譯（Excel V2.17／核心漢化 PDF）；`test:codex` G 區段比對 121 個名稱；另修靈刻 MP 公式與魔加農 IP（跨檔案共 6 處） | 2026-10-05 |
+| N | 職業技能改數值 ＋ 免費增益 ＋ 數值構成公式 | 全 35 職僅【不動要塞】【集中】改上限（皆有反映）；修 D1 `+undefined`、D2 二選一 MP 不可達、D3 暗黑之刃【Playtest】誤判；新增 `StatFormulaPanel` 逐項公式面板；D4~D7 待裁定 | 2026-10-05 |
 
 ## 7. 本檔維護
 

@@ -145,6 +145,14 @@ export default function CharacterEditor({
     setNewlyAddedClassName(null);
   };
 
+  // 免費增益二選一（最大 HP 或 最大 MP）：寫入 classes[].chosenBenefit，引擎據此決定 +5 落在 HP 還是 MP
+  const handleUpdateClassBenefit = (classIdx, benefit) => {
+    const curClasses = JSON.parse(JSON.stringify(character.classes || []));
+    if (!curClasses[classIdx]) return;
+    curClasses[classIdx].chosenBenefit = benefit;
+    updateField('classes', curClasses);
+  };
+
   const handleUpdateClassSkills = (classIdx, updatedSkills) => {
     const curClasses = JSON.parse(JSON.stringify(character.classes || []));
     if (!curClasses[classIdx]) return;
@@ -975,6 +983,7 @@ export default function CharacterEditor({
                       theme={theme}
                       isInitialEdit={newlyAddedClassName === cl.className}
                       onUpdateSkills={handleUpdateClassSkills}
+                      onUpdateClassBenefit={handleUpdateClassBenefit}
                       onRemoveClass={handleRemoveClass}
                       onUpdateCharacter={onChange}
                     />

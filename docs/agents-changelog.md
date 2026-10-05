@@ -106,7 +106,7 @@
 *⑧ **規則五.1 掃描範圍補漏**：`test:emoji` 原本只掃 `src/`，新增的 `shared/` 會成為零 Emoji 鐵律的**盲區**——已擴及。**教訓：新增原始碼目錄時，必須同步掃描範圍。** 本次新增兩個檔案時，這個關卡並未攔下任何東西（`shared/schema.js` 本來就乾淨），但那是運氣不是紀律。*
 *驗證：`npm test` 60/60 + 33/33 + 94/94 + 56/56 + 235/235 + 114/114 + **243/243** + **86/86** ＋ Emoji 掃描（81 檔），exit 0；`npm run build` exit 0（1,914.22 kB / gzip 546.45 kB，與基線一致）。另以 `scratch/verify_stage0.mjs` 對真實 localStorage 介面做端到端驗證（11/11 通過）：模擬「舊版資料 → 升級後開啟 App」，確認戰鬥追蹤器確實讀得到 NPC 工坊的產出。*
 *2026-10-04（房間同步計畫草案）：建立 `docs/room-sync-plan.md`。架構選定 **Cloudflare Workers + Durable Objects**（一個房間 = 一個 DO），免費方案即可（每日 10 萬請求、13,000 GB-s；SQLite 後端的 DO 免費方案可用）。關鍵設計紀律：**事件驅動而非狀態驅動**、**提交時送而非拖動時送**、**連線時快照之後增量**——這三條決定日後是免費還是付費（六人團一次事件 = 7 請求；但若照既有 `CombatTracker.jsx` 的做法「狀態一變就廣播全份」，拖一次血量轉盤即可破百次請求）。另註明必須啟用 **WebSocket Hibernation**，否則 DO 常駐會吃掉 10,800／13,000 GB-s。計畫內含未驗證項清單（含「本 repo 能否部署到 Cloudflare」尚未確認）。*
-*2026-10-04（既有同步方案的實證缺陷）：查核 `peerSync.js` 後確認其**無法運作**，非「未完成」而是「連不上」——⑴ 房主 Peer ID 帶時間戳後綴、玩家端連的是不帶後綴的 ID，**兩者永不相等**（`:23` vs `:66`，`:64` 的註解顯示發現機制寫一半）；⑵ 全專案僅一處廣播且被 `isHost` 鎖住（`CombatTracker.jsx:96`），**玩家改自己 HP/MP 不會傳出去**；⑶ 「同步角色進房間」只寫本機 localStorage 就跳成功提示，`PUSH_CHARACTER` 封包**只有接收端沒有發送端**。此為「看起來完成、實際沒跑過」的實例。*
+*2026-10-04（既有同步方案的實證缺陷）：查核 `peerSync.js` 後確認其**無法運作**，非「未完成」而是「連不上」——⑴ 房主 Peer ID 帶時間戳後綴、玩家端連的是不帶後綴的 ID，**兩者永不相等**（`:23` vs `:66`，`:64` 的註解顯示發現機制寫一半）；⑵ 全專案僅一處廣播且被 `isHost` 鎖住（`CombatTracker.jsx:96`），**玩家改自己 HP/MP 不會傳出去**；⑶ 「同步角色進房間」只寫本機 localStorage 就跳成功提示，`PUSH_CHARACTER` 封包**只有接收端沒有發送端**。此為「看起來完成、實際沒跑過」的實例。*
 *2026-10-05（規則概念速查：授權合規清理 ＋ 補齊 10 個職業）：*
 *① **先讀授權**。Fabula Ultima Third-Party Tabletop License 1.0 §1 明定官方原書的美術、文字、素材、商業外觀均為保留材料；§3 是唯一例外，允許引用規則、文字與機制，包括「使用完全相同的術語與完整擴充條目與描述」——但**僅限 7 類**（基礎武器／防具／庫存物品／各職業規則與機制／英雄技能／稀有物品特性／NPC 咒語）。§1 亦明文把「character generators」列為許可形式，本專案正是這一類。*
 *② **關鍵判斷**：職業的「額外子系統章節」（阿爾卡納、徽記、舞步、花園、源泉、天賦、獸化、載具、牌組…）**不在 §3 的 7 類清單內**。§3(iv) 用 `e.g. Class Skills` 可寬鬆解讀為涵蓋它們，但那是推測、不是白紙黑字。故採**唯一不需要靠解讀的作法：只收錄機制，不收錄任何畫風／敘述文字**。判準是「移掉之後玩家還能不能用這條規則」。*
@@ -118,7 +118,7 @@
 *⑧ **關鍵字衝突**：`秘儀學派儀式` 同時屬於「阿爾卡納」與「儀式魔法」，而 `findCodexRule` 只回第一個。已從阿爾卡納移除（保留在儀式魔法）。*
 *⑨ **誤傷檢查**：33 筆「跨職業命中」逐一檢視後**全部是正確的交叉引用**——商人【過期食品】寫「美食（見第 151 頁）」、靈能者【領航員】寫「效果屬於儀式學派的儀式魔法」、機師【壓縮技術】提到魔科技、修補匠【小工具】提到煉金術。這些連結本來就該存在。*
 *⑩ **環境副作用（需知悉）**：抽取機師模組表時，子代理為做字元座標驗證，在 DSH bundled Python 安裝了 `cryptography`、`pdfminer.six`（+ `cffi`、`pycparser`、`charset-normalizer`）。屬開發期工具，不影響執行期。*
-*驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描；`npm run build` exit 0（1,960.11 kB）。*
+*驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + 256/256 ＋ Emoji 掃描；`npm run build` exit 0（1,960.11 kB）。*
 *2026-10-05（應用名稱改為《物語手帳》）：授權 §8 規定標題不得含 "Fabula"／"Fabula Ultima"。原名 `FU Companion 《物語助手》` 的 `FU` 是遊戲名縮寫——字面上沒踩線，但離得很近，且位於標題最顯眼處；`Companion`／`助手` 則是工具語彙而非 JRPG 語彙。*
 *① **命名原則**：JRPG 味來自三個要素——和製漢字複合詞（物語／手帳／羈絆／命刻）、具體的實體物（手帳／典籍／水晶）、「記錄冒險」的框架。而本專案的 UI 本來就是一本書（書封首頁、翻頁動畫、內文寫著「冒險典籍」），所以「手帳」與既有介面是同一套語言。*
 *② **決定《物語手帳》**：保留既有的「物語」語感，把工具性的「助手」換成實體感的「手帳」。不另取英文名——規則三本就要求純中文。*
@@ -126,3 +126,53 @@
 *④ **刻意不改（改了會壞）**：`src/data/keys.js` 的 `fu_companion_*` 是 **localStorage 鍵名**，改了所有既有使用者的角色卡／NPC 庫／戰鬥存檔都會讀不到——它不是「標題」，§8 管不到。`fultimatorConverter.js` 的 `uid: 'fu_companion_export'` 同理（匯出格式識別字）。*
 *⑤ **備份相容性已驗證**：匯出結構只有 `version` 與 `exportedAt`，沒有應用名稱欄位；還原端只驗證 key 名稱，不看應用名稱。故改名不影響既有備份的匯入。*
 *驗證：`npm test` 1159 項全過（含 Emoji 掃描）；`npm run build` exit 0（1,960.01 kB）。*
+*2026-10-05（交接簡報，因本機路徑即將搬遷）：使用者要把專案目錄改名並開新 session 接手，要求一份可讓新 session 完全接軌的文件。*
+*① **先講清楚一件事**：文件能完整傳承的是**狀態、已裁定的決策、硬性規則、踩過的坑**；不能傳承的是對話中的摸索與未寫下的判斷。而且**規範本來就會自動繼承**——`AGENTS.md` 會被 harness 當成 workspace instructions 注入，`GEMINI.md` 是上位規範。所以交接文件**不重複那兩份**，只補它們沒有的：專案搬到哪、目前做到哪、哪些坑踩過。*
+*② **新增 `docs/handoff.md`**：含「先做這三件事」、路徑搬遷影響清單、實測現況快照、在途工作（連線房間同步）、四個未修的引擎缺陷、工作紀律（含已踩五次的地雷）、建議下一步，以及一節「交接範圍的誠實聲明」。*
+*③ **在 `AGENTS.md` 頂部加指引**——因為 `AGENTS.md` 是唯一會被自動注入的管道，不從那裡指路，新 session 不會知道有交接文件。*
+*④ **複驗時抓到一處過時記述**：`AGENTS.md` §6.1 寫「GitHub repo 改名 —— 指令待執行 —— 待執行」，但**實測 `git remote -v` 已是 `https://github.com/Vice1412/monogatari-techou.git`**——改名其實早就完成了。已更正為「已結案」，並另立一列「本機路徑搬遷｜待執行」。**這正是規則六的價值：寫下來的狀態會過時。***
+*⑤ **§1 工作目錄加註**：標明該行是舊路徑、**一律以 harness 回報的實際工作目錄為準**，並註明 `.github/workflows/deploy.yml` 與 `vite.config.js` 都用相對路徑故不受搬遷影響。*
+*⑥ 交接文件內另標記 `docs/room-sync-plan.md` §1.1 的「資料層：純 localStorage，無抽象層」**已過時**（階段 0 已完成收斂），提醒開工前先修。*
+*2026-10-05（規則概念速查：入口可發現性修正）：使用者回報「之前說幫我寫好的規則速查，在網頁完全找不到」。*
+*① **先查證再說**。速查本體完全正常：`RuleCodexDrawer` 早已全域掛載於 `App.jsx:368`、16 條資料齊全、`npm run test:codex` 256 項全過。**問題不在功能，在入口。***
+*② **根因**：抽屜是**純事件驅動**（監聽 `fu:open-rule-codex`），全 `src/` 只有 6 個派送點，且**全部落在「角色卡 → 修補匠」語境**（`CharacterPlayHUD.jsx:1423`／`:1695`、`TinkererWorkshop.jsx:753`／`:870`／`:1364`／`:1524`），加上技能描述內的虛線底線關鍵詞（`skillFormulaEvaluator.jsx:277`）。推論：封面、NPC 工坊、戰鬥輪次、命刻記錄**都是零入口**；角色卡也需先有修補匠角色。等於**16 條資料只有 1 條走得進去，其餘 15 條實質不可達**。*
+*③ **教訓：功能存在 ≠ 功能可達。** `test:codex` 驗的是資料完整性、關鍵字唯一性、授權合規——**沒有一項驗得到「使用者按不按得到」**。既有測試全綠，功能卻對使用者不存在。純事件驅動的 UI 一定要有至少一個**常駐可見**的觸發點，否則只有寫它的人知道怎麼開。*
+*④ **依規則四預審**：建立 `implementation_plan-codex-entry.md` 並以 `ask_user_question` 確認位置。使用者裁定**只加章節標頭**（封面按鈕不實作）。*
+*⑤ **實裝**：`App.jsx` 新增 `handleOpenCodex = () => openRuleCodex()` 並傳 `onOpenCodex`；`ChapterHeader.jsx` 新增同名 prop 與按鈕（`GiSpellBook` ＋「規則速查」，置於「擲骰器」左側，沿用 `theme.toolBtn` 與 `customTheme` 兩套樣式，`hidden sm:inline` 窄螢幕只留圖示）。**`RuleCodexDrawer` 與 16 條資料零改動**——事件契約本來就支援不帶關鍵字開啟（`detail.keyword` 為 undefined 時直接 `setInternalIsOpen(true)`，落於預設條目 `arcana`）。*
+*⑥ **分層**：`book/` 元件只收 prop、不 import feature 模組，維持既有依賴方向。*
+*驗證：`npm run build` exit 0（1,960.56 kB / gzip 560.38 kB）；`npm run test:emoji` 82 檔 0 命中；`npm run test:codex` 256/256。另確認新字串已進入 bundle（`dist/assets/index-C2uJChMZ.js`）。*
+*2026-10-05（規則概念速查：譯名稽核，約 140 處改回定譯）：使用者指出「速查的譯名有些沒有跟著 CHM 或者我的 Excel 角色卡」。*
+*① **先建權威再比對**。`skillSuboptionsData.js` 檔頭早已寫明其資料為「**繁中 Excel 定譯**」，`pilotVehicleData.js` 亦註明「依繁中版 Excel 機師相關工作表」——但速查的兩個資料檔是**照英文原書自行重譯**的。結果：同一批職業、同一批名詞**兩套譯名並存**，而速查是唯一孤例。*
+*② **稽核來源**：繁中版角色卡 Excel V2.17（17 工作表）、26 份 CHM 漢化 `.md`、專案既有的 `skillSuboptionsData.js`／`pilotVehicleData.js`／`rulesData.json`，以及使用者提供的**官方核心規則漢化 PDF**（`FabulaUltima 最终物语核心规则书 汉化版20230602.pdf`）。*
+*③ **錯得最明顯者**：舞者舞步 17/17 全錯、機師支援模組 14/14 全錯、突變體混合形態 12/12 全錯；徽記 9/19、魔法種子 13/20、心靈天賦 7/9。其中**「帝王帝王花」「荊棘荊棘」是疊字損毀**（應為王者帝王花、守衛肉垂），不是翻譯選擇。*
+*④ **使用者當場糾正我三件事**（本輪最重要的修正）*：
+*　• **「連結」是對的**（跟核心漢化 PDF 的「連結」），Excel 表頭的「連接」才是打錯字——我原先誤判為速查的錯。*
+*　• **徽記同時維持上限確為 SL + 1**（核對原文），速查原寫「等於 SL」→ 已修。*
+*　• **靈能者天賦 MP 消耗【靈刻格數 × 5】沒錯**（官方正式版），我引 CHM／HUD 的「5 + 格數 × 5」才是**測試版**值。*
+*⑤ **使用者的通則（已寫入 `docs/decisions.md` §M2）**：**一切以官方英文正式版為主；Excel、漢化 PDF、CHM 只是拿來看翻譯，機制不要跟。** CHM 是測試版內容。本輪據此**未改動任何機制數值**，唯一例外是④的徽記上限。*
+*⑥ **兩處權威本身有缺口**（勿再誤判）：漢化 PDF 的元素師表**缺 `Boulder`**、靈師表**缺 `Soul Shroud`**（英文正式版兩者都在），該兩條改以 Excel 的**地碎**／**魂之帷幕**為準；「構裝體／構造體」在 PDF 內就自相矛盾（NPC 物種表與魔科技篡奪用「構裝體」，忠實夥伴技能用「構造體」），速查**照原樣鏡射、未強行統一**。*
+*⑦ **實裝方式**：以 `scratch/rename_codex.py` 執行 237 條**帶預期次數斷言**的字串替換（次數不符即整批中止、不寫檔），改動 `ruleCodexExpansion.js`／`ruleCodexData.js`／`RuleCodexDrawer.jsx`（含 3 個分頁標籤）。*
+*⑧ **護欄（本輪最該留下來的東西）**：`test:codex` 新增 **G 區段**，把速查子項目名稱逐一比對定譯表，共 **121 個名稱**。既有 A~F 區段只驗結構、數量、關鍵字唯一性、授權合規——**完全驗不到「名稱對不對」**，所以這 140 處錯誤在**測試全綠**的狀態下存在了一整輪。已實測「注入錯字 → FAIL、還原 → PASS」。*
+*⑨ **同步修測試**：`tests/ruleCodex.test.mjs` 的 E2 區段原本以**舊標題**取 section（`'音色'`／`'詩節'`／`'魔種一覽'`／`'獸化一覽'`／`'裝甲模組'`／`'武器模組'`），改名後直接 `TypeError: Cannot read properties of undefined (reading 'rows')`。已同步為新標題。*
+*驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + **268/268** ＋ Emoji 掃描，exit 0；`npm run build` exit 0（1,961.19 kB / gzip 560.56 kB）；`git diff --check` 無空白錯誤。*
+*2026-10-05（兩處機制值修正：靈刻 MP 公式、魔加農 IP）：使用者裁定上一則留下的三項，並指出兩項都能在官方英文原書查到。*
+*① **靈刻的 MP 消耗**：`CharacterPlayHUD.jsx:1577` 原顯示「消耗 MP：【5 + 靈刻格數 × 5】」（**測試版 CHM 的公式**），改為「【靈刻格數 × 5】（最少 5 點）」。依據：官方英文 **Techno Fantasy Atlas p.154**——「spend an amount of Mind Points equal to (the number of filled sections in your Brainwave Clock, multiplied by 5) **(minimum 5 Mind Points)**」。速查本身原本就對，是 UI 跟錯了測試版。*
+*② **魔加農的 IP 成本**：速查寫 2 IP（正確），但 UI 與扣點邏輯寫 3 IP。共修 **5 處**：`TinkererWorkshop.jsx` 的 `consumeIp(3)` → `consumeIp(2)`、成功 Toast 文案、按鈕標籤 `(3 IP)` → `(2 IP)`、徽章 `3 IP · 火器武器` → `2 IP · 火器武器`；`TinkererGadgetsModal.jsx` 的 `cost`／`summary`／`desc`；`TinkererGadgetsQuickRef.jsx` 的徽章與說明。依據：官方英文 **Core p.215**——「MAGICANNON (Advanced) — You may perform the Inventory action and spend **2 Inventory Points**」。漢化 PDF 作 3 IP，是舊版／誤譯。*
+*③ **教訓：`AGENTS.md` 說「已修」也要複驗範圍。** 該檔 §4 早已記載「魔加農 IP 由 3 改回 2」，但當時**只改了速查的資料檔**，UI 顯示與 `consumeIp(3)` 兩處漏網——**同一個事實寫在多個檔案時，改一處不等於改完**。這與 §M4（測試驗不到名稱）是同一種病：缺的是跨檔案的關卡，不是單點的細心。*
+*④ **魔奏者的 verse／key 都叫「音調」—— 撤銷我上一則的「壞掉的取代痕跡」判斷。** 使用者說明：玩家團覺得原譯（CHM 的唱詞／樂頻／樂句／樂調）難懂，**自行換過譯名並以繁中版 Excel 為準**。回查 Excel 確認**它自己就不一致**：「職業技能合集」分頁的技能說明寫「這被稱作音調」，而「魔奏師相關」分頁寫「演唱樂句」。`rulesData.json:588` 忠實鏡射了前者，**屬刻意保留，不改**。*
+*⑤ 順帶複驗（皆正確、未動）：煉金術混合成本 基礎 3／高級 4／最高 5 IP（英文 Core p.212）、灌注術 9 項名稱、魔科技篡奪 10 MP、魔法球 2 IP、忠實夥伴物種「construct」。*
+*驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 243/243 + 86/86 + **268/268** ＋ Emoji 掃描，exit 0；`npm run build` exit 0；`git diff --check` 無空白錯誤。*
+*2026-10-05（跑團卡數值構成公式 ＋ 免費增益二選一）：使用者提出三問——① 哪些職業技能會改數值、點選後是否真的反映　② 每個職業的免費增益是否真的有影響　③ 跑團卡上每個數值要能點開看公式。*
+*① **研究（非推論，逐條實測）**：官方五本原書全文正則掃描「maximum Hit／Mind／Inventory Points」＋「Permanently increase」——**全 35 個職業中只有 2 個技能會永久改上限**：守護者【不動要塞】`SL × 3`（Core p.199）、博學士【集中】`SL × 3`（Core p.201）；Playtest 版兩者皆 `SL × 5`、上限 4 級（2024-09-09／2024-12-05／2025-01-23 三份材料 p.31 逐字相同）。三大奇幻手冊（高魔 4 職／自然 4 職／科技 3 職）與特典（2 職）**沒有任何技能會改 HP／MP／IP 上限**。實跑引擎確認不動要塞 SL5 讓 HP 50→65、集中 SL5 讓 MP 50→65——**點選後確實反映在體質上**。*
+*② **免費增益**：35 筆與官方逐字核對**無一筆數值錯誤**，同種增益也會疊加。但查出 7 個缺陷（D1~D7），本輪修掉 D1~D3。*
+*③ **缺陷 D1（顯示 `+undefined`）**：`calculateCharacterStats` 的回傳物件**根本沒有** `bonusHp`／`bonusMp`／`bonusIp`，但 `CharacterCard.jsx:208/221/234` 與 `CharacterPlayHUD.jsx:749/787/826` 的 `title` 都在讀它們——畫面上的提示實際是「被動加成(**+undefined**)」。*
+*④ **缺陷 D2（二選一職業的 MP 選項不可達）**：秘儀師【Playtest】／死靈術士／舞者／祈喚者／植物學家／卡牌大師的「最大 HP +5 **或** 最大 MP +5」，**全專案沒有任何 UI 可以選**——`chosenBenefit` **只被讀、從未被寫入**（全 `src/` 僅 `characterEngine.js:165/167` 兩處讀取）。結果一律落回 HP +5，MP 永遠選不到。*
+*⑤ **缺陷 D3（誤判）**：`isChoiceClass = fb.includes('或')`——**暗黑之刃【Playtest】** 的「或」出現在「近戰**或**遠程武器（二選一）」，被誤判為 HP/MP 二選一。目前靠「未指定→預設 HP+5」僥倖正確，但實測 `chosenBenefit='MP'` 會給出**錯誤的** `maxHp 45 / maxMp 50`。已改為 `isHpMpChoiceBenefit()`：必須在句中**同時看到 HP 與 MP 兩側**才算二選一（並移除 D4 的 `includes('or')` 潛伏誤判）。*
+*⑥ **實裝（規則四預審後）**：先建 `implementation_plan-stat-formula.md` 列出全部文案，再以 `ask_user_question` 取得三項裁定（就地展開面板／修 D1+D2+D3／跑團卡＋角色卡＋戰鬥追蹤器）。*
+*　• **引擎**：`characterEngine.js` 的 HP／MP／IP 加成改為逐項累加並記錄來源（`{ label, value, kind }`），新增 `breakdown`（hp／mp／ip／crisis／def／mdef／init／attributes 共 8 組）；回傳補上 `bonusHp`／`bonusMp`／`bonusIp`。**數值零變動**——只加可讀性。屬性減值改由 `STATUS_AFFLICTIONS.affectedStats` 推導（單一資料來源，並保留來源名稱）。載具防禦改由 `PILOT_ARMOR_MODULES` 取名，不再寫死 12／8／10／11。*
+*　• **新元件**：`components/StatFormulaPanel.jsx`——小字在上、數值在下，`kind` 決定配色（base／level／class／skill／equip／heroic／quirk／status 八色）；零新依賴。*
+*　• **掛載**：`CharacterPlayHUD`（HP／MP／IP／危機門檻／物防／魔防／先攻／四屬性）與 `CharacterCard`（HP／MP／IP／物防／魔防／先攻）；戰鬥追蹤器的角色抽屜共用 `CharacterCard`，自動受益。四屬性瓷磚原本的點擊是擲骰，故另加「✦ 公式」小鈕避免搶走既有行為。*
+*　• **二選一 UI**：`ClassSkillCard` 標頭新增 `二選一` ＋ `HP +5`／`MP +5` 兩鈕，寫入 `classes[].chosenBenefit`；`CharacterEditor` 新增 `handleUpdateClassBenefit`。未指定時仍沿用既有預設（HP +5），**既有存檔行為不變**。*
+*⑦ **測試**：`tests/characterEngine.test.mjs` 新增 **J 區段（79 項）**——bonus 三欄不再 undefined、逐項加總不變式（數字項相加必須等於總額）、標籤內容、裝備／載具構成、二選一判定矩陣（全 35 職業僅 6 個成立）、二選一實際數值、暗黑之刃【Playtest】回歸。`test:engine` 由 243 → **322 項**。*
+*⑧ **實測護欄（重要）**：另以 `react-dom/server` 做一次性渲染煙霧測試（`scratch/_render_smoke.mjs`，不進版控），確認兩個畫面與卡片都能渲染、且 `+undefined` 已消失。過程中**抓到自己的斷言寫錯**：原本用 `includes('二選一')` 判斷選擇器是否存在，但暗黑之刃【Playtest】的**免費增益原文本身**就含「（二選一）」——改為比對按鈕的 `title` 才正確。**斷言字串必須是該元素獨有的。***
+*驗證：`npm test` 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + **322/322** + 86/86 + 268/268 ＋ Emoji 掃描（0 命中），exit 0；`npm run build` exit 0（1,971.86 kB / gzip 562.99 kB）；SSR 煙霧測試 18 項全過。*

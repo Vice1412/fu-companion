@@ -35,6 +35,7 @@ import {
   createDefaultCompanionData
 } from '../data/wayfarerCompanionData';
 import { getClassInfo } from '../data/sourcebookConfig';
+import { isHpMpChoiceBenefit } from '../utils/characterEngine';
 import rulesData from '../data/rulesData.json';
 import { withEn } from '../../../utils/properNouns';
 
@@ -351,6 +352,7 @@ export default function ClassSkillCard({
   theme,
   isInitialEdit = false,
   onUpdateSkills,
+  onUpdateClassBenefit,
   onRemoveClass,
   onUpdateCharacter
 }) {
@@ -360,6 +362,10 @@ export default function ClassSkillCard({
   const classInfo = getClassInfo(className);
   const classDef = rulesData.classes[className] || {};
   const allAvailableSkills = classDef.skills || [];
+
+  // 免費增益二選一：只有「最大 HP 或 最大 MP」的職業需要玩家指定（引擎未指定時預設 HP）
+  const isHpMpChoice = isHpMpChoiceBenefit((classDef.freeBenefits || '') + ' ' + (classDef.freeBonus || ''));
+  const chosenBenefit = classItem.chosenBenefit || 'HP';
 
   // 子項目構築彈窗目標特技 { skillName, sl, selectedOptions }
   const [suboptionModalSkill, setSuboptionModalSkill] = useState(null);
@@ -524,6 +530,28 @@ export default function ClassSkillCard({
                       <SkillDescription desc={classDef.freeBenefits} />
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* 免費增益二選一：僅「最大 HP 或 最大 MP」的職業需要指定，選了才會反映在角色體質上 */}
+              {isHpMpChoice && (
+                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                  <span className="text-[10px] font-bold text-slate-500">二選一</span>
+                  {['HP', 'MP'].map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => onUpdateClassBenefit && onUpdateClassBenefit(classIndex, opt)}
+                      title={`將此職業的免費增益設為 ${opt} +5`}
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                        chosenBenefit === opt
+                          ? 'bg-emerald-600 border-emerald-700 text-white'
+                          : 'bg-white border-slate-300 text-slate-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {opt} +5
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

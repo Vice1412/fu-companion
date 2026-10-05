@@ -51,6 +51,7 @@ import TinkererWorkshop from './companions/TinkererWorkshop';
 import GourmetCookbook from './companions/GourmetCookbook';
 import AceOfCardsTable from './companions/AceOfCardsTable';
 import ClassResourceStrip from './ClassResourceStrip';
+import StatFormulaPanel, { STAT_FORMULA_NOTE } from './StatFormulaPanel';
 import TinkererGadgetsQuickRef from './companions/TinkererGadgetsQuickRef';
 import SuboptionDetailsList from './SuboptionDetailsList';
 import ChanterComposer from './companions/ChanterComposer';
@@ -160,6 +161,10 @@ export default function CharacterPlayHUD({
   const [expandedSpells, setExpandedSpells] = useState({});
   const [collapsedSuboptions, setCollapsedSuboptions] = useState({});
 
+  // 數值構成公式面板：一次只開一個，key 如 'hp' / 'mp' / 'ip' / 'crisis' / 'def' / 'mdef' / 'init' / 'attr:dex'
+  const [openFormula, setOpenFormula] = useState(null);
+  const toggleFormula = (key) => setOpenFormula(prev => (prev === key ? null : key));
+
   // Free roll picker modal
   const [isFreeRollModalOpen, setIsFreeRollModalOpen] = useState(false);
   const [freeRollAttr1, setFreeRollAttr1] = useState('dex');
@@ -180,6 +185,7 @@ export default function CharacterPlayHUD({
 
   const theme = getCharacterTheme(character.themeColor || themeId);
   const stats = calculateCharacterStats(character);
+  const breakdown = stats.breakdown || {};
   const curHp = character.currentHp !== null && character.currentHp !== undefined ? character.currentHp : stats.maxHp;
   const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : stats.maxMp;
   const curIp = character.currentIp !== null && character.currentIp !== undefined ? character.currentIp : stats.maxIp;
@@ -744,12 +750,14 @@ export default function CharacterPlayHUD({
                 </span>
               )}
             </div>
-            <div
-              className="font-mono font-black text-base text-red-950 cursor-help"
-              title={`最大 HP: 基礎 MIG(${stats.baseMig})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusHp}) = ${stats.maxHp}`}
+            <button
+              type="button"
+              onClick={() => toggleFormula('hp')}
+              title="點擊查看公式"
+              className="font-mono font-black text-base text-red-950 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
               {curHp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxHp}</span>
-            </div>
+            </button>
           </div>
 
           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-3">
@@ -773,6 +781,32 @@ export default function CharacterPlayHUD({
               全滿
             </button>
           </div>
+
+          <div className="flex items-center justify-between gap-2 mt-1.5">
+            <button
+              type="button"
+              onClick={() => toggleFormula('crisis')}
+              title="點擊查看公式"
+              className="text-[10px] font-mono font-bold text-red-900 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              危機門檻 {stats.crisisThreshold}
+            </button>
+          </div>
+
+          <StatFormulaPanel
+            isOpen={openFormula === 'hp'}
+            title="最大生命值"
+            breakdown={breakdown.hp}
+            note={STAT_FORMULA_NOTE}
+            onClose={() => setOpenFormula(null)}
+          />
+
+          <StatFormulaPanel
+            isOpen={openFormula === 'crisis'}
+            title="危機門檻"
+            breakdown={breakdown.crisis}
+            onClose={() => setOpenFormula(null)}
+          />
         </div>
 
         {/* MP Gauge */}
@@ -782,12 +816,14 @@ export default function CharacterPlayHUD({
               <GiLightningTear className="w-4 h-4 text-blue-600" />
               <span>魔力值</span>
             </div>
-            <div
-              className="font-mono font-black text-base text-blue-950 cursor-help"
-              title={`最大 MP: 基礎 WLP(${stats.baseWlp})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusMp}) = ${stats.maxMp}`}
+            <button
+              type="button"
+              onClick={() => toggleFormula('mp')}
+              title="點擊查看公式"
+              className="font-mono font-black text-base text-blue-950 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
               {curMp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxMp}</span>
-            </div>
+            </button>
           </div>
 
           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-3">
@@ -811,6 +847,14 @@ export default function CharacterPlayHUD({
               全滿
             </button>
           </div>
+
+          <StatFormulaPanel
+            isOpen={openFormula === 'mp'}
+            title="最大魔力值"
+            breakdown={breakdown.mp}
+            note={STAT_FORMULA_NOTE}
+            onClose={() => setOpenFormula(null)}
+          />
         </div>
 
         {/* IP Gauge & Consumables */}
@@ -821,12 +865,14 @@ export default function CharacterPlayHUD({
                 <GiBackpack className="w-4 h-4 text-emerald-600" />
                 <span>道具點</span>
               </div>
-              <div
-                className="font-mono font-black text-base text-emerald-950 cursor-help"
-                title={`最大 IP: 基礎(6) + 職業/裝備被動加成(+${stats.bonusIp}) = ${stats.maxIp}`}
+              <button
+                type="button"
+                onClick={() => toggleFormula('ip')}
+                title="點擊查看公式"
+                className="font-mono font-black text-base text-emerald-950 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
               >
                 {curIp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxIp}</span>
-              </div>
+              </button>
             </div>
 
             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-3">
@@ -866,6 +912,13 @@ export default function CharacterPlayHUD({
               </button>
             </div>
           </div>
+
+          <StatFormulaPanel
+            isOpen={openFormula === 'ip'}
+            title="最大道具點"
+            breakdown={breakdown.ip}
+            onClose={() => setOpenFormula(null)}
+          />
         </div>
       </div>
 
@@ -919,40 +972,57 @@ export default function CharacterPlayHUD({
           { key: 'mig', enName: 'MIG', zhName: '體魄', cur: stats.currentMig, base: stats.baseMig },
           { key: 'wlp', enName: 'WLP', zhName: '意志', cur: stats.currentWlp, base: stats.baseWlp }
         ].map(attr => (
-          <button
-            key={attr.key}
-            type="button"
-            onClick={() => onOpenDice && onOpenDice({
-              die1: attr.cur,
-              die2: attr.cur,
-              modifier: 0,
-              label: `${attr.enName} (${attr.zhName}) 單項檢定`
-            })}
-            className="rounded-xl p-3.5 border flex flex-col items-center gap-1 shadow-xs transition-all text-center group bg-[#fffdf9] hover:shadow-md hover:scale-[1.01]"
-            style={{ borderColor: theme.border }}
-            title={`點擊使用 ${attr.enName} 擲骰`}
-          >
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-base font-black tracking-wider text-slate-900 font-mono">
-                {attr.enName}
-              </span>
-              <span className="text-xs text-slate-500 font-sans">
-                {attr.zhName}
-              </span>
-            </div>
+          <div key={attr.key} className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenDice && onOpenDice({
+                die1: attr.cur,
+                die2: attr.cur,
+                modifier: 0,
+                label: `${attr.enName} (${attr.zhName}) 單項檢定`
+              })}
+              className="w-full rounded-xl p-3.5 border flex flex-col items-center gap-1 shadow-xs transition-all text-center group bg-[#fffdf9] hover:shadow-md hover:scale-[1.01]"
+              style={{ borderColor: theme.border }}
+              title={`點擊使用 ${attr.enName} 擲骰`}
+            >
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-base font-black tracking-wider text-slate-900 font-mono">
+                  {attr.enName}
+                </span>
+                <span className="text-xs text-slate-500 font-sans">
+                  {attr.zhName}
+                </span>
+              </div>
 
-            <div className="text-2xl font-serif font-black flex items-baseline gap-1 mt-0.5" style={{ color: theme.textDark }}>
-              <span>d{attr.cur}</span>
-              {attr.cur < attr.base && (
-                <span className="text-xs text-red-500 line-through font-mono">d{attr.base}</span>
-              )}
-            </div>
+              <div className="text-2xl font-serif font-black flex items-baseline gap-1 mt-0.5" style={{ color: theme.textDark }}>
+                <span>d{attr.cur}</span>
+                {attr.cur < attr.base && (
+                  <span className="text-xs text-red-500 line-through font-mono">d{attr.base}</span>
+                )}
+              </div>
 
-            <span className="text-[10px] text-slate-400 font-sans group-hover:text-amber-800 flex items-center gap-1 transition-colors">
-              <GiRollingDices className="w-3 h-3" />
-              <span>點擊檢定</span>
-            </span>
-          </button>
+              <span className="text-[10px] text-slate-400 font-sans group-hover:text-amber-800 flex items-center gap-1 transition-colors">
+                <GiRollingDices className="w-3 h-3" />
+                <span>點擊檢定</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleFormula(`attr:${attr.key}`)}
+              title="點擊查看公式"
+              className="w-full text-[10px] font-bold text-[#7c6a58] hover:text-[#3c2415] py-0.5 rounded-lg border border-dashed border-[#d6c7ab] hover:border-[#3c2415]/30 transition-colors cursor-pointer"
+            >
+              ✦ 公式
+            </button>
+
+            <StatFormulaPanel
+              isOpen={openFormula === `attr:${attr.key}`}
+              title={`${attr.enName} 當前骰`}
+              breakdown={breakdown.attributes?.[attr.key]}
+              onClose={() => setOpenFormula(null)}
+            />
+          </div>
         ))}
       </div>
 
@@ -1005,31 +1075,69 @@ export default function CharacterPlayHUD({
             {activeTab === 'attacks' && (
             <div className="space-y-4 animate-fade-in text-xs">
               {/* Defense & Initiative Dashboard */}
-              <div
-                className="grid grid-cols-3 gap-3 p-3 rounded-xl border text-center font-mono"
-                style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
-              >
-                <div className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab]">
-                  <span className="text-slate-500 block text-[11px] font-sans font-medium">物理防禦</span>
-                  <span className="text-2xl font-black" style={{ color: theme.textDark }}>{stats.def}</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
-                    {stats.currentDex !== stats.def ? `DEX(d${stats.currentDex}) + 盾/裝甲` : `當前 DEX(d${stats.currentDex})`}
-                  </span>
+              <div className="space-y-2">
+                <div
+                  className="grid grid-cols-3 gap-3 p-3 rounded-xl border text-center font-mono"
+                  style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFormula('def')}
+                    title="點擊查看公式"
+                    className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab] hover:border-[#3c2415]/30 transition-colors cursor-pointer"
+                  >
+                    <span className="text-slate-500 block text-[11px] font-sans font-medium">物理防禦</span>
+                    <span className="text-2xl font-black" style={{ color: theme.textDark }}>{stats.def}</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
+                      {stats.currentDex !== stats.def ? `DEX(d${stats.currentDex}) + 盾/裝甲` : `當前 DEX(d${stats.currentDex})`}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFormula('mdef')}
+                    title="點擊查看公式"
+                    className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab] hover:border-[#3c2415]/30 transition-colors cursor-pointer"
+                  >
+                    <span className="text-blue-700 block text-[11px] font-sans font-medium">魔法防禦</span>
+                    <span className="text-2xl font-black text-blue-950">{stats.mdef}</span>
+                    <span className="text-[10px] text-blue-700/60 block mt-0.5 truncate">
+                      {stats.currentIns !== stats.mdef ? `INS(d${stats.currentIns}) + 盾/加值` : `當前 INS(d${stats.currentIns})`}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFormula('init')}
+                    title="點擊查看公式"
+                    className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab] hover:border-[#3c2415]/30 transition-colors cursor-pointer"
+                  >
+                    <span className="text-slate-500 block text-[11px] font-sans font-medium">先攻修正</span>
+                    <span className="text-2xl font-black text-slate-800">{stats.init >= 0 ? `+${stats.init}` : stats.init}</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
+                      裝備與防具修正
+                    </span>
+                  </button>
                 </div>
-                <div className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab]">
-                  <span className="text-blue-700 block text-[11px] font-sans font-medium">魔法防禦</span>
-                  <span className="text-2xl font-black text-blue-950">{stats.mdef}</span>
-                  <span className="text-[10px] text-blue-700/60 block mt-0.5 truncate">
-                    {stats.currentIns !== stats.mdef ? `INS(d${stats.currentIns}) + 盾/加值` : `當前 INS(d${stats.currentIns})`}
-                  </span>
-                </div>
-                <div className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab]">
-                  <span className="text-slate-500 block text-[11px] font-sans font-medium">先攻修正</span>
-                  <span className="text-2xl font-black text-slate-800">{stats.init >= 0 ? `+${stats.init}` : stats.init}</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
-                    裝備與防具修正
-                  </span>
-                </div>
+
+                <StatFormulaPanel
+                  isOpen={openFormula === 'def'}
+                  title="物理防禦"
+                  breakdown={breakdown.def}
+                  note={STAT_FORMULA_NOTE}
+                  onClose={() => setOpenFormula(null)}
+                />
+                <StatFormulaPanel
+                  isOpen={openFormula === 'mdef'}
+                  title="魔法防禦"
+                  breakdown={breakdown.mdef}
+                  note={STAT_FORMULA_NOTE}
+                  onClose={() => setOpenFormula(null)}
+                />
+                <StatFormulaPanel
+                  isOpen={openFormula === 'init'}
+                  title="先攻修正"
+                  breakdown={breakdown.init}
+                  onClose={() => setOpenFormula(null)}
+                />
               </div>
 
               {/* Weapon Attacks Title & Free Roller Button */}
@@ -1574,7 +1682,7 @@ export default function CharacterPlayHUD({
                                         <span className="font-mono text-xs text-purple-700 font-bold">({character.brainwaveClock || 0} / 4)</span>
                                       </div>
                                       <p className="text-[10px] text-slate-500 leading-tight">
-                                        每次使用天賦後填入 1 格。消耗 MP：【5 + 靈刻格數 × 5】
+                                        每次使用天賦後填入 1 格。消耗 MP：【靈刻格數 × 5】（最少 5 點）
                                       </p>
                                     </div>
                                   </div>

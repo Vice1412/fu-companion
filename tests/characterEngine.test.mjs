@@ -42,7 +42,8 @@ import {
   canLevelUp,
   applyLevelUp,
   validateCharacter,
-  exportCharacterToCombatant
+  exportCharacterToCombatant,
+  isHpMpChoiceBenefit
 } from '../src/features/character-sheet/utils/characterEngine.js';
 
 let pass = 0;
@@ -577,6 +578,145 @@ check('故鄉未填 -> 產生 origin 提示', hasField(validateCharacter({ ...va
 
 // 步驟 5：羈絆
 check('無羈絆 -> 產生 bonds 警告', hasField(validateCharacter({ ...validChar, bonds: [] }), 'bonds'), true);
+
+// ─────────────────────────────────────────────────────────── J
+section('J. 數值構成公式（breakdown）與免費增益二選一');
+
+// 逐項加總工具：字串值（骰階）不計入加總
+const sumTerms = (b) => (b?.terms || []).reduce((s, t) => s + (typeof t.value === 'number' ? t.value : 0), 0);
+
+// ── J1 bonusHp / bonusMp / bonusIp 必須真的存在
+// 原本回傳物件缺這三個欄位，導致角色卡與跑團卡的提示顯示「被動加成(+undefined)」。
+const fortChar = mk({
+  attributes: ALL_8,
+  classes: [{ className: '守護者', level: 5, skills: [{ name: '不動要塞', sl: 5 }] }]
+});
+const fortStats = calculateCharacterStats(fortChar);
+check('J1 守護者＋不動要塞 SL5：bonusHp = 免費增益 5 + 技能 15 = 20', fortStats.bonusHp, 20);
+check('J1 bonusMp = 0', fortStats.bonusMp, 0);
+check('J1 bonusIp = 0', fortStats.bonusIp, 0);
+check('J1 三個 bonus 欄位皆為數字（不再是 undefined）',
+  [fortStats.bonusHp, fortStats.bonusMp, fortStats.bonusIp].every((v) => typeof v === 'number'), true);
+check('J1 maxHp = 基礎 40 + 等級 5 + 加成 20 = 65', fortStats.maxHp, 65);
+
+// ── J2 逐項加總不變式：所有數字項相加必須等於該項總額
+check('J2 HP：逐項相加等於 maxHp', sumTerms(fortStats.breakdown.hp), fortStats.maxHp);
+check('J2 MP：逐項相加等於 maxMp', sumTerms(fortStats.breakdown.mp), fortStats.maxMp);
+check('J2 IP：逐項相加等於 maxIp', sumTerms(fortStats.breakdown.ip), fortStats.maxIp);
+check('J2 危機合計 = 65 的一半向下取整 = 32', fortStats.breakdown.crisis.total, 32);
+check('J2 危機第一項為最大生命值 65', fortStats.breakdown.crisis.terms[0].value, 65);
+check('J2 危機第二項為 ÷ 2', fortStats.breakdown.crisis.terms[1].value, '÷ 2');
+
+// ── J3 標籤必須說明這筆數字的身分
+const hpLabels = fortStats.breakdown.hp.terms.map((t) => t.label);
+check('J3 HP 首項標籤為基礎體魄', hpLabels[0], '基礎體魄 d8 × 5');
+check('J3 HP 次項標籤為角色等級', hpLabels[1], '角色等級 Lv 5');
+check('J3 HP 含職業免費增益項', hpLabels.includes('守護者 免費增益'), true);
+check('J3 HP 含特技 SL 項（帶職業名與 SL 與倍率）', hpLabels.includes('守護者 不動要塞 SL 5 × 3'), true);
+check('J3 每一項都有 label / value / kind',
+  fortStats.breakdown.hp.terms.every((t) => t.label && t.value !== undefined && t.kind), true);
+
+// ── J4 裝備／屬性構成
+const neutralStats = stats({ attributes: ALL_8 });
+check('J4 中性裝備物防逐項相加 = 8', sumTerms(neutralStats.breakdown.def), neutralStats.def);
+check('J4 中性裝備魔防逐項相加 = 8', sumTerms(neutralStats.breakdown.mdef), neutralStats.mdef);
+check('J4 中性裝備先攻沒有任何加成項', neutralStats.breakdown.init.terms.length, 0);
+
+const lightStats = calculateCharacterStats(mk({ attributes: ALL_8, equipment: LIGHT_EQUIP }));
+check('J4 輕甲物防 = 敏捷 8 + 防具 1 + 盾牌 2 = 11', sumTerms(lightStats.breakdown.def), lightStats.def);
+check('J4 輕甲物防第一項標籤為當前敏捷', lightStats.breakdown.def.terms[0].label, '當前敏捷 d8');
+check('J4 輕甲魔防 = 洞察 8 + 防具 1 = 9', sumTerms(lightStats.breakdown.mdef), lightStats.mdef);
+check('J4 輕甲先攻逐項相加 = -1', sumTerms(lightStats.breakdown.init), lightStats.init);
+
+const heavyStats = calculateCharacterStats(mk({ attributes: ALL_8, equipment: HEAVY_EQUIP }));
+check('J4 重甲物防為單一固定值項', heavyStats.breakdown.def.terms.length, 1);
+check('J4 重甲物防固定值 10', heavyStats.breakdown.def.terms[0].value, 10);
+check('J4 重甲魔防仍為當前洞察（逐項相加 = 8）', sumTerms(heavyStats.breakdown.mdef), heavyStats.mdef);
+
+const slowStats = stats({ attributes: ALL_8, statusAfflictions: aff('slow') });
+check('J4 緩慢：DEX 構成含基礎骰與狀態兩項', slowStats.breakdown.attributes.dex.terms.length, 2);
+check('J4 緩慢：DEX 首項為基礎骰 d8', slowStats.breakdown.attributes.dex.terms[0].value, 'd8');
+check('J4 緩慢：DEX 次項標籤載明狀態名稱', slowStats.breakdown.attributes.dex.terms[1].label, '狀態 緩慢 降 1 階');
+check('J4 緩慢：DEX 合計為 d6', slowStats.breakdown.attributes.dex.total, 6);
+check('J4 未受影響的 INS 只有基礎骰一項', slowStats.breakdown.attributes.ins.terms.length, 1);
+
+const bothStats = stats({ attributes: ALL_8, statusAfflictions: aff('slow', 'enraged') });
+check('J4 緩慢＋憤怒：DEX 狀態項標籤列出兩個狀態名',
+  bothStats.breakdown.attributes.dex.terms[1].label, '狀態 憤怒、緩慢 降 2 階');
+
+// ── J5 飾品 / 英雄技能 / 金手指的來源標籤
+const gearStats = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  equipment: { mainHand: '', offHand: '無盾牌', armor: '無裝甲 / 冒險服', accessory: '守護護符' }
+}));
+check('J5 飾品守護護符以「飾品 + 名稱」為標籤', gearStats.breakdown.hp.terms.some((t) => t.label === '飾品 守護護符'), true);
+check('J5 飾品讓 maxHp = 45 + 5 = 50', gearStats.maxHp, 50);
+
+const heroicStats = calculateCharacterStats(mk({ attributes: ALL_8, heroicSkills: ['額外HP', '額外MP', '額外IP'] }));
+check('J5 英雄技能額外HP +10', heroicStats.bonusHp, 10);
+check('J5 英雄技能額外MP +10', heroicStats.bonusMp, 10);
+check('J5 英雄技能額外IP +4', heroicStats.bonusIp, 4);
+check('J5 英雄技能標籤', heroicStats.breakdown.hp.terms.some((t) => t.label === '英雄技能 額外HP'), true);
+
+const quirkStats = calculateCharacterStats(mk({ attributes: ALL_8, quirk: '倖存者（自奇）' }));
+check('J5 金手指倖存者 HP +5 / MP +5', [quirkStats.bonusHp, quirkStats.bonusMp], [5, 5]);
+check('J5 金手指標籤帶金手指名稱',
+  quirkStats.breakdown.mp.terms.some((t) => t.label === '金手指 倖存者（自奇）'), true);
+
+// ── J6 二選一判定：必須只看「最大 HP 或 最大 MP」
+const fbOf = (cn) => {
+  const c = rulesData.classes[cn] || {};
+  return (c.freeBenefits || '') + ' ' + (c.freeBonus || '');
+};
+const CHOICE_CLASSES = ['秘儀師【Playtest】', '死靈術士', '舞者', '祈喚者', '植物學家', '卡牌大師'];
+CHOICE_CLASSES.forEach((cn) => {
+  check(`J6 ${cn} 判定為 HP/MP 二選一`, isHpMpChoiceBenefit(fbOf(cn)), true);
+});
+// 暗黑之刃【Playtest】的「或」指的是「近戰或遠程武器」，HP 本身固定 +5 —— 這是最容易誤判的一筆
+check('J6 暗黑之刃【Playtest】的「或」屬武器類別，不得判為 HP/MP 二選一', isHpMpChoiceBenefit(fbOf('暗黑之刃【Playtest】')), false);
+check('J6 守護者（固定 HP +5）不得判為二選一', isHpMpChoiceBenefit(fbOf('守護者')), false);
+check('J6 機師（固定 HP +5，近戰/遠程皆給）不得判為二選一', isHpMpChoiceBenefit(fbOf('機師')), false);
+check('J6 全 35 個職業中，僅 6 個屬 HP/MP 二選一',
+  Object.keys(rulesData.classes).filter((cn) => isHpMpChoiceBenefit(fbOf(cn))).length, 6);
+
+// ── J7 二選一的實際數值
+const choiceStats = (cn, benefit) => calculateCharacterStats(mk({
+  attributes: ALL_8,
+  classes: [{ className: cn, level: 5, skills: [], ...(benefit ? { chosenBenefit: benefit } : {}) }]
+}));
+CHOICE_CLASSES.forEach((cn) => {
+  check(`J7 ${cn} 指定 MP -> HP 45 / MP 50`, [choiceStats(cn, 'MP').maxHp, choiceStats(cn, 'MP').maxMp], [45, 50]);
+  check(`J7 ${cn} 指定 HP -> HP 50 / MP 45`, [choiceStats(cn, 'HP').maxHp, choiceStats(cn, 'HP').maxMp], [50, 45]);
+  check(`J7 ${cn} 未指定 -> 沿用既有預設 HP +5`, [choiceStats(cn).maxHp, choiceStats(cn).maxMp], [50, 45]);
+});
+check('J7 暗黑之刃【Playtest】即使被指定 MP，仍為 HP 50 / MP 45（修正前會誤給 MP +5）',
+  [choiceStats('暗黑之刃【Playtest】', 'MP').maxHp, choiceStats('暗黑之刃【Playtest】', 'MP').maxMp], [50, 45]);
+
+// ── J8 二選一職業的標籤要標明點數落在哪一邊
+check('J8 二選一選 HP 時標籤為（HP）',
+  choiceStats('舞者', 'HP').breakdown.hp.terms.some((t) => t.label === '舞者 免費增益（HP）'), true);
+check('J8 二選一選 MP 時標籤為（MP）',
+  choiceStats('舞者', 'MP').breakdown.mp.terms.some((t) => t.label === '舞者 免費增益（MP）'), true);
+check('J8 未指定時標籤仍為（HP）',
+  choiceStats('舞者').breakdown.hp.terms.some((t) => t.label === '舞者 免費增益（HP）'), true);
+
+// ── J9 機師載具的防禦覆蓋（Techno Fantasy Atlas p.161）
+const mountedStats = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  pilotVehicle: { isMounted: true, activeModules: ['standard_plating', 'shield_module', 'shield_module'] }
+}));
+check('J9 標準鍍層 物防 11 + 盾牌模組 2×2 = 15', mountedStats.def, 15);
+check('J9 標準鍍層 魔防 10 + 盾牌模組 2×2 = 14', mountedStats.mdef, 14);
+check('J9 載具物防逐項相加 = 15', sumTerms(mountedStats.breakdown.def), 15);
+check('J9 載具物防首項為模組固定值 11', mountedStats.breakdown.def.terms[0].value, 11);
+
+const flexStats = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  pilotVehicle: { isMounted: true, activeModules: ['flexible_plating'] }
+}));
+check('J9 柔性鍍層 物防 = 敏捷 8 + 2 = 10', flexStats.def, 10);
+check('J9 柔性鍍層 魔防 = 洞察 8 + 1 = 9', flexStats.mdef, 9);
+check('J9 柔性鍍層物防逐項相加 = 10', sumTerms(flexStats.breakdown.def), 10);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

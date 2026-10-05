@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   GiHealthNormal,
   GiLightningTear,
@@ -20,6 +20,7 @@ import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import ClockTracker from '../../../components/ui/ClockTracker';
 import SkillDescription from '../utils/skillFormulaEvaluator';
+import StatFormulaPanel, { STAT_FORMULA_NOTE } from './StatFormulaPanel';
 import rulesData from '../data/rulesData.json';
 import { getCharacterTheme } from '../utils/characterThemes';
 import { withEn } from '../../../utils/properNouns';
@@ -32,10 +33,15 @@ export default function CharacterCard({
   onAvatarClick = null,
   className = ''
 }) {
+  // 數值構成公式面板：一次只開一個，key 如 'hp' / 'mp' / 'ip' / 'def' / 'mdef' / 'init'
+  const [openFormula, setOpenFormula] = useState(null);
+  const toggleFormula = (key) => setOpenFormula(prev => (prev === key ? null : key));
+
   if (!character) return null;
 
   const theme = getCharacterTheme(character.themeColor || themeId);
   const stats = calculateCharacterStats(character);
+  const breakdown = stats.breakdown || {};
   const curHp = character.currentHp !== null && character.currentHp !== undefined ? character.currentHp : stats.maxHp;
   const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : stats.maxMp;
   const isCrisis = curHp <= stats.crisisThreshold;
@@ -194,88 +200,152 @@ export default function CharacterCard({
       </div>
 
       {/* Core Resources Grid */}
-      <div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 border-b transition-colors duration-200"
-        style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
-      >
-        {/* HP */}
-        <div className="bg-[#fee2e2] rounded-lg p-2.5 border border-[#fca5a5]">
-          <div className="text-[10px] text-red-800 font-mono uppercase font-bold flex items-center gap-1">
-            <GiHealthNormal className="w-3.5 h-3.5 text-red-600" /> HP 生命值
+      <div className="space-y-2 p-3.5 border-b transition-colors duration-200" style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {/* HP */}
+          <div className="bg-[#fee2e2] rounded-lg p-2.5 border border-[#fca5a5]">
+            <div className="text-[10px] text-red-800 font-mono uppercase font-bold flex items-center gap-1">
+              <GiHealthNormal className="w-3.5 h-3.5 text-red-600" /> HP 生命值
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleFormula('hp')}
+              title="點擊查看公式"
+              className="text-base font-mono font-black text-red-900 mt-0.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              {curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span>
+            </button>
           </div>
-          <div
-            className="text-base font-mono font-black text-red-900 mt-0.5 cursor-help"
-            title={`最大 HP: 基礎 MIG(${stats.baseMig})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusHp}) = ${stats.maxHp}`}
-          >
-            {curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span>
+
+          {/* MP */}
+          <div className="bg-[#dbeafe] rounded-lg p-2.5 border border-[#93c5fd]">
+            <div className="text-[10px] text-blue-800 font-mono uppercase font-bold flex items-center gap-1">
+              <GiLightningTear className="w-3.5 h-3.5 text-blue-600" /> MP 魔力值
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleFormula('mp')}
+              title="點擊查看公式"
+              className="text-base font-mono font-black text-blue-900 mt-0.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              {curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span>
+            </button>
+          </div>
+
+          {/* IP */}
+          <div className="bg-[#d1fae5] rounded-lg p-2.5 border border-[#6ee7b7]">
+            <div className="text-[10px] text-emerald-800 font-mono uppercase font-bold flex items-center gap-1">
+              <GiBackpack className="w-3.5 h-3.5 text-emerald-600" /> IP 庫存點
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleFormula('ip')}
+              title="點擊查看公式"
+              className="text-base font-mono font-black text-emerald-950 mt-0.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              {character.currentIp ?? stats.maxIp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxIp}</span>
+            </button>
+          </div>
+
+          {/* FP */}
+          <div className="bg-[#fef3c7] rounded-lg p-2.5 border border-[#fcd34d]">
+            <div className="text-[10px] text-amber-900 font-mono uppercase font-bold flex items-center gap-1">
+              <GiSparkles className="w-3.5 h-3.5 text-amber-700" /> 物語點
+            </div>
+            <div className="text-base font-mono font-black text-amber-950 mt-0.5">
+              {character.fabulaPoints || 3}
+            </div>
           </div>
         </div>
 
-        {/* MP */}
-        <div className="bg-[#dbeafe] rounded-lg p-2.5 border border-[#93c5fd]">
-          <div className="text-[10px] text-blue-800 font-mono uppercase font-bold flex items-center gap-1">
-            <GiLightningTear className="w-3.5 h-3.5 text-blue-600" /> MP 魔力值
-          </div>
-          <div
-            className="text-base font-mono font-black text-blue-900 mt-0.5 cursor-help"
-            title={`最大 MP: 基礎 WLP(${stats.baseWlp})×5 + 等級(${character.level || 5}) + 被動加成(+${stats.bonusMp}) = ${stats.maxMp}`}
-          >
-            {curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span>
-          </div>
-        </div>
-
-        {/* IP */}
-        <div className="bg-[#d1fae5] rounded-lg p-2.5 border border-[#6ee7b7]">
-          <div className="text-[10px] text-emerald-800 font-mono uppercase font-bold flex items-center gap-1">
-            <GiBackpack className="w-3.5 h-3.5 text-emerald-600" /> IP 庫存點
-          </div>
-          <div
-            className="text-base font-mono font-black text-emerald-950 mt-0.5 cursor-help"
-            title={`最大 IP: 基礎(6) + 職業/裝備被動加成(+${stats.bonusIp}) = ${stats.maxIp}`}
-          >
-            {character.currentIp ?? stats.maxIp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxIp}</span>
-          </div>
-        </div>
-
-        {/* FP */}
-        <div className="bg-[#fef3c7] rounded-lg p-2.5 border border-[#fcd34d]">
-          <div className="text-[10px] text-amber-900 font-mono uppercase font-bold flex items-center gap-1">
-            <GiSparkles className="w-3.5 h-3.5 text-amber-700" /> 物語點
-          </div>
-          <div className="text-base font-mono font-black text-amber-950 mt-0.5">
-            {character.fabulaPoints || 3}
-          </div>
-        </div>
+        <StatFormulaPanel
+          isOpen={openFormula === 'hp'}
+          title="最大生命值"
+          breakdown={breakdown.hp}
+          note={STAT_FORMULA_NOTE}
+          onClose={() => setOpenFormula(null)}
+        />
+        <StatFormulaPanel
+          isOpen={openFormula === 'mp'}
+          title="最大魔力值"
+          breakdown={breakdown.mp}
+          note={STAT_FORMULA_NOTE}
+          onClose={() => setOpenFormula(null)}
+        />
+        <StatFormulaPanel
+          isOpen={openFormula === 'ip'}
+          title="最大庫存點"
+          breakdown={breakdown.ip}
+          onClose={() => setOpenFormula(null)}
+        />
       </div>
 
       {/* Attributes & Defenses */}
       <div
-        className="p-3.5 border-b flex flex-wrap items-center justify-between gap-4 transition-colors duration-200"
+        className="p-3.5 border-b space-y-2 transition-colors duration-200"
         style={{ backgroundColor: theme.appBg, borderColor: theme.border }}
       >
-        {/* Dice */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <StatBadge stat="dex" value={stats.currentDex || stats.baseDex || 8} size="sm" />
-          <StatBadge stat="ins" value={stats.currentIns || stats.baseIns || 8} size="sm" />
-          <StatBadge stat="mig" value={stats.currentMig || stats.baseMig || 8} size="sm" />
-          <StatBadge stat="wlp" value={stats.currentWlp || stats.baseWlp || 8} size="sm" />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Dice */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatBadge stat="dex" value={stats.currentDex || stats.baseDex || 8} size="sm" />
+            <StatBadge stat="ins" value={stats.currentIns || stats.baseIns || 8} size="sm" />
+            <StatBadge stat="mig" value={stats.currentMig || stats.baseMig || 8} size="sm" />
+            <StatBadge stat="wlp" value={stats.currentWlp || stats.baseWlp || 8} size="sm" />
+          </div>
+
+          {/* Def & MDef & Init */}
+          <div className="flex items-center gap-3 font-mono text-xs text-[#3c2415]">
+            <button
+              type="button"
+              onClick={() => toggleFormula('def')}
+              title="點擊查看公式"
+              className="flex items-center gap-1 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              <GiShield className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+              <span>物防: <strong className="font-bold" style={{ color: theme.textDark }}>{stats.def}</strong></span>
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleFormula('mdef')}
+              title="點擊查看公式"
+              className="flex items-center gap-1 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              <GiShield className="w-3.5 h-3.5 text-blue-800" />
+              <span>魔防: <strong className="text-blue-900 font-bold">{stats.mdef}</strong></span>
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleFormula('init')}
+              title="點擊查看公式"
+              className="flex items-center gap-1 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
+            >
+              <GiPocketWatch className="w-3.5 h-3.5 text-[#7c6a58]" />
+              <span>先攻: <strong className="text-[#3c2415]">+{stats.init}</strong></span>
+            </button>
+          </div>
         </div>
 
-        {/* Def & MDef & Init */}
-        <div className="flex items-center gap-3 font-mono text-xs text-[#3c2415]">
-          <div className="flex items-center gap-1">
-            <GiShield className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-            <span>物防: <strong className="font-bold" style={{ color: theme.textDark }}>{stats.def}</strong></span>
-          </div>
-          <div className="flex items-center gap-1">
-            <GiShield className="w-3.5 h-3.5 text-blue-800" />
-            <span>魔防: <strong className="text-blue-900 font-bold">{stats.mdef}</strong></span>
-          </div>
-          <div className="flex items-center gap-1">
-            <GiPocketWatch className="w-3.5 h-3.5 text-[#7c6a58]" />
-            <span>先攻: <strong className="text-[#3c2415]">+{stats.init}</strong></span>
-          </div>
-        </div>
+        <StatFormulaPanel
+          isOpen={openFormula === 'def'}
+          title="物理防禦"
+          breakdown={breakdown.def}
+          note={STAT_FORMULA_NOTE}
+          onClose={() => setOpenFormula(null)}
+        />
+        <StatFormulaPanel
+          isOpen={openFormula === 'mdef'}
+          title="魔法防禦"
+          breakdown={breakdown.mdef}
+          note={STAT_FORMULA_NOTE}
+          onClose={() => setOpenFormula(null)}
+        />
+        <StatFormulaPanel
+          isOpen={openFormula === 'init'}
+          title="先攻修正"
+          breakdown={breakdown.init}
+          onClose={() => setOpenFormula(null)}
+        />
       </div>
 
       {/* Equipment List */}

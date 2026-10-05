@@ -1,6 +1,7 @@
 import rulesData from '../data/rulesData.json';
-import { SOURCEBOOKS } from '../data/sourcebookConfig';
+import { SOURCEBOOKS, STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
+import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 
 // Dice ladder for step reductions
 const DICE_STEPS = [6, 8, 10, 12];
@@ -11,6 +12,21 @@ export const reduceDieStep = (baseDie, steps = 1) => {
   const targetIdx = Math.max(0, currentIdx - steps);
   return DICE_STEPS[targetIdx];
 };
+
+/**
+ * 判定職業免費增益是否為「最大 HP 或最大 MP」二選一。
+ *
+ * 為什麼不能只看有沒有一個「或」字：暗黑之刃【Playtest】的免費增益是
+ * 「…獲得裝備職業近戰或遠程武器（二選一）和職業防具的能力。」——
+ * 它的「或」指的是武器類別，HP 本身是固定 +5。只看「或」會把它誤判為 HP/MP 二選一，
+ * 一旦玩家選了 MP 就會得到錯誤的數值。
+ * 因此必須同時在句中看到 HP 與 MP 兩側（或英文的 maximum Hit/Mind Points 兩側）。
+ */
+export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
+  /最大\s*HP[^。；]{0,40}或[^。；]{0,40}最大\s*MP/.test(freeBenefitText) ||
+  /最大\s*MP[^。；]{0,40}或[^。；]{0,40}最大\s*HP/.test(freeBenefitText) ||
+  /maximum\s+(?:Hit|Mind)\s+Points[^.]{0,60}\bor\b[^.]{0,60}maximum\s+(?:Hit|Mind)\s+Points/i.test(freeBenefitText)
+);
 
 /**
  * 建立全新角色卡預設結構
@@ -131,18 +147,22 @@ export const calculateCharacterStats = (char) => {
   const baseWlp = char.attributes?.wlp || 8;
 
   // 1. 計算六大異常狀態對屬性骰階的削減
+  // 減值一律由 STATUS_AFFLICTIONS.affectedStats 推導（單一資料來源），
+  // 同時保留每一項減值的來源名稱，供數值構成公式逐項顯示。
   const aff = char.statusAfflictions || {};
-  let dexPenalty = 0;
-  let insPenalty = 0;
-  let migPenalty = 0;
-  let wlpPenalty = 0;
+  const affSources = { dex: [], ins: [], mig: [], wlp: [] };
 
-  if (aff.slow) dexPenalty += 1;
-  if (aff.enraged) { dexPenalty += 1; insPenalty += 1; }
-  if (aff.dazed) insPenalty += 1;
-  if (aff.weak) migPenalty += 1;
-  if (aff.poisoned) { migPenalty += 1; wlpPenalty += 1; }
-  if (aff.shaken) wlpPenalty += 1;
+  Object.keys(STATUS_AFFLICTIONS).forEach(key => {
+    if (!aff[key]) return;
+    (STATUS_AFFLICTIONS[key].affectedStats || []).forEach(attrKey => {
+      if (affSources[attrKey]) affSources[attrKey].push(STATUS_AFFLICTIONS[key].name);
+    });
+  });
+
+  const dexPenalty = affSources.dex.length;
+  const insPenalty = affSources.ins.length;
+  const migPenalty = affSources.mig.length;
+  const wlpPenalty = affSources.wlp.length;
 
   const currentDex = reduceDieStep(baseDex, dexPenalty);
   const currentIns = reduceDieStep(baseIns, insPenalty);
@@ -150,75 +170,81 @@ export const calculateCharacterStats = (char) => {
   const currentWlp = reduceDieStep(baseWlp, wlpPenalty);
 
   // 2. 計算職業免費加成、技能常駐加成、飾品、英雄技能與金手指 (HP, MP, IP)
+  // 每一筆加成同時記錄來源（label / value / kind），供數值構成公式逐項顯示。
   let bonusHp = 0;
   let bonusMp = 0;
   let bonusIp = 0;
+  const hpTerms = [];
+  const mpTerms = [];
+  const ipTerms = [];
+
+  const addHp = (label, value, kind) => { if (value) { bonusHp += value; hpTerms.push({ label, value, kind }); } };
+  const addMp = (label, value, kind) => { if (value) { bonusMp += value; mpTerms.push({ label, value, kind }); } };
+  const addIp = (label, value, kind) => { if (value) { bonusIp += value; ipTerms.push({ label, value, kind }); } };
 
   // (1) 職業免費增益 (Free Benefits) 與職業常駐被動技能
   (char.classes || []).forEach(cl => {
     const classDef = rulesData.classes[cl.className];
     const fb = (classDef?.freeBenefits || '') + ' ' + (classDef?.freeBonus || '');
+    const clsLabel = cl.className || '未知職業';
 
-    // 二選一職業判定 (如 秘儀師Playtest、死靈術士、舞者、祈喚者、卡牌大師)
-    const isChoiceClass = fb.includes('或') || fb.toLowerCase().includes('or');
-    if (isChoiceClass) {
+    // 二選一職業判定 (秘儀師【Playtest】、死靈術士、舞者、祈喚者、植物學家、卡牌大師)
+    if (isHpMpChoiceBenefit(fb)) {
+      // 未指定時預設以 HP+5 為主（避免兩者同時加 5 點導致多送點數）
       if (cl.chosenBenefit === 'MP') {
-        bonusMp += 5;
-      } else if (cl.chosenBenefit === 'HP') {
-        bonusHp += 5;
+        addMp(`${clsLabel} 免費增益（MP）`, 5, 'class');
       } else {
-        // 未指定時預設以 HP+5 為主（避免兩者同時加 5 點導致多送點數）
-        bonusHp += 5;
+        addHp(`${clsLabel} 免費增益（HP）`, 5, 'class');
       }
     } else {
-      if (fb.includes('HP') && fb.includes('5')) bonusHp += 5;
-      if (fb.includes('MP') && fb.includes('5')) bonusMp += 5;
+      if (fb.includes('HP') && fb.includes('5')) addHp(`${clsLabel} 免費增益`, 5, 'class');
+      if (fb.includes('MP') && fb.includes('5')) addMp(`${clsLabel} 免費增益`, 5, 'class');
     }
-    if (fb.includes('IP') && fb.includes('2')) bonusIp += 2;
+    if (fb.includes('IP') && fb.includes('2')) addIp(`${clsLabel} 免費增益`, 2, 'class');
 
     // 職業常駐被動技能衍生加成 (不動要塞, 集中)
+    const step = clsLabel.includes('Playtest') ? 5 : 3;
     (cl.skills || []).forEach(sk => {
       const skName = sk.name || '';
+      const sl = sk.sl || 0;
       if (skName.includes('不動要塞') || skName.toLowerCase().includes('fortress')) {
-        const isPlaytest = (cl.className || '').includes('Playtest');
-        bonusHp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
+        addHp(`${clsLabel} ${skName} SL ${sl} × ${step}`, sl * step, 'skill');
       }
       if (skName.includes('集中') || skName.toLowerCase().includes('concentration')) {
-        const isPlaytest = (cl.className || '').includes('Playtest');
-        bonusMp += (sk.sl || 0) * (isPlaytest ? 5 : 3);
+        addMp(`${clsLabel} ${skName} SL ${sl} × ${step}`, sl * step, 'skill');
       }
     });
   });
 
   // (2) 飾品特殊加成 (支援自訂或括號名稱鬆散匹配)
   const accName = char.equipment?.accessory || '';
-  if (accName.includes('守護護符')) bonusHp += 5;
-  if (accName.includes('魔力寶戒')) bonusMp += 5;
-  if (accName.includes('工匠工具帶')) bonusIp += 2;
+  if (accName.includes('守護護符')) addHp(`飾品 ${accName}`, 5, 'equip');
+  if (accName.includes('魔力寶戒')) addMp(`飾品 ${accName}`, 5, 'equip');
+  if (accName.includes('工匠工具帶')) addIp(`飾品 ${accName}`, 2, 'equip');
 
   // (3) 英雄技能常駐加成 (額外HP, 額外MP, 額外IP)
   (char.heroicSkills || []).forEach(hs => {
     const hName = typeof hs === 'string' ? hs : (hs?.name || '');
     if (hName.includes('額外HP') || hName.toLowerCase().includes('extra hp')) {
-      bonusHp += level >= 40 ? 20 : 10;
+      addHp(`英雄技能 ${hName}`, level >= 40 ? 20 : 10, 'heroic');
     }
     if (hName.includes('額外MP') || hName.toLowerCase().includes('extra mp')) {
-      bonusMp += level >= 40 ? 20 : 10;
+      addMp(`英雄技能 ${hName}`, level >= 40 ? 20 : 10, 'heroic');
     }
     if (hName.includes('額外IP') || hName.toLowerCase().includes('extra ip')) {
-      bonusIp += 4;
+      addIp(`英雄技能 ${hName}`, 4, 'heroic');
     }
   });
 
   // (4) 金手指特定加成 (倖存者, 束縛你的約定)
   const quirkName = char.quirk || '';
   if (quirkName.includes('倖存者')) {
-    bonusHp += 5;
-    bonusMp += 5;
+    addHp(`金手指 ${quirkName}`, 5, 'quirk');
+    addMp(`金手指 ${quirkName}`, 5, 'quirk');
   }
   if (quirkName.includes('束縛你的約定')) {
-    bonusHp += 5;
-    bonusMp += 5;
+    addHp(`金手指 ${quirkName}`, 5, 'quirk');
+    addMp(`金手指 ${quirkName}`, 5, 'quirk');
   }
 
   // 官方規則：最大 HP / MP 基礎計算採用 BASE 體魄與意志（不受異常狀態減骰影響）
@@ -234,55 +260,110 @@ export const calculateCharacterStats = (char) => {
 
   let def = currentDex;
   let mdef = currentIns;
+  const defTerms = [];
+  const mdefTerms = [];
+  const initTerms = [];
+
+  // 顯示用的裝備名稱：優先採用角色實際填寫的字串，其次才是資料表名稱
+  const armorLabel = char.equipment?.armor || armorDef?.name || '';
+  const shieldLabel = char.equipment?.offHand || shieldDef?.name || '';
 
   // 防具防禦公式 (輕甲使用當前敏捷，重甲使用固定數值)
   if (armorDef) {
-    if (armorDef.defFormula === 'dex') def = currentDex;
-    else if (armorDef.defFormula === 'dex+1') def = currentDex + 1;
-    else if (armorDef.defFormula === 'dex+2') def = currentDex + 2;
-    else if (!isNaN(parseInt(armorDef.defFormula, 10))) def = parseInt(armorDef.defFormula, 10);
+    if (armorDef.defFormula === 'dex') {
+      def = currentDex;
+      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+    } else if (armorDef.defFormula === 'dex+1') {
+      def = currentDex + 1;
+      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+      defTerms.push({ label: `${armorLabel} 敏捷 + 1`, value: 1, kind: 'equip' });
+    } else if (armorDef.defFormula === 'dex+2') {
+      def = currentDex + 2;
+      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+      defTerms.push({ label: `${armorLabel} 敏捷 + 2`, value: 2, kind: 'equip' });
+    } else if (!isNaN(parseInt(armorDef.defFormula, 10))) {
+      const fixedDef = parseInt(armorDef.defFormula, 10);
+      def = fixedDef;
+      defTerms.push({ label: `${armorLabel} 固定值 ${fixedDef}`, value: fixedDef, kind: 'equip' });
+    }
 
-    if (armorDef.mdefFormula === 'ins') mdef = currentIns;
-    else if (armorDef.mdefFormula === 'ins+1') mdef = currentIns + 1;
-    else if (armorDef.mdefFormula === 'ins+2') mdef = currentIns + 2;
-    else if (!isNaN(parseInt(armorDef.mdefFormula, 10))) mdef = parseInt(armorDef.mdefFormula, 10);
+    if (armorDef.mdefFormula === 'ins') {
+      mdef = currentIns;
+      mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
+    } else if (armorDef.mdefFormula === 'ins+1') {
+      mdef = currentIns + 1;
+      mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
+      mdefTerms.push({ label: `${armorLabel} 洞察 + 1`, value: 1, kind: 'equip' });
+    } else if (armorDef.mdefFormula === 'ins+2') {
+      mdef = currentIns + 2;
+      mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
+      mdefTerms.push({ label: `${armorLabel} 洞察 + 2`, value: 2, kind: 'equip' });
+    } else if (!isNaN(parseInt(armorDef.mdefFormula, 10))) {
+      const fixedMdef = parseInt(armorDef.mdefFormula, 10);
+      mdef = fixedMdef;
+      mdefTerms.push({ label: `${armorLabel} 固定值 ${fixedMdef}`, value: fixedMdef, kind: 'equip' });
+    }
   }
+
+  // 資料缺漏或公式無法辨識時，仍以「當前屬性骰」作為基準項顯示
+  if (defTerms.length === 0) defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+  if (mdefTerms.length === 0) mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
 
   // 盾牌防禦加值
   if (shieldDef) {
-    def += shieldDef.defBonus || 0;
-    mdef += shieldDef.mdefBonus || 0;
+    const shieldDefBonus = shieldDef.defBonus || 0;
+    const shieldMdefBonus = shieldDef.mdefBonus || 0;
+    def += shieldDefBonus;
+    mdef += shieldMdefBonus;
+    if (shieldDefBonus) defTerms.push({ label: `${shieldLabel} 物防 +${shieldDefBonus}`, value: shieldDefBonus, kind: 'equip' });
+    if (shieldMdefBonus) mdefTerms.push({ label: `${shieldLabel} 魔防 +${shieldMdefBonus}`, value: shieldMdefBonus, kind: 'equip' });
   }
 
   // 機師載具搭乘防禦覆蓋 (Techno Fantasy Atlas p. 161)
   if (char.pilotVehicle?.isMounted) {
     const activeMods = char.pilotVehicle?.activeModules || [];
-    if (activeMods.includes('flexible_plating')) {
-      def = currentDex + 2;
-      mdef = currentIns + 1;
-    } else if (activeMods.includes('heavy_plating')) {
-      def = 12;
-      mdef = 8;
-    } else if (activeMods.includes('runic_plating')) {
-      def = 10;
-      mdef = 11;
-    } else if (activeMods.includes('standard_plating')) {
-      def = 11;
-      mdef = 10;
+    const plating = PILOT_ARMOR_MODULES.find(m => activeMods.includes(m.id));
+    if (plating) {
+      defTerms.length = 0;
+      mdefTerms.length = 0;
+      if (plating.id === 'flexible_plating') {
+        def = currentDex + 2;
+        mdef = currentIns + 1;
+        defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+        defTerms.push({ label: `載具 ${plating.name} + 2`, value: 2, kind: 'equip' });
+        mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
+        mdefTerms.push({ label: `載具 ${plating.name} + 1`, value: 1, kind: 'equip' });
+      } else {
+        def = plating.def;
+        mdef = plating.mdef;
+        defTerms.push({ label: `載具 ${plating.name} 固定值 ${plating.def}`, value: plating.def, kind: 'equip' });
+        mdefTerms.push({ label: `載具 ${plating.name} 固定值 ${plating.mdef}`, value: plating.mdef, kind: 'equip' });
+      }
     }
     // 載具盾牌模組加值 (每個提供 DEF+2, M.DEF+2)
     const shieldModuleCount = activeMods.filter(id => id === 'shield_module').length;
     if (shieldModuleCount > 0) {
       def += shieldModuleCount * 2;
       mdef += shieldModuleCount * 2;
+      defTerms.push({ label: `載具 盾牌模組 × ${shieldModuleCount}`, value: shieldModuleCount * 2, kind: 'equip' });
+      mdefTerms.push({ label: `載具 盾牌模組 × ${shieldModuleCount}`, value: shieldModuleCount * 2, kind: 'equip' });
     }
   }
 
   // 先攻修正
   let init = 0;
-  if (armorDef?.initMod) init += armorDef.initMod;
-  if (shieldDef?.initMod) init += shieldDef.initMod;
-  if (char.equipment?.accessory === '風行長靴') init += 2;
+  if (armorDef?.initMod) {
+    init += armorDef.initMod;
+    initTerms.push({ label: `${armorLabel} 先攻 ${armorDef.initMod > 0 ? '+' : ''}${armorDef.initMod}`, value: armorDef.initMod, kind: 'equip' });
+  }
+  if (shieldDef?.initMod) {
+    init += shieldDef.initMod;
+    initTerms.push({ label: `${shieldLabel} 先攻 ${shieldDef.initMod > 0 ? '+' : ''}${shieldDef.initMod}`, value: shieldDef.initMod, kind: 'equip' });
+  }
+  if (char.equipment?.accessory === '風行長靴') {
+    init += 2;
+    initTerms.push({ label: '飾品 風行長靴 先攻 +2', value: 2, kind: 'equip' });
+  }
 
   // 4. 熟練度比對
   const profs = getProficiencies(char);
@@ -296,6 +377,61 @@ export const calculateCharacterStats = (char) => {
   const masteredClasses = (char.classes || []).filter(cl => cl.level >= 10).map(cl => cl.className);
   const totalSkillLevels = (char.classes || []).reduce((sum, cl) => sum + (cl.skills || []).reduce((sSum, sk) => sSum + sk.sl, 0), 0);
 
+  // 6. 數值構成公式（逐項分解，供角色卡／跑團卡點擊展開顯示）
+  // 每一項為 { label, value, kind }；kind 供面板分色：
+  // base 基礎骰 / level 等級 / class 職業免費增益 / skill 特技 / equip 裝備飾品 / heroic 英雄技能 / quirk 金手指 / status 狀態異常
+  const attrBreakdown = (base, current, penalty, sources) => ({
+    total: current,
+    terms: [
+      { label: `基礎骰 d${base}`, value: `d${base}`, kind: 'base' },
+      ...(penalty > 0
+        ? [{ label: `狀態 ${sources.join('、')} 降 ${penalty} 階`, value: `d${current}`, kind: 'status' }]
+        : [])
+    ]
+  });
+
+  const breakdown = {
+    hp: {
+      total: maxHp,
+      terms: [
+        { label: `基礎體魄 d${baseMig} × 5`, value: baseMig * 5, kind: 'base' },
+        { label: `角色等級 Lv ${level}`, value: level, kind: 'level' },
+        ...hpTerms
+      ]
+    },
+    mp: {
+      total: maxMp,
+      terms: [
+        { label: `基礎意志 d${baseWlp} × 5`, value: baseWlp * 5, kind: 'base' },
+        { label: `角色等級 Lv ${level}`, value: level, kind: 'level' },
+        ...mpTerms
+      ]
+    },
+    ip: {
+      total: maxIp,
+      terms: [
+        { label: '基礎值 6', value: 6, kind: 'base' },
+        ...ipTerms
+      ]
+    },
+    crisis: {
+      total: crisisThreshold,
+      terms: [
+        { label: '最大生命值', value: maxHp, kind: 'base' },
+        { label: '除以 2，向下取整', value: '÷ 2', kind: 'base' }
+      ]
+    },
+    def: { total: def, terms: defTerms },
+    mdef: { total: mdef, terms: mdefTerms },
+    init: { total: init, terms: initTerms },
+    attributes: {
+      dex: attrBreakdown(baseDex, currentDex, dexPenalty, affSources.dex),
+      ins: attrBreakdown(baseIns, currentIns, insPenalty, affSources.ins),
+      mig: attrBreakdown(baseMig, currentMig, migPenalty, affSources.mig),
+      wlp: attrBreakdown(baseWlp, currentWlp, wlpPenalty, affSources.wlp)
+    }
+  };
+
   return {
     maxHp,
     maxMp,
@@ -304,6 +440,9 @@ export const calculateCharacterStats = (char) => {
     def,
     mdef,
     init,
+    bonusHp,
+    bonusMp,
+    bonusIp,
     baseDex,
     baseIns,
     baseMig,
@@ -321,6 +460,7 @@ export const calculateCharacterStats = (char) => {
     shieldWarning,
     masteredClasses,
     totalSkillLevels,
+    breakdown,
     isLevelMatched: totalSkillLevels === level
   };
 };
