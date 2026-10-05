@@ -57,9 +57,9 @@
 | 套件名 | `monogatari-techou`　｜　顯示名《物語手帳》 |
 | 分支 | `main` |
 | 工作樹 | **乾淨**（全部已提交，無未追蹤檔案） |
-| `npm run build` | exit 0，約 4.3 秒，**1,971 kB / gzip 563 kB**（chunk-size 警告為既有現象） |
-| `npm test` | exit 0，**60 + 33 + 75 + 56 + 235 + 114 + 322 + 86 + 268 ＋ Emoji 掃描** |
-| 測試檔 | `tests/` 共 10 檔（emojiScan／sentinel／properNouns／tinkererProjects／classResources／gourmet／aceOfCards／characterEngine／dataLayer／ruleCodex） |
+| `npm run build` | exit 0，約 4.3 秒，**1,998 kB / gzip 565 kB**（chunk-size 警告為既有現象） |
+| `npm test` | exit 0，**60 + 33 + 75 + 56 + 235 + 114 + 322 + 86 + 99 + 268 ＋ Emoji 掃描** |
+| 測試檔 | `tests/` 共 11 檔（emojiScan／sentinel／properNouns／tinkererProjects／classResources／gourmet／aceOfCards／characterEngine／dataLayer／starterPresets／ruleCodex） |
 | 資料層 | `src/data/keys.js`（7 權威鍵 + 3 舊鍵）、`src/data/store.js`、`shared/schema.js` |
 | 文件 | `docs/`：`decisions.md`、`agents-changelog.md`、`room-sync-plan.md`、`skill-coverage.md` |
 | Git 歷史 | ⚠️ **2026-10-05 改寫過**（`resources/` 徹底清除），所有 SHA 與改寫前不同，見 §8 |
@@ -126,7 +126,7 @@
 
 | 規則 | 內容 |
 |---|---|
-| 規則四 | **面向使用者的文字**（介面文案、提示、按鈕標籤）**必須先寫計畫再問**，取得明確確認才能實裝 |
+| 規則四 | ~~**面向使用者的文字**（介面文案、提示、按鈕標籤）**必須先寫計畫再問**，取得明確確認才能實裝~~ —— ⚠️ **2026-10-05 經使用者授權停用**：不再需要 `implementation_plan.md` 預審，**計畫討論定案後直接實裝**（見 `AGENTS.md` §2 規則四） |
 | 規則五 | 每次改動後**必須**跑 Emoji 掃描 + `npm run build`（exit 0），兩項未過不得宣稱完成 |
 | 規則六 | **嚴禁**引用歷史報告、舊 Session 草稿或 `PROJECT_CHANGELOG.md` 作為現況結論——一律重新實測源碼 |
 

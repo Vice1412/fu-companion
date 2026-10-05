@@ -32,9 +32,9 @@
   本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 1,960 kB（gzip 560 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 268/268 ＋ Emoji 掃描** 通過，exit 0）。
-  八組測試 ＋ 一道自動關卡：
+- **建置產物**：`dist/`，JS 1,998 kB（gzip 565 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 99/99 + 268/268 ＋ Emoji 掃描** 通過，exit 0）。
+  九組測試 ＋ 一道自動關卡：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
   - `npm run test:propernouns` —— 專有名詞對照與格式鐵律
@@ -44,6 +44,7 @@
   - `npm run test:cards` —— 卡牌大師牌組與組合結算（30 張組成、7 種效果的精確比對、鬼牌指定、等級加成）
   - `npm run test:engine` —— 角色卡數值引擎（HP/MP/IP/危機/DEF/M.DEF，對照原書 p.163–164）
   - `npm run test:datalayer` —— 鍵註冊表、存取層、舊鍵遷移、房間同步契約
+  - `npm run test:presets` —— 官方經典職業搭配 81 組（五本手冊，含篩選分組純函式與 SSR 渲染煙霧）
   - `npm run test:codex` —— 規則概念速查（16 條覆蓋率、關鍵字唯一性、授權合規、**譯名與定譯表逐字比對**）
   測試源碼位於受版控的 `tests/`；bundle 產物輸出至 `.test-build/`（已列入 `.gitignore`）。
   ⚠️ `scratch/` 整個目錄**不在版控內**（`.gitignore:27`），凡置於該處的測試或 bundle 都會與源碼脫鉤——
@@ -194,15 +195,19 @@ CHM 旁的 `.html` 只是 301 bytes 的空殼 frameset，**無用**；真正的�
 - 唯一允許縮寫：`DEX/INS/MIG/WLP`、`HP/MP/IP`、`HR`、`SL`、`DEF/M.DEF`、`z`、`d6~d20`。
 - ⚠️ 邊界案例見 §5 技術債 C 項（物種英文標籤、`【Playtest】` 等）。
 
-### 規則四：文案與顯示文本預審協議
-`GEMINI.md` 要求以 **Antigravity Artifact** 建立 `implementation_plan.md` 並啟用 `RequestFeedback: true`。
-**DSH 無 Artifact 機制**，故採用下列等效流程：
+### 規則四：文案與顯示文本預審協議 —— ⚠️ **DSH 已於 2026-10-05 經使用者授權停用**
 
-1. 以 `write` 在工作區建立 `implementation_plan.md`（或任務專屬檔名），完整列出預計文案。
-2. 以 `ask_user_question` 請使用者確認或修訂。
-3. **取得明確確認後，方可進行代碼實裝。**
-
-> **未經確認，不得實作任何面向使用者的文字。** 此為硬性關卡。
+> **使用者授權（2026-10-05，原文）**：「給你授權。由於你的能力更加優秀，所以不需要再輸出
+> implementation plan 這個規矩。日後有什麼計劃討論完畢後就可以直接實裝。」
+>
+> 故 DSH 的等效流程（原為：寫 `implementation_plan.md` → `ask_user_question` 確認 → 才可實裝）
+> **不再要求事前產出計畫文件或等待確認**。**計畫在對話中討論定案後即可直接實裝。**
+> 既有 `implementation_plan-*.md` 保留為歷史紀錄，不刪。
+>
+> ⚠️ **`GEMINI.md` 規則四原文未被改寫**（本檔不得改寫其原文）。Antigravity／Gemini 仍依
+> `GEMINI.md` 走 Artifact 流程；此停用僅適用於 DSH。若使用者日後要求恢復，改回本節即可。
+>
+> **仍會主動提請確認的情況**（判斷，非規範）：需求本身有歧義、或涉及不可逆的資料刪除。
 
 ### 規則五：防退化自檢流程
 每次代碼改動完成後、回覆使用者前，**必須**依序執行：
@@ -386,13 +391,14 @@ Get-ChildItem -Path "src" -Recurse -File |
 
 ### E. 建置與測試
 - `npm run build` 通過（exit 0，2026-10-04 實測 4.32 秒）。
-- JS bundle 1,960 kB / gzip 560 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- JS bundle 1,998 kB / gzip 565 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 268/268 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 114/114 + 322/322 + 86/86 + 99/99 + 268/268 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
-  **角色卡數值引擎（`test:engine`，2026-10-04 補上）**、**資料層與房間契約（`test:datalayer`）**。
+  **角色卡數值引擎（`test:engine`，2026-10-04 補上）**、**資料層與房間契約（`test:datalayer`）**、
+  **官方經典職業搭配 81 組（`test:presets`，2026-10-05 補上）**。
   **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
   > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`；2026-10-05 擴充至 **322 項**
   > ＝ 243 項基礎向量 ＋ 79 項數值構成公式與免費增益二選一，見 `docs/decisions.md` §N）。
@@ -487,6 +493,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | L | 資料層收斂 | 7 權威鍵 + 3 舊鍵；全站零直接 `localStorage` 呼叫 | 2026-10-04 |
 | M | 規則概念速查譯名稽核 | 約 140 處改回定譯（Excel V2.17／核心漢化 PDF）；`test:codex` G 區段比對 121 個名稱；另修靈刻 MP 公式與魔加農 IP（跨檔案共 6 處） | 2026-10-05 |
 | N | 職業技能改數值 ＋ 免費增益 ＋ 數值構成公式 | 全 35 職僅【不動要塞】【集中】改上限（皆有反映）；修 D1 `+undefined`、D2 二選一 MP 不可達、D3 暗黑之刃【Playtest】誤判；新增 `StatFormulaPanel` 逐項公式面板；D4~D7 待裁定 | 2026-10-05 |
+| P | 官方經典職業搭配擴充（HF／NF／TF／Bonus） | 五本手冊共 **81 組**（核心 20 ＋ 擴充 61）；依使用者裁定**只收官方欄位**，Core 20 的風味欄位一併移除；不顯示職業英文名；**套用時連技能子選擇（咒語／舞步／音調曲風／天賦／混合形態／魔法種子／徽記）與小工具／阿爾卡納／載具一起選好**；修既有資料錯誤 `護衛`→`保鏢` 與官方筆誤 `魂流靈刃` 四維；`test:presets` 99 項 | 2026-10-05 |
 
 ## 7. 本檔維護
 

@@ -21,7 +21,6 @@ import {
   GiSpellBook,
   GiHazardSign,
   GiCheckMark,
-  GiMagnifyingGlass,
   GiQuillInk,
   GiCoins,
   GiRollingDices,
@@ -52,7 +51,8 @@ import {
   generateRandomIdentity,
   getClassInfo
 } from '../data/sourcebookConfig';
-import { STARTER_PRESETS } from '../data/starterPresets';
+import StarterPresetsModal from './StarterPresetsModal';
+import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
   validateCharacter
@@ -71,7 +71,6 @@ export default function CharacterEditor({
 }) {
   const [activeTab, setActiveTab] = useState(1);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
-  const [presetSearch, setPresetSearch] = useState('');
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
@@ -258,20 +257,13 @@ export default function CharacterEditor({
   };
 
   // Apply Starter Preset
+  // 官方經典職業搭配只提供官方欄位（屬性／職業技能／裝備／資金／金手指）；
+  // 身分、主題、出身、羈絆屬玩家自訂，套用時一律保留現值不動。
+  // 技能子選擇（咒語／舞步／音調曲風／天賦／混合形態／魔法種子／徽記）內嵌在
+  // `classes[].skills[].selectedOptions`，隨 `classes` 深拷貝一併帶入。
+  // 純邏輯抽在 `utils/presetApply.js`，以便測試覆蓋。
   const handleApplyPreset = (preset) => {
-    onChange({
-      ...character,
-      name: `${preset.title.split(' ')[0]}`,
-      identity: preset.identity,
-      theme: preset.theme,
-      origin: preset.origin,
-      attributes: { ...preset.attributes },
-      classes: JSON.parse(JSON.stringify(preset.classes)),
-      equipment: { ...preset.equipment },
-      bonds: JSON.parse(JSON.stringify(preset.bonds)),
-      zenit: preset.zenit,
-      updatedAt: new Date().toISOString()
-    });
+    onChange(applyPreset(character, preset));
     setIsPresetsModalOpen(false);
   };
 
@@ -1536,135 +1528,12 @@ export default function CharacterEditor({
       </JRPGModal>
 
       {/* Starter Presets Modal */}
-      <JRPGModal
+      <StarterPresetsModal
         isOpen={isPresetsModalOpen}
         onClose={() => setIsPresetsModalOpen(false)}
-        title="官方經典職業搭配"
-        maxWidth="max-w-4xl"
         theme={theme}
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-slate-600 leading-relaxed -mt-1">
-            嚴格遵循官方核心規則書 (v1.1 Errata 校正版 p.172-175) 實裝。包含全套 20 組經典職業搭配、特技分配、起始裝備與資金。
-          </p>
-
-          {/* Search filter */}
-          <div className="relative">
-            <input
-              type="text"
-              value={presetSearch}
-              onChange={e => setPresetSearch(e.target.value)}
-              placeholder="搜尋經典搭配名稱、職業或特技（例如：黑騎士、神射手、修補匠、暗影突襲）..."
-              className="w-full px-3.5 py-2 pl-9 text-xs rounded-xl bg-white border text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 shadow-2xs"
-              style={{ borderColor: theme.border }}
-            />
-            <GiMagnifyingGlass className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            {presetSearch && (
-              <button
-                type="button"
-                onClick={() => setPresetSearch('')}
-                className="absolute right-3 top-2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                清除
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-            {STARTER_PRESETS
-              .filter(preset => {
-                if (!presetSearch.trim()) return true;
-                const q = presetSearch.toLowerCase();
-                const matchTitle = preset.title.toLowerCase().includes(q);
-                const matchSubtitle = preset.subtitle.toLowerCase().includes(q);
-                const matchIdentity = preset.identity.toLowerCase().includes(q);
-                const matchClasses = preset.classes.some(c => 
-                  c.className.toLowerCase().includes(q) || 
-                  c.skills.some(s => s.name.toLowerCase().includes(q))
-                );
-                return matchTitle || matchSubtitle || matchIdentity || matchClasses;
-              })
-              .map(preset => (
-                <div
-                  key={preset.id}
-                  className="rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all shadow-xs hover:shadow-md"
-                  style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-serif font-black text-base" style={{ color: theme.textDark }}>
-                        {preset.title}
-                      </span>
-                      <span
-                        className="text-[11px] font-bold px-2 py-0.5 rounded border font-mono shadow-2xs"
-                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                      >
-                        {preset.zenit}z
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold" style={{ color: theme.accent }}>{preset.subtitle}</div>
-                    <p className="text-[11px] text-slate-600 italic leading-relaxed">{preset.tagline}</p>
-
-                    {/* Class badges & Attribute array */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1 font-mono text-[11px]">
-                      {preset.classes.map((c, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded border font-bold flex items-center gap-1"
-                          style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                        >
-                          <GameIcon name={c.className} size={12} style={{ color: theme.accent }} />
-                          {withEn(c.className)} Lv{c.level}
-                        </span>
-                      ))}
-                      <span className="text-slate-400 text-[10px]">
-                        [DEX d{preset.attributes.dex}, INS d{preset.attributes.ins}, MIG d{preset.attributes.mig}, WLP d{preset.attributes.wlp}]
-                      </span>
-                    </div>
-
-                    {/* Skills detail */}
-                    <div
-                      className="text-[11px] text-slate-700 bg-white/90 rounded-lg p-2.5 border space-y-1 shadow-2xs"
-                      style={{ borderColor: theme.border }}
-                    >
-                      <div className="font-bold text-[10px] uppercase tracking-wider" style={{ color: theme.accent }}>
-                        習得技能
-                      </div>
-                      {preset.classes.map((c, i) => (
-                        <div key={i} className="text-[11px] leading-tight">
-                          <span className="font-bold" style={{ color: theme.textDark }}>{withEn(c.className)}:</span>{' '}
-                          {c.skills.map(s => `${s.name}${s.sl > 1 ? ` SL${s.sl}` : ''}`).join('、')}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Starting Equipment */}
-                    <div
-                      className="text-[11px] text-slate-600 bg-white/70 rounded-lg px-2.5 py-1.5 border flex items-center gap-1.5 shadow-2xs"
-                      style={{ borderColor: theme.border }}
-                    >
-                      <span className="font-bold text-slate-700">裝備:</span>{' '}
-                      {[
-                        preset.equipment.mainHand,
-                        preset.equipment.offHand && preset.equipment.offHand !== '無盾牌' ? preset.equipment.offHand : null,
-                        preset.equipment.armor
-                      ].filter(Boolean).join('、')}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleApplyPreset(preset)}
-                    className="w-full py-2 rounded-lg text-white font-bold text-xs shadow-xs transition-all hover:opacity-90 active:scale-98 cursor-pointer"
-                    style={{ backgroundColor: theme.accent }}
-                  >
-                    套用此經典配置
-                  </button>
-                </div>
-            ))}
-          </div>
-        </div>
-      </JRPGModal>
+        onApply={handleApplyPreset}
+      />
 
       {/* Validation Checklist Drawer / Modal */}
       <JRPGModal
