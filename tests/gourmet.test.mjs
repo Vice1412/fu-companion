@@ -26,6 +26,8 @@ import {
   conflictingPairKeys,
   countByTaste,
   groupByTaste,
+  parseRollSequence,
+  assignSequence,
   effectSignature,
   findDuplicateEffects,
   cookbookProgress,
@@ -356,6 +358,55 @@ check('非法口味不產生群組',
 check('分組後總數不變',
   groupByTaste([{ taste: '苦味' }, { taste: '鹹味' }, { taste: '苦味' }])
     .reduce((n, g) => n + g.items.length, 0), 3);
+
+// ─────────────────────────────────────────────────────────── Q
+section('Q. 批次填寫：d12 序列解析（給在實體桌面擲骰的玩家）');
+check('空白分隔', parseRollSequence('7 3 12'), [7, 3, 12]);
+check('半形逗號', parseRollSequence('7,3,12'), [7, 3, 12]);
+check('全形逗號', parseRollSequence('7，3，12'), [7, 3, 12]);
+check('頓號', parseRollSequence('7、3、12'), [7, 3, 12]);
+check('混合分隔與多餘空白', parseRollSequence('  7 , 3、 12  '), [7, 3, 12]);
+check('單一數字', parseRollSequence('5'), [5]);
+check('空字串 -> 空陣列', parseRollSequence(''), []);
+check('null -> 空陣列', parseRollSequence(null), []);
+check('undefined -> 空陣列', parseRollSequence(undefined), []);
+check('只有分隔符 -> 空陣列', parseRollSequence(' , 、 '), []);
+check('0 被忽略（d12 擲不出 0）', parseRollSequence('0 5'), [5]);
+check('13 被忽略（超出 d12）', parseRollSequence('13 5'), [5]);
+check('負數被忽略', parseRollSequence('-3 5'), [5]);
+check('非數字被忽略', parseRollSequence('abc 5'), [5]);
+check('12 保留（邊界值）', parseRollSequence('12'), [12]);
+check('1 保留（邊界值）', parseRollSequence('1'), [1]);
+check('重複數字保留', parseRollSequence('5 5 5'), [5, 5, 5]);
+check('超過 12 個也全收', parseRollSequence('1 2 3 4 5 6 7 8 9 10 11 12 1 2').length, 14);
+
+section('Q2. 批次填寫：序列配對到組合');
+const pairs3 = ['苦味+苦味', '苦味+鹹味', '苦味+酸味'];
+const asg = assignSequence(pairs3, [7, 3, 12]);
+check('三組都配到', Object.keys(asg).length, 3);
+check('第一組配 7', asg['苦味+苦味'].roll, 7);
+check('第二組配 3', asg['苦味+鹹味'].roll, 3);
+check('第三組配 12', asg['苦味+酸味'].roll, 12);
+check('不需選擇的效果 choice 為 null', asg['苦味+苦味'].choice, null);
+check('需選擇的效果取第一個選項（效果 12 -> 風）', asg['苦味+酸味'].choice, '風');
+check('序列比組合短 -> 只配前面的', Object.keys(assignSequence(pairs3, [7])).length, 1);
+check('序列比組合長 -> 多出的忽略', Object.keys(assignSequence(pairs3, [1, 2, 3, 4, 5])).length, 3);
+check('空序列 -> 空物件', Object.keys(assignSequence(pairs3, [])).length, 0);
+check('空組合 -> 空物件', Object.keys(assignSequence([], [7, 3])).length, 0);
+check('null 組合不炸', Object.keys(assignSequence(null, [7])).length, 0);
+// 效果 5（造成傷害）需要選屬性
+const asg5 = assignSequence(['苦味+苦味'], [5]);
+check('效果 5 的 choice 取第一個屬性（風）', asg5['苦味+苦味'].choice, '風');
+// 效果 11（提升屬性骰）需要選四維
+const asg11 = assignSequence(['苦味+苦味'], [11]);
+check('效果 11 的 choice 取 DEX', asg11['苦味+苦味'].choice, 'DEX');
+// 效果 2（施加狀態）的選項不含憤怒與中毒
+const asg2 = assignSequence(['苦味+苦味'], [2]);
+check('效果 2 的 choice 取眩暈', asg2['苦味+苦味'].choice, '眩暈');
+// 配對結果可直接寫入食譜並通過重複檢查
+const asgMixed = assignSequence(ALL_TASTE_PAIRS.slice(0, 3), [7, 3, 12]);
+check('配對結果無重複效果', findDuplicateEffects(asgMixed), []);
+check('配對結果可算出進度', cookbookProgress(asgMixed), 3);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

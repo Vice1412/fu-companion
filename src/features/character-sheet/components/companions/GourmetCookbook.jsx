@@ -17,6 +17,7 @@ import {
   TASTES,
   TASTE_SHORT,
   TASTE_ROLL,
+  ALL_TASTE_PAIRS,
   tastePairKey,
   parseTastePairKey,
   pairsFromTastes,
@@ -31,7 +32,9 @@ import {
   findDuplicateEffects,
   cookbookProgress,
   countByTaste,
-  groupByTaste
+  groupByTaste,
+  parseRollSequence,
+  assignSequence
 } from '../../data/gourmetData';
 
 /**
@@ -122,6 +125,10 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   const [dishName, setDishName] = useState('');
   /** 口味篩選：null = 全部。食材與烹飪分頁共用（你在兩邊找的是同一批東西）。 */
   const [tasteFilter, setTasteFilter] = useState(null);
+  /** 批次填寫：{ pairKey: { roll, choice } } —— 供在實體桌面擲骰的玩家一次輸入多筆。 */
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchDraft, setBatchDraft] = useState({});
+  const [batchSeq, setBatchSeq] = useState('');
 
   const data = character?.gourmetData || {};
   const ingredients = data.ingredients || [];
@@ -139,6 +146,8 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
   const progress = cookbookProgress(cookbook);
   const remaining = useMemo(() => unusedEffects(cookbook, level), [cookbook, level]);
   const tasteCounts = useMemo(() => countByTaste(ingredients), [ingredients]);
+  /** 食材是否已達上限——滿了就擋住新增，並常駐顯示提示。 */
+  const isFull = ingredients.length >= capacity;
 
   const write = (patch) => {
     onChange({
@@ -231,6 +240,37 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
     write({ cookbook: next });
     if (pending?.key === key) setPending(null);
     showToast(`已刪除【${key}】的記錄，可重新決定`, 'info');
+  };
+
+  // ── 批次填寫（給在實體桌面擲骰的玩家）───────────────────
+  //
+  // 問題：一個一個點進格子填出目，骰 3 顆就要十幾個動作。
+  // 解法：**快速輸入序列**——把擲出的數字照順序打成一串（`7 3 12`），
+  // 自動依序填入尚未決定的組合；下方再逐列確認與調整屬性／體質，
+  // 最後一次寫入。這樣「骰 3 顆」只需一次輸入 + 一次確認。
+  //
+  /** 尚未決定的組合，依官方口味順序。 */
+  const undecidedPairs = ALL_TASTE_PAIRS.filter((k) => !cookbook[k]?.roll);
+
+  /** 把序列依序填入尚未決定的組合（解析與配對邏輯在 data 層，已測試）。 */
+  const applySequence = (raw) => {
+    setBatchDraft(assignSequence(undecidedPairs, parseRollSequence(raw)));
+  };
+
+  /** 把批次草稿一次寫入食譜（此後固定）。 */
+  const commitBatch = () => {
+    const filled = Object.entries(batchDraft).filter(([, v]) => v && v.roll);
+    if (filled.length === 0) {
+      showToast('尚未輸入任何骰值', 'warning');
+      return;
+    }
+    const next = { ...cookbook };
+    for (const [k, v] of filled) next[k] = { roll: v.roll, choice: v.choice };
+    write({ cookbook: next });
+    showToast(`已寫入 ${filled.length} 筆食譜記錄`, 'success');
+    setBatchDraft({});
+    setBatchSeq('');
+    setBatchOpen(false);
   };
 
   // ── 烹飪 ────────────────────────────────────────────────
@@ -496,46 +536,73 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
             {/* 口味分布（同時是篩選器） */}
             {renderTasteBar()}
 
-            {/* 新增食材 */}
-            <div className="flex items-end gap-2 flex-wrap p-2.5 rounded-xl bg-white border border-[#d6c7ab]">
-              <label className="flex flex-col gap-1 text-[11px] font-bold text-[#6b5a4b]">
-                <span>名稱（可留空，之後仍可改）</span>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="例：石化蜂蜜"
-                  className="w-36 px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white text-xs text-[#3c2415]"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[11px] font-bold text-[#6b5a4b]">
-                <span>口味（骰到 6 時用這個）</span>
-                <select
-                  value={newTaste}
-                  onChange={(e) => setNewTaste(e.target.value)}
-                  className="px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white text-xs text-[#3c2415] cursor-pointer"
+            {/* 新增食材（滿了則整區停用並常駐警示） */}
+            <div className="space-y-1.5">
+              {isFull && (
+                <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-red-50 border border-red-400 text-[11px] font-bold text-red-900">
+                  <GiHazardSign className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    背包已滿（{ingredients.length} / {capacity}）——請先使用或丟棄食材才能再取得。
+                  </span>
+                </div>
+              )}
+              <div
+                className={`flex items-end gap-2 flex-wrap p-2.5 rounded-xl border ${
+                  isFull ? 'bg-slate-50 border-slate-200 opacity-70' : 'bg-white border-[#d6c7ab]'
+                }`}
+              >
+                <label className="flex flex-col gap-1 text-[11px] font-bold text-[#6b5a4b]">
+                  <span>名稱（可留空，之後仍可改）</span>
+                  <input
+                    type="text"
+                    value={newName}
+                    disabled={isFull}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="例：石化蜂蜜"
+                    className="w-36 px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white text-xs text-[#3c2415] disabled:bg-slate-100 disabled:text-slate-400"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-[11px] font-bold text-[#6b5a4b]">
+                  <span>口味（骰到 6 時用這個）</span>
+                  <select
+                    value={newTaste}
+                    disabled={isFull}
+                    onChange={(e) => setNewTaste(e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white text-xs text-[#3c2415] cursor-pointer disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    {TASTES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={rollIngredient}
+                  disabled={isFull}
+                  title={isFull ? '背包已滿' : '骰 d6 決定口味'}
+                  className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 ${
+                    isFull
+                      ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-900 cursor-pointer'
+                  }`}
                 >
-                  {TASTES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={rollIngredient}
-                title="骰 d6 決定口味"
-                className="px-2.5 py-1.5 rounded-lg border border-amber-400 bg-amber-50 hover:bg-amber-100 text-[11px] font-bold text-amber-900 flex items-center gap-1 cursor-pointer"
-              >
-                <GiPerspectiveDiceSixFacesRandom className="w-3.5 h-3.5" />
-                <span>骰 d6 取得</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { addIngredient(newTaste, newName); setNewName(''); }}
-                className="px-2.5 py-1.5 rounded-lg border border-[#d6c7ab] bg-white hover:bg-[#ebdcc4] text-[11px] font-bold text-[#6b5a4b] cursor-pointer"
-              >
-                直接新增
-              </button>
+                  <GiPerspectiveDiceSixFacesRandom className="w-3.5 h-3.5" />
+                  <span>骰 d6 取得</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isFull}
+                  onClick={() => { addIngredient(newTaste, newName); setNewName(''); }}
+                  title={isFull ? '背包已滿' : '直接新增'}
+                  className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold ${
+                    isFull
+                      ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'border-[#d6c7ab] bg-white hover:bg-[#ebdcc4] text-[#6b5a4b] cursor-pointer'
+                  }`}
+                >
+                  直接新增
+                </button>
+              </div>
             </div>
 
             <p className="text-[10px] text-[#6b5a4b] font-mono">
@@ -688,6 +755,128 @@ export default function GourmetCookbook({ character, onChange, showToast = () =>
                       尚未決定。首次使用這個組合時決定，之後永久固定。
                     </p>
                     {renderUndecidedActions(selectedPair)}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 批次填寫（給在實體桌面擲骰的玩家） */}
+            {undecidedPairs.length > 0 && (
+              <div className="p-2.5 rounded-xl bg-white border border-[#d6c7ab] space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold text-[#3c2415] flex items-center gap-1.5">
+                    <GiDiceTwentyFacesTwenty className="w-3.5 h-3.5 text-amber-700" />
+                    <span>批次填寫（尚未決定 {undecidedPairs.length} 格）</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBatchOpen((v) => !v);
+                      setBatchDraft({});
+                      setBatchSeq('');
+                    }}
+                    className="px-2 py-0.5 rounded border border-[#d6c7ab] bg-white hover:bg-[#ebdcc4] text-[11px] font-bold text-[#6b5a4b] cursor-pointer"
+                  >
+                    {batchOpen ? '收起' : '展開'}
+                  </button>
+                </div>
+
+                {batchOpen && (
+                  <>
+                    <div className="p-2 rounded-lg bg-[#f5efdf] border border-[#d6c7ab]">
+                      <div className="text-[11px] font-bold text-[#3c2415] mb-1">
+                        快速輸入：把擲出的 d12 照順序打成一串
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <input
+                          type="text"
+                          value={batchSeq}
+                          onChange={(e) => {
+                            setBatchSeq(e.target.value);
+                            applySequence(e.target.value);
+                          }}
+                          placeholder="例：7 3 12 5"
+                          className="flex-1 min-w-[8rem] px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white text-xs font-mono text-[#3c2415]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setBatchSeq(''); setBatchDraft({}); }}
+                          className="px-2 py-1 rounded-lg border border-[#d6c7ab] bg-white hover:bg-[#ebdcc4] text-[11px] font-bold text-[#6b5a4b] cursor-pointer"
+                        >
+                          清除
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-[#6b5a4b] font-mono mt-1">
+                        支援空白、逗號、頓號分隔；會依官方口味順序填入下方各列。
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                      {undecidedPairs.map((key) => {
+                        const draft = batchDraft[key] || {};
+                        const def = draft.roll ? DELICACY_EFFECTS[draft.roll] : null;
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center gap-1.5 flex-wrap px-1.5 py-1 rounded-lg border border-[#d6c7ab] bg-[#f5efdf]"
+                          >
+                            <span className="text-[11px] font-bold text-[#3c2415] w-24 shrink-0">{key}</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={12}
+                              value={draft.roll || ''}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                setBatchDraft((d) => {
+                                  const nx = { ...d };
+                                  if (!Number.isInteger(n) || n < 1 || n > 12) {
+                                    delete nx[key];
+                                  } else {
+                                    const df = DELICACY_EFFECTS[n];
+                                    nx[key] = {
+                                      roll: n,
+                                      choice: df.choice ? d[key]?.choice || df.choice.options[0] : null
+                                    };
+                                  }
+                                  return nx;
+                                });
+                              }}
+                              placeholder="d12"
+                              className="w-14 px-1.5 py-0.5 rounded border border-[#d6c7ab] bg-white text-center font-mono text-[11px] text-[#3c2415]"
+                            />
+                            {def?.choice && (
+                              <select
+                                value={draft.choice || ''}
+                                onChange={(e) =>
+                                  setBatchDraft((d) => ({ ...d, [key]: { ...d[key], choice: e.target.value } }))
+                                }
+                                className="px-1.5 py-0.5 rounded border border-[#d6c7ab] bg-white text-[11px] text-[#3c2415] cursor-pointer"
+                              >
+                                {def.choice.options.map((o) => (
+                                  <option key={o} value={o}>{o}</option>
+                                ))}
+                              </select>
+                            )}
+                            <span className="text-[10px] text-[#3c2415] flex-1 min-w-[7rem]">
+                              {def ? (
+                                renderTextWithAffinities(formatEffect(draft.roll, draft.choice, level))
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={commitBatch}
+                      className="w-full px-3 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                    >
+                      一次寫入食譜（此後固定）
+                    </button>
                   </>
                 )}
               </div>

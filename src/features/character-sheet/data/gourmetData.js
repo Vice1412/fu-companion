@@ -395,3 +395,40 @@ export const groupByTaste = (ingredients) =>
     taste,
     items: (ingredients || []).filter((i) => i?.taste === taste)
   })).filter((g) => g.items.length > 0);
+
+/**
+ * 解析玩家輸入的 d12 序列（供批次填寫用）。
+ *
+ * 支援空白、半形逗號、全形逗號、頓號分隔；**忽略 1～12 以外的值**
+ * （含 0、13、非數字），因為 d12 不可能擲出那些結果。
+ *
+ * @param {string} raw 例：`"7 3 12"`、`"7,3,12"`、`"7、3、12"`
+ * @returns {number[]} 例：`[7, 3, 12]`
+ */
+export const parseRollSequence = (raw) =>
+  String(raw ?? '')
+    .split(/[\s,，、]+/)
+    .map((s) => parseInt(s, 10))
+    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 12);
+
+/**
+ * 把骰值序列依序指定給尚未決定的口味組合。
+ *
+ * 這是「在實體桌面擲骰」的批次輸入核心：玩家把擲出的數字照順序打成一串，
+ * 這裡負責配對到各組合。選項（屬性／體質）先取該效果的第一個選項，
+ * 之後由 UI 讓玩家逐列調整——因為食譜一旦寫入就固定，必須在寫入前確認。
+ *
+ * @param {string[]} pairKeys 目標組合鍵（依序）
+ * @param {number[]} rolls 骰值序列
+ * @returns {Object} `{ pairKey: { roll, choice } }`
+ */
+export const assignSequence = (pairKeys, rolls) => {
+  const out = {};
+  (pairKeys || []).forEach((key, i) => {
+    const roll = (rolls || [])[i];
+    if (!roll) return;
+    const def = DELICACY_EFFECTS[roll];
+    out[key] = { roll, choice: def.choice ? def.choice.options[0] : null };
+  });
+  return out;
+};
