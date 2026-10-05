@@ -3,15 +3,15 @@ import { GiSparkles, GiTrashCan, GiPocketWatch, GiPalette, GiCheckMark } from 'r
 import JRPGButton from '../../components/ui/JRPGButton';
 import ClockTracker, { CLOCK_THEMES } from '../../components/ui/ClockTracker';
 import { JRPGInput } from '../../components/ui/JRPGInput';
+import { STORAGE_KEYS } from '../../data/keys';
+import { readJSON, writeJSON } from '../../data/store';
 
-const STORAGE_KEY = 'fu_companion_fate_clocks';
+const STORAGE_KEY = STORAGE_KEYS.fateClocks;
 
 export default function FateClockPage() {
   const [clocks, setClocks] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
+    const saved = readJSON(STORAGE_KEY, null);
+    if (saved) return saved;
     return [
       { id: 'fc_1', title: '深淵魔神的甦醒儀式', totalSegments: 8, filledSegments: 3, theme: 'red', type: 'circle' },
       { id: 'fc_2', title: '王國皇家禁衛隊抵達', totalSegments: 6, filledSegments: 2, theme: 'amber', type: 'line' },
@@ -22,9 +22,7 @@ export default function FateClockPage() {
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clocks));
-    } catch (e) {}
+    writeJSON(STORAGE_KEY, clocks);
   }, [clocks]);
 
   const showToast = (msg) => {
@@ -63,7 +61,7 @@ export default function FateClockPage() {
             <span className="text-amber-700">◷</span> 命刻編織者
           </h2>
           <p className="text-xs text-[#6b5a4b] mt-0.5">
-            《FU》進度時鐘工作台 · 支援圓盤切片與線形進度 · 多主題色調與即時互動
+            《物語手帳》進度時鐘工作台 · 支援圓盤切片與線形進度 · 多主題色調與即時互動
           </p>
         </div>
 

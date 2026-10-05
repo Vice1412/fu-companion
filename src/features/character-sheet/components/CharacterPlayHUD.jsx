@@ -57,6 +57,8 @@ import ChanterComposer from './companions/ChanterComposer';
 import FloristGardenTracker from './companions/FloristGardenTracker';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
 import { withEn } from '../../../utils/properNouns';
+import { STORAGE_KEYS } from '../../../data/keys';
+import { readJSON, writeJSON } from '../../../data/store';
 
 /**
  * 輔助解析武器/咒語命中檢定公式 (如 "DEX + MIG" 或 "INS + WLP")
@@ -287,8 +289,7 @@ export default function CharacterPlayHUD({
   // Send Character to Combat Tracker
   const handleSendToCombat = () => {
     try {
-      const activeCombatRaw = localStorage.getItem('fu_companion_active_combat');
-      const activeCombat = activeCombatRaw ? JSON.parse(activeCombatRaw) : { combatants: [] };
+      const activeCombat = readJSON(STORAGE_KEYS.activeCombat, { combatants: [] });
       const combatants = activeCombat.combatants || [];
 
       const existingIdx = combatants.findIndex(c => c.sourceId === character.id);
@@ -345,7 +346,7 @@ export default function CharacterPlayHUD({
       }
 
       activeCombat.combatants = combatants;
-      localStorage.setItem('fu_companion_active_combat', JSON.stringify(activeCombat));
+      writeJSON(STORAGE_KEYS.activeCombat, activeCombat);
       showToast(`已將【${character.name}】同步至戰鬥房間！`);
     } catch (e) {
       console.error(e);

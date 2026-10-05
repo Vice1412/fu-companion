@@ -17,6 +17,8 @@ import DiceRollerModal from './features/dice-roller/DiceRollerModal';
 import ChapterDevWarningModal from './components/book/ChapterDevWarningModal';
 import RuleCodexDrawer from './features/character-sheet/components/RuleCodexDrawer';
 import { playPageFlipSound } from './utils/soundEffects';
+import { STORAGE_KEYS } from './data/keys';
+import { readJSON, writeJSON } from './data/store';
 
 const CHAPTER_METAS = {
   character: {
@@ -131,22 +133,23 @@ export default function App() {
     }, 850);
   };
 
-  // Full site backup (All localStorage keys: NPC library, character roster, active combat, fate clocks)
+  // 全站備份：涵蓋四個資料類權威鍵（NPC 檔案庫、角色名冊、進行中的戰鬥、命刻）。
+  // 不含偏好設定類的鍵（音效、配色）—— 那些不隨備份搬移。
   const handleFullBackup = () => {
     const backupData = {
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
-      npcLibrary: JSON.parse(localStorage.getItem('fu_companion_npc_library') || '[]'),
-      characterRoster: JSON.parse(localStorage.getItem('fu_companion_character_roster') || '[]'),
-      activeCombat: JSON.parse(localStorage.getItem('fu_companion_active_combat') || '{}'),
-      fateClocks: JSON.parse(localStorage.getItem('fu_companion_fate_clocks') || '[]')
+      npcLibrary: readJSON(STORAGE_KEYS.npcLibrary, []),
+      characterRoster: readJSON(STORAGE_KEYS.characterRoster, []),
+      activeCombat: readJSON(STORAGE_KEYS.activeCombat, {}),
+      fateClocks: readJSON(STORAGE_KEYS.fateClocks, [])
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fu_companion_full_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `monogatari_techou_full_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -160,10 +163,10 @@ export default function App() {
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
-        if (parsed.npcLibrary) localStorage.setItem('fu_companion_npc_library', JSON.stringify(parsed.npcLibrary));
-        if (parsed.characterRoster) localStorage.setItem('fu_companion_character_roster', JSON.stringify(parsed.characterRoster));
-        if (parsed.activeCombat) localStorage.setItem('fu_companion_active_combat', JSON.stringify(parsed.activeCombat));
-        if (parsed.fateClocks) localStorage.setItem('fu_companion_fate_clocks', JSON.stringify(parsed.fateClocks));
+        if (parsed.npcLibrary) writeJSON(STORAGE_KEYS.npcLibrary, parsed.npcLibrary);
+        if (parsed.characterRoster) writeJSON(STORAGE_KEYS.characterRoster, parsed.characterRoster);
+        if (parsed.activeCombat) writeJSON(STORAGE_KEYS.activeCombat, parsed.activeCombat);
+        if (parsed.fateClocks) writeJSON(STORAGE_KEYS.fateClocks, parsed.fateClocks);
 
         alert('完整資料備份還原成功！將為您刷新頁面以載入數據。');
         window.location.reload();

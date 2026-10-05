@@ -1,5 +1,7 @@
 import React from 'react';
 import { GiHazardSign, GiSparkles, GiBookAura } from 'react-icons/gi';
+import { STORAGE_KEYS } from '../../data/keys';
+import { removeKey, clearAll } from '../../data/store';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,7 +14,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('FU Companion Caught Error:', error, errorInfo);
+    console.error('[物語手帳] Caught Error:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -27,7 +29,7 @@ export default class ErrorBoundary extends React.Component {
     );
     if (!ok) return;
     try {
-      localStorage.removeItem('fu_companion_active_combat');
+      removeKey(STORAGE_KEYS.activeCombat);
       // Keep characters and NPCs unless user explicitly wants to purge, but fix any corrupted active view
       window.location.href = window.location.origin + window.location.pathname;
     } catch (e) {
@@ -37,9 +39,7 @@ export default class ErrorBoundary extends React.Component {
 
   handleHardReset = () => {
     if (window.confirm('確定要清除所有暫存並恢復預設狀態嗎？（建議先匯出備份）')) {
-      try {
-        localStorage.clear();
-      } catch (e) {}
+      clearAll();
       window.location.reload();
     }
   };

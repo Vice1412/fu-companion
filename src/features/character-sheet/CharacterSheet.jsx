@@ -34,21 +34,15 @@ import {
 import JRPGButton from '../../components/ui/JRPGButton';
 import JRPGBadge from '../../components/ui/JRPGBadge';
 import { withEn } from '../../utils/properNouns';
+import { STORAGE_KEYS } from '../../data/keys';
+import { readJSON, writeJSON } from '../../data/store';
 
-const STORAGE_KEY = 'fu_companion_character_roster';
+const STORAGE_KEY = STORAGE_KEYS.characterRoster;
 
 export default function CharacterSheet({ onOpenDice = null, onSubNavChange = null }) {
   const [roster, setRoster] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to load characters:', e);
-    }
-    return [];
+    const parsed = readJSON(STORAGE_KEY, []);
+    return Array.isArray(parsed) ? parsed : [];
   });
 
   const [activeCharId, setActiveCharId] = useState(null);
@@ -61,11 +55,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'name_asc' | 'level_desc' | 'level_asc'
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(roster));
-    } catch (e) {
-      console.error('Failed to save character roster:', e);
-    }
+    writeJSON(STORAGE_KEY, roster);
   }, [roster]);
 
   const showToast = (msg, type = 'info') => {
@@ -118,8 +108,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   const handleSendToCombatDirect = (char) => {
     try {
       const stats = calculateCharacterStats(char);
-      const activeCombatRaw = localStorage.getItem('fu_companion_active_combat');
-      const activeCombat = activeCombatRaw ? JSON.parse(activeCombatRaw) : { combatants: [] };
+      const activeCombat = readJSON(STORAGE_KEYS.activeCombat, { combatants: [] });
       const combatants = activeCombat.combatants || [];
 
       const curHp = char.currentHp !== null && char.currentHp !== undefined ? char.currentHp : stats.maxHp;
@@ -180,7 +169,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
       }
 
       activeCombat.combatants = combatants;
-      localStorage.setItem('fu_companion_active_combat', JSON.stringify(activeCombat));
+      writeJSON(STORAGE_KEYS.activeCombat, activeCombat);
       showToast(`已將【${char.name}】推入戰鬥房間！`);
     } catch (e) {
       console.error(e);
@@ -252,7 +241,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           if (isFultimatorCharacter(parsed)) {
             const converted = convertFultimatorToFUCompanion(parsed);
             setRoster(prev => [converted, ...prev]);
-            showToast(`成功匯入 Fultimator 角色「${converted.name}」！已無縫轉換為 FU Companion 格式。`);
+            showToast(`成功匯入 Fultimator 角色「${converted.name}」！已無縫轉換為《物語手帳》格式。`);
           } else {
             setRoster(prev => [parsed, ...prev]);
             showToast(`成功匯入「${parsed.name || '冒險者'}」！`);
@@ -479,7 +468,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                 />
                 <span
                   className="bg-white hover:bg-emerald-50 text-emerald-950 border border-emerald-200 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs cursor-pointer"
-                  title="支援匯入 FU Companion 備份或 Fultimator 導出之角色 JSON"
+                  title="支援匯入《物語手帳》備份或 Fultimator 導出之角色 JSON"
                 >
                   <Upload className="w-3.5 h-3.5 text-emerald-700" />
                   <span>匯入卡片</span>

@@ -1,5 +1,8 @@
 // Web Audio API Synthesizer for tactile book sound effects (Zero external files needed)
 
+import { STORAGE_KEYS } from '../data/keys';
+import { readRaw, writeRaw } from '../data/store';
+
 let audioCtx = null;
 let soundEnabled = true;
 
@@ -18,7 +21,7 @@ function getAudioContext() {
 }
 
 export function isSoundEnabled() {
-  const saved = localStorage.getItem('fu_companion_sound_enabled');
+  const saved = readRaw(STORAGE_KEYS.soundEnabled);
   if (saved !== null) {
     soundEnabled = saved === 'true';
   }
@@ -27,7 +30,7 @@ export function isSoundEnabled() {
 
 export function toggleSoundEnabled() {
   soundEnabled = !isSoundEnabled();
-  localStorage.setItem('fu_companion_sound_enabled', String(soundEnabled));
+  writeRaw(STORAGE_KEYS.soundEnabled, String(soundEnabled));
   return soundEnabled;
 }
 

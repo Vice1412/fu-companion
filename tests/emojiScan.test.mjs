@@ -18,6 +18,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const SRC = path.resolve(process.cwd(), 'src');
+// `shared/` 是前端與未來的 Worker 共用的原始碼，同樣受零 Emoji 鐵律約束。
+// 未納入掃描的話，寫在 shared/ 的 emoji 會完全逃過關卡。
+const SHARED = path.resolve(process.cwd(), 'shared');
 const EXTS = new Set(['.js', '.jsx', '.json', '.css']);
 
 /**
@@ -35,7 +38,7 @@ const walk = (dir, out = []) => {
   return out;
 };
 
-const files = walk(SRC);
+const files = [...walk(SRC), ...(fs.existsSync(SHARED) ? walk(SHARED) : [])];
 const hits = [];
 
 for (const file of files) {
@@ -56,7 +59,7 @@ for (const file of files) {
 }
 
 console.log(`\n=== 規則五.1：零 Emoji 掃描 ===`);
-console.log(`  掃描檔案數 = ${files.length}（src/ 內 .js/.jsx/.json/.css）`);
+console.log(`  掃描檔案數 = ${files.length}（src/ 與 shared/ 內 .js/.jsx/.json/.css）`);
 
 if (hits.length === 0) {
   console.log(`  ✅ 命中 0 行（全部通過）`);

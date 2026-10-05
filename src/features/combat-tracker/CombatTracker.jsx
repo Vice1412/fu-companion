@@ -23,34 +23,22 @@ import CharacterDrawer from './components/CharacterDrawer';
 import ClockTracker from '../../components/ui/ClockTracker';
 import { peerSync } from './utils/peerSync';
 import { migrateNpcState } from '../npc-workshop/utils/npcEngine';
+import { STORAGE_KEYS } from '../../data/keys';
+import { readJSON, writeJSON } from '../../data/store';
 
-const COMBAT_STORAGE_KEY = 'fu_companion_active_combat';
+const COMBAT_STORAGE_KEY = STORAGE_KEYS.activeCombat;
 
 export default function CombatTracker() {
   const [round, setRound] = useState(1);
   const [combatants, setCombatants] = useState(() => {
-    try {
-      const saved = localStorage.getItem(COMBAT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.combatants)) {
-          return parsed.combatants;
-        }
-      }
-    } catch (e) {}
+    const parsed = readJSON(COMBAT_STORAGE_KEY, null);
+    if (parsed && Array.isArray(parsed.combatants)) return parsed.combatants;
     return [];
   });
 
   const [sceneClocks, setSceneClocks] = useState(() => {
-    try {
-      const saved = localStorage.getItem(COMBAT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.sceneClocks)) {
-          return parsed.sceneClocks;
-        }
-      }
-    } catch (e) {}
+    const parsed = readJSON(COMBAT_STORAGE_KEY, null);
+    if (parsed && Array.isArray(parsed.sceneClocks)) return parsed.sceneClocks;
     return [
       { id: 'sc_1', title: '主要威脅 / 戰場倒數', totalSegments: 6, filledSegments: 0, theme: 'red', type: 'circle' }
     ];
@@ -67,29 +55,27 @@ export default function CombatTracker() {
   const [isHost, setIsHost] = useState(false);
   const [connectedPeersCount, setConnectedPeersCount] = useState(0);
 
-  // Load NPC library & character roster from localStorage
+  // Load NPC library & character roster
   const [npcLibrary, setNpcLibrary] = useState([]);
   const [characterRoster, setCharacterRoster] = useState([]);
 
   useEffect(() => {
-    try {
-      const savedNpcs = localStorage.getItem('fu_companion_npc_library');
-      if (savedNpcs) setNpcLibrary(JSON.parse(savedNpcs).map(migrateNpcState));
+    // NPC 檔案庫改讀權威鍵；在此之前這裡讀的是 `fu_companion_npc_library`，
+    // 而 NPC 工坊寫的是 `fabula-npc-library-v2` —— 兩者不同，所以永遠是空的。
+    const savedNpcs = readJSON(STORAGE_KEYS.npcLibrary, []);
+    setNpcLibrary(Array.isArray(savedNpcs) ? savedNpcs.map(migrateNpcState) : []);
 
-      const savedChars = localStorage.getItem('fu_companion_character_roster');
-      if (savedChars) setCharacterRoster(JSON.parse(savedChars));
-    } catch (e) {}
+    const savedChars = readJSON(STORAGE_KEYS.characterRoster, []);
+    setCharacterRoster(Array.isArray(savedChars) ? savedChars : []);
   }, [isAddModalOpen]);
 
   // Persist combat state
   useEffect(() => {
-    try {
-      localStorage.setItem(COMBAT_STORAGE_KEY, JSON.stringify({
-        round,
-        combatants,
-        sceneClocks
-      }));
-    } catch (e) {}
+    writeJSON(COMBAT_STORAGE_KEY, {
+      round,
+      combatants,
+      sceneClocks
+    });
 
     // If hosting, broadcast state to all connected players
     if (isHost && isConnected) {

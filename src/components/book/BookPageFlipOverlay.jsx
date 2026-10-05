@@ -85,7 +85,7 @@ export default function BookPageFlipOverlay({ direction, targetChapter, onAnimat
           
           <div className={`flex items-center justify-between border-b ${theme.headerBorder} pb-4`}>
             <div className="flex items-center gap-2">
-              <span className={`font-mono text-xs ${theme.tag} font-bold`}>FU COMPANION 《物語助手》</span>
+              <span className={`font-mono text-xs ${theme.tag} font-bold`}>《物語手帳》</span>
             </div>
             <span className={`font-serif text-xs ${theme.tagAccent} font-semibold`}>✦ CHAPTER OPENING ✦</span>
           </div>
@@ -100,7 +100,7 @@ export default function BookPageFlipOverlay({ direction, targetChapter, onAnimat
           </div>
 
           <div className={`border-t ${theme.headerBorder} pt-4 flex justify-between text-[11px] ${theme.tag} font-mono font-medium`}>
-            <span>《FU》一體化套件</span>
+            <span>《物語手帳》一體化套件</span>
             <span>PAGE TURNING...</span>
           </div>
         </div>
@@ -125,14 +125,14 @@ export default function BookPageFlipOverlay({ direction, targetChapter, onAnimat
             <div className="text-center my-auto">
               <img
                 src={appIcon}
-                alt="FU"
+                alt="物語手帳"
                 className="w-16 h-16 rounded-2xl border-2 border-sky-300 mx-auto mb-4 bg-sky-950 p-1.5 shadow-xl"
               />
               <h2 className="text-2xl sm:text-3xl font-serif font-black gold-text-emboss tracking-widest">
-                FU COMPANION
+                《物語手帳》
               </h2>
               <p className="text-xs text-sky-200 font-serif mt-2 tracking-widest">
-                ~ 《物語助手》冒險啟程之書 ~
+                ~ 《物語手帳》冒險啟程之書 ~
               </p>
             </div>
           </div>

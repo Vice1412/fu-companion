@@ -1,8 +1,8 @@
 /**
  * Fultimator (fultimator.com) 角色卡數據相容轉換工具
  * 提供雙向相容：
- * 1. 支援無縫匯入 Fultimator 的 JSON 導出檔，自動轉化為 FU Companion 內部標準結構
- * 2. 支援將 FU Companion 角色導出為 Fultimator 標準 JSON 格式
+ * 1. 支援無縫匯入 Fultimator 的 JSON 導出檔，自動轉化為《物語手帳》內部標準結構
+ * 2. 支援將《物語手帳》角色導出為 Fultimator 標準 JSON 格式
  */
 
 import { createNewCharacter, calculateCharacterStats } from './characterEngine.js';
@@ -79,7 +79,7 @@ export const isFultimatorCharacter = (data) => {
 };
 
 /**
- * 將 Fultimator 角色數據轉化為 FU Companion 內部規範格式
+ * 將 Fultimator 角色數據轉化為《物語手帳》內部規範格式
  */
 export const convertFultimatorToFUCompanion = (fChar) => {
   const base = createNewCharacter();
@@ -272,7 +272,7 @@ export const convertFultimatorToFUCompanion = (fChar) => {
 };
 
 /**
- * 將 FU Companion 角色導出為 Fultimator 規範之 JSON 結構
+ * 將《物語手帳》角色導出為 Fultimator 規範之 JSON 結構
  */
 export const convertFUCompanionToFultimator = (char) => {
   const engineStats = calculateCharacterStats(char);

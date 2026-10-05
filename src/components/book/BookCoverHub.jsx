@@ -101,7 +101,7 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/80 border border-sky-300 text-sky-900 font-serif tracking-wider shadow-sm backdrop-blur-sm">
             <GiSparkles className="w-4 h-4 text-sky-600" />
-            <span>FU COMPANION 《物語助手》</span>
+            <span>《物語手帳》</span>
           </span>
         </div>
 
@@ -150,7 +150,7 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
 
           {/* Vertical Embossed Spine Title */}
           <div className="[writing-mode:vertical-rl] text-sky-100 tracking-[0.35em] font-serif text-xs font-bold uppercase opacity-95 drop-shadow-[0_2px_4px_rgba(2,132,199,0.8)]">
-            FU COMPANION 《物語助手》 · 冒險典籍
+            《物語手帳》 · 冒險典籍
           </div>
 
           {/* Bottom Spine Stud */}
@@ -199,13 +199,13 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
                   Tabletop Roleplaying Companion
                 </span>
                 <h1 className="text-2xl sm:text-4xl font-serif font-black tracking-widest gold-text-emboss flex flex-wrap items-center gap-2">
-                  FU COMPANION <span className="text-xl sm:text-3xl text-sky-200 font-bold">《物語助手》</span>
+                  《物語手帳》
                 </h1>
               </div>
             </div>
 
             <p className="text-sm sm:text-base font-serif text-sky-100 tracking-wide mt-1">
-              《FU》冒險啟程之書 · 一體化跑團綜合典籍
+              《物語手帳》冒險啟程之書 · 一體化跑團綜合典籍
             </p>
           </div>
 
@@ -309,7 +309,7 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
       >
         <img src={modLogo} alt="Fabula Ultima Mod Logo" className="h-7 object-contain mx-auto opacity-75" />
         <div className="text-[11px] text-slate-600 leading-relaxed">
-          <p><span className="font-bold text-slate-800">FU Companion</span> is an independent production by <span className="font-bold text-slate-800">ScarletVice</span>.</p>
+          <p><span className="font-bold text-slate-800">《物語手帳》</span> is an independent production by <span className="font-bold text-slate-800">ScarletVice</span>.</p>
           <p>It is <span className="font-bold text-slate-800">not endorsed or sponsored in any way</span> by Need Games or Rooster Games.</p>
           <p>Published under the <a href="https://need.games/wp-content/uploads/2024/06/Fabula-Ultima-Third-Party-Tabletop-License-1.0.pdf" target="_blank" rel="noopener noreferrer" className="text-sky-800 hover:text-sky-600 underline underline-offset-2 transition-colors">Fabula Ultima Third-Party Tabletop License 1.0</a>.</p>
           <p>Fabula Ultima is &copy; Emanuele Galletto, Need Games and Rooster Games.</p>
@@ -325,7 +325,7 @@ export default function BookCoverHub({ onSelectChapter, onOpenDice, onBackup, on
           </p>
         </div>
         <div className="text-[10px] text-sky-900/60 font-serif pt-1">
-          FU Companion 《物語助手》 · 純前端零伺服器架構 · 數據即時保存於瀏覽器
+          《物語手帳》 · 純前端零伺服器架構 · 數據即時保存於瀏覽器
         </div>
       </footer>
     </div>

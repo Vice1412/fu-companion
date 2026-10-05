@@ -1530,7 +1530,7 @@ export default function CharacterEditor({
       <JRPGModal
         isOpen={isPresetsModalOpen}
         onClose={() => setIsPresetsModalOpen(false)}
-        title="《FU》官方經典職業搭配"
+        title="官方經典職業搭配"
         maxWidth="max-w-4xl"
         theme={theme}
       >

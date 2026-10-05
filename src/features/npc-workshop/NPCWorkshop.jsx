@@ -96,6 +96,8 @@ import {
 } from './data';
 import { exportNpcToCombatant, migrateSpellSentinel } from './utils/npcEngine';
 import { withEn } from '../../utils/properNouns';
+import { STORAGE_KEYS, LEGACY_KEYS } from '../../data/keys';
+import { readJSON, writeJSON, readRaw, writeRaw } from '../../data/store';
 
 // --- COMPONENTS ---
 
@@ -1669,17 +1671,13 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const sheetRef = useRef(null);
 
   const [library, setLibrary] = useState(() => {
-    const saved = localStorage.getItem('fabula-npc-library-v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed.map(migrateNpcState) : [];
-      } catch (e) { }
-    }
-    return [];
+    // 權威鍵為 `fu_companion_npc_library`。舊鍵 `fabula-npc-library-v2` 的內容
+    // 已由 store.migrateLegacyStorage() 在首次渲染前搬移（見 main.jsx）。
+    const parsed = readJSON(STORAGE_KEYS.npcLibrary, []);
+    return Array.isArray(parsed) ? parsed.map(migrateNpcState) : [];
   });
 
-  useEffect(() => { localStorage.setItem('fabula-npc-library-v2', JSON.stringify(library)); }, [library]);
+  useEffect(() => { writeJSON(STORAGE_KEYS.npcLibrary, library); }, [library]);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
@@ -1807,11 +1805,11 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const handleSendToCombat = (npc) => {
     try {
       const combatant = exportNpcToCombatant(npc);
-      const activeCombat = JSON.parse(localStorage.getItem('fu_companion_active_combat') || '{}');
+      const activeCombat = readJSON(STORAGE_KEYS.activeCombat, {});
       const combatants = activeCombat.combatants || [];
       combatants.push(combatant);
       activeCombat.combatants = combatants;
-      localStorage.setItem('fu_companion_active_combat', JSON.stringify(activeCombat));
+      writeJSON(STORAGE_KEYS.activeCombat, activeCombat);
       showToast(`已將【${npc.name || 'NPC'}】推入戰鬥房間！`, 'success');
     } catch (e) {
       console.error('Failed to send to combat:', e);
@@ -1824,7 +1822,8 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
   const [revealLevel, setRevealLevel] = useState('full'); // 'full', '7', '10', '13'
   const [roleDrafts, setRoleDrafts] = useState({});
   const [cardTheme, setCardTheme] = useState(() => {
-    const saved = localStorage.getItem('fabula-npc-card-theme') || localStorage.getItem('fabula-npc-theme');
+    // 配色存的是原始字串（如 `'amber'`）而非 JSON，故走 readRaw 而非 readJSON
+    const saved = readRaw(STORAGE_KEYS.npcCardTheme) || readRaw(LEGACY_KEYS.npcCardThemeV1);
     return saved && THEMES[saved] ? saved : 'amber';
   });
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -1881,7 +1880,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                     type="button"
                     onClick={() => {
                       setCardTheme(t);
-                      localStorage.setItem('fabula-npc-card-theme', t);
+                      writeRaw(STORAGE_KEYS.npcCardTheme, t);
                     }}
                     className={`w-5 h-5 rounded-full transition-all relative flex items-center justify-center cursor-pointer ${
                       isSelected
@@ -2023,7 +2022,6 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                   newLib.push(migrateNpcState(item));
                 }
               });
-              localStorage.setItem('fu_npc_library', JSON.stringify(newLib));
               return newLib;
             });
             showToast(`成功備份/匯入 ${parsed.length} 個 NPC 至檔案庫！`, "success");
@@ -6343,7 +6341,7 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
                                 key={t}
                                 onClick={() => {
                                   setCardTheme(t);
-                                  localStorage.setItem('fabula-npc-card-theme', t);
+                                  writeRaw(STORAGE_KEYS.npcCardTheme, t);
                                   setIsPaletteOpen(false);
                                 }}
                                 className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-all text-xs font-bold ${

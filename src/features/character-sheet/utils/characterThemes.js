@@ -180,7 +180,10 @@ export const CHARACTER_THEMES = {
   }
 };
 
-export const STORAGE_THEME_KEY = 'fu_companion_character_theme';
+import { STORAGE_KEYS } from '../../../data/keys';
+
+/** 角色卡配色的儲存鍵。數值由 `src/data/keys.js` 的註冊表提供，避免兩處定義漂移。 */
+export const STORAGE_THEME_KEY = STORAGE_KEYS.characterTheme;
 
 export const getCharacterTheme = (themeId) => {
   if (!themeId || !CHARACTER_THEMES[themeId]) {
