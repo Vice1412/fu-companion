@@ -38,6 +38,7 @@ import {
   isTwoHanded,
   isUnarmedStrike,
   isShieldItem,
+  applyEquipmentChoice,
   getEquipmentIcon
 } from '../src/features/character-sheet/utils/equipmentRules.js';
 import React from 'react';
@@ -177,6 +178,13 @@ check('所有武器的命中屬性都是合法四維',
     const { attrs } = parseAccuracy(w.attr);
     return attrs.length !== 2 || attrs.some((a) => !DICE_ATTRS.includes(a));
   }).map((w) => w.name), []);
+
+// 首版種子資料曾在法杖上多加一個原書沒有的「魔攻檢定 +1」，2026-10-05 查出無出處後移除
+check('法杖的欄位與原書一致，不得再長出額外欄位',
+  Object.keys(weaponsByName.get('法杖')).sort(),
+  ['attr', 'category', 'cost', 'damage', 'hands', 'name', 'range']);
+check('全表沒有任何武器帶「魔攻加值」這類未經原書核實的欄位',
+  rulesData.equipment.weapons.filter((w) => 'magicBonus' in w).map((w) => w.name), []);
 
 // ─────────────────────────────────────────────────────────── E
 section('E. 裝備圖示對照表（來源：使用者的裝備設計器，逐項 IoU 比對）');
@@ -563,6 +571,53 @@ const slotHtml = renderToStaticMarkup(React.createElement(EquipmentSlotCard, {
 }));
 check('槽位卡顯示槽位標籤與裝備名', slotHtml.includes('主手武器') && slotHtml.includes('刺劍'), true);
 check('槽位卡顯示傷害式', slotHtml.includes('HR + 6'), true);
+
+const mergedHtml = renderToStaticMarkup(React.createElement(EquipmentSlotCard, {
+  theme: smokeTheme,
+  slotDef: EQUIPMENT_SLOTS.mainHand,
+  itemName: '戰斧',
+  itemIcon: getEquipmentIcon('戰斧'),
+  badges: [{ label: '雙手', variant: 'zinc' }],
+  metrics: [{ label: '傷害', value: 'HR + 14' }],
+  note: '重型 · 雙手近戰',
+  warning: null,
+  mergedNote: '被主手佔用（雙手武器）',
+  onOpen: () => {}
+}));
+check('雙手武器時槽位卡長出副手佔用區塊',
+  mergedHtml.includes('副手武裝') && mergedHtml.includes('被主手佔用'), true);
+check('雙手武器時標示「雙手」徽章', mergedHtml.includes('雙手'), true);
+
+// ─────────────────────────────────────────────────────────── Q
+section('Q. 雙手武器佔用副手：切換主手時自動卸下副手（Core p.131）');
+
+const pickMain = (equipment, name) => applyEquipmentChoice(equipment, 'mainHand', name, weaponsByName);
+
+check('換上雙手武器（戰斧）→ 副手自動清空',
+  pickMain({ mainHand: '青銅劍', offHand: '青銅圓盾' }, '戰斧').equipment.offHand, '無盾牌');
+check('被卸下的副手會被回報（供 UI 提示）',
+  pickMain({ mainHand: '青銅劍', offHand: '符文圓盾' }, '戰斧').clearedOffHand, '符文圓盾');
+check('副手本來就是空的 → 不提示',
+  pickMain({ mainHand: '青銅劍', offHand: '無盾牌' }, '戰斧').clearedOffHand, null);
+check('副手只是徒手打擊 → 靜默改為無盾牌（不算被卸下的裝備）',
+  pickMain({ mainHand: '青銅劍', offHand: '徒手打擊' }, '戰斧'),
+  { equipment: { mainHand: '戰斧', offHand: '無盾牌' }, clearedOffHand: null });
+check('換上單手武器不動副手',
+  pickMain({ mainHand: '戰斧', offHand: '無盾牌' }, '青銅劍').equipment.offHand, '無盾牌');
+check('換成徒手打擊也不動副手（單手武器）',
+  pickMain({ mainHand: '戰斧', offHand: '無盾牌' }, '徒手打擊').equipment.offHand, '無盾牌');
+check('只換防具時完全不碰主副手',
+  applyEquipmentChoice({ mainHand: '青銅劍', offHand: '青銅圓盾' }, 'armor', '賢者長袍', weaponsByName).equipment,
+  { mainHand: '青銅劍', offHand: '青銅圓盾', armor: '賢者長袍' });
+check('原物件不會被就地修改',
+  (() => {
+    const original = { mainHand: '青銅劍', offHand: '青銅圓盾' };
+    pickMain(original, '戰斧');
+    return original.offHand;
+  })(), '青銅圓盾');
+check('雙手武器清單：戰斧／巨劍／法杖為雙手，青銅劍／徒手打擊為單手',
+  ['戰斧', '巨劍', '法杖', '青銅劍', '徒手打擊'].map((n) => isTwoHanded(weaponsByName.get(n))),
+  [true, true, true, false, false]);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

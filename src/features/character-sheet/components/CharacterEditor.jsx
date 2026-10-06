@@ -71,6 +71,7 @@ import {
   buildLoadoutIssues,
   getEquipmentIcon,
   getDualShieldState,
+  applyEquipmentChoice,
   isTwoHanded
 } from '../utils/equipmentRules';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
@@ -379,7 +380,9 @@ export default function CharacterEditor({
   const armorProficiency = checkEquippable(armor, 'armor', stats.profs);
 
   const offHandOccupied = Boolean(offHandName) && offHandName !== '無盾牌';
-  const twoHandedConflict = isTwoHanded(mainWeapon) && offHandOccupied;
+  // 雙手武器佔滿兩個手部欄位（Core p.131）：副手格會被主手吃掉
+  const mainTakesBothHands = isTwoHanded(mainWeapon);
+  const twoHandedConflict = mainTakesBothHands && offHandOccupied;
 
   const loadoutIssues = buildLoadoutIssues({
     character,
@@ -417,6 +420,7 @@ export default function CharacterEditor({
   } else if (mainWeapon?.category) {
     mainHandBadges.push({ label: mainWeapon.category, variant: theme.badgeVariant });
   }
+  if (mainTakesBothHands) mainHandBadges.push({ label: '雙手', variant: 'zinc' });
   if (mainWeapon?.martial || mainShield?.martial) mainHandBadges.push({ label: '職業', variant: 'rose' });
 
   const offHandMetrics = offShield
@@ -1274,58 +1278,104 @@ export default function CharacterEditor({
                 </div>
               )}
 
-              {/* 四個槽位：每格直接顯示「這一格換算成什麼」，要比較時才開選擇彈窗 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <EquipmentSlotCard
-                  theme={theme}
-                  slotDef={EQUIPMENT_SLOTS.mainHand}
-                  itemName={mainHandLabel}
-                  itemIcon={mainHandIcon}
-                  itemMissing={mainHandMissing}
-                  badges={mainHandBadges}
-                  metrics={mainHandMetrics}
-                  note={mainHandNote}
-                  warning={mainHandWarning}
-                  onOpen={() => setPickerSlot('mainHand')}
-                />
+              {/* 四個槽位：每格直接顯示「這一格換算成什麼」，要比較時才開選擇彈窗。
+                  主手換成雙手武器時，這張卡會平滑長成滿版、並把副手格吃進來（虛線佔位），
+                  讓「這件武器佔了兩隻手」是看得見的事實，而不是一行要自己讀的警告。 */}
+              <div className="flex flex-wrap gap-3 items-stretch">
+                <div
+                  className="min-w-0"
+                  style={{
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: mainTakesBothHands ? '100%' : 'calc(50% - 0.375rem)',
+                    minWidth: 'min(100%, 250px)',
+                    transition: 'flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  <EquipmentSlotCard
+                    theme={theme}
+                    slotDef={EQUIPMENT_SLOTS.mainHand}
+                    itemName={mainHandLabel}
+                    itemIcon={mainHandIcon}
+                    itemMissing={mainHandMissing}
+                    badges={mainHandBadges}
+                    metrics={mainHandMetrics}
+                    note={mainHandNote}
+                    warning={mainHandWarning}
+                    mergedNote={mainTakesBothHands ? '被主手佔用（雙手武器）' : null}
+                    onOpen={() => setPickerSlot('mainHand')}
+                  />
+                </div>
 
-                <EquipmentSlotCard
-                  theme={theme}
-                  slotDef={EQUIPMENT_SLOTS.offHand}
-                  itemName={offHandLabel}
-                  itemIcon={offHandIcon}
-                  itemMissing={offHandMissing}
-                  badges={offShield?.martial ? [{ label: '職業', variant: 'rose' }] : []}
-                  metrics={offHandMetrics}
-                  note={offShield?.desc || null}
-                  warning={offHandWarning}
-                  onOpen={() => setPickerSlot('offHand')}
-                />
+                {!mainTakesBothHands && (
+                  <div
+                    className="min-w-0"
+                    style={{
+                      flexGrow: 1,
+                      flexShrink: 1,
+                      flexBasis: 'calc(50% - 0.375rem)',
+                      minWidth: 'min(100%, 250px)'
+                    }}
+                  >
+                    <EquipmentSlotCard
+                      theme={theme}
+                      slotDef={EQUIPMENT_SLOTS.offHand}
+                      itemName={offHandLabel}
+                      itemIcon={offHandIcon}
+                      itemMissing={offHandMissing}
+                      badges={offShield?.martial ? [{ label: '職業', variant: 'rose' }] : []}
+                      metrics={offHandMetrics}
+                      note={offShield?.desc || null}
+                      warning={offHandWarning}
+                      onOpen={() => setPickerSlot('offHand')}
+                    />
+                  </div>
+                )}
 
-                <EquipmentSlotCard
-                  theme={theme}
-                  slotDef={EQUIPMENT_SLOTS.armor}
-                  itemName={armorLabel}
-                  itemIcon={armorIcon}
-                  itemMissing={armorMissing}
-                  badges={armor?.martial ? [{ label: '職業', variant: 'rose' }] : []}
-                  metrics={armorMetrics}
-                  note={armor?.desc || null}
-                  warning={armorWarningText}
-                  onOpen={() => setPickerSlot('armor')}
-                />
+                <div
+                  className="min-w-0"
+                  style={{
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: 'calc(50% - 0.375rem)',
+                    minWidth: 'min(100%, 250px)'
+                  }}
+                >
+                  <EquipmentSlotCard
+                    theme={theme}
+                    slotDef={EQUIPMENT_SLOTS.armor}
+                    itemName={armorLabel}
+                    itemIcon={armorIcon}
+                    itemMissing={armorMissing}
+                    badges={armor?.martial ? [{ label: '職業', variant: 'rose' }] : []}
+                    metrics={armorMetrics}
+                    note={armor?.desc || null}
+                    warning={armorWarningText}
+                    onOpen={() => setPickerSlot('armor')}
+                  />
+                </div>
 
-                <EquipmentSlotCard
-                  theme={theme}
-                  slotDef={EQUIPMENT_SLOTS.accessory}
-                  itemName={accessoryLabel}
-                  itemIcon="slot_accessory"
-                  itemMissing={accessoryMissing}
-                  badges={accessory ? [{ label: '稀有物品', variant: 'zinc' }] : []}
-                  metrics={[]}
-                  note={accessory?.desc || '飾品在原書中一律屬稀有物品，需與團員討論後取得。'}
-                  onOpen={() => setPickerSlot('accessory')}
-                />
+                <div
+                  className="min-w-0"
+                  style={{
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: 'calc(50% - 0.375rem)',
+                    minWidth: 'min(100%, 250px)'
+                  }}
+                >
+                  <EquipmentSlotCard
+                    theme={theme}
+                    slotDef={EQUIPMENT_SLOTS.accessory}
+                    itemName={accessoryLabel}
+                    itemIcon="slot_accessory"
+                    itemMissing={accessoryMissing}
+                    badges={accessory ? [{ label: '稀有物品', variant: 'zinc' }] : []}
+                    metrics={[]}
+                    note={accessory?.desc || '飾品在原書中一律屬稀有物品，需與團員討論後取得。'}
+                    onOpen={() => setPickerSlot('accessory')}
+                  />
+                </div>
               </div>
 
               {/* 裝備選擇彈窗 */}
@@ -1339,7 +1389,17 @@ export default function CharacterEditor({
                 remainingBudget={pickerBudget}
                 onSelect={(name) => {
                   if (!pickerSlot) return;
-                  updateField('equipment', { ...character.equipment, [pickerSlot]: name });
+                  // 換上雙手武器時副手必須空出——由規則層判定，這裡只負責提示
+                  const { equipment: nextEquipment, clearedOffHand } = applyEquipmentChoice(
+                    character.equipment,
+                    pickerSlot,
+                    name,
+                    weaponByName
+                  );
+                  updateField('equipment', nextEquipment);
+                  if (clearedOffHand && showToast) {
+                    showToast(`已卸下副手「${clearedOffHand}」——雙手武器佔滿兩個手部欄位`);
+                  }
                 }}
               />
             </div>

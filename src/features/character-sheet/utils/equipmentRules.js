@@ -220,6 +220,30 @@ export const isUnarmedStrike = (weapon) => weapon?.name === '徒手打擊';
 /** 是否為盾牌條目（盾牌有 defBonus 欄位；武器沒有） */
 export const isShieldItem = (item) => Boolean(item) && item.defBonus !== undefined;
 
+/**
+ * 套用一次裝備變更，並回傳需要連帶處理的結果。
+ *
+ * 目前唯一的連帶規則是：**主手換成雙手武器時，副手必須空出**（Core p.131——
+ * 雙手武器佔滿兩個手部欄位）。純函式，讓 UI 與測試共用同一份判定。
+ *
+ * `clearedOffHand` 只在「真的有東西被卸下」時才有值——
+ * 副手本來就是空的、或只是徒手打擊時不提示（那是「空手」的另一種寫法，不是被換掉的裝備）。
+ */
+export const applyEquipmentChoice = (equipment, slot, name, weaponMap) => {
+  const next = { ...(equipment || {}), [slot]: name };
+  let clearedOffHand = null;
+
+  if (slot === 'mainHand' && isTwoHanded(weaponMap?.get?.(name))) {
+    const previous = next.offHand;
+    if (previous && previous !== '無盾牌') {
+      if (previous !== '徒手打擊') clearedOffHand = previous;
+      next.offHand = '無盾牌';
+    }
+  }
+
+  return { equipment: next, clearedOffHand };
+};
+
 // ─────────────────────────────────────────────────────────── 熟練度
 
 /**

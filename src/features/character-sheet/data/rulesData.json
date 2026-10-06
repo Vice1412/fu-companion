@@ -2419,8 +2419,7 @@
         "hands": 2,
         "attr": "WLP + WLP",
         "damage": "【HR + 6】物理",
-        "range": "近戰",
-        "magicBonus": "魔攻檢定 +1"
+        "range": "近戰"
       },
       {
         "name": "魔導書",

@@ -260,6 +260,21 @@ check('完全沒有裝備欄位 -> 物防 = 當前 DEX = 8', noEquip.def, 8);
 check('完全沒有裝備欄位 -> 魔防 = 當前 INS = 8', noEquip.mdef, 8);
 check('完全沒有裝備欄位 -> 先攻 = 0', noEquip.init, 0);
 
+// 雙手武器佔滿兩個手部欄位（Core p.131）→ 副手裝備不生效。
+// UI 在切換主手時就會自動卸下副手（見 test:equipment §Q），這裡處理的是既有存檔的殘留組合。
+const twoHandedWithShield = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  equipment: { mainHand: '戰斧', offHand: '符文圓盾', armor: '旅行皮甲', accessory: '' }
+}));
+check('雙手武器 + 副手盾牌：盾牌加值不生效（物防 = 8 + 1，無 +2）', twoHandedWithShield.def, 9);
+check('雙手武器 + 副手盾牌：魔防也不吃盾牌（= 8 + 1，無 +2）', twoHandedWithShield.mdef, 9);
+check('雙手武器 + 副手盾牌：先攻不計盾牌（旅行皮甲 -1、符文圓盾 0）', twoHandedWithShield.init, -1);
+const oneHandedWithShield = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  equipment: { mainHand: '青銅劍', offHand: '符文圓盾', armor: '旅行皮甲', accessory: '' }
+}));
+check('對照：單手武器 + 同一個盾牌時加值照算（8 + 1 + 2 = 11）', oneHandedWithShield.def, 11);
+
 // ─────────────────────────────────────────────────────────── D
 section('D. 六大異常狀態映射（眩暈／憤怒／中毒／動搖／緩慢／虛弱）');
 

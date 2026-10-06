@@ -320,9 +320,6 @@ export function EquipmentPickerBody({
                   {w.note ? (
                     <div className="text-[10px] text-[#8c7b6c] mt-0.5">{w.note}</div>
                   ) : null}
-                  {w.magicBonus ? (
-                    <div className="text-[10px] text-[#7b4720] mt-0.5">{w.magicBonus}</div>
-                  ) : null}
                 </td>
                 <td className={cellText}>
                   <span className="text-[11px] text-[#5b4a3a]">{w.category}</span>

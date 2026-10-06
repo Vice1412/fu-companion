@@ -256,7 +256,12 @@ export const calculateCharacterStats = (char) => {
   // 3. 裝備防禦與先攻計算
   const normName = (n) => (n || '').replace(/\s*\([^)]*\)/g, '').trim();
   const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor || a.name === normName(char.equipment?.armor)) || rulesData.equipment.armors[0];
-  const shieldDef = rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand || s.name === normName(char.equipment?.offHand)) || rulesData.equipment.shields[0];
+  // 雙手武器佔滿兩個手部欄位（Core p.131）→ 副手裝備不生效，回退到中性條目（無盾牌）
+  const mainHandDef = rulesData.equipment.weapons.find(w => w.name === char.equipment?.mainHand || w.name === normName(char.equipment?.mainHand));
+  const offHandSuppressed = Number(mainHandDef?.hands) === 2;
+  const shieldDef = offHandSuppressed
+    ? rulesData.equipment.shields[0]
+    : (rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand || s.name === normName(char.equipment?.offHand)) || rulesData.equipment.shields[0]);
 
   let def = currentDex;
   let mdef = currentIns;
