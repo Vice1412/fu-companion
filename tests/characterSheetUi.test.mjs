@@ -150,6 +150,16 @@ check('麵包屑不再用「構建／實戰」',
 check('全站使用者可見文案不再出現「跑團卡」',
   [editorCode, hudCode, sheetCode].filter((src) => src.includes('跑團卡')).length, 0);
 
+// 同一個動作（開卡片預覽彈窗）在畫面上有三個入口（側邊欄／手機列／底部動作列），
+// 它們**必須同名**——上一輪就是漏了底部那顆，三個入口兩個名字。
+// 護欄用「開窗次數 ≤ 標籤出現次數」把這件事綁住：新增入口卻忘了用同一個標籤就會斷。
+const previewOpeners = (editorCode.match(/setIsCardPreviewModalOpen\(true\)/g) || []).length;
+const previewLabelCount = (editorCode.match(/卡片預覽/g) || []).length;
+check('開卡片預覽的入口不只一個（三處）', previewOpeners >= 3, true);
+check('每個入口都用同一個標籤「卡片預覽」', previewLabelCount >= previewOpeners, true);
+check('沒有殘留的舊標籤（查看當前角色卡／查看角色卡／進入跑團卡）',
+  ['查看當前角色卡', '查看角色卡', '進入跑團卡'].filter((t) => editorCode.includes(t)), []);
+
 // ─────────────────────────────────────────────────────────── E
 section('E. 官方三頁匯出：欄位對應');
 

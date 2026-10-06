@@ -1880,10 +1880,10 @@ export default function CharacterEditor({
                 onClick={() => setIsCardPreviewModalOpen(true)}
                 className="px-4 py-2 rounded-lg border bg-white hover:bg-slate-50 text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                 style={{ borderColor: theme.border, color: theme.textDark }}
-                title="隨時預覽目前填寫之角色卡狀態"
+                title="唯讀：看這張卡目前長什麼樣，也可以列印、截圖或匯出成 PNG／PDF"
               >
                 <GiScrollUnfurled className="w-4 h-4" style={{ color: theme.accent }} />
-                <span>查看當前角色卡</span>
+                <span>卡片預覽</span>
               </button>
 
               {activeTab < TABS.length ? (
