@@ -2296,13 +2296,14 @@
   "equipment": {
     "weapons": [
       {
-        "name": "無手空拳",
+        "name": "徒手打擊",
         "category": "鬥毆",
         "cost": 0,
         "hands": 1,
         "attr": "DEX + MIG",
         "damage": "【HR + 0】物理",
-        "range": "近戰"
+        "range": "近戰",
+        "note": "空格的手部欄位自動視為徒手打擊"
       },
       {
         "name": "鐵指虎",
@@ -2331,15 +2332,6 @@
         "damage": "【HR + 6】物理",
         "range": "近戰",
         "martial": true
-      },
-      {
-        "name": "闊劍",
-        "category": "劍",
-        "cost": 200,
-        "hands": 1,
-        "attr": "DEX + MIG + 1",
-        "damage": "【HR + 8】物理",
-        "range": "近戰"
       },
       {
         "name": "巨劍",
@@ -2373,7 +2365,7 @@
       },
       {
         "name": "闊斧",
-        "category": "斧",
+        "category": "重型",
         "cost": 250,
         "hands": 1,
         "attr": "MIG + MIG",
@@ -2383,7 +2375,7 @@
       },
       {
         "name": "戰斧",
-        "category": "斧",
+        "category": "重型",
         "cost": 250,
         "hands": 2,
         "attr": "MIG + MIG",
@@ -2411,15 +2403,6 @@
         "martial": true
       },
       {
-        "name": "長槍",
-        "category": "矛",
-        "cost": 200,
-        "hands": 2,
-        "attr": "DEX + MIG",
-        "damage": "【HR + 10】物理",
-        "range": "近戰"
-      },
-      {
         "name": "重長矛",
         "category": "矛",
         "cost": 200,
@@ -2431,7 +2414,7 @@
       },
       {
         "name": "法杖",
-        "category": "法杖",
+        "category": "奧術",
         "cost": 100,
         "hands": 2,
         "attr": "WLP + WLP",
@@ -2477,16 +2460,6 @@
         "martial": true
       },
       {
-        "name": "重型火槍",
-        "category": "火器",
-        "cost": 400,
-        "hands": 2,
-        "attr": "DEX + INS",
-        "damage": "【HR + 12】物理",
-        "range": "遠程",
-        "martial": true
-      },
-      {
         "name": "手裡劍",
         "category": "投擲",
         "cost": 150,
@@ -2503,6 +2476,26 @@
         "attr": "DEX + DEX",
         "damage": "【HR + 8】物理",
         "range": "近戰"
+      },
+      {
+        "name": "臨時武器（近戰）",
+        "category": "鬥毆",
+        "cost": 0,
+        "hands": 1,
+        "attr": "DEX + MIG",
+        "damage": "【HR + 2】物理",
+        "range": "近戰",
+        "note": "攻擊後損毀"
+      },
+      {
+        "name": "臨時武器（遠程）",
+        "category": "投擲",
+        "cost": 0,
+        "hands": 1,
+        "attr": "DEX + MIG",
+        "damage": "【HR + 2】物理",
+        "range": "遠程",
+        "note": "攻擊後損毀"
       }
     ],
     "armors": [
@@ -2607,15 +2600,6 @@
         "mdefBonus": 2,
         "initMod": 0,
         "desc": "物防 +2，魔防 +2"
-      },
-      {
-        "name": "重型塔盾",
-        "cost": 200,
-        "martial": true,
-        "defBonus": 3,
-        "mdefBonus": 0,
-        "initMod": -2,
-        "desc": "物防 +3，先攻 -2"
       }
     ],
     "accessories": [

@@ -70,7 +70,44 @@ import {
   GiTrashCan,
   GiQuillInk,
   GiLaurelCrown,
-  GiScrollUnfurled
+  GiScrollUnfurled,
+
+  // Equipment Categories & Slots (武器十大類別與四個裝備欄位)
+  GiPocketBow,
+  GiPlainDagger,
+  GiMusket,
+  GiFlail,
+  GiWarhammer,
+  GiSpears,
+  GiShuriken,
+  GiRoundShield,
+  GiBreastplate,
+  GiRing,
+
+  // Equipment Item Icons (裝備設計器逐項對照；見 equipmentRules.js 的 EQUIPMENT_ICONS)
+  GiBrassKnuckles,
+  GiSacrificialDagger,
+  GiRevolver,
+  GiFlatHammer,
+  GiBatteredAxe,
+  GiBattleAxe,
+  GiGlaive,
+  GiBarbedSpear,
+  GiGladius,
+  GiSwitchblade,
+  GiPunch,
+  GiWoodClub,
+  GiSling,
+  GiDragonShield,
+  GiClothes,
+  GiShirt,
+  GiPirateCoat,
+  GiNinjaArmor,
+  GiRobe,
+  GiChainMail,
+  GiLeatherArmor,
+  GiHeartArmor,
+  GiLamellar
 } from 'react-icons/gi';
 
 export const GAME_ICONS_MAP = {
@@ -275,7 +312,57 @@ export const GAME_ICONS_MAP = {
   edit: GiQuillInk,
   save: GiSaveArrow,
   crown: GiLaurelCrown,
-  scroll: GiScrollUnfurled
+  scroll: GiScrollUnfurled,
+
+  // Equipment Categories (武器十大類別，Core p.129)
+  cat_arcane: GiWizardStaff,
+  cat_bow: GiPocketBow,
+  cat_brawling: GiPunchBlast,
+  cat_dagger: GiPlainDagger,
+  cat_firearm: GiMusket,
+  cat_flail: GiFlail,
+  cat_heavy: GiWarhammer,
+  cat_spear: GiSpears,
+  cat_sword: GiBroadsword,
+  cat_thrown: GiShuriken,
+
+  // Equipment Slots (四個裝備欄位)
+  slot_mainhand: GiBroadsword,
+  slot_offhand: GiRoundShield,
+  slot_armor: GiBreastplate,
+  slot_accessory: GiRing,
+
+  // Equipment Items (裝備設計器逐項對照；由 equipmentRules.js 的 EQUIPMENT_ICONS 指定元件名)
+  GiSpellBook,
+  GiPocketBow,
+  GiFlail,
+  GiBroadsword,
+  GiShuriken,
+  GiSpears,
+  GiMusket,
+  GiBrassKnuckles,
+  GiSacrificialDagger,
+  GiRevolver,
+  GiFlatHammer,
+  GiBatteredAxe,
+  GiBattleAxe,
+  GiGlaive,
+  GiBarbedSpear,
+  GiGladius,
+  GiSwitchblade,
+  GiPunch,
+  GiWoodClub,
+  GiSling,
+  GiDragonShield,
+  GiClothes,
+  GiShirt,
+  GiPirateCoat,
+  GiNinjaArmor,
+  GiRobe,
+  GiChainMail,
+  GiLeatherArmor,
+  GiHeartArmor,
+  GiLamellar
 };
 
 /**

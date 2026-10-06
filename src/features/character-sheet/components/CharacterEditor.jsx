@@ -26,12 +26,14 @@ import {
   GiRollingDices,
   GiLaurelCrown,
   GiScrollUnfurled,
-  GiPalette
+  GiPalette,
+  GiRoundShield,
+  GiCrystalBall
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
-import { JRPGInput, JRPGSelect } from '../../../components/ui/JRPGInput';
+import { JRPGInput } from '../../../components/ui/JRPGInput';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGModal from '../../../components/ui/JRPGModal';
 import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
@@ -40,6 +42,8 @@ import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
 import ClassPickerModal from './ClassPickerModal';
+import EquipmentPickerModal from './EquipmentPickerModal';
+import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
@@ -57,6 +61,18 @@ import {
   calculateCharacterStats,
   validateCharacter
 } from '../utils/characterEngine';
+import {
+  EQUIPMENT_SLOTS,
+  diceFromStats,
+  evaluateWeapon,
+  computeArmorOutcome,
+  computeShieldOutcome,
+  checkEquippable,
+  buildLoadoutIssues,
+  getEquipmentIcon,
+  getDualShieldState,
+  isTwoHanded
+} from '../utils/equipmentRules';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
 import { withEn } from '../../../utils/properNouns';
 
@@ -78,6 +94,8 @@ export default function CharacterEditor({
   const [isClassPickerOpen, setIsClassPickerOpen] = useState(false);
   const [newlyAddedClassName, setNewlyAddedClassName] = useState(null);
   const [selectedHeroicToAdd, setSelectedHeroicToAdd] = useState('');
+  // 目前開啟中的裝備選擇欄位（null = 未開啟）
+  const [pickerSlot, setPickerSlot] = useState(null);
 
   if (!character) return null;
 
@@ -313,6 +331,141 @@ export default function CharacterEditor({
     updateField('zenit', finalZenit);
     alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
   };
+
+  // ── 裝備配置：所有顯示數字都以「目前這張卡的四維骰」即時換算。
+  // 換算規則集中在 utils/equipmentRules.js，選裝彈窗與這裡共用同一份實作，
+  // 避免「選單上算一套、角色卡上算另一套」。
+  const equipDice = diceFromStats(stats);
+  const weaponByName = new Map(rulesData.equipment.weapons.map(w => [w.name, w]));
+  const armorByName = new Map(rulesData.equipment.armors.map(a => [a.name, a]));
+  const shieldByName = new Map(rulesData.equipment.shields.map(s => [s.name, s]));
+  const accessoryByName = new Map(rulesData.equipment.accessories.map(a => [a.name, a]));
+
+  const mainHandName = character.equipment?.mainHand || '';
+  const mainShield = shieldByName.get(mainHandName) || null;
+  // 空手＝原書 p.130 的徒手打擊：空格的手部欄位自動視為裝備它
+  const mainWeapon = mainShield
+    ? null
+    : (weaponByName.get(mainHandName) || (mainHandName ? null : weaponByName.get('徒手打擊')));
+
+  const offHandName = character.equipment?.offHand || '';
+  const offShield = shieldByName.get(offHandName) || null;
+  const offWeapon = offShield ? null : (weaponByName.get(offHandName) || null);
+  const offWeaponEval = offWeapon ? evaluateWeapon(offWeapon, equipDice) : null;
+  const offShieldOutcome = computeShieldOutcome(offShield);
+
+  // 守護者【雙重盾牌】：兩手皆盾時合併視為格鬥類別雙手近戰武器「雙盾」，
+  // 攻擊改用該技能的命中與傷害公式——盾牌本身沒有攻擊資料。
+  const dualShield = getDualShieldState(character, {
+    mainIsShield: Boolean(mainShield),
+    offIsShield: Boolean(offShield)
+  });
+  const mainAttack = dualShield.active ? dualShield.weapon : mainWeapon;
+  const mainWeaponEval = mainAttack ? evaluateWeapon(mainAttack, equipDice) : null;
+
+  const armorName = character.equipment?.armor || '無裝甲 / 冒險服';
+  const armor = armorByName.get(armorName) || null;
+  const armorOutcome = computeArmorOutcome(armor, equipDice);
+
+  const accessoryName = character.equipment?.accessory || '';
+  const accessory = accessoryByName.get(accessoryName) || null;
+
+  const mainProficiency = mainShield
+    ? checkEquippable(mainShield, 'mainHand', stats.profs, { isShield: true })
+    : checkEquippable(mainWeapon, 'mainHand', stats.profs);
+  const offProficiency = offShield
+    ? checkEquippable(offShield, 'offHand', stats.profs, { isShield: true })
+    : checkEquippable(offWeapon, 'offHand', stats.profs);
+  const armorProficiency = checkEquippable(armor, 'armor', stats.profs);
+
+  const offHandOccupied = Boolean(offHandName) && offHandName !== '無盾牌';
+  const twoHandedConflict = isTwoHanded(mainWeapon) && offHandOccupied;
+
+  const loadoutIssues = buildLoadoutIssues({
+    character,
+    stats,
+    weaponMap: weaponByName,
+    armorMap: armorByName,
+    shieldMap: shieldByName,
+    accessoryMap: accessoryByName
+  });
+
+  // 更換某個欄位時，該欄位原本的花費會被釋出，所以可動用預算要把它的成本加回去
+  const slotCost = {
+    mainHand: (mainWeapon || mainShield)?.cost || 0,
+    offHand: (offShield || offWeapon)?.cost || 0,
+    armor: armor?.cost || 0,
+    accessory: 0
+  };
+  const pickerBudget = Math.max(0, 500 - (totalEquipCost - (slotCost[pickerSlot] || 0)));
+
+  const mainHandMetrics = mainWeaponEval
+    ? [
+        { label: '命中檢定', value: mainWeaponEval.accuracyLabel },
+        { label: '傷害', value: mainWeaponEval.damageFormula },
+        { label: '價格', value: `${mainAttack.cost}z` }
+      ]
+    : [];
+  const mainHandNote = dualShield.active
+    ? `兩手皆盾，合併視為格鬥類別雙手近戰武器；傷害 ${dualShield.weapon.damage}${dualShield.defenseMasterySL > 0 ? `，額外 +${dualShield.defenseMasterySL}（防守掌握 SL）` : ''}`
+    : (mainWeaponEval
+        ? `${mainAttack.category} · ${mainAttack.hands === 2 ? '雙手' : '單手'}${mainAttack.range}${mainAttack.note ? ` · ${mainAttack.note}` : ''}`
+        : (mainShield ? '單獨一面盾牌不能攻擊；需與副手盾牌合併為「雙盾」' : null));
+  const mainHandBadges = [];
+  if (dualShield.active) {
+    mainHandBadges.push({ label: '雙盾', variant: theme.badgeVariant });
+  } else if (mainWeapon?.category) {
+    mainHandBadges.push({ label: mainWeapon.category, variant: theme.badgeVariant });
+  }
+  if (mainWeapon?.martial || mainShield?.martial) mainHandBadges.push({ label: '職業', variant: 'rose' });
+
+  const offHandMetrics = offShield
+    ? [
+        { label: '物防', value: `+${offShieldOutcome.defBonus}` },
+        { label: '魔防', value: `+${offShieldOutcome.mdefBonus}` },
+        { label: '先攻', value: offShieldOutcome.initMod === 0 ? '±0' : String(offShieldOutcome.initMod) }
+      ]
+    : (offWeaponEval
+        ? [
+            { label: '命中檢定', value: offWeaponEval.accuracyLabel },
+            { label: '傷害', value: offWeaponEval.damageFormula },
+            { label: '價格', value: `${offWeapon.cost}z` }
+          ]
+        : []);
+
+  const armorMetrics = [
+    { label: '物防', value: String(armorOutcome.def) },
+    { label: '魔防', value: String(armorOutcome.mdef) },
+    { label: '先攻', value: armorOutcome.initMod === 0 ? '±0' : String(armorOutcome.initMod) }
+  ];
+
+  const mainHandWarning = twoHandedConflict
+    ? '雙手武器佔滿兩個手部欄位，副手必須空出'
+    : (mainShield && !dualShield.learned
+        ? '盾牌裝備於主手需要守護者【雙重盾牌】'
+        : (mainProficiency.ok ? null : mainProficiency.reason));
+  const offHandWarning = offHandOccupied && !offProficiency.ok ? offProficiency.reason : null;
+  const armorWarningText = armorProficiency.ok ? null : armorProficiency.reason;
+
+  const mainHandLabel = mainShield?.name || mainWeapon?.name || (mainHandName || '未設定');
+  const offHandLabel = offShield?.name || offWeapon?.name || (offHandName || '無盾牌');
+  const armorLabel = armor?.name || armorName;
+  const accessoryLabel = accessory?.name || (accessoryName || '不佩戴飾品');
+
+  // 裝備圖示一律取自使用者的裝備設計器對照表（見 equipmentRules.js 的 EQUIPMENT_ICONS）
+  const mainHandIcon = getEquipmentIcon(
+    dualShield.active ? '雙盾' : (mainShield?.name || mainWeapon?.name || ''),
+    'slot_mainhand'
+  );
+  const offHandIcon = offShield
+    ? getEquipmentIcon(offShield.name, 'slot_offhand')
+    : (offWeapon ? getEquipmentIcon(offWeapon.name, 'slot_offhand') : 'slot_offhand');
+  const armorIcon = getEquipmentIcon(armor?.name || '', 'slot_armor');
+
+  const mainHandMissing = Boolean(mainHandName) && !mainWeapon && !mainShield;
+  const offHandMissing = Boolean(offHandName) && !offShield && !offWeapon;
+  const armorMissing = Boolean(character.equipment?.armor) && !armor;
+  const accessoryMissing = Boolean(accessoryName) && !accessory;
 
   return (
     <div className="space-y-4">
@@ -1001,11 +1154,44 @@ export default function CharacterEditor({
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>4.</span> 裝備庫與熟練度檢核
+                  <span style={{ color: theme.accent }}>4.</span> 裝備配置
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  即時計算物理防禦、魔法防禦與先攻修正。
+                  以目前的四維骰即時換算期望命中、期望傷害與防禦結果；不能裝備的原因直接標在選項上。
                 </p>
+              </div>
+
+              {/* 即時結算：裝備一改，這三個數字就是玩家最在意的結果 */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'def', label: '物理防禦', value: stats.def, icon: GiRoundShield },
+                  { key: 'mdef', label: '魔法防禦', value: stats.mdef, icon: GiCrystalBall },
+                  { key: 'init', label: '先攻修正', value: stats.init, icon: GiPocketWatch }
+                ].map((tile) => {
+                  const TileIcon = tile.icon;
+                  return (
+                    <div
+                      key={tile.key}
+                      className="rounded-xl border p-2.5 flex items-center gap-2.5"
+                      style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+                    >
+                      <span
+                        className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: theme.panelBg, borderColor: theme.border, color: theme.accent }}
+                      >
+                        <TileIcon size={17} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold truncate" style={{ color: theme.textMuted }}>
+                          {tile.label}
+                        </div>
+                        <div className="font-mono font-black text-lg leading-tight" style={{ color: theme.textDark }}>
+                          {tile.key === 'init' && tile.value > 0 ? `+${tile.value}` : tile.value}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Proficiencies Indicator */}
@@ -1076,75 +1262,86 @@ export default function CharacterEditor({
                 </div>
               </div>
 
-              {/* Warnings */}
-              {(stats.armorWarning || stats.shieldWarning) && (
+              {/* 載入衝突：規則上明確不成立的組合，選完立刻看得到，不用等跑團才被 GM 抓 */}
+              {loadoutIssues.length > 0 && (
                 <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-xs space-y-1">
-                  {stats.armorWarning && (
-                    <div className="flex items-center gap-1.5">
+                  {loadoutIssues.map((issue, idx) => (
+                    <div key={`${issue.message}_${idx}`} className="flex items-center gap-1.5">
                       <GiHazardSign className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                      <span>目前穿戴軍用防具 (重甲)，但當前職業組合並無重甲熟練度。</span>
+                      <span>{issue.message}</span>
                     </div>
-                  )}
-                  {stats.shieldWarning && (
-                    <div className="flex items-center gap-1.5">
-                      <GiHazardSign className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                      <span>目前裝備軍用盾牌，但當前職業組合並無軍用盾熟練度。</span>
-                    </div>
-                  )}
+                  ))}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <JRPGSelect
-                  label="主手武器"
+              {/* 四個槽位：每格直接顯示「這一格換算成什麼」，要比較時才開選擇彈窗 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <EquipmentSlotCard
                   theme={theme}
-                  value={character.equipment?.mainHand || ''}
-                  onChange={e => updateField('equipment', { ...character.equipment, mainHand: e.target.value })}
-                  options={rulesData.equipment.weapons.map(w => ({
-                    value: w.name,
-                    label: `${w.name} [${w.range}] (${w.damage}) - ${w.cost}z`
-                  }))}
+                  slotDef={EQUIPMENT_SLOTS.mainHand}
+                  itemName={mainHandLabel}
+                  itemIcon={mainHandIcon}
+                  itemMissing={mainHandMissing}
+                  badges={mainHandBadges}
+                  metrics={mainHandMetrics}
+                  note={mainHandNote}
+                  warning={mainHandWarning}
+                  onOpen={() => setPickerSlot('mainHand')}
                 />
 
-                <JRPGSelect
-                  label="副手裝備 / 盾牌"
+                <EquipmentSlotCard
                   theme={theme}
-                  value={character.equipment?.offHand || ''}
-                  onChange={e => updateField('equipment', { ...character.equipment, offHand: e.target.value })}
-                  options={[
-                    ...rulesData.equipment.shields.map(s => ({
-                      value: s.name,
-                      label: `【盾牌】${s.name} ${s.desc ? `(${s.desc})` : ''} - ${s.cost}z`
-                    })),
-                    ...rulesData.equipment.weapons.filter(w => w.hands === 1 && w.name !== '無手空拳').map(w => ({
-                      value: w.name,
-                      label: `【副手武器】${w.name} (${w.damage}) - ${w.cost}z`
-                    }))
-                  ]}
+                  slotDef={EQUIPMENT_SLOTS.offHand}
+                  itemName={offHandLabel}
+                  itemIcon={offHandIcon}
+                  itemMissing={offHandMissing}
+                  badges={offShield?.martial ? [{ label: '職業', variant: 'rose' }] : []}
+                  metrics={offHandMetrics}
+                  note={offShield?.desc || null}
+                  warning={offHandWarning}
+                  onOpen={() => setPickerSlot('offHand')}
                 />
 
-                <JRPGSelect
-                  label="身體防具"
+                <EquipmentSlotCard
                   theme={theme}
-                  value={character.equipment?.armor || ''}
-                  onChange={e => updateField('equipment', { ...character.equipment, armor: e.target.value })}
-                  options={rulesData.equipment.armors.map(a => ({
-                    value: a.name,
-                    label: `${a.name} (${a.desc}) - ${a.cost}z`
-                  }))}
+                  slotDef={EQUIPMENT_SLOTS.armor}
+                  itemName={armorLabel}
+                  itemIcon={armorIcon}
+                  itemMissing={armorMissing}
+                  badges={armor?.martial ? [{ label: '職業', variant: 'rose' }] : []}
+                  metrics={armorMetrics}
+                  note={armor?.desc || null}
+                  warning={armorWarningText}
+                  onOpen={() => setPickerSlot('armor')}
                 />
 
-                <JRPGSelect
-                  label="佩戴飾品"
+                <EquipmentSlotCard
                   theme={theme}
-                  value={character.equipment?.accessory || ''}
-                  onChange={e => updateField('equipment', { ...character.equipment, accessory: e.target.value })}
-                  options={rulesData.equipment.accessories.map(acc => ({
-                    value: acc.name,
-                    label: `${acc.name} (${acc.desc}) - ${acc.cost}z`
-                  }))}
+                  slotDef={EQUIPMENT_SLOTS.accessory}
+                  itemName={accessoryLabel}
+                  itemIcon="slot_accessory"
+                  itemMissing={accessoryMissing}
+                  badges={accessory ? [{ label: '稀有物品', variant: 'zinc' }] : []}
+                  metrics={[]}
+                  note={accessory?.desc || '飾品在原書中一律屬稀有物品，需與團員討論後取得。'}
+                  onOpen={() => setPickerSlot('accessory')}
                 />
               </div>
+
+              {/* 裝備選擇彈窗 */}
+              <EquipmentPickerModal
+                isOpen={pickerSlot !== null}
+                slot={pickerSlot || 'mainHand'}
+                onClose={() => setPickerSlot(null)}
+                theme={theme}
+                character={character}
+                stats={stats}
+                remainingBudget={pickerBudget}
+                onSelect={(name) => {
+                  if (!pickerSlot) return;
+                  updateField('equipment', { ...character.equipment, [pickerSlot]: name });
+                }}
+              />
             </div>
           )}
 

@@ -80,12 +80,12 @@ export const createNewCharacter = (overrides = {}) => {
       }
     ],
 
-    // 武裝配置
+    // 武裝配置：開卡時兩手皆為徒手打擊、不穿防具 —— 預算 500z 全額留給玩家自己選購
     equipment: {
-      mainHand: "青銅劍",
-      offHand: "青銅圓盾",
-      armor: "旅行皮甲",
-      accessory: "守護護符"
+      mainHand: "徒手打擊",
+      offHand: "徒手打擊",
+      armor: "無裝甲 / 冒險服",
+      accessory: ""
     },
 
     // 已學會法術、英雄技能、金手指與個人筆記
@@ -368,7 +368,10 @@ export const calculateCharacterStats = (char) => {
   // 4. 熟練度比對
   const profs = getProficiencies(char);
   const isWearingMartialArmor = !isNaN(parseInt(armorDef?.defFormula, 10));
-  const isWearingMartialShield = shieldDef && (shieldDef.cost >= 150 || shieldDef.name.includes('重型') || shieldDef.name.includes('塔盾') || shieldDef.name.includes('符文'));
+  // 職業盾牌優先用資料表的 martial 旗標；名稱／價格的啟發式只留給自訂或匯入的字串
+  const isWearingMartialShield = Boolean(shieldDef) && (
+    shieldDef.martial === true || (!('martial' in shieldDef) && shieldDef.cost >= 150)
+  );
   
   const armorWarning = isWearingMartialArmor && !profs.martialArmor;
   const shieldWarning = isWearingMartialShield && !profs.martialShields;

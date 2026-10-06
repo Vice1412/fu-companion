@@ -598,7 +598,7 @@ export const EXPANSION_PRESETS = [
       { className: '狂怒鬥士', level: 1, skills: [{ name: '暴怒', sl: 1 }] },
       { className: '突變體', level: 3, skills: [{ name: '無拘形態', sl: 1 }, { name: '基因分析', sl: 1 }, { name: '混合變形', sl: 1, selectedOptions: ['腕力形態'] }] }
     ],
-    equipment: { mainHand: '無手空拳', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    equipment: { mainHand: '徒手打擊', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
     zenit: 370
   },
   {
@@ -609,7 +609,7 @@ export const EXPANSION_PRESETS = [
       { className: '機師', level: 2, skills: [{ name: '個人載具', sl: 2 }] },
       { className: '修補匠', level: 3, skills: [{ name: '小工具', sl: 1 }, { name: '藥水雨', sl: 1 }, { name: '高瞻遠矚', sl: 1 }] }
     ],
-    equipment: { mainHand: '無手空拳', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    equipment: { mainHand: '徒手打擊', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
     zenit: 370,
     gadgets: { alchemy: 0, infusion: 1, magitech: 0, magitechSpells: [] },
     vehicle: { frameId: 'exoskeleton', modules: ['advanced_targeting_module', 'rifle_module', 'shield_module'] }
@@ -712,7 +712,7 @@ export const EXPANSION_PRESETS = [
       { className: '機師', level: 2, skills: [{ name: '個人載具', sl: 2 }] },
       { className: '靈師', level: 1, skills: [{ name: '靈魂魔法', sl: 1, selectedOptions: ['治癒'] }] }
     ],
-    equipment: { mainHand: '重型火槍', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
+    equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
     customWeapon: '埃克特里步槍（自訂武器樣本，見科技奇幻手冊 p.116）',
     zenit: 70,
     vehicle: { frameId: 'mecha', modules: ['advanced_targeting_module', 'aerial_module', 'bow_module', 'counterstrike_module', 'runic_plating'] }
@@ -742,7 +742,7 @@ export const EXPANSION_PRESETS = [
       { className: '突變體', level: 2, skills: [{ name: '無拘形態', sl: 2 }] },
       { className: '靈師', level: 2, skills: [{ name: '靈魂魔法', sl: 2, selectedOptions: ['激怒', '幻覺'] }] }
     ],
-    equipment: { mainHand: '無手空拳', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    equipment: { mainHand: '徒手打擊', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
     quirk: '束縛你的約定',
     zenit: 370
   },
@@ -810,7 +810,7 @@ export const EXPANSION_PRESETS = [
       { className: '守護者', level: 2, skills: [{ name: '防守掌握', sl: 2 }] },
       { className: '神射手', level: 2, skills: [{ name: '連續射擊', sl: 1 }, { name: '鷹眼', sl: 1 }] }
     ],
-    equipment: { mainHand: '重型火槍', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
+    equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
     customWeapon: '腹砲原子加農（自訂武器：DEX＋MIG、火器、遠程、精準、防禦強化、強力）',
     quirk: '超級頭目(據說是)',
     zenit: 70,
@@ -825,7 +825,7 @@ export const EXPANSION_PRESETS = [
       { className: '修補匠', level: 2, skills: [{ name: '小工具', sl: 1 }, { name: '藥水雨', sl: 1 }] },
       { className: '旅人', level: 1, skills: [{ name: '有備無患', sl: 1 }] }
     ],
-    equipment: { mainHand: '無手空拳', offHand: '符文圓盾', armor: '青銅胸甲', accessory: '' },
+    equipment: { mainHand: '徒手打擊', offHand: '符文圓盾', armor: '青銅胸甲', accessory: '' },
     quirk: '亡者歸來',
     zenit: 70,
     gadgets: { alchemy: 1, infusion: 0, magitech: 0, magitechSpells: [] }

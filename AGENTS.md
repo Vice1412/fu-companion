@@ -32,11 +32,12 @@
   本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 2,023 kB（gzip 574 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描** 通過，exit 0）。
-  十組測試 ＋ 兩道自動關卡：
+- **建置產物**：`dist/`，JS 2,105 kB（gzip 603 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 158/158 + 86/86 + 99/99 + 270/270 ＋ Emoji 掃描** 通過，exit 0）。
+  十三道測試關卡（其中兩道是自動化的規則關卡）：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:affinity` —— 九相屬性標記（誤標表、正標表、資料層掃描、渲染器同步；見 §4 F）
+  - `npm run test:equipment` —— 裝備配置（原書裝備表逐筆核對、裝備圖示對照表、熟練度與載入衝突、雙重盾牌、SSR 煙霧；見 `docs/decisions.md` §U）
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
   - `npm run test:propernouns` —— 專有名詞對照與格式鐵律
   - `npm run test:projects` —— 造物專案成本與每日推進公式（對照原書官方範例）
@@ -395,16 +396,17 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-04 實測 4.32 秒）。
-- JS bundle 2,023 kB / gzip 574 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-05 實測 4.30 秒）。
+- JS bundle 2,105 kB / gzip 603 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 86/86 + 99/99 + 270/270 + 176/176 ＋ Emoji 掃描**，exit 0）。
+- `npm test` 通過（**1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 322/322 + 158/158 + 86/86 + 99/99 + 270/270 ＋ Emoji 掃描**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
   **角色卡數值引擎（`test:engine`，2026-10-04 補上）**、**資料層與房間契約（`test:datalayer`）**、
   **官方經典職業搭配 81 組（`test:presets`，2026-10-05 補上）**、
-  **九相屬性標記（`test:affinity`，2026-10-05 補上，見 §4 F）**。
+  **九相屬性標記（`test:affinity`，2026-10-05 補上，見 §4 F）**、
+  **裝備配置（`test:equipment`，2026-10-05 補上，見 `docs/decisions.md` §U）**。
   **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
   > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`；2026-10-05 擴充至 **322 項**
   > ＝ 243 項基礎向量 ＋ 79 項數值構成公式與免費增益二選一，見 `docs/decisions.md` §N）。
@@ -497,6 +499,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | 金手指來源標記 | `（高奇）`／`（自奇）`／`（科奇）` 標記不完整；`quirks` 無 `source` 欄位，手冊開關對金手指完全失效 | ⏸️ 使用者裁定暫緩 |
 | Bonus Collection 其餘 7 項 | New Heroic Skills／Halloween 系列／Arcane Whispers／三隻 Additional Bosses | 待裁定優先序 |
 | 角色卡引擎四個既有缺陷 | `characterEngine.js` 的 `applyLevelUp` 空扣 EXP、`fabulaPoints` 0 被還原成 3、等級夾在 5、防具回退語意錯誤 | 待裁定是否修 |
+| 先攻變體是否套用 | 本團玩 Playtest 2026-06-22「先攻」變體（無先攻值、防具無先攻減值、戰鬥束腰外衣改物防 +2／魔防 +0），但應用程式仍以核心規則值為準（見 `docs/decisions.md` §U7） | 待裁定 |
 | ~~GitHub repo 改名~~ | **實測 `git remote -v` 已是 `https://github.com/Vice1412/monogatari-techou.git`——改名早已完成。** 原記「待執行」為過時記述（2026-10-05 複驗更正） | ✅ 已結案 |
 | 本機路徑搬遷 | 專案由 `FU Companion` 更名《物語手帳》並搬遷本機目錄；§1 的工作目錄已加註，接手後請更新為新路徑 | 待執行 |
 
@@ -527,6 +530,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | R | 卡牌大師非英雄技能補完（陷阱卡／牌運亨通／再調度） | `陷阱卡` 文字原為 CHM 測試版機制（MP 上限 `SL×10`、宣告花色翻牌庫底部）→ 官方正式版 `SL×5`、棄 `SL+1` 張花色對應動作的牌（**文字於 §S 落地**，首輪只改了 UI／行為）；新增陷阱卡／牌運亨通／再調度三套 UI；再調度改為**玩家自選牌**（原為程式代丟手牌前 N 張）；結算回寫自身 HP/MP 與狀態滿貫；速查表補上 8 條效果；花色對應加互異檢查。**英雄技能（黑與白／先鋒卡／決鬥大師／禁忌儀式）依使用者指示延後**——需精通職業（Lv 10）才可習得；`test:cards` 114 → 172 項 | 2026-10-05 |
 | S | 卡牌大師譯名統一（使用者裁定） | 裁定 **小丑牌／四條頭獎／魔法同花順／炫目順子／狀態滿貫**（三重支援／雙重麻煩／魔法對子／禁忌君王 沿用）。改了 `aceOfCardsData.js`、`AceOfCardsTable.jsx`（牌面字樣「鬼」→「丑」）、`rulesData.json`（牌運亨通＋陷阱卡文字）、`ruleCodexExpansion.js`、測試標籤；新增 `test:codex` 護欄比對速查手冊與 `SET_EFFECTS` 逐字相同（268 → 270 項）。⚠️ 批次置換順序踩坑：16 處誤成「狀態四條頭獎」 | 2026-10-05 |
 | T | 卡牌大師：小丑牌指定 ＋ 撲克牌面 ＋ 衝突結束卡死（使用者回報） | ① 修 **bug**：舊判準 `deck.length > 0` 讓【衝突結束】把 30 張收回後永遠判定「衝突中」，再也回不到「衝突開始」；改為 `isDeckInConflict()`（`active` 旗標 ＋ 舊存檔啟發式）＋ `idleDeckState()`。② 新增**小丑牌指定**（原書 p.8 由玩家指定花色與數值，花色會決定傷害類型）：`applyJokerAssignment`／`suggestJokerAssignment`／`detectSets({ jokerAssignment })`。③ 牌面改為**撲克牌樣式**（白底長方形、數字與花色同尺寸並排、花色著色）。`test:cards` 172 → **211 項**（含 R 小丑牌指定、S 衝突狀態回歸、T 渲染器同步原始碼護欄） | 2026-10-05 |
+| U | 裝備配置的呈現重設計（使用者提供 Google Sheets 裝備設計器 v5.1） | 研究結論：**「一目了然」的瓶頸是換算，不是排版**。改為「顯示後果不顯示規格」（命中檢定換成該角色的骰 `DEX d8 + INS d6`、傷害式照原書 `HR + 6`、合計物防／魔防、先攻）＋「不能選的原因在選之前看見」＋**預設只列目前職業裝備得了的項目**（勾選才顯示全部）＋「可排序表格而非卡片牆」；副手拆「盾牌／單手武器」分頁。**不寫期望值**（統計量不是規則書上的數字）。**裝備圖示逐項對齊設計器的 `IMAGE()` 公式格**：自寫 SVG 光柵器把 4,036 個 `react-icons/gi` 圖示與設計器 PNG 做 IoU 比對（需先剔除疊在圖上的職業徽章），23/28 達到 IoU ≥ 0.80、另 5 項以最接近的語意圖示補上。**守護者【雙重盾牌】**：`DUAL_SHIELD` 做成虛擬武器條目（`MIG + MIG`／`HR + 5`），主手可裝盾、兩手皆盾自動套用該公式，跑團卡同步。原書逐筆核對修掉三處類別錯誤（`斧`→`重型`、`法杖`→`奧術`）並補上臨時武器；**追出處後刪除 `闊劍`／`長槍`／`重型火槍` 三筆無官方來源的武器 ＋ 同源的 `重型塔盾`**（`git log -S` 追到 repo 第一個 commit，同批種子數值全錯 → 非照抄原書；`expansionPresets` 兩處改以 `手槍` 代替；`characterEngine` 的職業盾牌判定由名稱啟發式改讀 `martial` 旗標）；武器表 21 筆、盾牌表 3 筆，與原書完全一致；`test:equipment` **158 項**（含圖示鍵護欄與「不得回流」護欄） | 2026-10-05 |
 
 ## 7. 本檔維護
 

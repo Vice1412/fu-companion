@@ -42,6 +42,7 @@ import {
 import rulesData from '../data/rulesData.json';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
+import { getDualShieldState } from '../utils/equipmentRules';
 import SkillDescription, { openRuleCodex } from '../utils/skillFormulaEvaluator';
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
@@ -382,16 +383,27 @@ export default function CharacterPlayHUD({
   };
 
   // Equipments resolution
-  const mainWeapon = rulesData.equipment.weapons.find(w => w.name === character.equipment?.mainHand) || {
-    name: character.equipment?.mainHand || '無手空拳',
-    attr: 'DEX + MIG',
-    damage: '【HR + 0】物理',
-    range: '近戰',
-    category: '鬥毆'
-  };
+  const mainShieldEquipped = rulesData.equipment.shields.find(s => s.name === character.equipment?.mainHand);
+  const offShield = rulesData.equipment.shields.find(s => s.name === character.equipment?.offHand);
+
+  // 守護者【雙重盾牌】：兩手皆盾時合併視為「雙盾」，
+  // 攻擊改用該技能的命中【MIG + MIG】與傷害【HR + 5】——盾牌本身沒有攻擊資料。
+  const dualShield = getDualShieldState(character, {
+    mainIsShield: Boolean(mainShieldEquipped),
+    offIsShield: Boolean(offShield)
+  });
+
+  const mainWeapon = dualShield.active
+    ? dualShield.weapon
+    : (rulesData.equipment.weapons.find(w => w.name === character.equipment?.mainHand) || {
+        name: character.equipment?.mainHand || '徒手打擊',
+        attr: 'DEX + MIG',
+        damage: '【HR + 0】物理',
+        range: '近戰',
+        category: '鬥毆'
+      });
 
   const offWeapon = rulesData.equipment.weapons.find(w => w.name === character.equipment?.offHand);
-  const offShield = rulesData.equipment.shields.find(s => s.name === character.equipment?.offHand);
 
   // Parse weapon checks & damage
   const mainCheck = parseCheckFormula(mainWeapon.attr, stats);

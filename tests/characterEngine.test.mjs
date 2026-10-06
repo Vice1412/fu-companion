@@ -344,14 +344,16 @@ check('啟用來源手冊預設僅核心', fresh.enabledSourcebooks, ['core']);
 check('情感羈絆預設 1 條', fresh.bonds.length, 1);
 check('個人命刻預設 1 座', fresh.clocks.length, 1);
 check('咒語與英雄技能預設為空', [fresh.spells.length, fresh.heroicSkills.length], [0, 0]);
-check('預設防具為旅行皮甲', fresh.equipment.armor, '旅行皮甲');
-check('預設飾品為守護護符', fresh.equipment.accessory, '守護護符');
+check('預設主手為徒手打擊', fresh.equipment.mainHand, '徒手打擊');
+check('預設副手也為徒手打擊（開卡兩手皆空手）', fresh.equipment.offHand, '徒手打擊');
+check('預設不穿防具', fresh.equipment.armor, '無裝甲 / 冒險服');
+check('預設不佩戴飾品', fresh.equipment.accessory, '');
 
 // overrides 為最上層覆寫（不做深層合併）
 const overridden = createNewCharacter({ level: 12, name: '覆寫測試' });
 check('overrides 覆寫等級', overridden.level, 12);
 check('overrides 覆寫姓名', overridden.name, '覆寫測試');
-check('overrides 未提及的欄位保持預設（防具）', overridden.equipment.armor, '旅行皮甲');
+check('overrides 未提及的欄位保持預設（防具）', overridden.equipment.armor, '無裝甲 / 冒險服');
 
 // id 唯一性
 const idA = createNewCharacter().id;
