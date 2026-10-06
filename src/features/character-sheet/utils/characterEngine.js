@@ -3,6 +3,7 @@ import { SOURCEBOOKS, STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
+import { appendLog, createLogEntry } from './characterLog';
 
 // Dice ladder for step reductions
 const DICE_STEPS = [6, 8, 10, 12];
@@ -38,7 +39,7 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
  */
 export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULES) => {
   const creation = resolveCreationRules(rules);
-  return {
+  const character = {
     id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     name: "新冒險者",
     identity: "",
@@ -113,6 +114,12 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     updatedAt: new Date().toISOString(),
     ...overrides
   };
+
+  // 成長履歷的第一筆：建卡。之後的每一次變更都由 loggableChange 追加。
+  return appendLog(character, createLogEntry({
+    kind: 'creation',
+    title: `建立角色（${creation.startingLevel} 級起，起始資金 ${creation.startingZenit}z）`
+  }));
 };
 
 /**

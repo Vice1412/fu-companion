@@ -71,6 +71,10 @@ import {
   GiQuillInk,
   GiLaurelCrown,
   GiScrollUnfurled,
+  GiUpCard,
+  GiChest,
+  GiProgression,
+  GiTrophyCup,
 
   // Equipment Categories & Slots (武器十大類別與四個裝備欄位)
   GiPocketBow,
@@ -331,6 +335,20 @@ export const GAME_ICONS_MAP = {
   slot_offhand: GiRoundShield,
   slot_armor: GiBreastplate,
   slot_accessory: GiRing,
+
+  // Character Log (成長履歷；由 characterLog.js 的 LOG_KINDS[].icon 指定元件名)
+  GiScrollQuill,
+  GiUpCard,
+  GiScrollUnfurled,
+  GiChest,
+  GiHealthNormal,
+  GiLightningTear,
+  GiBackpack,
+  GiSparkles,
+  GiProgression,
+  GiTwoCoins,
+  GiTrophyCup,
+  GiQuillInk,
 
   // Equipment Items (裝備設計器逐項對照；由 equipmentRules.js 的 EQUIPMENT_ICONS 指定元件名)
   GiSpellBook,

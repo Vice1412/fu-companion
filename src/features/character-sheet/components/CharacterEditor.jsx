@@ -46,6 +46,7 @@ import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
+import { loggableChange } from '../utils/characterLog';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
@@ -113,12 +114,18 @@ export default function CharacterEditor({
   const validation = validateCharacter(character, rules);
   const stats = calculateCharacterStats(character);
 
-  const updateField = (field, value) => {
-    onChange({
+  /**
+   * 所有欄位變更的唯一出口。
+   * `meta` 有值時會留下一筆成長履歷（見 utils/characterLog.js）；
+   * `fields: []` 表示「只留標題、不比對欄位」（用於職業／技能這類陣列變更）。
+   */
+  const updateField = (field, value, meta = null) => {
+    const base = {
       ...character,
       [field]: value,
       updatedAt: new Date().toISOString()
-    });
+    };
+    onChange(meta ? loggableChange(character, base, { fields: [field], ...meta }) : base);
   };
 
   const updateAttribute = (attr, val) => {
@@ -171,7 +178,11 @@ export default function CharacterEditor({
         level: totalLevel,
         skills: activeSkills
       }
-    ]);
+    ], {
+      kind: 'skill',
+      title: `修習【${cName}】（投入 ${totalLevel} 級${activeSkills.length ? `：${activeSkills.map(s => `${s.name} ${s.sl}`).join('、')}` : ''}）`,
+      fields: []
+    });
     setNewlyAddedClassName(null);
   };
 
@@ -180,12 +191,17 @@ export default function CharacterEditor({
     const curClasses = JSON.parse(JSON.stringify(character.classes || []));
     if (!curClasses[classIdx]) return;
     curClasses[classIdx].chosenBenefit = benefit;
-    updateField('classes', curClasses);
+    updateField('classes', curClasses, {
+      kind: 'skill',
+      title: `【${curClasses[classIdx].className}】免費增益改為 ${benefit === 'mp' ? '最大 MP +5' : '最大 HP +5'}`,
+      fields: []
+    });
   };
 
   const handleUpdateClassSkills = (classIdx, updatedSkills) => {
     const curClasses = JSON.parse(JSON.stringify(character.classes || []));
     if (!curClasses[classIdx]) return;
+    const beforeSkills = (character.classes || [])[classIdx]?.skills || [];
     curClasses[classIdx].skills = updatedSkills;
     curClasses[classIdx].level = updatedSkills.reduce((sum, s) => sum + s.sl, 0);
 
@@ -207,12 +223,26 @@ export default function CharacterEditor({
       return found ? { ...found } : { name: spName };
     });
 
-    onChange({
+    const className = curClasses[classIdx].className;
+    // 逐技能比對 SL，記錄「升級後把點數加在哪一個技能上」
+    const skillChanges = updatedSkills
+      .map(sk => ({
+        field: `skill:${sk.name}`,
+        from: beforeSkills.find(b => b.name === sk.name)?.sl ?? 0,
+        to: sk.sl
+      }))
+      .filter(c => c.from !== c.to);
+
+    onChange(loggableChange(character, {
       ...character,
       classes: curClasses,
       spells: [...nonCoreSpells, ...newClassSpells],
       updatedAt: new Date().toISOString()
-    });
+    }, {
+      kind: 'skill',
+      title: `調整【${className}】的技能`,
+      changes: skillChanges
+    }));
   };
 
   const handleRemoveClass = (classNameToRemove) => {
@@ -233,12 +263,16 @@ export default function CharacterEditor({
       return found ? { ...found } : { name: spName };
     });
 
-    onChange({
+    onChange(loggableChange(character, {
       ...character,
       classes: remainingClasses,
       spells: [...nonCoreSpells, ...newClassSpells],
       updatedAt: new Date().toISOString()
-    });
+    }, {
+      kind: 'skill',
+      title: `移除職業【${classNameToRemove}】`,
+      fields: []
+    }));
     if (newlyAddedClassName === classNameToRemove) {
       setNewlyAddedClassName(null);
     }
@@ -341,7 +375,7 @@ export default function CharacterEditor({
     const d2 = Math.floor(Math.random() * 6) + 1;
     const rollSum = (d1 + d2) * 10;
     const finalZenit = Math.max(0, remainingBudget) + rollSum;
-    updateField('zenit', finalZenit);
+    updateField('zenit', finalZenit, { kind: 'zenit', title: '擲起始資金 2d6 × 10' });
     alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
   };
 
@@ -861,7 +895,7 @@ export default function CharacterEditor({
                     min={rules.startingLevel}
                     max={50}
                     value={character.level || rules.startingLevel}
-                    onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel)}
+                    onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel, { kind: 'levelup', title: '調整等級' })}
                     className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   />
@@ -964,7 +998,7 @@ export default function CharacterEditor({
                     label="初始持有金幣"
                     type="number"
                     value={character.zenit !== undefined ? character.zenit : 500}
-                    onChange={e => updateField('zenit', parseInt(e.target.value, 10) || 0)}
+                    onChange={e => updateField('zenit', parseInt(e.target.value, 10) || 0, { kind: 'zenit', title: '調整資金' })}
                     theme={theme}
                   />
                   <JRPGInput
@@ -1402,14 +1436,31 @@ export default function CharacterEditor({
                 remainingBudget={pickerBudget}
                 onSelect={(name) => {
                   if (!pickerSlot) return;
-                  // 換上雙手武器時副手必須空出——由規則層判定，這裡只負責提示
+                  // 換上雙手武器時副手必須空出——由規則層判定，這裡只負責提示與記錄
                   const { equipment: nextEquipment, clearedOffHand } = applyEquipmentChoice(
                     character.equipment,
                     pickerSlot,
                     name,
                     weaponByName
                   );
-                  updateField('equipment', nextEquipment);
+                  const base = {
+                    ...character,
+                    equipment: nextEquipment,
+                    updatedAt: new Date().toISOString()
+                  };
+                  const changes = [{
+                    field: pickerSlot,
+                    from: character.equipment?.[pickerSlot] || '',
+                    to: name
+                  }];
+                  if (clearedOffHand) {
+                    changes.push({ field: 'offHand', from: clearedOffHand, to: '無盾牌' });
+                  }
+                  onChange(loggableChange(character, base, {
+                    kind: 'equipment',
+                    title: `更換${EQUIPMENT_SLOTS[pickerSlot].label}`,
+                    changes
+                  }));
                   if (clearedOffHand && showToast) {
                     showToast(`已卸下副手「${clearedOffHand}」——雙手武器佔滿兩個手部欄位`);
                   }

@@ -15,6 +15,7 @@ import {
   GiSparkles,
   GiCoins,
   GiUpgrade,
+  GiScrollQuill,
   GiRollingDices,
   GiHazardSign,
   GiCrossedSwords,
@@ -43,6 +44,7 @@ import rulesData from '../data/rulesData.json';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
 import { getDualShieldState } from '../utils/equipmentRules';
+import { loggableChange } from '../utils/characterLog';
 import SkillDescription, { openRuleCodex } from '../utils/skillFormulaEvaluator';
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
@@ -140,6 +142,7 @@ export default function CharacterPlayHUD({
   onChange,
   onBackToRoster,
   onOpenEditor,
+  onOpenLog = null,
   onOpenDice = null,
   showToast = () => {}
 }) {
@@ -193,43 +196,77 @@ export default function CharacterPlayHUD({
   const isCrisis = curHp <= stats.crisisThreshold;
   const isReadyToLevelUp = canLevelUp(character);
 
-  const updateField = (field, val) => {
-    onChange({
+  /**
+   * 所有數值變更的唯一出口。
+   * `meta` 有值時會留下一筆成長履歷（見 utils/characterLog.js）——
+   * HP／MP／IP／EXP／資金／物語點都是「跑團中一路記錄」的對象。
+   * `from` 一律傳**顯示值**（currentHp 的 null 代表滿血，記錄裡不該出現 null）。
+   */
+  const updateField = (field, val, meta = null) => {
+    const base = {
       ...character,
       [field]: val,
       updatedAt: new Date().toISOString()
-    });
+    };
+    onChange(meta ? loggableChange(character, base, meta) : base);
   };
 
   // Adjust Vital Resources
   const adjustHp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxHp, curHp + delta));
-    updateField('currentHp', next);
+    updateField('currentHp', next, {
+      kind: 'hp',
+      title: delta < 0 ? '承受傷害' : '回復 HP',
+      changes: [{ field: 'currentHp', from: curHp, to: next }]
+    });
   };
 
   const adjustMp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxMp, curMp + delta));
-    updateField('currentMp', next);
+    updateField('currentMp', next, {
+      kind: 'mp',
+      title: delta < 0 ? '消耗 MP' : '回復 MP',
+      changes: [{ field: 'currentMp', from: curMp, to: next }]
+    });
   };
 
   const adjustIp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxIp, curIp + delta));
-    updateField('currentIp', next);
+    updateField('currentIp', next, {
+      kind: 'ip',
+      title: delta < 0 ? '消耗 IP' : '回復 IP',
+      changes: [{ field: 'currentIp', from: curIp, to: next }]
+    });
   };
 
   const adjustExp = (delta) => {
-    const next = Math.max(0, (character.exp || 0) + delta);
-    updateField('exp', next);
+    const cur = character.exp || 0;
+    const next = Math.max(0, cur + delta);
+    updateField('exp', next, {
+      kind: 'exp',
+      title: delta < 0 ? '扣除 EXP' : '獲得 EXP',
+      changes: [{ field: 'exp', from: cur, to: next }]
+    });
   };
 
   const adjustZenit = (delta) => {
-    const next = Math.max(0, (character.zenit || 0) + delta);
-    updateField('zenit', next);
+    const cur = character.zenit || 0;
+    const next = Math.max(0, cur + delta);
+    updateField('zenit', next, {
+      kind: 'zenit',
+      title: delta < 0 ? '支出資金' : '獲得資金',
+      changes: [{ field: 'zenit', from: cur, to: next }]
+    });
   };
 
   const adjustFp = (delta) => {
-    const next = Math.max(0, (character.fabulaPoints || 3) + delta);
-    updateField('fabulaPoints', next);
+    const cur = character.fabulaPoints || 3;
+    const next = Math.max(0, cur + delta);
+    updateField('fabulaPoints', next, {
+      kind: 'fp',
+      title: delta < 0 ? '消耗物語點' : '獲得物語點',
+      changes: [{ field: 'fabulaPoints', from: cur, to: next }]
+    });
   };
 
   // Toggle Status Afflictions
@@ -374,7 +411,12 @@ export default function CharacterPlayHUD({
       isNewClass: isNewClassLevelUp
     });
 
-    onChange(updated);
+    // 成長履歷：升級是最重要的一筆——等級、EXP，以及點在哪個職業的哪個技能
+    onChange(loggableChange(character, updated, {
+      kind: 'levelup',
+      title: `升級：${withEn(selectedClassForLevelUp)}【${selectedSkillForLevelUp}】${isNewClassLevelUp ? '（新職業）' : ''}`,
+      fields: ['level', 'exp']
+    }));
     setIsLevelUpModalOpen(false);
     setSelectedClassForLevelUp('');
     setSelectedSkillForLevelUp('');
@@ -620,6 +662,18 @@ export default function CharacterPlayHUD({
             >
               <span>構建工坊</span>
             </button>
+
+            {onOpenLog && (
+              <button
+                onClick={onOpenLog}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+                style={{ borderColor: theme.border, color: theme.textDark }}
+                title="成長履歷：HP／MP／EXP／資金／升級／換裝的完整記錄"
+              >
+                <GiScrollQuill className="w-3.5 h-3.5" />
+                <span>履歷</span>
+              </button>
+            )}
           </div>
         </div>
 

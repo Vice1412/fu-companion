@@ -16,6 +16,7 @@ import {
   GiHazardSign,
   GiCheckMark,
   GiSpellBook,
+  GiScrollQuill,
   GiQuillInk,
   GiScrollUnfurled,
   GiShield
@@ -24,6 +25,7 @@ import GameIcon from '../../components/ui/GameIcon';
 import FUIcon from '../../components/ui/FUIcon';
 import CharacterEditor from './components/CharacterEditor';
 import CharacterPlayHUD from './components/CharacterPlayHUD';
+import CharacterLogModal from './components/CharacterLogModal';
 import { createNewCharacter, calculateCharacterStats } from './utils/characterEngine';
 import { CHARACTER_THEMES, getCharacterTheme } from './utils/characterThemes';
 import {
@@ -47,6 +49,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
 
   const [activeCharId, setActiveCharId] = useState(null);
   const [viewMode, setViewMode] = useState('roster'); // 'roster' | 'play' | 'editor'
+  const [isLogOpen, setIsLogOpen] = useState(false);  // 成長履歷彈窗
   const [toastMessage, setToastMessage] = useState(null);
 
   // Gallery Search, Filter & Sort State
@@ -71,6 +74,13 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   const handleOpenEditorMode = (char) => {
     setActiveCharId(char.id);
     setViewMode('editor');
+  };
+
+  // 成長履歷：名冊與跑團卡都能開，內容是同一份（角色物件內的 log）
+  const handleOpenLog = (char) => {
+    if (!char) return;
+    setActiveCharId(char.id);
+    setIsLogOpen(true);
   };
 
   const handleCreateCharacter = () => {
@@ -726,6 +736,13 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                           <FileCode className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => handleOpenLog(char)}
+                          className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-amber-800 hover:bg-amber-100/60 transition-colors"
+                          title="成長履歷"
+                        >
+                          <GiScrollQuill className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteCharacter(char.id)}
                           className="p-1.5 rounded-lg text-[#6b5a4b] hover:text-rose-700 hover:bg-rose-50 transition-colors"
                           title="刪除角色"
@@ -771,10 +788,21 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
           onOpenEditor={() => setViewMode('editor')}
+          onOpenLog={() => handleOpenLog(activeChar)}
           onOpenDice={onOpenDice}
           showToast={showToast}
         />
       )}
+
+      {/* 成長履歷彈窗（名冊與跑團卡共用同一份） */}
+      <CharacterLogModal
+        isOpen={isLogOpen}
+        onClose={() => setIsLogOpen(false)}
+        theme={getCharacterTheme(activeChar?.themeColor)}
+        character={activeChar}
+        onChange={handleUpdateActiveCharacter}
+        showToast={showToast}
+      />
 
       {/* Mode 3: Step-by-Step Builder Wizard */}
       {viewMode === 'editor' && activeChar && (
