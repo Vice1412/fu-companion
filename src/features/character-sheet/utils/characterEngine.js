@@ -111,6 +111,10 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     currentMp: null,
     currentIp: null,
 
+    // 創角定稿狀態（見下方 isCharacterLocked／lockCharacter）
+    locked: false,
+    lockedAt: null,
+
     updatedAt: new Date().toISOString(),
     ...overrides
   };
@@ -702,6 +706,72 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
     warnings,
     totalIssues: warnings.length
   };
+};
+
+/**
+ * 創角定稿 (Lock)
+ *
+ * 使用者對這張卡的描述是「開好角色後，就基本是固定好了」——但在這之前，
+ * 程式裡沒有任何狀態表達那件事：編輯器任何時候都全開，於是 UI 不敢簡化，
+ * 玩家也分不清自己「還在創角」還是「已經在跑」。
+ *
+ * `locked` 就是那個狀態。定稿後，創角時做的決定（身世、四維）凍結，
+ * 只留成長相關的欄位（等級、技能點、裝備、羈絆、命刻、筆記）可以動。
+ * **舊存檔沒有這個欄位 → 一律視為未定稿**，行為與以前完全相同。
+ */
+export const isCharacterLocked = (char) => char?.locked === true;
+
+/** 定稿後凍結的分頁（對應 CharacterEditor 的分頁 id：1 基礎身世、2 四維屬性） */
+export const LOCKED_CREATION_TABS = Object.freeze([1, 2]);
+
+/** 定稿：留下 `locked` 旗標與一筆履歷 */
+export const lockCharacter = (char, { at, note = '' } = {}) => {
+  const ts = at || new Date().toISOString();
+  return appendLog(
+    { ...char, locked: true, lockedAt: ts },
+    createLogEntry({ kind: 'lock', title: '角色定稿', note, at: ts })
+  );
+};
+
+/** 解除定稿：重新開放創角欄位（同樣留下一筆履歷，所以「什麼時候解鎖過」查得到） */
+export const unlockCharacter = (char, { at, note = '' } = {}) => {
+  const ts = at || new Date().toISOString();
+  return appendLog(
+    { ...char, locked: false, lockedAt: null },
+    createLogEntry({ kind: 'lock', title: '解除定稿（重新開放創角欄位）', note, at: ts })
+  );
+};
+
+/** 創角步驟（與 validateCharacter 的 step 編號一一對應） */
+export const CREATION_STEPS = Object.freeze([
+  { id: 1, label: '基礎身世', doneHint: '姓名、身分、主題、故鄉都已填寫' },
+  { id: 2, label: '四維屬性', doneHint: '骰階點數已分配完成' },
+  { id: 3, label: '職業與技能', doneHint: '職業組合與技能點數已配置' },
+  { id: 4, label: '裝備配置', doneHint: '武裝與防具已就緒' },
+  { id: 5, label: '情感羈絆', doneHint: '已建立情感羈絆' },
+  { id: 6, label: '特質與命刻', doneHint: '特質與命刻已確認' }
+]);
+
+/**
+ * 創角進度清單：把 `validateCharacter` 的結果整理成一條主線。
+ *
+ * 以前「還缺什麼」只是一顆小紅點加一個 modal——玩家得自己找。
+ * 這裡**不新增任何驗證邏輯**，只把同一份結果按步驟分成
+ * 「已完成（done）／待處理（todo）／有問題（error）」，讓導航列本身就是進度表。
+ */
+export const buildCreationChecklist = (char, rules = DEFAULT_CREATION_RULES) => {
+  const validation = validateCharacter(char, rules);
+  return CREATION_STEPS.map((step) => {
+    const issues = validation.warnings.filter((w) => w.step === step.id);
+    const errorCount = issues.filter((w) => w.type === 'error').length;
+    return {
+      ...step,
+      status: errorCount > 0 ? 'error' : (issues.length > 0 ? 'todo' : 'done'),
+      errorCount,
+      issueCount: issues.length,
+      message: issues.length > 0 ? issues[0].message : step.doneHint
+    };
+  });
 };
 
 /**

@@ -32,13 +32,13 @@
   本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 2,124 kB（gzip 610 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 69/69 + 85/85 + 86/86 + 99/99 + 270/270** 通過，exit 0）。
+- **建置產物**：`dist/`，JS 2,128 kB（gzip 611 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 86/86 + 99/99 + 270/270** 通過，exit 0）。
   十五道測試關卡（其中兩道是自動化的規則關卡）：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:affinity` —— 九相屬性標記（誤標表、正標表、資料層掃描、渲染器同步；見 §4 F）
   - `npm run test:equipment` —— 裝備配置（原書裝備表逐筆核對、裝備圖示對照表、熟練度與載入衝突、雙重盾牌、SSR 煙霧；見 `docs/decisions.md` §U）
-  - `npm run test:creation` —— 開卡規則（原書逐項對照、欄位集護欄、壞資料校正、`createNewCharacter`／`validateCharacter` 讀規則、硬編碼不得回流的原始碼護欄；見 `docs/decisions.md` §V）
+  - `npm run test:creation` —— 開卡規則與生命週期（原書逐項對照、欄位集護欄、壞資料校正、`createNewCharacter`／`validateCharacter` 讀規則、定稿與進度清單、硬編碼不得回流的原始碼護欄；見 `docs/decisions.md` §V、§X）
   - `npm run test:log` —— 成長履歷（種類詞彙與圖示護欄、append-only 與合併時窗、摘要推導、建卡第一筆、寫入端原始碼護欄、SSR 煙霧；見 `docs/decisions.md` §W）
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
   - `npm run test:propernouns` —— 專有名詞對照與格式鐵律
@@ -398,10 +398,10 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-05 實測 4.63 秒）。
-- JS bundle 2,124 kB / gzip 610 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-05 實測 4.48 秒）。
+- JS bundle 2,128 kB / gzip 611 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 69/69 + 85/85 + 86/86 + 99/99 + 270/270**，exit 0）。
+- `npm test` 通過（**1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 86/86 + 99/99 + 270/270**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
@@ -409,7 +409,7 @@ Get-ChildItem -Path "src" -Recurse -File |
   **官方經典職業搭配 81 組（`test:presets`，2026-10-05 補上）**、
   **九相屬性標記（`test:affinity`，2026-10-05 補上，見 §4 F）**、
   **裝備配置（`test:equipment`，2026-10-05 補上，見 `docs/decisions.md` §U）**、
-  **開卡規則（`test:creation`，2026-10-05 補上，見 `docs/decisions.md` §V）**、
+  **開卡規則（`test:creation`，2026-10-05 補上，見 `docs/decisions.md` §V、§X）**、
   **成長履歷（`test:log`，2026-10-05 補上，見 `docs/decisions.md` §W）**。
   **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
   > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`；2026-10-05 擴充至 **322 項**
@@ -537,6 +537,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | U | 裝備配置的呈現重設計（使用者提供 Google Sheets 裝備設計器 v5.1） | 研究結論：**「一目了然」的瓶頸是換算，不是排版**。改為「顯示後果不顯示規格」（命中檢定換成該角色的骰 `DEX d8 + INS d6`、傷害式照原書 `HR + 6`、合計物防／魔防、先攻）＋「不能選的原因在選之前看見」＋**預設只列目前職業裝備得了的項目**（勾選才顯示全部）＋「可排序表格而非卡片牆」；副手拆「盾牌／單手武器」分頁。**不寫期望值**（統計量不是規則書上的數字）。**裝備圖示逐項對齊設計器的 `IMAGE()` 公式格**：自寫 SVG 光柵器把 4,036 個 `react-icons/gi` 圖示與設計器 PNG 做 IoU 比對（需先剔除疊在圖上的職業徽章），23/28 達到 IoU ≥ 0.80、另 5 項以最接近的語意圖示補上。**守護者【雙重盾牌】**：`DUAL_SHIELD` 做成虛擬武器條目（`MIG + MIG`／`HR + 5`），主手可裝盾、兩手皆盾自動套用該公式，跑團卡同步。原書逐筆核對修掉三處類別錯誤（`斧`→`重型`、`法杖`→`奧術`）並補上臨時武器；**追出處後刪除 `闊劍`／`長槍`／`重型火槍` 三筆無官方來源的武器 ＋ 同源的 `重型塔盾`**（`git log -S` 追到 repo 第一個 commit，同批種子數值全錯 → 非照抄原書；`expansionPresets` 兩處改以 `手槍` 代替；`characterEngine` 的職業盾牌判定由名稱啟發式改讀 `martial` 旗標）；武器表 21 筆、盾牌表 3 筆，與原書完全一致。**後續三輪**：`無手空拳` 正名為 **`徒手打擊`**（與突變體技能連動，含 4 處官方配置的主手字串）；**開卡預設**兩手徒手打擊、不穿防具、不佩戴飾品（0z → 起始預算顯示滿額 500z）；**雙手武器佔用副手**三層落實（規則層 `applyEquipmentChoice` 自動卸下副手、視覺層主手卡以 340ms 過渡長成滿版並吃掉副手格、引擎層副手加值不再生效——最後一項原本是會靜默多給 +2/+2 的規則錯誤）；**法杖「魔攻檢定 +1」查出是首版種子資料的幻覺**（原書 p.130 為 No Quality，且該欄位全專案無人讀取）已刪除，並新增**欄位集**護欄；`test:equipment` **180 項**、`test:engine` **328 項** | 2026-10-05 |
 | V | 開卡規則抽離（使用者對「功能範圍」的迷茫 ＋ GM 自訂開局） | **診斷**：創角與編輯共用同一個編輯器（意圖相反）、六個分頁是「角色卡的章節」而非「玩家的決定」、「還缺什麼」只靠小紅點、**開卡規則硬編碼在六個檔案**。**結論：不重寫，先做外科手術**——把開卡規則抽成 `data/creationRules.js`（`DEFAULT_CREATION_RULES`／`resolveCreationRules`／`diffCreationRules`），讀取端改為 `createNewCharacter(overrides, rules)`／`validateCharacter(char, rules)`／`CharacterEditor`／`ClassPickerModal`／`EquipmentPickerModal`。這條縫同時是 GM 自訂開局、創角／編輯分流、Playtest 規則開關的共同前置。**兩個刻意的設計決定**：只放有讀取端的欄位（未收錄的底力技不預開旗標，並以欄位集護欄把關）；拓展的「上限」與「預設勾選」分成兩個欄位（上限預設全部手冊，否則會靜默鎖住既有使用者的拓展與 81 組擴充 preset）。**刻意沒動**：引擎的 `Math.max(5, …)`（既有缺陷 #3，屬待裁定）。新增 `test:creation` **69 項**（含硬編碼不得回流的原始碼護欄） | 2026-10-05 |
 | W | 成長履歷（§V 順序表的第 2 項） | 角色卡從「現在是什麼」變成「**怎麼變成這樣的**」。新增 `utils/characterLog.js`：`LOG_KINDS` 封閉詞彙（12 種）、`createLogEntry`、`appendLog`、`loggableChange`、`summarizeLog`、`formatChange`。**五個設計決定**：append-only；**帶前後值**（「HP 12 → 8」，只寫「HP 變成 8」沒有用）；**存在角色物件內**（名冊本來就是單一 blob，同步／備份免費，`keys.js` 不動）；種類**封閉詞彙**（未登記者拒收）；**連續同值合併**（每種 kind 宣告 `coalesce` 毫秒數——這是「可用的履歷」與「雜訊」的分界，等級 60 秒時窗順帶解決數字輸入的兩筆問題）。**寫入端只改兩個出口**（兩支 `updateField` 加 `meta` 參數）；技能變更逐技能比對 SL 寫成「【元素魔法】SL 1 → 2」；建卡那一筆寫在**引擎層**。新增 `CharacterLogModal`（摘要磚全部由 `changes` 推導、玩家可自由補記含日期），入口為名冊卡片與跑團卡標頭共用。**過程失誤**：`loggableChange` 起初只看 `changes` 是否為空 → 「`fields: []` ＋ 標題」的呼叫端靜默不記錄（**測試抓到**）；另有一次 `edit` 把 `useState` 吞進註解（**沒有測試抓到**，重讀時發現）。`test:log` **85 項** | 2026-10-05 |
+| X | 創角／編輯分流（§V1 診斷的第 1、3、4 點；使用者最初抱怨的「繁瑣不直觀」） | ① **定稿狀態**：`character.locked`／`lockedAt` ＋ `isCharacterLocked`／`lockCharacter`／`unlockCharacter`／`LOCKED_CREATION_TABS`，兩者都留下一筆履歷（新增第 13 種記錄種類 `lock`）。**新角色預設未定稿；舊存檔沒有這個欄位 → 一律視為未定稿，行為與以前完全相同**。② **導航列本身就是進度表**：`buildCreationChecklist` 把 `validateCharacter` 的結果按步驟分成「已完成／待處理／有問題」，**不新增驗證邏輯**；完成的步驟打勾，並**順手修掉一個既有缺陷**——側邊欄第二行原本印的是 `{t.label}`（與第一行一模一樣），現在顯示第一則提醒。③ **用 `<fieldset disabled>` 一次凍結整頁**（HTML 原生語意，不會漏掉任何控件；逐個 input 加 `disabled` 在 2,000 行元件裡必然會漏）；凍結範圍**刻意不含導航列**與解鎖按鈕。**刻意沒做**：分頁重組成決定導向流程、逐欄位權限、把定稿做成權限系統（那要等 campaign 與房間同步）。`test:creation` **102 項** | 2026-10-05 |
 
 ## 7. 本檔維護
 

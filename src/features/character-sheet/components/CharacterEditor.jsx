@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import {
   GiSparkles,
+  GiPadlock,
   GiCrossedSwords,
   GiBroadsword,
   GiShield,
@@ -46,7 +47,7 @@ import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
-import { loggableChange } from '../utils/characterLog';
+import { loggableChange, formatLogTime } from '../utils/characterLog';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
@@ -61,7 +62,12 @@ import StarterPresetsModal from './StarterPresetsModal';
 import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
-  validateCharacter
+  validateCharacter,
+  isCharacterLocked,
+  lockCharacter,
+  unlockCharacter,
+  buildCreationChecklist,
+  LOCKED_CREATION_TABS
 } from '../utils/characterEngine';
 import {
   EQUIPMENT_SLOTS,
@@ -113,6 +119,27 @@ export default function CharacterEditor({
   // Validation checklist（以這一團的規則驗證，不是寫死的官方標準）
   const validation = validateCharacter(character, rules);
   const stats = calculateCharacterStats(character);
+
+  // 創角進度：同一份驗證結果按步驟整理成主線（導航列本身就是進度表）
+  const checklist = buildCreationChecklist(character, rules);
+  const checklistById = new Map(checklist.map((item) => [item.id, item]));
+  const blockedCount = checklist.filter((item) => item.status === 'error').length;
+  const canLock = blockedCount === 0;
+
+  // 定稿狀態：創角欄位凍結，只留成長相關的欄位可以動
+  const locked = isCharacterLocked(character);
+  const frozenTab = locked && LOCKED_CREATION_TABS.includes(activeTab);
+
+  const handleLock = () => {
+    onChange(lockCharacter(character));
+    if (showToast) showToast('已定稿——創角欄位凍結，成長仍可繼續');
+  };
+
+  const handleUnlock = () => {
+    if (typeof window !== 'undefined' && !window.confirm('解除定稿會重新開放身世與四維屬性，確定嗎？')) return;
+    onChange(unlockCharacter(character));
+    if (showToast) showToast('已解除定稿——創角欄位重新開放');
+  };
 
   /**
    * 所有欄位變更的唯一出口。
@@ -570,13 +597,14 @@ export default function CharacterEditor({
           <button
             type="button"
             onClick={() => setIsPresetsModalOpen(true)}
-            className="w-full inline-flex items-center justify-between px-3.5 py-2.5 rounded-xl border font-bold transition-all shadow-xs hover:scale-102 group text-left cursor-pointer"
+            disabled={locked}
+            className="w-full inline-flex items-center justify-between px-3.5 py-2.5 rounded-xl border font-bold transition-all shadow-xs hover:scale-102 group text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             style={{
               borderColor: theme.border,
               backgroundColor: theme.subpanelBg,
               color: theme.textDark
             }}
-            title="一鍵套用官方經典職業搭配（職業、特技、屬性骰、裝備配置）"
+            title={locked ? '已定稿——套用官方配置會重寫屬性與職業，請先解除定稿' : '一鍵套用官方經典職業搭配（職業、特技、屬性骰、裝備配置）'}
           >
             <div className="flex items-center gap-2">
               <GiSparkles className="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" style={{ color: theme.accent }} />
@@ -590,6 +618,55 @@ export default function CharacterEditor({
             </span>
           </button>
 
+          {/* 定稿狀態卡：「還在創角」與「已經在跑」的分界 */}
+          <div
+            className="rounded-xl border shadow-xs p-3 flex flex-col gap-2 transition-colors"
+            style={{
+              backgroundColor: theme.cardBg,
+              borderColor: locked ? theme.accent : theme.border
+            }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <GameIcon name="GiPadlock" size={13} style={{ color: locked ? theme.accent : theme.textMuted }} />
+                <span className="text-[11px] font-black" style={{ color: theme.textDark }}>
+                  {locked ? '已定稿' : '創角中'}
+                </span>
+              </div>
+              {locked && character.lockedAt && (
+                <span className="text-[9px] font-mono shrink-0" style={{ color: theme.textMuted }}>
+                  {formatLogTime(character.lockedAt)}
+                </span>
+              )}
+            </div>
+
+            <p className="text-[10px] leading-relaxed" style={{ color: theme.textMuted }}>
+              {locked
+                ? '身世與四維屬性已凍結；等級、技能、裝備、羈絆、命刻仍可隨時調整。'
+                : canLock
+                  ? '六個步驟都通過規則檢查，可以定稿了。定稿後創角欄位會凍結。'
+                  : `還有 ${blockedCount} 項未符合規則，補完後即可定稿。`}
+            </p>
+
+            <button
+              type="button"
+              onClick={locked ? handleUnlock : handleLock}
+              disabled={!locked && !canLock}
+              className={`w-full text-[11px] font-bold px-2.5 py-2 rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed ${
+                locked ? 'hover:bg-rose-50' : 'hover:scale-101'
+              }`}
+              style={{
+                backgroundColor: locked ? theme.cardBg : (canLock ? '#059669' : theme.subpanelBg),
+                borderColor: locked ? theme.border : (canLock ? '#047857' : theme.border),
+                color: locked ? theme.textDark : (canLock ? '#ffffff' : theme.textMuted)
+              }}
+              title={locked ? '解除定稿會重新開放身世與四維屬性' : '定稿後創角欄位凍結，只留成長相關欄位'}
+            >
+              <GiPadlock className="w-3.5 h-3.5" />
+              {locked ? '解鎖編輯' : '完成創角'}
+            </button>
+          </div>
+
           {/* 5 大步驟縱向清單 */}
           <div
             className="rounded-xl border shadow-xs p-2 flex flex-col gap-1 transition-colors"
@@ -600,10 +677,9 @@ export default function CharacterEditor({
             </div>
 
             {TABS.map(t => {
-              const tabWarnings = validation.warnings.filter(w => w.step === t.id);
-              const hasError = tabWarnings.some(w => w.type === 'error');
-              const hasWarn = tabWarnings.some(w => w.type !== 'error');
+              const step = checklistById.get(t.id) || { status: 'todo', message: '', issueCount: 0 };
               const isTabActive = activeTab === t.id;
+              const isFrozen = locked && LOCKED_CREATION_TABS.includes(t.id);
 
               return (
                 <button
@@ -628,23 +704,27 @@ export default function CharacterEditor({
                       {t.id}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-xs font-bold leading-tight">
+                      <div className="truncate text-xs font-bold leading-tight flex items-center gap-1">
                         {t.label}
+                        {isFrozen && <GameIcon name="GiPadlock" size={10} className="shrink-0" />}
                       </div>
-                      <div className={`text-[10px] font-mono leading-tight mt-0.5 truncate ${
+                      {/* 這一行以前是標籤的重複；改成「這一格還缺什麼」，導航列就變成進度表 */}
+                      <div className={`text-[10px] leading-tight mt-0.5 truncate ${
                         isTabActive ? 'text-white/80' : 'text-slate-400'
                       }`}>
-                        {t.label}
+                        {step.message}
                       </div>
                     </div>
                   </div>
 
-                  {/* 狀態徽章 */}
-                  {hasError ? (
-                    <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-200 shrink-0" />
-                  ) : hasWarn ? (
-                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                  ) : null}
+                  {/* 狀態：完成打勾、待處理黃點、有問題紅點 */}
+                  {step.status === 'error' ? (
+                    <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-200 shrink-0" title="有未符合規則的項目" />
+                  ) : step.status === 'todo' ? (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="還有提醒項目" />
+                  ) : (
+                    <GiCheckMark className={`w-3.5 h-3.5 shrink-0 ${isTabActive ? 'text-white' : 'text-emerald-600'}`} />
+                  )}
                 </button>
               );
             })}
@@ -825,9 +905,13 @@ export default function CharacterEditor({
               className="flex-1 text-xs font-bold border rounded-lg px-2.5 py-1 outline-none"
               style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
             >
-              {TABS.map(t => (
-                <option key={t.id} value={t.id}>{t.id}. {t.label}</option>
-              ))}
+              {TABS.map(t => {
+                const step = checklistById.get(t.id);
+                const mark = step?.status === 'done' ? '✓' : step?.status === 'todo' ? '△' : '✕';
+                return (
+                  <option key={t.id} value={t.id}>{t.id}. {mark} {t.label}</option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -838,6 +922,12 @@ export default function CharacterEditor({
           style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
         >
           <ErrorBoundary inline label={TABS.find(t => t.id === activeTab)?.label || '編輯步驟'}>
+          {/* 定稿後凍結創角分頁：`fieldset[disabled]` 會連同內部所有表單控件一起停用，
+              所以不必逐個 input 加 disabled（也才不會漏掉任何一個） */}
+          <fieldset
+            disabled={frozenTab}
+            className="border-0 p-0 m-0 min-w-0 disabled:opacity-60"
+          >
 
           {/* ==================== TAB 1: 基礎身世 ==================== */}
           {activeTab === 1 && (
@@ -1134,7 +1224,8 @@ export default function CharacterEditor({
                   size="sm"
                   icon={Plus}
                   onClick={() => setIsClassPickerOpen(true)}
-                  disabled={(character.classes || []).length >= 3 && (character.level || 5) <= 5}
+                  disabled={locked || ((character.classes || []).length >= rules.classCountMax && (character.level || rules.startingLevel) <= rules.startingLevel)}
+                  title={locked ? '已定稿——新增職業屬創角決定，請先解除定稿' : undefined}
                 >
                   選擇職業
                 </JRPGButton>
@@ -1164,6 +1255,8 @@ export default function CharacterEditor({
                       size="sm"
                       icon={Plus}
                       onClick={() => setIsClassPickerOpen(true)}
+                      disabled={locked}
+                      title={locked ? '已定稿——新增職業屬創角決定，請先解除定稿' : undefined}
                     >
                       選擇職業
                     </JRPGButton>
@@ -1745,6 +1838,7 @@ export default function CharacterEditor({
               </div>
             </div>
           )}
+          </fieldset>
           </ErrorBoundary>
 
           {/* Wizard Footer Navigation Bar */}

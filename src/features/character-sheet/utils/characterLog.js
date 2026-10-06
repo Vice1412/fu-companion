@@ -33,6 +33,7 @@ export const LOG_KINDS = Object.freeze({
   exp: { label: 'EXP', icon: 'GiProgression', tone: 'emerald', coalesce: 120000 },
   zenit: { label: '資金', icon: 'GiTwoCoins', tone: 'amber', coalesce: 120000 },
   reward: { label: '團務獎勵', icon: 'GiTrophyCup', tone: 'violet', coalesce: 0 },
+  lock: { label: '定稿', icon: 'GiPadlock', tone: 'stone', coalesce: 0 },
   note: { label: '記事', icon: 'GiQuillInk', tone: 'stone', coalesce: 0 }
 });
 

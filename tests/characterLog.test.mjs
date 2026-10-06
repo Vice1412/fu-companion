@@ -56,8 +56,8 @@ check('每一種 kind 都有 label／icon／coalesce',
   Object.entries(LOG_KINDS).filter(([, v]) =>
     typeof v.label !== 'string' || typeof v.icon !== 'string' || typeof v.coalesce !== 'number'
   ).map(([k]) => k), []);
-check('kind 數量（建卡／等級／技能／裝備／HP／MP／IP／物語點／EXP／資金／團務獎勵／記事）',
-  Object.keys(LOG_KINDS).length, 12);
+check('kind 數量（建卡／等級／技能／裝備／HP／MP／IP／物語點／EXP／資金／團務獎勵／定稿／記事）',
+  Object.keys(LOG_KINDS).length, 13);
 check('未登記的 kind 一律拒收',
   createLogEntry({ kind: '不存在的種類', title: 'x' }), null);
 check('未登記的 kind 不會寫進角色',

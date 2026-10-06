@@ -23,8 +23,15 @@ import {
 import {
   createNewCharacter,
   validateCharacter,
-  calculateCharacterStats
+  calculateCharacterStats,
+  isCharacterLocked,
+  lockCharacter,
+  unlockCharacter,
+  buildCreationChecklist,
+  CREATION_STEPS,
+  LOCKED_CREATION_TABS
 } from '../src/features/character-sheet/utils/characterEngine.js';
+import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
 import { SOURCEBOOKS } from '../src/features/character-sheet/data/sourcebookConfig.js';
 
 let pass = 0;
@@ -211,8 +218,90 @@ check('預設規則（上限＝全部手冊）不會對拓展報錯',
 check('規則不影響數值引擎（換規則不會改變同一張卡的 HP）',
   calculateCharacterStats(base()).maxHp, calculateCharacterStats(base()).maxHp);
 
-// ─────────────────────────────────────────────────────────── E
-section('E. 原始碼護欄：硬編碼不得回流');
+// ─────────────────────────────────────────────────────────── F
+section('F. 創角定稿：把「開好就固定」變成真實狀態');
+
+const T0 = '2026-10-05T09:00:00.000Z';
+const T1 = '2026-10-06T09:00:00.000Z';
+
+const unlocked = createNewCharacter();
+check('新角色預設未定稿', [unlocked.locked, unlocked.lockedAt], [false, null]);
+check('舊存檔（沒有 locked 欄位）視為未定稿', isCharacterLocked({ name: '舊角色' }), false);
+check('locked 不是 true 也視為未定稿', isCharacterLocked({ locked: 'yes' }), false);
+check('角色為 null 不炸', isCharacterLocked(null), false);
+
+const lockedChar = lockCharacter(unlocked, { at: T0 });
+check('定稿後 locked 為 true', lockedChar.locked, true);
+check('定稿時間寫入 lockedAt', lockedChar.lockedAt, T0);
+check('定稿留下一筆履歷', getLog(lockedChar).map((e) => e.kind), ['creation', 'lock']);
+check('履歷標題', getLog(lockedChar)[1].title, '角色定稿');
+check('定稿不就地修改原角色', unlocked.locked, false);
+check('不傳時間也能定稿', Number.isFinite(Date.parse(lockCharacter(unlocked).lockedAt)), true);
+
+const unlockedAgain = unlockCharacter(lockedChar, { at: T1 });
+check('解鎖後 locked 為 false', unlockedAgain.locked, false);
+check('解鎖後 lockedAt 清空', unlockedAgain.lockedAt, null);
+check('解鎖也留下一筆履歷（查得到什麼時候解鎖過）',
+  getLog(unlockedAgain).map((e) => e.kind), ['creation', 'lock', 'lock']);
+check('解鎖的標題說明原因', getLog(unlockedAgain)[2].title, '解除定稿（重新開放創角欄位）');
+
+check('凍結的分頁是身世與四維', [...LOCKED_CREATION_TABS], [1, 2]);
+
+// ─────────────────────────────────────────────────────────── G
+section('G. 創角進度清單：把驗證結果變成一條主線');
+
+const blankList = buildCreationChecklist(createNewCharacter());
+check('清單有六個步驟且與 CREATION_STEPS 一致',
+  blankList.map((i) => i.id), CREATION_STEPS.map((i) => i.id));
+check('每一步都有顯示名', blankList.every((i) => Boolean(i.label)), true);
+check('空白角色：身世待處理（缺姓名等）', blankList[0].status, 'todo');
+check('空白角色：四維已完成（預設 8×4 = 32）', blankList[1].status, 'done');
+check('空白角色：職業有問題（0 個職業）', blankList[2].status, 'error');
+check('有問題的步驟帶錯誤數', blankList[2].errorCount, 1);
+check('完成的步驟給出說明文字', blankList[1].message, '骰階點數已分配完成');
+check('待處理的步驟給出第一則提醒', blankList[0].message, '尚未設定身份');
+
+// 清單不新增驗證邏輯：狀態必須與 validateCharacter 的分組一致
+const grouped = validateCharacter(createNewCharacter()).warnings.reduce((acc, w) => {
+  acc[w.step] = acc[w.step] || [];
+  acc[w.step].push(w);
+  return acc;
+}, {});
+check('清單狀態與 validateCharacter 的分組一致',
+  blankList.map((i) => {
+    const issues = grouped[i.id] || [];
+    const errors = issues.filter((w) => w.type === 'error').length;
+    return errors > 0 ? 'error' : (issues.length > 0 ? 'todo' : 'done');
+  }),
+  blankList.map((i) => i.status));
+
+// 一張「該填的都填了」的卡：六步全綠、可以定稿
+const finished = createNewCharacter({
+  name: '完成測試',
+  identity: '流浪劍士',
+  origin: '邊境村落',
+  classes: [
+    { className: '守護者', level: 5, skills: [{ name: '測試技能', sl: 5 }] },
+    { className: '元素師', level: 0, skills: [] }
+  ]
+});
+const finishedList = buildCreationChecklist(finished);
+check('填完的卡：六步全部完成',
+  finishedList.map((i) => i.status), ['done', 'done', 'done', 'done', 'done', 'done']);
+check('填完的卡：沒有阻擋定稿的項目',
+  finishedList.filter((i) => i.status === 'error').length, 0);
+check('GM 規則會反映在清單上（必修職業未修習 → 該步有問題）',
+  buildCreationChecklist(finished, { requiredClasses: ['靈師'] })
+    .find((i) => i.id === 3).status, 'error');
+check('GM 收窄職業數也會反映在清單上',
+  buildCreationChecklist(finished, { classCountMin: 3, classCountMax: 3 })
+    .find((i) => i.id === 3).status, 'error');
+check('未開放金手指且有金手指 → 第 6 步有問題',
+  buildCreationChecklist(createNewCharacter({ quirk: '倖存者' }), { allowQuirk: false })
+    .find((i) => i.id === 6).status, 'error');
+
+// ─────────────────────────────────────────────────────────── H
+section('H. 原始碼護欄：硬編碼不得回流');
 
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 const editor = read('../src/features/character-sheet/components/CharacterEditor.jsx');
@@ -230,6 +319,14 @@ check('characterEngine 不再寫死「起始 5 級」的職業數判斷', engine
 check('三個檔案都改讀 creationRules',
   [editor.includes('resolveCreationRules'), classPicker.includes('resolveCreationRules'), engine.includes('resolveCreationRules')],
   [true, true, true]);
+check('編輯器有定稿與解鎖的動作',
+  [editor.includes('lockCharacter('), editor.includes('unlockCharacter(')], [true, true]);
+check('凍結是用 fieldset 一次涵蓋整個分頁，不是逐個 input 加 disabled',
+  editor.includes('disabled={frozenTab}'), true);
+check('側邊欄不再重複顯示標籤，改顯示進度訊息',
+  [editor.includes('step.message'), editor.includes('checklistById')], [true, true]);
+check('已定稿時仍可切換分頁（導航列不在凍結範圍內）',
+  editor.includes('const frozenTab = locked && LOCKED_CREATION_TABS.includes(activeTab)'), true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

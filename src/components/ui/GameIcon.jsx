@@ -75,6 +75,7 @@ import {
   GiChest,
   GiProgression,
   GiTrophyCup,
+  GiPadlock,
 
   // Equipment Categories & Slots (武器十大類別與四個裝備欄位)
   GiPocketBow,
@@ -349,6 +350,7 @@ export const GAME_ICONS_MAP = {
   GiTwoCoins,
   GiTrophyCup,
   GiQuillInk,
+  GiPadlock,
 
   // Equipment Items (裝備設計器逐項對照；由 equipmentRules.js 的 EQUIPMENT_ICONS 指定元件名)
   GiSpellBook,
