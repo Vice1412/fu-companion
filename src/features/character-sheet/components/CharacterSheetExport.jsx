@@ -4,6 +4,8 @@ import { GiScrollUnfurled, GiCheckMark } from 'react-icons/gi';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import GameIcon from '../../../components/ui/GameIcon';
 import rulesData from '../data/rulesData.json';
+import SkillDescription from '../utils/skillFormulaEvaluator';
+import iconFontUrl from '../../../assets/FabulaUltimaIcons-Regular.otf';
 import { calculateCharacterStats, getProficiencies } from '../utils/characterEngine';
 import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 
@@ -37,34 +39,60 @@ import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 export const SHEET_PAGE_WIDTH = 1123;
 export const SHEET_PAGE_HEIGHT = 794;
 
+/**
+ * 三頁表格的配色。
+ *
+ * **樣式照站內設計，不照官方表的青綠色**（使用者裁定）：
+ * 官方表是深青綠標題條＋灰白欄位，那是「別人家的文件」；
+ * 這張表是《物語手帳》印出來的東西，所以用站內的羊皮紙色系，
+ * 標題條取**該角色自己的主題色**（跟畫面上的卡片一致）。
+ *
+ * 用 CSS 變數而不是把調色盤傳進每個子元件：三頁裡有十幾個小元件，
+ * 逐一傳 prop 只為了換顏色並不值得；變數掛在最外層，`html-to-image`
+ * 取 computed style 時會拿到解析後的值，所以複製出去的節點一樣正確。
+ */
+export const sheetVars = (theme = null) => ({
+  // 頁面底色用主題的「頁面底」（比卡片深一階），卡片用主題的「卡片底」——
+  // 這樣才會有站內那種「淡色底 ＋ 白卡片」的層次；兩者同色的話框線會整個消失。
+  '--sh-bg': theme?.sheetBg || theme?.appBg || '#fbf7ee',
+  '--sh-box': theme?.cardBg || '#fffdf9',
+  '--sh-bar': theme?.accent || '#8a6a45',
+  '--sh-bar-ink': '#fffdf9',
+  '--sh-border': theme?.border || '#d6c7ab',
+  '--sh-soft': theme?.subpanelBg || '#f4ebd9',
+  '--sh-ink': theme?.textDark || '#3c2415',
+  '--sh-faint': theme?.textMuted || '#6b5a4b'
+});
+
 const C = {
-  bar: '#2f5d57',
-  barText: '#ffffff',
-  border: '#b9c6c3',
-  soft: '#f2f4f3',
-  ink: '#1b2b28',
-  faint: '#6b7a77'
+  bar: 'var(--sh-bar)',
+  barText: 'var(--sh-bar-ink)',
+  border: 'var(--sh-border)',
+  soft: 'var(--sh-soft)',
+  box: 'var(--sh-box)',
+  ink: 'var(--sh-ink)',
+  faint: 'var(--sh-faint)'
 };
 
 const S = {
   page: {
     width: SHEET_PAGE_WIDTH,
     height: SHEET_PAGE_HEIGHT,
-    backgroundColor: '#ffffff',
+    backgroundColor: C.box,
     color: C.ink,
-    padding: '20px 22px',
+    padding: '16px 18px',
     boxSizing: 'border-box',
     display: 'flex',
     gap: '16px',
     fontFamily: '"Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif',
     overflow: 'hidden'
   },
-  col: { display: 'flex', flexDirection: 'column', gap: '7px', minWidth: 0 },
+  col: { display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 },
   box: {
     border: `1px solid ${C.border}`,
     borderRadius: '3px',
     overflow: 'hidden',
-    backgroundColor: '#ffffff'
+    backgroundColor: C.box
   },
   bar: {
     backgroundColor: C.bar,
@@ -78,7 +106,7 @@ const S = {
     gap: '6px'
   },
   barNote: { fontSize: '8.5px', fontWeight: 400, opacity: 0.92 },
-  body: { padding: '6px 8px' },
+  body: { padding: '4px 7px' },
   label: { fontSize: '9px', fontWeight: 700, color: C.ink, letterSpacing: '0.04em' },
   value: { fontSize: '10px', color: C.ink },
   faint: { fontSize: '8.5px', color: C.faint },
@@ -108,8 +136,8 @@ const Check = ({ on }) => (
       fontSize: '9px',
       lineHeight: 1,
       flex: '0 0 auto',
-      backgroundColor: on ? C.ink : '#ffffff',
-      color: on ? '#ffffff' : 'transparent'
+      backgroundColor: on ? C.ink : C.box,
+      color: on ? C.barText : 'transparent'
     }}
   >
     {on ? '✓' : ''}
@@ -257,12 +285,24 @@ export const buildSheetModel = (character, stats = null) => {
     desc: sp.desc || sp.effect || ''
   }));
 
-  const classes = (ch.classes || []).map((cl) => ({
-    className: cl.className,
-    level: cl.level || 0,
-    freeBenefit: cl.chosenBenefit === 'mp' ? '最大 MP +5' : (cl.chosenBenefit === 'hp' ? '最大 HP +5' : ''),
-    skills: (cl.skills || []).map((sk) => `${sk.name}　SL ${sk.sl}`)
-  }));
+  // 職業與技能：**帶效果全文**（使用者要的是「丟進 TTS 給玩家隨時查」，不能只有技能名）
+  const classes = (ch.classes || []).map((cl) => {
+    const classDef = rulesData.classes?.[cl.className];
+    return {
+      className: cl.className,
+      level: cl.level || 0,
+      freeBenefit: cl.chosenBenefit === 'mp' ? '最大 MP +5' : (cl.chosenBenefit === 'hp' ? '最大 HP +5' : ''),
+      skills: (cl.skills || []).map((sk) => {
+        const skillDef = (classDef?.skills || []).find((s) => s.name === sk.name);
+        return {
+          name: sk.name,
+          sl: sk.sl,
+          maxSL: skillDef?.maxSL || 0,
+          desc: skillDef?.desc || ''
+        };
+      })
+    };
+  });
 
   return {
     name: ch.name || '',
@@ -300,12 +340,24 @@ export const buildSheetModel = (character, stats = null) => {
     classes,
     page1Classes: classes.slice(0, 3),
     otherClasses: classes.slice(3, 7),
-    heroicSkills: (ch.heroicSkills || []).map((h) => (typeof h === 'string' ? h : `${h.name}${h.sl ? `　SL ${h.sl}` : ''}`)),
+    // 英雄技能也帶效果全文（同樣是為了「丟進 TTS 給玩家查」）
+    heroicSkills: (ch.heroicSkills || []).map((h) => {
+      const name = typeof h === 'string' ? h : h.name;
+      const sl = typeof h === 'string' ? null : h.sl;
+      const def = (rulesData.heroicSkills || []).find((x) => x.name === name);
+      return { name, sl, requirement: def?.requirement || '', effect: def?.effect || '' };
+    }),
     spells: spellRows,
     page2Spells: spellRows.slice(0, 7),
     page3Spells: spellRows.slice(7, 21),
     disciplines,
-    quirk: ch.quirk && ch.quirk !== '無' ? ch.quirk : ''
+    quirk: ch.quirk && ch.quirk !== '無' ? ch.quirk : '',
+    // 金手指的效果全文（表上原本只有名字，等於什麼都沒說）
+    quirkDesc: (() => {
+      const name = ch.quirk && ch.quirk !== '無' ? ch.quirk : '';
+      if (!name) return '';
+      return (rulesData.quirks || []).find((x) => x.name === name)?.desc || '';
+    })()
   };
 };
 
@@ -345,7 +397,7 @@ const TraitsBox = ({ model }) => (
 
 const BondsBox = ({ model }) => (
   <Box title="羈絆">
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 14px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 12px' }}>
       {model.bonds.map((bond) => (
         <div key={bond.index} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ ...S.faint, width: '8px' }}>{bond.index}</span>
@@ -367,34 +419,39 @@ const BondsBox = ({ model }) => (
 const RulesList = ({ lines }) => (
   <ul style={{ margin: 0, paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
     {lines.map((t) => (
-      <li key={t} style={{ fontSize: '8.5px', lineHeight: 1.35 }}>{t}</li>
+      <li key={t} style={{ fontSize: '7.5px', lineHeight: 1.22 }}>{t}</li>
     ))}
   </ul>
 );
 
 const ClassSlot = ({ slot }) => (
   <div style={{ ...S.box, display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: '104px' }}>
-    <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ flex: '0 0 52%', backgroundColor: C.bar, color: C.barText, fontSize: '8.5px', fontWeight: 700, padding: '2px 6px' }}>
-        職業 / 等級
-      </div>
-      <div style={{ flex: '1 1 auto', backgroundColor: C.soft, fontSize: '8.5px', fontWeight: 700, padding: '2px 6px' }}>
-        免費增益
-      </div>
-    </div>
-    <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ flex: '0 0 52%', fontSize: '11px', fontWeight: 700, padding: '3px 6px' }}>
+    {/* 標題列與數值列合併成一列——固定版面裡每一列都很貴，省下來給技能效果 */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderBottom: `1px solid ${C.border}`, padding: '2px 6px' }}>
+      <span style={{ fontSize: '11px', fontWeight: 700 }}>
         {slot ? `${slot.className}　Lv ${slot.level}` : ''}
-      </div>
-      <div style={{ flex: '1 1 auto', fontSize: '9px', padding: '3px 6px', backgroundColor: '#fbfcfc' }}>
-        {slot?.freeBenefit || ''}
-      </div>
+      </span>
+      {slot?.freeBenefit ? (
+        <span style={{ marginLeft: 'auto', fontSize: '8.5px', color: C.faint }}>
+          免費增益：{slot.freeBenefit}
+        </span>
+      ) : null}
     </div>
-    <div style={{ flex: '1 1 auto', padding: '3px 6px' }}>
-      <div style={{ ...S.faint, fontSize: '8px', marginBottom: '2px' }}>技能資訊</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-        {(slot?.skills || []).map((t) => (
-          <span key={t} style={{ fontSize: '9px' }}>{t}</span>
+    <div style={{ flex: '1 1 auto', padding: '2px 6px', minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {(slot?.skills || []).map((sk) => (
+          <div key={sk.name}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontSize: '9px', fontWeight: 700 }}>{sk.name}</span>
+              <span style={{ fontSize: '8px', color: C.faint }}>
+                SL {sk.sl}{sk.maxSL ? ` / ${sk.maxSL}` : ''}
+              </span>
+            </div>
+            {/* 效果全文：使用者要的是「丟進 TTS 給玩家隨時查」，所以不能只有技能名 */}
+            {sk.desc ? (
+              <SkillDescription desc={sk.desc} sl={sk.sl} className="sheet-skill-desc" />
+            ) : null}
+          </div>
         ))}
       </div>
     </div>
@@ -436,7 +493,7 @@ const SpellTable = ({ rows, count }) => {
             }}
           >
             <div style={{ height: '13px', backgroundColor: C.soft, borderRadius: '2px' }} />
-            <div style={{ flex: '1 1 auto', backgroundColor: '#fafbfb', borderRadius: '2px' }} />
+            <div style={{ flex: '1 1 auto', backgroundColor: C.box, borderRadius: '2px' }} />
           </div>
         ))}
       </div>
@@ -460,8 +517,8 @@ const RitualBox = ({ model }) => (
 
 // ───────────────────────────────────────── 三頁
 
-export const OfficialSheetPage1 = ({ model }) => (
-  <div style={S.page} data-sheet-page="1">
+export const OfficialSheetPage1 = ({ model, vars = null }) => (
+  <div style={{ ...S.page, ...vars }} data-sheet-page="1">
     {/* 左欄 */}
     <div style={{ ...S.col, flex: '0 0 528px' }}>
       <NameHeader model={model} />
@@ -517,7 +574,7 @@ export const OfficialSheetPage1 = ({ model }) => (
                 display: 'grid',
                 gridTemplateColumns: '120px 1fr',
                 borderTop: `1px solid ${C.border}`,
-                padding: '3px 0',
+                padding: '2px 0',
                 alignItems: 'start'
               }}
             >
@@ -548,15 +605,15 @@ export const OfficialSheetPage1 = ({ model }) => (
 
     {/* 右欄 */}
     <div style={{ ...S.col, flex: '1 1 auto' }}>
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
         <div
           style={{
             ...S.box,
-            flex: '0 0 150px',
+            flex: '0 0 132px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '150px'
+            minHeight: '120px'
           }}
         >
           {model.avatar && (model.avatar.startsWith('http') || model.avatar.startsWith('data:')) ? (
@@ -568,42 +625,41 @@ export const OfficialSheetPage1 = ({ model }) => (
           )}
         </div>
 
-        <Box title="四維屬性與狀態" style={{ flex: '1 1 auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {/* 四維／狀態／三項資源合成一格：固定版面裡「一個標題條 ＋ 一格間距」很貴，
+            合併後直接讓出三十幾像素給下面的技能效果全文。 */}
+        <Box title="屬性・狀態・資源" style={{ flex: '1 1 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', ...S.faint, fontSize: '8px' }}>
               <span /><span>基礎</span><span>當前</span>
             </div>
             {model.attributes.base.map((a, i) => (
               <div key={a.key} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', alignItems: 'center' }}>
                 <span style={{ fontSize: '9.5px', fontWeight: 700 }}>{a.cn} {a.en}</span>
-                <span style={{ fontSize: '13px', fontWeight: 700 }}>d{a.value}</span>
-                <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                <span style={{ fontSize: '11px', fontWeight: 700 }}>d{a.value}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700 }}>
                   d{model.attributes.current[i].value}
                 </span>
               </div>
             ))}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px', marginTop: '3px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px 6px', marginTop: '2px' }}>
               {model.statuses.map((st) => (
-                <span key={st.key} style={{ ...S.cell, fontSize: '8.5px' }}>
+                <span key={st.key} style={{ ...S.cell, fontSize: '8px' }}>
                   <Check on={st.on} />
                   {st.cn}
                 </span>
               ))}
             </div>
-          </div>
-        </Box>
-      </div>
 
-      <Box title="生命值・魔力值・物品點">
-        <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr 1fr', gap: '2px 8px', alignItems: 'center' }}>
-          <span />
-          <span style={{ ...S.faint, fontSize: '8px' }}>上限</span>
-          <span style={{ ...S.faint, fontSize: '8px' }}>當前</span>
-          {[['hp', 'HP', '生命值'], ['mp', 'MP', '魔力值'], ['ip', 'IP', '物品點']].map(([key, en, cn]) => (
-            <React.Fragment key={key}>
-              <span style={{ fontSize: '11px', fontWeight: 700 }}>{en}</span>
-              <span style={{ fontSize: '15px', fontWeight: 700 }}>{model.pools[key].max}</span>
-              <span style={{ fontSize: '15px', fontWeight: 700 }}>
+            <div style={{ borderTop: `1px solid ${C.border}`, marginTop: '3px', paddingTop: '3px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '44px 1fr 1fr', gap: '1px 8px', alignItems: 'center' }}>
+                <span />
+                <span style={{ ...S.faint, fontSize: '8px' }}>上限</span>
+                <span style={{ ...S.faint, fontSize: '8px' }}>當前</span>
+                {[['hp', 'HP', '生命值'], ['mp', 'MP', '魔力值'], ['ip', 'IP', '物品點']].map(([key, en, cn]) => (
+                  <React.Fragment key={key}>
+                    <span style={{ fontSize: '10px', fontWeight: 700 }}>{en}</span>
+              <span style={{ fontSize: '12px', fontWeight: 700 }}>{model.pools[key].max}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>
                 {model.pools[key].current}
                 {key === 'hp' ? (
                   <span style={{ ...S.faint, fontSize: '8px', marginLeft: '6px' }}>
@@ -613,8 +669,11 @@ export const OfficialSheetPage1 = ({ model }) => (
               </span>
             </React.Fragment>
           ))}
-        </div>
-      </Box>
+              </div>
+            </div>
+          </div>
+        </Box>
+      </div>
 
       <Box
         title="角色等級"
@@ -632,8 +691,8 @@ export const OfficialSheetPage1 = ({ model }) => (
   </div>
 );
 
-export const OfficialSheetPage2 = ({ model }) => (
-  <div style={S.page} data-sheet-page="2">
+export const OfficialSheetPage2 = ({ model, vars = null }) => (
+  <div style={{ ...S.page, ...vars }} data-sheet-page="2">
     <div style={{ ...S.col, flex: '0 0 528px' }}>
       <NameHeader model={model} full />
       <Box
@@ -648,10 +707,31 @@ export const OfficialSheetPage2 = ({ model }) => (
           ))}
         </div>
       </Box>
-      <Box title="英雄技能">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minHeight: '54px' }}>
-          {model.heroicSkills.map((t) => (
-            <span key={t} style={{ fontSize: '9.5px' }}>{t}</span>
+      {/* 金手指：原本只有名字（等於什麼都沒說），改成連效果一起印。
+          放 P2 是因為 P1 的左欄已經滿了，而且金手指的效果文字本來就長。 */}
+      {model.quirk ? (
+        <Box title="金手指" style={{ flex: '0 0 auto' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, marginBottom: '1px' }}>{model.quirk}</div>
+          {model.quirkDesc ? (
+            <SkillDescription desc={model.quirkDesc} sl={1} className="sheet-skill-desc" />
+          ) : null}
+        </Box>
+      ) : null}
+
+      <Box title="英雄技能" style={{ flex: '0 0 auto' }}>        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minHeight: '40px' }}>
+          {model.heroicSkills.map((hs) => (
+            <div key={hs.name}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '9.5px', fontWeight: 700 }}>{hs.name}</span>
+                {hs.sl ? <span style={{ fontSize: '8px', color: C.faint }}>SL {hs.sl}</span> : null}
+                {hs.requirement ? (
+                  <span style={{ fontSize: '8px', color: C.faint }}>（{hs.requirement}）</span>
+                ) : null}
+              </div>
+              {hs.effect ? (
+                <SkillDescription desc={hs.effect} sl={hs.sl || 1} className="sheet-skill-desc" />
+              ) : null}
+            </div>
           ))}
         </div>
       </Box>
@@ -671,8 +751,8 @@ export const OfficialSheetPage2 = ({ model }) => (
   </div>
 );
 
-export const OfficialSheetPage3 = ({ model }) => (
-  <div style={S.page} data-sheet-page="3">
+export const OfficialSheetPage3 = ({ model, vars = null }) => (
+  <div style={{ ...S.page, ...vars }} data-sheet-page="3">
     <div style={{ ...S.col, flex: '1 1 1' }}>
       <NameHeader model={model} full />
       <Box
@@ -735,10 +815,8 @@ const yieldToBrowser = () => new Promise((resolve) => {
  */
 const RASTER_OPTIONS = Object.freeze({
   pixelRatio: 2,
-  backgroundColor: '#ffffff',
   width: SHEET_PAGE_WIDTH,
-  height: SHEET_PAGE_HEIGHT,
-  skipFonts: true
+  height: SHEET_PAGE_HEIGHT
 });
 
 /**
@@ -756,12 +834,44 @@ const withTimeout = (promise, label) => Promise.race([
 ]);
 
 /**
+ * 只內嵌「本機圖示字型」的 CSS，其餘一律不管。
+ *
+ * 為什麼要自己組這一小段：`html-to-image` 預設會去抓**所有**樣式表的字型
+ * （包含 `index.html` 掛的 Google Fonts），抓不到就永遠不 resolve（＝匯出卡死）；
+ * 但完全跳過字型（`skipFonts: true`）又會讓 `.fu-icon` 的官方屬性圖示變成空白方塊。
+ *
+ * 所以：本機那顆 `.otf`（74 KB，同源、離線可用）轉成 data URL 內嵌，
+ * **Google 的一律不碰**。`fontEmbedCSS` 的優先序高於 `skipFonts`，
+ * 所以兩者同時給也安全（前者勝出）。
+ */
+const ICON_FONT_CSS = `@font-face { font-family: 'Fabula Ultima Icons'; src: url(ICON_FONT_URL) format('opentype'); font-weight: normal; font-style: normal; }`;
+
+let iconFontCssPromise = null;
+const getIconFontCss = () => {
+  if (!iconFontCssPromise) {
+    iconFontCssPromise = Promise.resolve()
+      .then(() => fetch(iconFontUrl))
+      .then((res) => res.blob())
+      .then((blob) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }))
+      .then((dataUrl) => ICON_FONT_CSS.replace('ICON_FONT_URL', dataUrl))
+      .catch(() => '');
+  }
+  return iconFontCssPromise;
+};
+
+/**
  * 匯出面板：三頁預覽 ＋ 匯出三個 PNG 或一個三頁 PDF。
  * 預覽用 `transform: scale()` 縮小，但**光柵化的是未縮放的節點**，
  * 所以輸出仍是 1123×794 × pixelRatio 的原始尺寸。
  */
-export function CharacterSheetExportBody({ character, stats = null, showToast = null }) {
+export function CharacterSheetExportBody({ character, stats = null, theme = null, showToast = null }) {
   const model = useMemo(() => buildSheetModel(character, stats), [character, stats]);
+  const vars = useMemo(() => sheetVars(theme), [theme]);
   const pageRefs = useRef([]);
   const [exporting, setExporting] = useState(null); // null | 'png' | 'pdf'
   const [progress, setProgress] = useState('');
@@ -776,6 +886,12 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
   const rasterizePages = async (type) => {
     const out = [];
     const total = SHEET_PAGE_COMPONENTS.length;
+    const fontEmbedCSS = await getIconFontCss();
+    const options = {
+      ...RASTER_OPTIONS,
+      fontEmbedCSS,
+      backgroundColor: vars['--sh-bg']
+    };
     for (let i = 0; i < total; i += 1) {
       const node = pageRefs.current[i];
       if (!node) continue;
@@ -784,8 +900,8 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
       await yieldToBrowser();
       const dataUrl = await withTimeout(
         type === 'jpeg'
-          ? htmlToImage.toJpeg(node, { ...RASTER_OPTIONS, quality: 0.95 })
-          : htmlToImage.toPng(node, RASTER_OPTIONS),
+          ? htmlToImage.toJpeg(node, { ...options, quality: 0.95 })
+          : htmlToImage.toPng(node, options),
         `第 ${i + 1} 頁`
       );
       out.push({ index: i + 1, dataUrl });
@@ -855,10 +971,10 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs" style={{ color: C.faint }}>
-          依官方三頁橫向 A4 表格的版面重繪，內容取自這張卡的實際資料。
+        <p className="text-xs" style={{ color: theme?.textMuted || '#6b5a4b' }}>
+          依官方三頁橫向 A4 表格的版面重繪，配色沿用站內樣式與這個角色的主題色。
           選圖片會得到三個 PNG 檔（瀏覽器可能會詢問是否允許下載多個檔案）；選 PDF 會得到單一三頁檔案。
-          {progress ? <span className="font-bold" style={{ color: C.bar }}>　{progress}</span> : null}
+          {progress ? <span className="font-bold" style={{ color: theme?.accent || '#8a6a45' }}>　{progress}</span> : null}
         </p>
         <div className="flex items-center gap-2 shrink-0">
           <JRPGButton
@@ -884,10 +1000,10 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
 
       <div className="space-y-3">
         {SHEET_PAGE_COMPONENTS.map((Page, i) => (
-          <div key={i} className="rounded-lg border overflow-hidden" style={{ borderColor: C.border }}>
+          <div key={i} className="rounded-lg border overflow-hidden" style={{ borderColor: theme?.border || '#d6c7ab' }}>
             <div
               className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-bold"
-              style={{ backgroundColor: C.bar, color: C.barText }}
+              style={{ backgroundColor: theme?.accentDark || theme?.accent || '#8a6a45', color: '#fffdf9' }}
             >
               <GiCheckMark className="w-3 h-3" />
               第 {i + 1} 頁
@@ -896,7 +1012,7 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
             <div style={{ width: SHEET_PAGE_WIDTH * PREVIEW_SCALE, height: SHEET_PAGE_HEIGHT * PREVIEW_SCALE, overflow: 'hidden' }}>
               <div style={{ transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left' }}>
                 <div ref={(el) => { pageRefs.current[i] = el; }}>
-                  <Page model={model} />
+                  <Page model={model} vars={vars} />
                 </div>
               </div>
             </div>

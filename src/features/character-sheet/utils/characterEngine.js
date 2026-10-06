@@ -78,14 +78,10 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     // 職業與特技配置 (預設為空，起始需配置 2~3 個職業)
     classes: [],
 
-    // 三維六向情感羈絆 (最多 6 個)
-    bonds: [
-      {
-        id: `bond_${Date.now()}_1`,
-        target: "同行冒險夥伴",
-        feelings: ["admiration", "loyalty"]
-      }
-    ],
+    // 三維六向情感羈絆 (上限 6 個)。
+    // 官方創角八步驟**不含羈絆**（原書 p.154），羈絆是在遊戲中的休息場景等時機建立（p.57）；
+    // 「起始帶 1 條羈絆」是選用規則（p.220），本專案未開啟 —— 所以新角色從 0 條開始。
+    bonds: [],
 
     // 武裝配置：開卡時兩手皆為徒手打擊、不穿防具 —— 預算 500z 全額留給玩家自己選購
     equipment: {
@@ -681,15 +677,14 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
     warnings.push({ step: 4, field: 'offHand', type: 'warning', message: '目前裝備職業盾牌，但所選職業缺乏熟練度' });
   }
 
-  // 步驟 5: 羈絆 (官方強烈建議起始至少 1 個)
-  if (!char.bonds || char.bonds.length === 0) {
-    warnings.push({ step: 5, field: 'bonds', type: 'warning', message: '尚未建立任何情感羈絆，建議至少建立 1 個' });
-  }
-
-  // 步驟 6: 特質與金手指（是否開放由開卡規則決定）
+  // 步驟 5: 特質與金手指（是否開放由開卡規則決定）
+  //
+  // 註：羈絆**不在創角驗證範圍內**。原書的創角八步驟沒有羈絆（p.154），
+  // 羈絆是遊戲中於休息場景建立的（p.57），「起始帶 1 條羈絆」只是選用規則（p.220）。
+  // 以前這裡會產生「建議至少建立 1 個」的警告，那是沒有官方來源的杜撰。
   if (!creation.allowQuirk && char.quirk && char.quirk !== '無') {
     warnings.push({
-      step: 6,
+      step: 5,
       field: 'quirk',
       type: 'error',
       message: `此團未開放金手指，請移除「${char.quirk}」`
@@ -716,7 +711,8 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
  * 玩家也分不清自己「還在創角」還是「已經在跑」。
  *
  * `locked` 就是那個狀態。定稿後，創角時做的決定（身世、四維）凍結，
- * 只留成長相關的欄位（等級、技能點、裝備、羈絆、命刻、筆記）可以動。
+ * 只留成長相關的欄位（等級、技能點、裝備、命刻、筆記）可以動。
+ * （羈絆也是成長的一部分，但它不屬創角、編輯器也沒有這一格——於跑團面板管理，見 `CREATION_STEPS`。）
  * **舊存檔沒有這個欄位 → 一律視為未定稿**，行為與以前完全相同。
  */
 export const isCharacterLocked = (char) => char?.locked === true;
@@ -742,14 +738,19 @@ export const unlockCharacter = (char, { at, note = '' } = {}) => {
   );
 };
 
-/** 創角步驟（與 validateCharacter 的 step 編號一一對應） */
+/** 創角步驟（與 validateCharacter 的 step 編號一一對應）
+ *
+ * 為什麼沒有「情感羈絆」這一格：原書的創角流程是八個步驟（Identity／Theme／Origin／
+ * 職業與等級／四維／HP·MP·IP·DEF·M.DEF·先攻／裝備 500z／名字），**沒有羈絆**（p.154）；
+ * 羈絆是遊戲中透過休息場景等時機建立的（p.57），而「起始帶 1 條羈絆」是選用規則（p.220）。
+ * 舊版把它列為創角第 5 步並在驗證時催填，屬無官方來源的杜撰。
+ */
 export const CREATION_STEPS = Object.freeze([
   { id: 1, label: '基礎身世', doneHint: '姓名、身分、主題、故鄉都已填寫' },
   { id: 2, label: '四維屬性', doneHint: '骰階點數已分配完成' },
   { id: 3, label: '職業與技能', doneHint: '職業組合與技能點數已配置' },
   { id: 4, label: '裝備配置', doneHint: '武裝與防具已就緒' },
-  { id: 5, label: '情感羈絆', doneHint: '已建立情感羈絆' },
-  { id: 6, label: '特質與命刻', doneHint: '特質與命刻已確認' }
+  { id: 5, label: '特質與命刻', doneHint: '特質與命刻已確認' }
 ]);
 
 /**

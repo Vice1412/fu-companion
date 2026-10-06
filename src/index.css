@@ -378,3 +378,12 @@ body {
 }
 
 
+
+/* ── 三頁表格匯出（CharacterSheetExport）─────────────────────────────
+   匯出時技能效果全文要塞進 1123×794 的固定版面，所以比站內小一號。
+   放在 @tailwind utilities 之後，才能蓋掉 SkillDescription 內建的 .inline／.leading-relaxed。 */
+.sheet-skill-desc {
+  display: block;
+  font-size: 7px;
+  line-height: 1.14;
+}

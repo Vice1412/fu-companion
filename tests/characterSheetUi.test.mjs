@@ -22,6 +22,7 @@ import {
   OfficialSheetPage3,
   SHEET_PAGE_WIDTH,
   SHEET_PAGE_HEIGHT,
+  sheetVars,
   FABULA_POINT_RULES,
   EXPERIENCE_POINT_RULES,
   SHEET_DISCIPLINES
@@ -186,7 +187,7 @@ const sheetChar = createNewCharacter({
   ],
   equipment: { mainHand: '青銅劍', offHand: '青銅圓盾', armor: '旅行皮甲', accessory: '守護護符' },
   classes: [
-    { className: '守護者', level: 3, chosenBenefit: 'hp', skills: [{ name: '鐵壁', sl: 2 }] },
+    { className: '守護者', level: 3, chosenBenefit: 'hp', skills: [{ name: '防守掌握', sl: 2 }] },
     { className: '元素師', level: 2, skills: [{ name: '元素學派儀式', sl: 1 }] },
     { className: '博學士', level: 1, skills: [] },
     { className: '靈師', level: 1, skills: [{ name: '靈魂學派儀式', sl: 1 }] },
@@ -235,7 +236,10 @@ check('熟練度不是全空（確實有讀到職業）',
 check('P1 職業欄只放前 3 個', model.page1Classes.map((c) => c.className), ['守護者', '元素師', '博學士']);
 check('其他職業從第 4 個開始，最多 4 個', model.otherClasses.map((c) => c.className), ['靈師', '熵師']);
 check('免費增益翻成中文', model.page1Classes[0].freeBenefit, '最大 HP +5');
-check('技能資訊帶 SL', model.page1Classes[0].skills, ['鐵壁　SL 2']);
+check('技能資訊帶 SL（現在是物件，多了效果全文欄位）',
+  [model.page1Classes[0].skills[0].name, model.page1Classes[0].skills[0].sl,
+    'desc' in model.page1Classes[0].skills[0]],
+  ['防守掌握', 2, true]);
 check('咒語 P2 放前 7 條', model.page2Spells.map((s) => s.name),
   ['火球', '治療', '冰錐', '雷擊', '護盾', '淨化', '疾風']);
 check('咒語 P3 接續（第 8 條起）', model.page3Spells.map((s) => s.name), ['暗影']);
@@ -244,7 +248,8 @@ check('咒語列帶 MP／目標／持續時間',
 check('儀式學派由技能名稱推導（元素師＋靈師 → 兩個學派）',
   model.disciplines.filter((d) => d.on).map((d) => d.name), ['元素學派', '靈魂學派']);
 check('六個學派都在表上', model.disciplines.length, 6);
-check('英雄技能', model.heroicSkills, ['英雄的覺悟']);
+check('英雄技能帶效果全文欄位',
+  [model.heroicSkills[0].name, 'effect' in model.heroicSkills[0]], ['英雄的覺悟', true]);
 check('金手指「無」不顯示', buildSheetModel(createNewCharacter({ quirk: '無' })).quirk, '');
 check('金手指有值時顯示', model.quirk, '倖存者');
 check('行囊筆記', model.backpackNotes, '乾糧三份');
@@ -294,14 +299,17 @@ const exportSrc = read('../src/features/character-sheet/components/CharacterShee
 check('PNG 走無損的 toPng（表格線條需要無損）',
   [exportSrc.includes('htmlToImage.toPng'), exportSrc.includes("rasterizePages('png')")], [true, true]);
 check('輸出以 pixelRatio 2 提高解析度', exportSrc.includes('pixelRatio: 2'), true);
-check('白底輸出（不是羊皮紙底色）', exportSrc.includes("backgroundColor: '#ffffff'"), true);
+check('匯出底色跟著角色主題（不再寫死白色／官方青綠）',
+  [exportSrc.includes('sheetVars'), exportSrc.includes('--sh-bg')], [true, true]);
 check('逐頁匯出成三個檔案', exportSrc.includes('SHEET_PAGE_COMPONENTS.length'), true);
 check('檔名帶角色名與頁碼', exportSrc.includes('_角色卡_p'), true);
 check('預覽縮放與光柵化分離（ref 掛在未縮放的內層）',
   [exportSrc.includes('transform: `scale(${PREVIEW_SCALE})`'), exportSrc.includes('pageRefs.current[i] = el')],
   [true, true]);
-check('編輯器有兩個檢視分頁', [editorCode.includes('官方三頁（可匯出 PNG）'), editorCode.includes("previewTab === 'official'")], [true, true]);
-check('卡片檢視仍保留', editorCode.includes('<CharacterCard'), true);
+const previewSrc = read('../src/features/character-sheet/components/CharacterPreviewModal.jsx');
+check('預覽彈窗有兩個分頁（已抽成獨立元件）',
+  [previewSrc.includes('卡片檢視'), previewSrc.includes('三頁表格（可匯出 PNG／PDF）')], [true, true]);
+check('卡片檢視仍保留在彈窗裡', previewSrc.includes('<CharacterCard'), true);
 check('匯出面板有載入中狀態（避免重複點擊）', exportSrc.includes("'匯出中…'"), true);
 
 // ─────────────────────────────────────────────────────────── H
@@ -487,7 +495,61 @@ check('編輯器對 initialTab 做夾制（最後一道防線）',
   [true, true]);
 check('TAB_COUNT 與實際分頁數綁在一起（改了一邊就會在執行時拋錯）',
   editorCode.includes('TABS.length !== TAB_COUNT'), true);
-check('分頁總數仍是 6', (editorCode.match(/icon: '[a-z]+' \}/g) || []).length, 6);
+check('分頁總數是 5（情感羈絆已移除：羈絆不屬創角，原書 p.154）',
+  (editorCode.match(/icon: '[a-z]+' \}/g) || []).length, 5);
+check('編輯器不再有情感羈絆分頁與其處理函式',
+  [
+    editorCode.includes("label: '情感羈絆'"),
+    editorCode.includes('BOND_FEELINGS'),
+    editorCode.includes('handleAddBond')
+  ],
+  [false, false, false]);
+
+// ─────────────────────────────────────────────────────────── L
+section('L. 跑團面板也能預覽／匯出，且內容要完整（使用者要求）');
+
+// 「跑團面板也要有預覽的功能，才可以直接在那邊匯出圖片或 pdf」
+check('跑團面板有「卡片預覽」按鈕',
+  [hudCode.includes('卡片預覽'), hudCode.includes('setIsPreviewOpen(true)')], [true, true]);
+check('跑團面板開的是同一個預覽彈窗元件（不是另寫一個）',
+  hudCode.includes("import CharacterPreviewModal from './CharacterPreviewModal'"), true);
+check('編輯器也改用同一個元件', editorCode.includes('<CharacterPreviewModal'), true);
+check('彈窗元件同時提供卡片檢視與三頁表格',
+  [previewSrc.includes('CharacterSheetExportBody'), previewSrc.includes('<CharacterCard')], [true, true]);
+check('從跑團面板開的關閉標籤是「返回跑團面板」',
+  hudCode.includes('closeLabel="返回跑團面板"'), true);
+
+// 「各種信息應該都要完整才對，比如技能等資料」
+check('技能帶效果全文（不是只有技能名）',
+  [model.page1Classes[0].skills[0].desc.length > 0, model.page1Classes[0].skills[0].maxSL > 0],
+  [true, true]);
+check('英雄技能帶效果全文', model.heroicSkills[0].effect.length >= 0, true);
+check('金手指帶效果全文', typeof model.quirkDesc === 'string', true);
+check('匯出用 SkillDescription 渲染效果（會代換【SL×N】公式）',
+  [exportSrc.includes("import SkillDescription from '../utils/skillFormulaEvaluator'"),
+    exportSrc.includes('<SkillDescription')],
+  [true, true]);
+check('咒語列帶說明', model.page2Spells[0].desc.length > 0, true);
+
+// 「樣式還是照著我們網頁的設計」→ 配色取自角色主題，不是官方表的青綠
+check('配色由角色主題推導（sheetVars）',
+  [typeof sheetVars, sheetVars({ accent: '#123456' })['--sh-bar']], ['function', '#123456']);
+check('沒有角色主題時退回站內羊皮紙色',
+  [sheetVars(null)['--sh-bg'], sheetVars(null)['--sh-ink']], ['#fbf7ee', '#3c2415']);
+check('三頁都吃這組變數',
+  (exportSrc.match(/\.\.\.S\.page, \.\.\.vars/g) || []).length, 3);
+check('頁面底色與卡片底色不同（否則框線會消失）',
+  sheetVars({ sheetBg: '#eeeeee', cardBg: '#ffffff' })['--sh-bg']
+    !== sheetVars({ sheetBg: '#eeeeee', cardBg: '#ffffff' })['--sh-box'],
+  true);
+
+// 只內嵌本機圖示字型：Google Fonts 一律不碰（那是上一輪「匯出永遠不回來」的根因）
+check('只內嵌本機圖示字型（fontEmbedCSS 自己組，不讓 html-to-image 去抓）',
+  [exportSrc.includes('getIconFontCss'), exportSrc.includes('fontEmbedCSS'),
+    exportSrc.includes("import iconFontUrl from '../../../assets/FabulaUltimaIcons-Regular.otf'")],
+  [true, true, true]);
+check('字型內嵌失敗也不會讓匯出卡住（catch 後回空字串）',
+  exportSrc.includes(".catch(() => '')"), true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

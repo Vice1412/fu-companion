@@ -42,6 +42,7 @@ import {
   applyLevelUp
 } from '../utils/characterEngine';
 import rulesData from '../data/rulesData.json';
+import CharacterPreviewModal from './CharacterPreviewModal';
 import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
 import { getDualShieldState } from '../utils/equipmentRules';
@@ -153,6 +154,8 @@ export default function CharacterPlayHUD({
 
   // Level up modal
   const [isLevelUpModalOpen, setIsLevelUpModalOpen] = useState(false);
+  // 角色卡預覽（含三頁表格的匯出）
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedClassForLevelUp, setSelectedClassForLevelUp] = useState('');
   const [selectedSkillForLevelUp, setSelectedSkillForLevelUp] = useState('');
   const [isNewClassLevelUp, setIsNewClassLevelUp] = useState(false);
@@ -662,6 +665,16 @@ export default function CharacterPlayHUD({
             >
               <GiCrossedSwords className="w-3.5 h-3.5" />
               <span>推入戰鬥</span>
+            </button>
+
+            <button
+              onClick={() => setIsPreviewOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+              style={{ borderColor: theme.border, color: theme.textDark }}
+              title="看整張卡現在長什麼樣，也可以直接匯出 PNG／PDF"
+            >
+              <GiScrollUnfurled className="w-3.5 h-3.5" />
+              <span>卡片預覽</span>
             </button>
 
             <button
@@ -2495,6 +2508,17 @@ export default function CharacterPlayHUD({
           </button>
         </div>
       </JRPGModal>
+
+      {/* 角色卡預覽（與「構築與成長」共用同一個彈窗）——跑團時可以直接在這裡匯出 PNG／PDF */}
+      <CharacterPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        character={character}
+        theme={theme}
+        themeId={themeId}
+        showToast={showToast}
+        closeLabel="返回跑團面板"
+      />
     </div>
   );
 }

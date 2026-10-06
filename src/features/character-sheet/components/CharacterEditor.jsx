@@ -17,7 +17,6 @@ import {
   GiCrossedSwords,
   GiBroadsword,
   GiShield,
-  GiHeartPlus,
   GiPocketWatch,
   GiSpellBook,
   GiHazardSign,
@@ -38,7 +37,6 @@ import { JRPGInput } from '../../../components/ui/JRPGInput';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGModal from '../../../components/ui/JRPGModal';
 import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
-import CharacterCard from './CharacterCard';
 import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
@@ -52,17 +50,16 @@ import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
   SOURCEBOOKS,
-  BOND_FEELINGS,
   CANONICAL_THEMES,
   ATTRIBUTE_STARTING_ARRAYS,
   generateRandomIdentity,
   getClassInfo
 } from '../data/sourcebookConfig';
 import StarterPresetsModal from './StarterPresetsModal';
-import CharacterSheetExportBody from './CharacterSheetExport';
+import CharacterPreviewModal from './CharacterPreviewModal';
 
 /** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
-const TAB_COUNT = 6;
+const TAB_COUNT = 5;
 import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
@@ -105,7 +102,7 @@ export default function CharacterEditor({
 }) {
   // 分頁編號一定要是合法數字。這裡是最後一道防線：
   // 曾經有一次呼叫端寫成 `onClick={onOpenEditor}`，React 就把**點擊事件物件**當成分頁編號傳進來，
-  // 而編輯器會把 activeTab 直接渲染在「步驟 {activeTab}/6」上——
+  // 而編輯器會把 activeTab 直接渲染在「步驟 {activeTab}/{TABS.length}」上——
   // 於是 React 拋出 "Objects are not valid as a React child"，整棵樹被卸載、畫面全黑。
   // 就算呼叫端再犯，這裡也不會讓它變成當機。
   // 註：不能在這裡讀 TABS——它宣告在下面，useState 的初始值會在那一行之前執行（TDZ）。
@@ -114,8 +111,6 @@ export default function CharacterEditor({
   );
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
-  // 角色卡檢視彈窗的兩個分頁：本專案卡片 / 官方三頁表格
-  const [previewTab, setPreviewTab] = useState('card');
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
   const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(character?.theme) && Boolean(character?.theme));
@@ -321,48 +316,9 @@ export default function CharacterEditor({
     }
   };
 
-  // Bond Handlers
-  const handleAddBond = () => {
-    const curBonds = character.bonds || [];
-    if (curBonds.length >= 6) return;
-    const newBond = {
-      id: `bond_${Date.now()}`,
-      target: '未命名的同伴或對象',
-      feelings: ['admiration']
-    };
-    updateField('bonds', [...curBonds, newBond]);
-  };
-
-  const handleUpdateBondTarget = (bondIdx, target) => {
-    const curBonds = JSON.parse(JSON.stringify(character.bonds || []));
-    curBonds[bondIdx].target = target;
-    updateField('bonds', curBonds);
-  };
-
-  const handleToggleBondFeeling = (bondIdx, feelingId, category) => {
-    const curBonds = JSON.parse(JSON.stringify(character.bonds || []));
-    const bond = curBonds[bondIdx];
-    const pair = BOND_FEELINGS.find(p => p.category === category);
-    const pairOptions = pair ? pair.options.map(o => o.id) : [];
-
-    const isCurrentActive = bond.feelings.includes(feelingId);
-
-    if (isCurrentActive) {
-      // Toggle off
-      bond.feelings = bond.feelings.filter(f => f !== feelingId);
-    } else {
-      // Toggle on, remove conflicting feeling in same pair
-      bond.feelings = bond.feelings.filter(f => !pairOptions.includes(f));
-      bond.feelings.push(feelingId);
-    }
-
-    updateField('bonds', curBonds);
-  };
-
-  const handleRemoveBond = (bondIdx) => {
-    const curBonds = (character.bonds || []).filter((_, idx) => idx !== bondIdx);
-    updateField('bonds', curBonds);
-  };
+  // 情感羈絆在編輯器裡沒有處理函式：羈絆不屬創角（原書 p.154 的八步驟沒有羈絆；
+  // p.57 說明羈絆於休息場景建立），所以這個分頁已移除。
+  // 羈絆一律在跑團面板（CharacterPlayHUD 的「情感羈絆」分頁）新增與調整。
 
   // Apply Starter Preset
   // 官方經典職業搭配只提供官方欄位（屬性／職業技能／裝備／資金／金手指）；
@@ -392,13 +348,15 @@ export default function CharacterEditor({
     updateField('clocks', (character.clocks || []).filter(c => c.id !== clkId));
   };
 
+  // 創角步驟＝原書 p.154 的八個步驟（身世／四維／職業與技能／裝備／特質與命刻，
+  // 其中「名字」併入身世、「HP/MP/IP 等數值」由引擎自動算）。
+  // **沒有情感羈絆**：羈絆不屬創角，見 CREATION_STEPS 的說明。
   const TABS = [
     { id: 1, label: '基礎身世', icon: 'edit' },
     { id: 2, label: '四維屬性', icon: 'dice' },
     { id: 3, label: '職業與技能', icon: 'swords' },
     { id: 4, label: '裝備配置', icon: 'shield' },
-    { id: 5, label: '情感羈絆', icon: 'hp' },
-    { id: 6, label: '特質與命刻', icon: 'clock' }
+    { id: 5, label: '特質與命刻', icon: 'clock' }
   ];
   // 上面那個 useState 的夾制用 TAB_COUNT（不能讀 TABS，會踩 TDZ）；test:ui 有一條護欄綁住兩者相等。
   if (TABS.length !== TAB_COUNT) {
@@ -662,9 +620,9 @@ export default function CharacterEditor({
 
             <p className="text-[10px] leading-relaxed" style={{ color: theme.textMuted }}>
               {locked
-                ? '身世與四維屬性已凍結；等級、技能、裝備、羈絆、命刻仍可隨時調整。'
+                ? '身世與四維屬性已凍結；等級、技能、裝備、命刻仍可隨時調整。'
                 : canLock
-                  ? '六個步驟都通過規則檢查，可以定稿了。定稿後創角欄位會凍結。'
+                  ? `${TABS.length} 個步驟都通過規則檢查，可以定稿了。定稿後創角欄位會凍結。`
                   : `還有 ${blockedCount} 項未符合規則，補完後即可定稿。`}
             </p>
 
@@ -687,7 +645,7 @@ export default function CharacterEditor({
             </button>
           </div>
 
-          {/* 5 大步驟縱向清單 */}
+          {/* 創角流程縱向清單（步驟數＝TABS，不含情感羈絆） */}
           <div
             className="rounded-xl border shadow-xs p-2 flex flex-col gap-1 transition-colors"
             style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
@@ -1597,112 +1555,12 @@ export default function CharacterEditor({
             </div>
           )}
 
-          {/* ==================== TAB 5: 情感羈絆 ==================== */}
+          {/* ==================== TAB 5: 特質與命刻 ==================== */}
           {activeTab === 5 && (
-            <div className="space-y-5 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                    <span style={{ color: theme.accent }}>5.</span> 情感羈絆系統
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    起始最多 3 條羈絆（上限 6 條），每條包含 1~3 種情感維度。
-                  </p>
-                </div>
-
-                <JRPGButton
-                  variant={theme.buttonVariant || 'primary'}
-                  size="xs"
-                  icon={Plus}
-                  onClick={handleAddBond}
-                  disabled={(character.bonds || []).length >= 6}
-                >
-                  新增羈絆 【{(character.bonds || []).length}/6】
-                </JRPGButton>
-              </div>
-
-              {/* Bonds List */}
-              <div className="space-y-3">
-                {(character.bonds || []).map((bond, bIdx) => (
-                  <div
-                    key={bond.id || bIdx}
-                    className="rounded-xl p-3.5 border space-y-3 shadow-sm"
-                    style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={bond.target || ''}
-                          onChange={e => handleUpdateBondTarget(bIdx, e.target.value)}
-                          placeholder="羈絆對象 (例：同行法師、王國舊友、死敵首領)..."
-                          className="w-full border rounded-lg px-3 py-1.5 text-xs font-bold outline-none shadow-sm"
-                          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <JRPGBadge variant={theme.badgeVariant || 'green'} size="xs">
-                          強度 +{bond.feelings?.length || 0}
-                        </JRPGBadge>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveBond(bIdx)}
-                          className="p-1 text-slate-400 hover:text-red-700 font-bold cursor-pointer"
-                          title="移除羈絆"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Feelings Toggle Buttons */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t" style={{ borderColor: `${theme.border}80` }}>
-                      {BOND_FEELINGS.map(pair => (
-                        <div key={pair.category} className="flex items-center gap-1">
-                          {pair.options.map(opt => {
-                            const isSelected = (bond.feelings || []).includes(opt.id);
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleToggleBondFeeling(bIdx, opt.id, pair.category)}
-                                className="flex-1 text-[11px] py-1 px-1.5 rounded border transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-                                style={
-                                  isSelected
-                                    ? { backgroundColor: theme.accent, color: '#ffffff', borderColor: theme.accent, fontWeight: 700 }
-                                    : { backgroundColor: theme.cardBg, color: theme.textDark, borderColor: theme.border }
-                                }
-                              >
-                                <GameIcon name={opt.iconName} className="w-3.5 h-3.5 shrink-0" />
-                                <span>{opt.label.split(' ')[0]}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {(character.bonds || []).length === 0 && (
-                  <div
-                    className="text-center py-6 border-2 border-dashed rounded-xl text-xs"
-                    style={{ borderColor: theme.border, color: '#94a3b8' }}
-                  >
-                    尚未建立羈絆（點擊右上角「新增羈絆」）
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ==================== TAB 6: 特質與命刻 ==================== */}
-          {activeTab === 6 && (
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>6.</span> 英雄技能、特質與個人命刻
+                  <span style={{ color: theme.accent }}>5.</span> 英雄技能、特質與個人命刻
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   精通職業後解鎖英雄技能，並可設定特質與個人誓約命刻。
@@ -1928,86 +1786,23 @@ export default function CharacterEditor({
         </div>
       </div>
 
-      {/* Character Card View Modal (On-demand inspection) */}
-      <JRPGModal
+      {/* Character Card View Modal（抽成元件，跑團面板也能開同一個） */}
+      <CharacterPreviewModal
         isOpen={isCardPreviewModalOpen}
         onClose={() => setIsCardPreviewModalOpen(false)}
-        title="冒險者角色卡檢視"
-        maxWidth="max-w-5xl"
+        character={character}
+        stats={stats}
         theme={theme}
-        actionButtons={
-          <div className="flex items-center gap-2">
-            {onEnterPlayMode && (
-              <JRPGButton
-                variant={theme.buttonVariant || 'primary'}
-                size="sm"
-                icon={Play}
-                onClick={() => {
-                  setIsCardPreviewModalOpen(false);
-                  onEnterPlayMode();
-                }}
-              >
-                進入跑團實戰
-              </JRPGButton>
-            )}
-            <JRPGButton
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCardPreviewModalOpen(false)}
-            >
-              返回編輯
-            </JRPGButton>
-          </div>
-        }
-      >
-        <div className="space-y-3">
-          {/* 兩種檢視：本專案的卡片，與官方三頁表格（後者可匯出 PNG） */}
-          <div className="flex items-center gap-1.5">
-            {[['card', '卡片檢視'], ['official', '官方三頁（可匯出 PNG）']].map(([key, label]) => {
-              const active = previewTab === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setPreviewTab(key)}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: active ? theme.accent : theme.panelBg,
-                    borderColor: theme.border,
-                    color: active ? '#fffdf9' : theme.textDark
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+        themeId={themeId}
+        showToast={showToast}
+        closeLabel="返回編輯"
+        secondaryAction={onEnterPlayMode ? { label: '進入跑團實戰', onClick: onEnterPlayMode } : null}
+        onAvatarClick={() => {
+          setIsCardPreviewModalOpen(false);
+          setActiveTab(1);
+        }}
+      />
 
-          {previewTab === 'official' ? (
-            <CharacterSheetExportBody
-              character={character}
-              stats={stats}
-              showToast={showToast}
-            />
-          ) : (
-            <>
-              <div className="text-xs text-slate-500 flex items-center justify-between px-1">
-                <span>隨時檢視角色卡排版與構築進度</span>
-                <span className="font-mono text-[11px]" style={{ color: theme.accent }}>（填寫中未完成欄位均以空格標註）</span>
-              </div>
-
-              <CharacterCard
-                character={character}
-                themeId={character.themeColor || themeId}
-                onAvatarClick={() => {
-                  setIsCardPreviewModalOpen(false);
-                  setActiveTab(1);
-                }}
-              />
-            </>
-          )}
-        </div>
-      </JRPGModal>
 
       {/* Starter Presets Modal */}
       <StarterPresetsModal

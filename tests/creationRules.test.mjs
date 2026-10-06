@@ -251,8 +251,10 @@ check('凍結的分頁是身世與四維', [...LOCKED_CREATION_TABS], [1, 2]);
 section('G. 創角進度清單：把驗證結果變成一條主線');
 
 const blankList = buildCreationChecklist(createNewCharacter());
-check('清單有六個步驟且與 CREATION_STEPS 一致',
+check('清單有五個步驟且與 CREATION_STEPS 一致',
   blankList.map((i) => i.id), CREATION_STEPS.map((i) => i.id));
+check('清單不含情感羈絆（羈絆不屬創角，原書 p.154）',
+  blankList.some((i) => i.label.includes('羈絆')), false);
 check('每一步都有顯示名', blankList.every((i) => Boolean(i.label)), true);
 check('空白角色：身世待處理（缺姓名等）', blankList[0].status, 'todo');
 check('空白角色：四維已完成（預設 8×4 = 32）', blankList[1].status, 'done');
@@ -275,7 +277,7 @@ check('清單狀態與 validateCharacter 的分組一致',
   }),
   blankList.map((i) => i.status));
 
-// 一張「該填的都填了」的卡：六步全綠、可以定稿
+// 一張「該填的都填了」的卡：五步全綠、可以定稿
 const finished = createNewCharacter({
   name: '完成測試',
   identity: '流浪劍士',
@@ -286,8 +288,8 @@ const finished = createNewCharacter({
   ]
 });
 const finishedList = buildCreationChecklist(finished);
-check('填完的卡：六步全部完成',
-  finishedList.map((i) => i.status), ['done', 'done', 'done', 'done', 'done', 'done']);
+check('填完的卡：五步全部完成',
+  finishedList.map((i) => i.status), ['done', 'done', 'done', 'done', 'done']);
 check('填完的卡：沒有阻擋定稿的項目',
   finishedList.filter((i) => i.status === 'error').length, 0);
 check('GM 規則會反映在清單上（必修職業未修習 → 該步有問題）',
@@ -296,9 +298,9 @@ check('GM 規則會反映在清單上（必修職業未修習 → 該步有問�
 check('GM 收窄職業數也會反映在清單上',
   buildCreationChecklist(finished, { classCountMin: 3, classCountMax: 3 })
     .find((i) => i.id === 3).status, 'error');
-check('未開放金手指且有金手指 → 第 6 步有問題',
+check('未開放金手指且有金手指 → 第 5 步有問題',
   buildCreationChecklist(createNewCharacter({ quirk: '倖存者' }), { allowQuirk: false })
-    .find((i) => i.id === 6).status, 'error');
+    .find((i) => i.id === 5).status, 'error');
 
 // ─────────────────────────────────────────────────────────── H
 section('H. 原始碼護欄：硬編碼不得回流');

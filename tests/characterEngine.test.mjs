@@ -356,7 +356,7 @@ check('當前 HP / MP / IP 皆為 null（null 代表等於最大值）',
   [fresh.currentHp, fresh.currentMp, fresh.currentIp], [null, null, null]);
 check('職業清單預設為空', fresh.classes, []);
 check('啟用來源手冊預設僅核心', fresh.enabledSourcebooks, ['core']);
-check('情感羈絆預設 1 條', fresh.bonds.length, 1);
+check('情感羈絆預設 0 條（原書 p.154 創角八步驟無羈絆；羈絆於遊戲中建立 p.57）', fresh.bonds.length, 0);
 check('個人命刻預設 1 座', fresh.clocks.length, 1);
 check('咒語與英雄技能預設為空', [fresh.spells.length, fresh.heroicSkills.length], [0, 0]);
 check('預設主手為徒手打擊', fresh.equipment.mainHand, '徒手打擊');
@@ -593,8 +593,10 @@ check('姓名為空白 -> 產生 name 警告', hasField(noName, 'name'), true);
 check('身份未填 -> 產生 identity 提示', hasField(validateCharacter({ ...validChar, identity: '' }), 'identity'), true);
 check('故鄉未填 -> 產生 origin 提示', hasField(validateCharacter({ ...validChar, origin: '' }), 'origin'), true);
 
-// 步驟 5：羈絆
-check('無羈絆 -> 產生 bonds 警告', hasField(validateCharacter({ ...validChar, bonds: [] }), 'bonds'), true);
+// 羈絆**不是**創角步驟：原書 p.154 的八個步驟沒有羈絆，羈絆於休息場景建立（p.57）。
+// 所以「沒有羈絆」不該產生任何驗證警告（以前這裡會催玩家「建議至少建立 1 個」）。
+check('無羈絆 -> 不產生 bonds 警告（羈絆不在創角驗證範圍內）',
+  hasField(validateCharacter({ ...validChar, bonds: [] }), 'bonds'), false);
 
 // ─────────────────────────────────────────────────────────── J
 section('J. 數值構成公式（breakdown）與免費增益二選一');
