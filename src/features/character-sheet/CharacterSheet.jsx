@@ -50,6 +50,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   const [activeCharId, setActiveCharId] = useState(null);
   const [viewMode, setViewMode] = useState('roster'); // 'roster' | 'play' | 'editor'
   const [isLogOpen, setIsLogOpen] = useState(false);  // 成長履歷彈窗
+  const [editorTab, setEditorTab] = useState(1);      // 編輯器開啟時要停在哪個分頁
   const [toastMessage, setToastMessage] = useState(null);
 
   // Gallery Search, Filter & Sort State
@@ -73,6 +74,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
 
   const handleOpenEditorMode = (char) => {
     setActiveCharId(char.id);
+    setEditorTab(1);
     setViewMode('editor');
   };
 
@@ -380,7 +382,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
     if (viewMode === 'editor') {
       onSubNavChange({
         label: '返回角色名冊',
-        subTitle: `構建：${activeChar?.name || '冒險者'}`,
+        subTitle: `構築與成長：${activeChar?.name || '冒險者'}`,
         onBack: () => setViewMode('roster'),
         extraRight: renderThemeCircles(activeChar),
         theme: getCharacterTheme(activeChar?.themeColor)
@@ -388,7 +390,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
     } else if (viewMode === 'play') {
       onSubNavChange({
         label: '返回角色名冊',
-        subTitle: `實戰：${activeChar?.name || '冒險者'}`,
+        subTitle: `跑團面板：${activeChar?.name || '冒險者'}`,
         onBack: () => setViewMode('roster'),
         extraRight: renderThemeCircles(activeChar),
         theme: getCharacterTheme(activeChar?.themeColor)
@@ -759,7 +761,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                           title="進入創角與加點工作台"
                         >
                           <GiQuillInk className="w-3.5 h-3.5" style={{ color: charTheme.accent }} />
-                          <span>構建</span>
+                          <span>構築與成長</span>
                         </button>
 
                         <JRPGButton
@@ -767,8 +769,9 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                           size="xs"
                           icon={Play}
                           onClick={() => handleOpenPlayMode(char)}
+                          title="跑團中用：HP／MP／狀態、攻擊與咒語、命刻"
                         >
-                          跑團卡
+                          跑團面板
                         </JRPGButton>
                       </div>
                     </div>
@@ -787,7 +790,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           themeId={activeChar.themeColor || 'emerald'}
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
-          onOpenEditor={() => setViewMode('editor')}
+          onOpenEditor={(tab) => { setEditorTab(tab || 1); setViewMode('editor'); }}
           onOpenLog={() => handleOpenLog(activeChar)}
           onOpenDice={onOpenDice}
           showToast={showToast}
@@ -812,6 +815,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
           onEnterPlayMode={() => setViewMode('play')}
+          initialTab={editorTab}
           showToast={showToast}
         />
       )}

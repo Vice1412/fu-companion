@@ -16,6 +16,7 @@ import {
   GiCoins,
   GiUpgrade,
   GiScrollQuill,
+  GiScrollUnfurled,
   GiRollingDices,
   GiHazardSign,
   GiCrossedSwords,
@@ -45,6 +46,7 @@ import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
 import { getDualShieldState } from '../utils/equipmentRules';
 import { loggableChange } from '../utils/characterLog';
+import NumberStepper from '../../../components/ui/NumberStepper';
 import SkillDescription, { openRuleCodex } from '../utils/skillFormulaEvaluator';
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
@@ -212,8 +214,10 @@ export default function CharacterPlayHUD({
   };
 
   // Adjust Vital Resources
+  // 夾制後沒有實際變化時直接結束：不寫 localStorage、也不留下一筆「0 → 0」的空記錄
   const adjustHp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxHp, curHp + delta));
+    if (next === curHp) return;
     updateField('currentHp', next, {
       kind: 'hp',
       title: delta < 0 ? '承受傷害' : '回復 HP',
@@ -223,6 +227,7 @@ export default function CharacterPlayHUD({
 
   const adjustMp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxMp, curMp + delta));
+    if (next === curMp) return;
     updateField('currentMp', next, {
       kind: 'mp',
       title: delta < 0 ? '消耗 MP' : '回復 MP',
@@ -232,6 +237,7 @@ export default function CharacterPlayHUD({
 
   const adjustIp = (delta) => {
     const next = Math.max(0, Math.min(stats.maxIp, curIp + delta));
+    if (next === curIp) return;
     updateField('currentIp', next, {
       kind: 'ip',
       title: delta < 0 ? '消耗 IP' : '回復 IP',
@@ -242,6 +248,7 @@ export default function CharacterPlayHUD({
   const adjustExp = (delta) => {
     const cur = character.exp || 0;
     const next = Math.max(0, cur + delta);
+    if (next === cur) return;
     updateField('exp', next, {
       kind: 'exp',
       title: delta < 0 ? '扣除 EXP' : '獲得 EXP',
@@ -252,6 +259,7 @@ export default function CharacterPlayHUD({
   const adjustZenit = (delta) => {
     const cur = character.zenit || 0;
     const next = Math.max(0, cur + delta);
+    if (next === cur) return;
     updateField('zenit', next, {
       kind: 'zenit',
       title: delta < 0 ? '支出資金' : '獲得資金',
@@ -262,6 +270,7 @@ export default function CharacterPlayHUD({
   const adjustFp = (delta) => {
     const cur = character.fabulaPoints || 3;
     const next = Math.max(0, cur + delta);
+    if (next === cur) return;
     updateField('fabulaPoints', next, {
       kind: 'fp',
       title: delta < 0 ? '消耗物語點' : '獲得物語點',
@@ -596,7 +605,7 @@ export default function CharacterPlayHUD({
               onClick={onOpenEditor}
               className="w-11 h-11 rounded-xl border flex items-center justify-center font-serif text-lg font-bold overflow-hidden shadow-inner shrink-0 bg-white cursor-pointer hover:ring-2 hover:scale-105 transition-all group relative"
               style={{ borderColor: theme.border, color: theme.accent }}
-              title="點擊前往構建工作台更換或調整頭像"
+              title="點擊前往「構築與成長」更換或調整頭像"
             >
               {character.avatar ? (
                 character.avatar.startsWith('http') || character.avatar.startsWith('data:') ? (
@@ -660,7 +669,7 @@ export default function CharacterPlayHUD({
               className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
               style={{ borderColor: theme.border, color: theme.textDark }}
             >
-              <span>構建工坊</span>
+              <span>構築與成長</span>
             </button>
 
             {onOpenLog && (
@@ -700,30 +709,12 @@ export default function CharacterPlayHUD({
               />
             </div>
             <div className="flex items-center justify-between gap-1">
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => adjustExp(-1)}
-                  disabled={(character.exp || 0) <= 0}
-                  className="px-2 py-0.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold disabled:opacity-30"
-                >
-                  -1
-                </button>
-                <button
-                  type="button"
-                  onClick={() => adjustExp(1)}
-                  className="px-2 py-0.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold"
-                >
-                  +1
-                </button>
-                <button
-                  type="button"
-                  onClick={() => adjustExp(5)}
-                  className="px-2 py-0.5 rounded bg-[#f5efdf] hover:bg-[#ebdcc4] border border-[#d6c7ab] text-[#3c2415] text-xs font-bold"
-                >
-                  +5
-                </button>
-              </div>
+              <NumberStepper
+                value={character.exp || 0}
+                onDelta={adjustExp}
+                ariaLabel="經驗值"
+                width="w-14"
+              />
               <span className="text-[10px] text-slate-400 font-mono">10 EXP 升 1 級</span>
             </div>
           </div>
@@ -740,28 +731,14 @@ export default function CharacterPlayHUD({
               </span>
             </div>
             <div className="flex items-center gap-1.5 mt-auto pt-2">
-              <button
-                type="button"
-                onClick={() => adjustZenit(-50)}
-                disabled={(character.zenit || 0) < 50}
-                className="flex-1 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold disabled:opacity-30"
-              >
-                -50
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustZenit(50)}
-                className="flex-1 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold"
-              >
-                +50
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustZenit(100)}
-                className="flex-1 py-1 rounded bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold"
-              >
-                +100
-              </button>
+              <NumberStepper
+                value={character.zenit || 0}
+                onDelta={adjustZenit}
+                ariaLabel="金幣"
+                width="w-20"
+                inputClassName="text-amber-900"
+              />
+              <span className="text-[10px] text-slate-400 font-mono">z</span>
             </div>
           </div>
 
@@ -777,21 +754,14 @@ export default function CharacterPlayHUD({
               </span>
             </div>
             <div className="flex items-center gap-1.5 mt-auto pt-2">
-              <button
-                type="button"
-                onClick={() => adjustFp(-1)}
-                disabled={(character.fabulaPoints || 3) <= 0}
-                className="flex-1 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold disabled:opacity-30"
-              >
-                消耗 1 FP
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustFp(1)}
-                className="flex-1 py-1 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-950 text-xs font-bold"
-              >
-                獲得 1 FP
-              </button>
+              <NumberStepper
+                value={character.fabulaPoints || 3}
+                onDelta={adjustFp}
+                ariaLabel="物語點"
+                width="w-14"
+                inputClassName="text-indigo-950"
+              />
+              <span className="text-[10px] text-slate-400 font-mono">FP</span>
             </div>
           </div>
         </div>
@@ -833,20 +803,22 @@ export default function CharacterPlayHUD({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1">
-              <button onClick={() => adjustHp(-5)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">-5</button>
-              <button onClick={() => adjustHp(-1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">-1</button>
-              <button onClick={() => adjustHp(1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">+1</button>
-              <button onClick={() => adjustHp(5)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">+5</button>
+            <div className="flex items-center justify-between gap-1 mt-auto pt-2">
+              {/* 數值可直接填寫；輸入 +N／-N 以增減計算（見 NumberStepper） */}
+              <NumberStepper
+                value={curHp}
+                onDelta={adjustHp}
+                ariaLabel="生命值"
+                width="w-14"
+                inputClassName="text-red-950"
+              />
+              <button
+                onClick={() => updateField('currentHp', stats.maxHp)}
+                className="px-2 py-1 rounded bg-red-100 hover:bg-red-200 text-red-950 font-bold text-xs"
+              >
+                全滿
+              </button>
             </div>
-            <button
-              onClick={() => updateField('currentHp', stats.maxHp)}
-              className="px-2 py-1 rounded bg-red-100 hover:bg-red-200 text-red-950 font-bold text-xs"
-            >
-              全滿
-            </button>
-          </div>
 
           <div className="flex items-center justify-between gap-2 mt-1.5">
             <button
@@ -900,12 +872,13 @@ export default function CharacterPlayHUD({
           </div>
 
           <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1">
-              <button onClick={() => adjustMp(-5)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">-5</button>
-              <button onClick={() => adjustMp(-1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">-1</button>
-              <button onClick={() => adjustMp(1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">+1</button>
-              <button onClick={() => adjustMp(5)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">+5</button>
-            </div>
+            <NumberStepper
+              value={curMp}
+              onDelta={adjustMp}
+              ariaLabel="魔力值"
+              width="w-14"
+              inputClassName="text-blue-950"
+            />
             <button
               onClick={() => updateField('currentMp', stats.maxMp)}
               className="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-950 font-bold text-xs"
@@ -950,10 +923,12 @@ export default function CharacterPlayHUD({
           </div>
 
           <div className="flex items-center justify-between gap-1 flex-wrap">
-            <div className="flex items-center gap-1">
-              <button onClick={() => adjustIp(-1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">-1</button>
-              <button onClick={() => adjustIp(1)} className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">+1</button>
-            </div>
+            <NumberStepper
+              value={curIp}
+              onDelta={adjustIp}
+              ariaLabel="物品點"
+              width="w-14"
+            />
             <div className="flex items-center gap-1 ml-auto">
               <button
                 onClick={() => handleUseConsumable('potion')}
@@ -2344,23 +2319,63 @@ export default function CharacterPlayHUD({
                 <label className="text-xs font-bold text-[#3c2415] block mb-1">
                   選擇欲升級或習得的技能:
                 </label>
-                <select
-                  value={selectedSkillForLevelUp}
-                  onChange={e => setSelectedSkillForLevelUp(e.target.value)}
-                  className="w-full bg-[#fffdf9] border border-[#d6c7ab] rounded-lg px-3 py-2 text-xs text-[#3c2415] outline-none focus:border-amber-600 shadow-sm"
-                >
-                  <option value="" disabled>-- 選擇特技 --</option>
-                  {rulesData.classes[selectedClassForLevelUp]?.skills?.map(sk => {
+                {/* 舊版是一個下拉選單，一行「技能名 (SL 0/5)」根本看不出這技能在做什麼。
+                    這裡改成直接列出效果全文，並把選取中的那一項以**升級後**的 SL 顯示——
+                    讓你看到的是「買到之後數字長什麼樣」，而不是現在的數字。 */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5">
+                  {(rulesData.classes[selectedClassForLevelUp]?.skills || []).map(sk => {
                     const curClass = (character.classes || []).find(c => c.className === selectedClassForLevelUp);
                     const curSk = curClass?.skills?.find(s => s.name === sk.name);
                     const curSL = curSk?.sl || 0;
+                    const maxed = curSL >= sk.maxSL;
+                    const isSel = selectedSkillForLevelUp === sk.name;
                     return (
-                      <option key={sk.name} value={sk.name} disabled={curSL >= sk.maxSL}>
-                        {sk.name} (目前 SL {curSL} / {sk.maxSL}) {curSL >= sk.maxSL ? '【已升滿】' : ''}
-                      </option>
+                      <button
+                        key={sk.name}
+                        type="button"
+                        disabled={maxed}
+                        onClick={() => setSelectedSkillForLevelUp(sk.name)}
+                        className={`w-full text-left rounded-lg border p-2.5 transition-all ${
+                          maxed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-amber-400'
+                        } ${isSel ? 'ring-2 ring-amber-400' : ''}`}
+                        style={{
+                          backgroundColor: isSel ? '#fffbeb' : '#fffdf9',
+                          borderColor: isSel ? '#f59e0b' : '#d6c7ab'
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-[#3c2415]">{sk.name}</span>
+                          <span className="text-[10px] font-mono text-slate-500 shrink-0">
+                            SL {curSL} / {sk.maxSL}{maxed ? '　已升滿' : ''}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed mt-1">
+                          <SkillDescription
+                            desc={sk.desc || '（無效果描述）'}
+                            sl={isSel && !maxed ? curSL + 1 : curSL}
+                          />
+                        </p>
+                        {isSel && !maxed && (
+                          <span className="text-[10px] text-amber-800 font-bold mt-1 inline-block">
+                            以上數值以升級後的 SL {curSL + 1} 顯示
+                          </span>
+                        )}
+                      </button>
                     );
                   })}
-                </select>
+                </div>
+
+                {/* 想比較別的職業時，直接連到構築工坊的「職業與技能」分頁 */}
+                {onOpenEditor && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsLevelUpModalOpen(false); onOpenEditor(3); }}
+                    className="mt-2 text-[11px] text-amber-800 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <GiScrollUnfurled className="w-3.5 h-3.5" />
+                    <span>想比較其他職業的技能？到構築工坊的「職業與技能」</span>
+                  </button>
+                )}
               </div>
             )}
           </div>

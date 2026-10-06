@@ -474,7 +474,7 @@ export default function CharacterAvatarUploader({
             </div>
 
             <p className="text-[10px] text-slate-500 leading-tight">
-              支援 JPG, PNG, GIF, WebP 檔案或網址，可自由縮放與移動裁切。將同步顯示於角色卡、跑團卡與名冊大廳。
+              支援 JPG, PNG, GIF, WebP 檔案或網址，可自由縮放與移動裁切。將同步顯示於角色卡、跑團面板與名冊大廳。
             </p>
           </div>
         </div>

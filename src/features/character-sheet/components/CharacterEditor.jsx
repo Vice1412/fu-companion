@@ -95,9 +95,11 @@ export default function CharacterEditor({
   showToast = null,
   // 開卡規則：預設為官方核心規則；GM 自訂開局時由上游傳入該團的規則
   // （見 data/creationRules.js——起始等級、起始資金、必修職業、開放拓展都由此決定）
-  creationRules = DEFAULT_CREATION_RULES
+  creationRules = DEFAULT_CREATION_RULES,
+  // 開啟時要停在哪一個分頁（例如從跑團卡的升級流程連過來看「職業與技能」）
+  initialTab = 1
 }) {
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
@@ -797,19 +799,31 @@ export default function CharacterEditor({
             style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
           >
 
-            {/* 查看角色卡按鈕 */}
+            {/* 卡片預覽：唯讀。標籤說的是「你來這裡做什麼」，不是內部概念——
+                舊的「查看角色卡／進入跑團卡」對新玩家來說兩個都一樣。 */}
             <button
               type="button"
               onClick={() => setIsCardPreviewModalOpen(true)}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-2xs hover:opacity-90 cursor-pointer"
+              className="w-full text-left px-3 py-2 rounded-xl border transition-all shadow-2xs hover:opacity-90 cursor-pointer"
               style={{ borderColor: theme.border, color: theme.textDark, backgroundColor: theme.cardBg }}
-              title="隨時預覽或檢查角色卡目前填寫狀態"
+              title="唯讀：看這張卡目前長什麼樣，也可以列印或截圖"
             >
-              <GiScrollUnfurled className="w-3.5 h-3.5 shrink-0" style={{ color: theme.accent }} />
-              <span>查看角色卡</span>
+              <span className="flex items-center gap-1.5 text-xs font-bold">
+                <GiScrollUnfurled className="w-3.5 h-3.5 shrink-0" style={{ color: theme.accent }} />
+                <span>卡片預覽</span>
+                <span
+                  className="ml-auto text-[9px] font-mono px-1 py-0.5 rounded border shrink-0"
+                  style={{ borderColor: theme.border, color: theme.textMuted }}
+                >
+                  唯讀
+                </span>
+              </span>
+              <span className="block text-[10px] leading-tight mt-0.5" style={{ color: theme.textMuted }}>
+                看整張卡目前填得怎樣、列印或截圖存檔
+              </span>
             </button>
 
-            {/* 進入跑團卡按鈕 */}
+            {/* 跑團面板：跑團中操作的介面 */}
             {onEnterPlayMode && (
               <JRPGButton
                 variant={theme.buttonVariant || 'primary'}
@@ -818,7 +832,10 @@ export default function CharacterEditor({
                 onClick={onEnterPlayMode}
                 className="w-full justify-center"
               >
-                進入跑團卡
+                <span className="flex flex-col items-center leading-tight">
+                  <span>跑團面板</span>
+                  <span className="text-[9px] font-normal opacity-90">HP／MP／狀態、攻擊與咒語、命刻</span>
+                </span>
               </JRPGButton>
             )}
           </div>
@@ -882,7 +899,7 @@ export default function CharacterEditor({
                 className="px-2 py-1 rounded-md border text-[11px] font-bold shadow-2xs cursor-pointer"
                 style={{ borderColor: theme.border, color: theme.textDark, backgroundColor: theme.cardBg }}
               >
-                查看卡片
+                卡片預覽
               </button>
               {onEnterPlayMode && (
                 <button
@@ -891,7 +908,7 @@ export default function CharacterEditor({
                   className="px-2 py-1 rounded-md text-white text-[11px] font-bold shadow-2xs cursor-pointer"
                   style={{ backgroundColor: theme.accent }}
                 >
-                  跑團卡
+                  跑團面板
                 </button>
               )}
             </div>
@@ -1884,7 +1901,7 @@ export default function CharacterEditor({
                     icon={Play}
                     onClick={onEnterPlayMode}
                   >
-                    完成創角，進入跑團卡
+                    完成創角，進入跑團面板
                   </JRPGButton>
                 )
               )}
