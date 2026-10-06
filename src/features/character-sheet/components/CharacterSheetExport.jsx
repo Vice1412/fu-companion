@@ -5,6 +5,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import GameIcon from '../../../components/ui/GameIcon';
 import rulesData from '../data/rulesData.json';
 import { calculateCharacterStats, getProficiencies } from '../utils/characterEngine';
+import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 
 /**
  * 官方角色卡三頁匯出 (Official Sheet Export)
@@ -703,38 +704,55 @@ export const SHEET_PAGE_COMPONENTS = [OfficialSheetPage1, OfficialSheetPage2, Of
 const PREVIEW_SCALE = 0.46;
 
 /**
- * 匯出面板：三頁預覽 ＋ 一鍵匯出三個 PNG。
+ * 匯出面板：三頁預覽 ＋ 匯出三個 PNG 或一個三頁 PDF。
  * 預覽用 `transform: scale()` 縮小，但**光柵化的是未縮放的節點**，
  * 所以輸出仍是 1123×794 × pixelRatio 的原始尺寸。
  */
 export function CharacterSheetExportBody({ character, stats = null, showToast = null }) {
   const model = useMemo(() => buildSheetModel(character, stats), [character, stats]);
   const pageRefs = useRef([]);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState(null); // null | 'png' | 'pdf'
 
-  const fileName = (i) => `${(model.name || '冒險者').replace(/[\\/:*?"<>|]/g, '_')}_角色卡_p${i}.png`;
+  const safeName = (model.name || '冒險者').replace(/[\\/:*?"<>|]/g, '_');
+  const fileName = (ext, index) => (index ? `${safeName}_角色卡_p${index}.${ext}` : `${safeName}_角色卡.${ext}`);
 
-  const handleExport = async () => {
+  /** 逐頁光柵化；PNG 走無損、PDF 內嵌 JPEG（DCTDecode 可直接原樣嵌入） */
+  const rasterizePages = async (type) => {
+    const out = [];
+    for (let i = 0; i < SHEET_PAGE_COMPONENTS.length; i += 1) {
+      const node = pageRefs.current[i];
+      if (!node) continue;
+      const options = {
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        width: SHEET_PAGE_WIDTH,
+        height: SHEET_PAGE_HEIGHT
+      };
+      const dataUrl = type === 'jpeg'
+        ? await htmlToImage.toJpeg(node, { ...options, quality: 0.95 })
+        : await htmlToImage.toPng(node, options);
+      out.push({ index: i + 1, dataUrl });
+    }
+    return out;
+  };
+
+  const downloadHref = (href, name) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleExportPng = async () => {
     if (exporting) return;
-    setExporting(true);
+    setExporting('png');
     let done = 0;
     try {
-      for (let i = 0; i < SHEET_PAGE_COMPONENTS.length; i += 1) {
-        const node = pageRefs.current[i];
-        if (!node) continue;
-        // 略過 DOM 尚未完成時的空白節點
-        const dataUrl = await htmlToImage.toPng(node, {
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          width: SHEET_PAGE_WIDTH,
-          height: SHEET_PAGE_HEIGHT
-        });
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = fileName(i + 1);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+      const pages = await rasterizePages('png');
+      for (const page of pages) {
+        downloadHref(page.dataUrl, fileName('png', page.index));
         done += 1;
         // 讓瀏覽器有時間處理「允許多檔案下載」提示
         await new Promise((r) => setTimeout(r, 250));
@@ -743,7 +761,33 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
     } catch (err) {
       if (showToast) showToast('匯出失敗，請再試一次');
     } finally {
-      setExporting(false);
+      setExporting(null);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (exporting) return;
+    setExporting('pdf');
+    try {
+      const pages = await rasterizePages('jpeg');
+      const pdf = buildImagePdf(pages.map((page) => ({
+        bytes: dataUrlToBytes(page.dataUrl),
+        // 尺寸由 JPEG 檔頭讀出（pdfWriter 內部處理），這裡不必傳
+        width: SHEET_PAGE_WIDTH * 2,
+        height: SHEET_PAGE_HEIGHT * 2
+      })));
+      if (!pdf) {
+        if (showToast) showToast('這一張卡沒有可匯出的頁面');
+        return;
+      }
+      const url = URL.createObjectURL(pdf);
+      downloadHref(url, fileName('pdf'));
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      if (showToast) showToast('已匯出三頁 PDF（A4 橫向）');
+    } catch (err) {
+      if (showToast) showToast('匯出失敗，請再試一次');
+    } finally {
+      setExporting(null);
     }
   };
 
@@ -752,17 +796,28 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-xs" style={{ color: C.faint }}>
           依官方三頁橫向 A4 表格的版面重繪，內容取自這張卡的實際資料。
-          瀏覽器可能會詢問是否允許下載多個檔案。
+          選圖片會得到三個 PNG 檔（瀏覽器可能會詢問是否允許下載多個檔案）；選 PDF 會得到單一三頁檔案。
         </p>
-        <JRPGButton
-          variant="primary"
-          size="sm"
-          icon={GiScrollUnfurled}
-          onClick={handleExport}
-          disabled={exporting}
-        >
-          {exporting ? '匯出中…' : '匯出三頁 PNG'}
-        </JRPGButton>
+        <div className="flex items-center gap-2 shrink-0">
+          <JRPGButton
+            variant="primary"
+            size="sm"
+            icon={GiScrollUnfurled}
+            onClick={handleExportPdf}
+            disabled={Boolean(exporting)}
+          >
+            {exporting === 'pdf' ? '匯出中…' : '匯出三頁 PDF'}
+          </JRPGButton>
+          <JRPGButton
+            variant="ghost"
+            size="sm"
+            icon={GiScrollUnfurled}
+            onClick={handleExportPng}
+            disabled={Boolean(exporting)}
+          >
+            {exporting === 'png' ? '匯出中…' : '匯出三張 PNG'}
+          </JRPGButton>
+        </div>
       </div>
 
       <div className="space-y-3">

@@ -31,6 +31,13 @@ import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js
 import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
 import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
+import {
+  buildImagePdf,
+  buildImagePdfBytes,
+  readJpegSize,
+  dataUrlToBytes,
+  A4_LANDSCAPE_PT
+} from '../src/features/character-sheet/utils/pdfWriter.js';
 
 let pass = 0;
 let fail = 0;
@@ -271,7 +278,8 @@ check('三頁都是固定尺寸的版面', page1Html.includes(`width:${SHEET_PAG
 section('G. 官方三頁匯出：匯出管線與原始碼護欄');
 
 const exportSrc = read('../src/features/character-sheet/components/CharacterSheetExport.jsx');
-check('用 toPng 而不是 toJpeg（表格線條需要無損）', [exportSrc.includes('toPng'), exportSrc.includes('toJpeg')], [true, false]);
+check('PNG 走無損的 toPng（表格線條需要無損）',
+  [exportSrc.includes('htmlToImage.toPng'), exportSrc.includes("rasterizePages('png')")], [true, true]);
 check('輸出以 pixelRatio 2 提高解析度', exportSrc.includes('pixelRatio: 2'), true);
 check('白底輸出（不是羊皮紙底色）', exportSrc.includes("backgroundColor: '#ffffff'"), true);
 check('逐頁匯出成三個檔案', exportSrc.includes('SHEET_PAGE_COMPONENTS.length'), true);
@@ -281,7 +289,7 @@ check('預覽縮放與光柵化分離（ref 掛在未縮放的內層）',
   [true, true]);
 check('編輯器有兩個檢視分頁', [editorCode.includes('官方三頁（可匯出 PNG）'), editorCode.includes("previewTab === 'official'")], [true, true]);
 check('卡片檢視仍保留', editorCode.includes('<CharacterCard'), true);
-check('匯出面板有載入中狀態（避免重複點擊）', exportSrc.includes("exporting ? '匯出中…'"), true);
+check('匯出面板有載入中狀態（避免重複點擊）', exportSrc.includes("'匯出中…'"), true);
 
 // ─────────────────────────────────────────────────────────── H
 section('H. 圖示表本身的護欄（這一段是被自己的失誤逼出來的）');
@@ -293,6 +301,84 @@ check('成長履歷的 13 個圖示都登記在圖示表裡',
   Object.values(LOG_KINDS).filter((m) => !GAME_ICONS_MAP[m.icon]).map((m) => m.icon), []);
 check('裝備圖示對照表也都登記在圖示表裡',
   Object.values(EQUIPMENT_ICONS).filter((k) => !GAME_ICONS_MAP[k]), []);
+
+// ─────────────────────────────────────────────────────────── I
+section('I. 三頁 PDF：自己寫的極簡 PDF 產生器');
+
+/** 手工組一個最小可辨識的 JPEG 檔頭（SOI + SOF0）——readJpegSize 只讀到這裡 */
+const jpegHeader = (w, h) => new Uint8Array([
+  0xff, 0xd8,
+  0xff, 0xc0, 0x00, 0x11, 0x08,
+  (h >> 8) & 0xff, h & 0xff,
+  (w >> 8) & 0xff, w & 0xff,
+  0, 0, 0, 0, 0, 0, 0, 0, 0
+]);
+
+check('readJpegSize 讀出 JPEG 實際尺寸', readJpegSize(jpegHeader(2246, 1588)), { height: 1588, width: 2246 });
+check('非 JPEG 位元組 → null（由呼叫端退回傳入值）', readJpegSize(new Uint8Array([1, 2, 3, 4])), null);
+check('位元組太短 → null', readJpegSize(new Uint8Array([0xff, 0xd8])), null);
+check('null → null', readJpegSize(null), null);
+check('dataUrlToBytes 解出 base64 內容',
+  Array.from(dataUrlToBytes('data:image/jpeg;base64,AQIDBA==')), [1, 2, 3, 4]);
+check('dataUrlToBytes 對壞字串回空陣列', dataUrlToBytes('nonsense').length, 0);
+
+check('沒有影像 → 不產 PDF', buildImagePdf([]), null);
+check('全部是空影像 → 不產 PDF', buildImagePdf([{ bytes: new Uint8Array(0) }]), null);
+
+const fakeImages = [0, 1, 2].map((i) => ({
+  bytes: new Uint8Array(64).fill(0x40 + i),
+  width: 2246,
+  height: 1588
+}));
+const pdfBlob = buildImagePdf(fakeImages);
+check('產出 PDF blob', [pdfBlob instanceof Blob, pdfBlob.type], [true, 'application/pdf']);
+
+const pdfBytes = await buildImagePdfBytes(fakeImages);
+const pdfText = Buffer.from(pdfBytes).toString('latin1');
+
+check('檔頭是 %PDF-1.4', pdfText.startsWith('%PDF-1.4'), true);
+check('含二進位標記', pdfBytes[9] === 0x25 && pdfBytes[10] === 0xe2, true);
+check('Catalog 指向 Pages', pdfText.includes('/Type /Catalog /Pages 2 0 R'), true);
+check('頁數正確', pdfText.includes('/Count 3'), true);
+check('三頁都指向自己的影像物件',
+  ['/Im0 5 0 R', '/Im0 8 0 R', '/Im0 11 0 R'].every((t) => pdfText.includes(t)), true);
+check('頁面尺寸為 A4 橫向', pdfText.includes('/MediaBox [0 0 841.89 595.28]'), true);
+check('JPEG 以 DCTDecode 原樣嵌入（不重新編碼）', pdfText.includes('/Filter /DCTDecode'), true);
+check('物件數＝2 + 3×頁數', (pdfText.match(/\n\d+ 0 obj\n/g) || []).length, 11);
+check('以 %%EOF 結尾', pdfText.trimEnd().endsWith('%%EOF'), true);
+
+// xref 是 PDF 的目錄：位移錯了整份就打不開，所以逐筆驗它指到正確的物件開頭
+const startxref = Number(pdfText.match(/startxref\n(\d+)/)[1]);
+check('startxref 指向 xref 表', pdfText.slice(startxref, startxref + 4), 'xref');
+const xrefLines = pdfText.slice(startxref).split('\n').slice(2); // 0:'xref' 1:'0 12' 2:空閒條目
+check('第一筆是空閒條目', xrefLines[0], '0000000000 65535 f ');
+check('物件 1 從檔頭（含二進位標記）之後開始', xrefLines[1].slice(0, 10), '0000000015');
+const objectEntries = xrefLines.slice(1, 12);
+check('xref 有 11 筆物件條目', objectEntries.length, 11);
+check('每一筆 xref 位移都指到該物件的開頭',
+  objectEntries.map((line, i) => {
+    const offset = Number(line.slice(0, 10));
+    return pdfText.slice(offset, offset + `${i + 1} 0 obj`.length) === `${i + 1} 0 obj`;
+  }),
+  new Array(11).fill(true));
+check('xref 每筆條目剛好 19 字元（含換行則 20 bytes）', objectEntries.every((l) => l.length === 19), true);
+
+const fourPage = await buildImagePdfBytes([...fakeImages, { bytes: new Uint8Array(8).fill(7), width: 10, height: 10 }]);
+check('頁數隨影像數量變動', Buffer.from(fourPage).toString('latin1').includes('/Count 4'), true);
+
+const pdfWriterSrc = read('../src/features/character-sheet/utils/pdfWriter.js');
+check('PDF 產生器沒有外部依賴（自己寫，不拉套件）',
+  /^\s*import .* from '(?!node:)/m.test(pdfWriterSrc), false);
+check('A4 橫向常數與官方表一致', [A4_LANDSCAPE_PT.width, A4_LANDSCAPE_PT.height], [841.89, 595.28]);
+check('匯出面板同時提供 PDF 與 PNG',
+  [exportSrc.includes('匯出三頁 PDF'), exportSrc.includes('匯出三張 PNG')], [true, true]);
+check('PDF 走 JPEG（DCTDecode 可直接嵌入）、PNG 走無損',
+  [exportSrc.includes("await rasterizePages('jpeg')"), exportSrc.includes("await rasterizePages('png')")],
+  [true, true]);
+check('PDF 用 object URL 下載並事後釋放',
+  [exportSrc.includes('URL.createObjectURL(pdf)'), exportSrc.includes('URL.revokeObjectURL(url)')],
+  [true, true]);
+check('匯出中會鎖住兩顆按鈕', exportSrc.includes('disabled={Boolean(exporting)}'), true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
