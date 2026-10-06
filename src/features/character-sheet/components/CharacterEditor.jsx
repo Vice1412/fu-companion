@@ -60,6 +60,9 @@ import {
 } from '../data/sourcebookConfig';
 import StarterPresetsModal from './StarterPresetsModal';
 import CharacterSheetExportBody from './CharacterSheetExport';
+
+/** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
+const TAB_COUNT = 6;
 import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
@@ -100,7 +103,15 @@ export default function CharacterEditor({
   // 開啟時要停在哪一個分頁（例如從跑團卡的升級流程連過來看「職業與技能」）
   initialTab = 1
 }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // 分頁編號一定要是合法數字。這裡是最後一道防線：
+  // 曾經有一次呼叫端寫成 `onClick={onOpenEditor}`，React 就把**點擊事件物件**當成分頁編號傳進來，
+  // 而編輯器會把 activeTab 直接渲染在「步驟 {activeTab}/6」上——
+  // 於是 React 拋出 "Objects are not valid as a React child"，整棵樹被卸載、畫面全黑。
+  // 就算呼叫端再犯，這裡也不會讓它變成當機。
+  // 註：不能在這裡讀 TABS——它宣告在下面，useState 的初始值會在那一行之前執行（TDZ）。
+  const [activeTab, setActiveTab] = useState(
+    () => (Number.isInteger(initialTab) && initialTab >= 1 && initialTab <= TAB_COUNT ? initialTab : 1)
+  );
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   // 角色卡檢視彈窗的兩個分頁：本專案卡片 / 官方三頁表格
@@ -389,6 +400,10 @@ export default function CharacterEditor({
     { id: 5, label: '情感羈絆', icon: 'hp' },
     { id: 6, label: '特質與命刻', icon: 'clock' }
   ];
+  // 上面那個 useState 的夾制用 TAB_COUNT（不能讀 TABS，會踩 TDZ）；test:ui 有一條護欄綁住兩者相等。
+  if (TABS.length !== TAB_COUNT) {
+    throw new Error(`TABS 有 ${TABS.length} 個分頁，但 TAB_COUNT 是 ${TAB_COUNT}——請一起改`);
+  }
 
   // Attribute sum
   const attrSum = (character.attributes?.dex || 0) + (character.attributes?.ins || 0) + (character.attributes?.mig || 0) + (character.attributes?.wlp || 0);

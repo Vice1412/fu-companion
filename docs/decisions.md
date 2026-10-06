@@ -2188,6 +2188,54 @@ Y4 那一輪只統一了前兩個，第三個還是舊名字，而 Y4 的護欄�
 > 而這次能重現的（匯出永遠不回來），剛好就是最可能的原因：
 > 他前一則訊息正在問「匯出按鈕在哪裡」，時間點完全對得上。
 
+#### AA8. 後續：使用者指認了按鈕，真正的死機在跑團面板
+
+問清楚之後，使用者貼了截圖：**跑團面板（跑團卡）右上角的「構築與成長」**。
+
+**這正是我的駕駛艙漏掉的一條路徑**——我先前的四條路徑裡，「構築與成長」都是從**名冊**按的，
+而從跑團面板按是走**另一個 prop**（`onOpenEditor`）。把這條補進駕駛艙，**一次就重現了**：
+
+```
+E2 從跑團面板點「構築與成長」 → 點了「構築與成長」
+  newErrors: ["Uncaught Error: Objects are not valid as a React child
+              (found: object with keys {_reactName, _targetInst, type, nativeEvent, target, ...})"]
+```
+
+**根因（三層疊起來的）**：
+
+1. `CharacterPlayHUD` 的兩顆按鈕寫成 **`onClick={onOpenEditor}`**——
+   直接把回呼當 handler，React 會把**點擊事件物件**當成第一個參數傳進去。
+   （兩顆：頭像那格、以及「構築與成長」。）
+2. `CharacterSheet` 的 `onOpenEditor={(tab) => { setEditorTab(tab || 1); ... }}` 把那個
+   **事件物件**當成「分頁編號」存進 state（`event || 1` 當然是真的，所以完全不會被擋掉）。
+3. `CharacterEditor` 把 `activeTab` 直接渲染在 **`步驟 {activeTab}/{TABS.length}`** 上 →
+   React 拋 `Objects are not valid as a React child` → **整棵樹被卸載** → 畫面全黑。
+
+**「一按就死機」不是卡住，是整個 React 樹被卸載掉。** 這也解釋了為什麼它看起來像死機而不是轉圈。
+
+**修法三層（每一層都獨立成立）**：
+
+1. 兩顆按鈕改成 `onClick={() => onOpenEditor()}`——不要把事件當參數傳。
+2. `CharacterSheet` 驗型別才存：`typeof tab === 'number' && tab >= 1 ? tab : 1`。
+3. `CharacterEditor` 對 `initialTab` 做夾制（最後一道防線）：非整數、超出範圍一律回第 1 頁。
+   **就算呼叫端再犯，這裡也不會讓它變成當機。**
+
+> ⚠️ 夾制**不能讀 `TABS`**：`TABS` 宣告在元件內、在 `useState` 那行**之後**，
+> 初始值函式會踩到 TDZ（第一次修就中了 `ReferenceError: Cannot access 'TABS' before initialization`）。
+> 所以另存 `TAB_COUNT`，並在 `TABS` 宣告後加一行「兩者不相等就拋錯」，測試再綁一次。
+
+**測試（`test:ui` 149 → 159）**：核心是一條**真正的迴歸測試**——
+把長得像事件物件的東西當 `initialTab` 餵給編輯器做 SSR，斷言它不炸、
+且輸出裡沒有 `_reactName`／`[object Object]`。另外三條原始碼護欄（不得再出現
+`onClick={onOpenEditor}`、`CharacterSheet` 要驗型別、編輯器要夾制）。
+**依紀律刻意破壞驗證過會響**（改回 `onClick={onOpenEditor}` → 2 條 FAIL）。
+
+**駕駛艙也補上了這條路徑**，修好後在真實瀏覽器重跑：**0 個錯誤**。
+
+> **教訓（本輪第二次同類）**：我上一輪的四條路徑「看起來涵蓋了」，其實漏掉的是
+> **同一個按鈕、不同的入口**。按鈕的文字一樣、走的路徑不同——**測試要照「進入點」列舉，
+> 不是照「按鈕文字」列舉**。這也是為什麼使用者的一句「在跑團界面時的構築與成長」就足夠定位。
+
 
 
 

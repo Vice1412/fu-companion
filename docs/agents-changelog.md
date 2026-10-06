@@ -367,3 +367,11 @@
 *⑦ **我沒能重現的部分**：導覽／返回路徑的凍結。所以不宣稱修好了它，而是在回覆裡問使用者是哪一顆按鈕。**「我重現不了」是一個結論，不是失敗。***
 *測試：`test:ui` 135 → **149 項**（新增 J 區段）；刻意破壞 `skipFonts` → 護欄 FAIL；還原 → 全過。*
 *驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + 328 + 180 + 102 + 85 + **149** + 86 + 99 + 270 全過，exit 0；`npm run build` exit 0（2,152.94 kB / gzip 619.96 kB）。決策紀錄見 `docs/decisions.md` §AA。*
+
+*2026-10-05（真正的死機：跑團面板的「構築與成長」）：使用者貼截圖指認按鈕，**這正是我上一個駕駛艙漏掉的一條路徑**——先前四條路徑的「構築與成長」都是從名冊按的，從跑團面板按走的是另一個 prop（`onOpenEditor`）。補進駕駛艙後一次就重現：`Uncaught Error: Objects are not valid as a React child (found: object with keys {_reactName, _targetInst, type, nativeEvent, target, ...})`。*
+*① **根因（三層疊起來）**：(a) `CharacterPlayHUD` 兩顆按鈕寫成 **`onClick={onOpenEditor}`**——把回呼直接當 handler，React 會把**點擊事件物件**當第一個參數傳進去（兩顆：頭像那格、「構築與成長」）；(b) `CharacterSheet` 的 `onOpenEditor={(tab) => setEditorTab(tab || 1)}` 把那個事件物件當「分頁編號」存進 state（`event || 1` 當然是真的，擋不掉）；(c) `CharacterEditor` 把 `activeTab` 直接渲染在 **`步驟 {activeTab}/6`** → React 拋錯 → **整棵樹被卸載、畫面全黑**。**所以「一按就死機」不是卡住，是整個 React 樹被卸載。***
+*② **修法三層**（每層獨立成立）：兩顆按鈕改 `onClick={() => onOpenEditor()}`；`CharacterSheet` 驗型別才存；`CharacterEditor` 對 `initialTab` 做夾制（最後一道防線，呼叫端再犯也不會當機）。*
+*③ **踩到的坑**：夾制**不能讀 `TABS`**——它宣告在元件內、在 `useState` 那行**之後**，初始值函式會踩 TDZ（第一次修就中 `ReferenceError: Cannot access 'TABS' before initialization`）。另存 `TAB_COUNT`，並在 `TABS` 宣告後加一行「兩者不相等就拋錯」，測試再綁一次。*
+*④ **測試**：`test:ui` 149 → **159 項**。核心是一條**真正的迴歸測試**——把長得像事件物件的東西當 `initialTab` 餵給編輯器做 SSR，斷言它不炸、輸出裡沒有 `_reactName`／`[object Object]`；另三條原始碼護欄。**依紀律刻意破壞驗證過會響**（改回 `onClick={onOpenEditor}` → 2 條 FAIL）。駕駛艙也補上這條路徑，修好後在真實瀏覽器重跑：**0 個錯誤**。*
+*⑤ **教訓（本輪第二次同類）**：上一輪的四條路徑「看起來涵蓋了」，漏掉的是**同一個按鈕、不同的入口**——**測試要照「進入點」列舉，不是照「按鈕文字」列舉**。這也是為什麼使用者一句「在跑團界面時的構築與成長」就足夠定位。*
+*驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + 328 + 180 + 102 + 85 + **159** + 86 + 99 + 270 全過，exit 0；`npm run build` exit 0（2,153.14 kB / gzip 620.07 kB）。決策紀錄見 `docs/decisions.md` §AA8。*

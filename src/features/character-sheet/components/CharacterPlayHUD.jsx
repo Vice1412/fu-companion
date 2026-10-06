@@ -602,7 +602,7 @@ export default function CharacterPlayHUD({
         <div className="flex items-center justify-between flex-wrap gap-3 border-b pb-3" style={{ borderColor: theme.border }}>
           <div className="flex items-center gap-3">
             <div
-              onClick={onOpenEditor}
+              onClick={() => onOpenEditor()}
               className="w-11 h-11 rounded-xl border flex items-center justify-center font-serif text-lg font-bold overflow-hidden shadow-inner shrink-0 bg-white cursor-pointer hover:ring-2 hover:scale-105 transition-all group relative"
               style={{ borderColor: theme.border, color: theme.accent }}
               title="點擊前往「構築與成長」更換或調整頭像"
@@ -665,7 +665,7 @@ export default function CharacterPlayHUD({
             </button>
 
             <button
-              onClick={onOpenEditor}
+              onClick={() => onOpenEditor()}
               className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
               style={{ borderColor: theme.border, color: theme.textDark }}
             >

@@ -790,7 +790,12 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           themeId={activeChar.themeColor || 'emerald'}
           onChange={handleUpdateActiveCharacter}
           onBackToRoster={() => setViewMode('roster')}
-          onOpenEditor={(tab) => { setEditorTab(tab || 1); setViewMode('editor'); }}
+          onOpenEditor={(tab) => {
+            // 一定要驗型別：`onClick={onOpenEditor}` 會把**點擊事件物件**當成第一個參數傳進來，
+            // 一旦存進 state，編輯器就會試著把那個物件渲染出來 → 整棵樹炸掉（畫面全黑＝死機）。
+            setEditorTab(typeof tab === 'number' && tab >= 1 ? tab : 1);
+            setViewMode('editor');
+          }}
           onOpenLog={() => handleOpenLog(activeChar)}
           onOpenDice={onOpenDice}
           showToast={showToast}

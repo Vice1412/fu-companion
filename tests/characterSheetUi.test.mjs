@@ -31,6 +31,7 @@ import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js
 import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
 import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
+import CharacterEditor from '../src/features/character-sheet/components/CharacterEditor.jsx';
 import {
   buildImagePdf,
   buildImagePdfBytes,
@@ -127,9 +128,11 @@ check('選取中的技能以「升級後」的 SL 顯示',
   hud.includes('以上數值以升級後的 SL'), true);
 check('升級模態提供連到構築工坊「職業與技能」的入口',
   [hud.includes('onOpenEditor(3)'), hud.includes('想比較其他職業的技能？')], [true, true]);
-check('編輯器支援指定初始分頁', editor.includes('initialTab = 1') && editor.includes('useState(initialTab)'), true);
+check('編輯器支援指定初始分頁（且會夾制）',
+  [editor.includes('initialTab = 1'), editor.includes('Number.isInteger(initialTab)')], [true, true]);
 check('名冊開啟編輯器時固定回到第 1 分頁', sheet.includes('setEditorTab(1)'), true);
-check('跑團卡傳分頁給編輯器', sheet.includes('onOpenEditor={(tab) => { setEditorTab(tab || 1);'), true);
+check('跑團卡傳分頁給編輯器（且驗型別）',
+  [sheet.includes('onOpenEditor={(tab)'), sheet.includes("typeof tab === 'number'")], [true, true]);
 
 // ─────────────────────────────────────────────────────────── D
 section('D. 兩個入口按鈕必須說明「你來這裡做什麼」（使用者回報）');
@@ -432,6 +435,59 @@ check('NPC 工坊不再 await document.fonts.ready（那個 promise 可能永遠
   stripComments(npcSrc).includes('await document.fonts.ready'), false);
 check('index.html 確實有外部字型（這就是為什麼要 skipFonts）',
   read('../index.html').includes('fonts.googleapis.com'), true);
+
+// ─────────────────────────────────────────────────────────── K
+section('K. 跑團面板的「構築與成長」一按就死機（使用者回報，已重現）');
+
+// 症狀：在跑團面板按「構築與成長」，整頁死掉。
+// 根因：那顆按鈕寫成 `onClick={onOpenEditor}`，React 會把**點擊事件物件**當成第一個參數傳進去，
+//       CharacterSheet 把它存進 state 當成「分頁編號」，編輯器再把 activeTab 渲染到
+//       「步驟 {activeTab}/6」→ React 拋 "Objects are not valid as a React child" → 整棵樹卸載。
+//
+// 這裡直接餵一個長得像事件物件的東西，驗編輯器還活著——這才是真的迴歸測試。
+const bogusTab = { _reactName: 'onClick', type: 'click', nativeEvent: { isTrusted: true }, target: null };
+const editorWithBogusTab = (() => {
+  try {
+    return renderToStaticMarkup(React.createElement(CharacterEditor, {
+      character: createNewCharacter({ name: '當機測試角色' }),
+      themeId: 'emerald',
+      onChange: () => {},
+      showToast: () => {},
+      initialTab: bogusTab
+    }));
+  } catch (err) {
+    return `THREW ${err.message}`;
+  }
+})();
+
+check('把點擊事件物件當成分頁編號傳進去，編輯器不會炸',
+  editorWithBogusTab.startsWith('THREW'), false);
+check('沒有把事件物件渲染出來（就是這個字串讓 React 拋錯）',
+  [editorWithBogusTab.includes('_reactName'), editorWithBogusTab.includes('[object Object]')],
+  [false, false]);
+check('仍然正常畫出編輯器內容', editorWithBogusTab.includes('當機測試角色'), true);
+check('合法的分頁編號照舊生效',
+  renderToStaticMarkup(React.createElement(CharacterEditor, {
+    character: createNewCharacter({ name: '分頁測試' }),
+    themeId: 'emerald',
+    onChange: () => {},
+    showToast: () => {},
+    initialTab: 3
+  })).includes('_reactName'),
+  false);
+
+check('跑團面板不再把點擊事件當成參數傳給 onOpenEditor',
+  hudCode.includes('onClick={onOpenEditor}'), false);
+check('跑團面板的兩個入口都改成箭頭函式',
+  (hudCode.match(/onClick=\{\(\) => onOpenEditor\(\)\}/g) || []).length, 2);
+check('CharacterSheet 會驗型別才把分頁編號存進 state',
+  sheetCode.includes("typeof tab === 'number'"), true);
+check('編輯器對 initialTab 做夾制（最後一道防線）',
+  [editorCode.includes('Number.isInteger(initialTab)'), editorCode.includes('initialTab <= TAB_COUNT')],
+  [true, true]);
+check('TAB_COUNT 與實際分頁數綁在一起（改了一邊就會在執行時拋錯）',
+  editorCode.includes('TABS.length !== TAB_COUNT'), true);
+check('分頁總數仍是 6', (editorCode.match(/icon: '[a-z]+' \}/g) || []).length, 6);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
