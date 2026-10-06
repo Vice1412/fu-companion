@@ -28,6 +28,7 @@ import {
 import { createNewCharacter } from '../src/features/character-sheet/utils/characterEngine.js';
 import { CharacterLogBody } from '../src/features/character-sheet/components/CharacterLogModal.jsx';
 import { getCharacterTheme } from '../src/features/character-sheet/utils/characterThemes.js';
+import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 
 let pass = 0;
 let fail = 0;
@@ -63,13 +64,13 @@ check('未登記的 kind 一律拒收',
 check('未登記的 kind 不會寫進角色',
   getLog(appendLog(baseChar(), { kind: '不存在的種類', title: 'x' })).length, 0);
 
-const gameIconSource = fs.readFileSync(
-  new URL('../src/components/ui/GameIcon.jsx', import.meta.url), 'utf8'
-);
+// 注意：這裡查的是**執行期的圖示表**，不是掃檔案文字。
+// 圖示名在 GameIcon.jsx 裡同時出現在檔頭 import，掃文字會被 import 行滿足，
+// 於是「只有 import、沒有登記」的圖示照樣過關（2026-10-05 真的發生過）。
 const missingIcons = Object.entries(LOG_KINDS)
-  .filter(([, meta]) => !new RegExp(`^\\s+${meta.icon},?\\s*$`, 'm').test(gameIconSource))
+  .filter(([, meta]) => !GAME_ICONS_MAP[meta.icon])
   .map(([k, meta]) => `${k}:${meta.icon}`);
-check('每個 LOG_KINDS 的圖示都是 GameIcon 認得的元件名（護欄）', missingIcons, []);
+check('每個 LOG_KINDS 的圖示都真的登記在 GameIcon 的圖示表裡', missingIcons, []);
 
 // ─────────────────────────────────────────────────────────── B
 section('B. createLogEntry：正規化與拒收');

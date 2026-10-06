@@ -338,7 +338,8 @@ export const GAME_ICONS_MAP = {
   slot_accessory: GiRing,
 
   // Character Log (成長履歷；由 characterLog.js 的 LOG_KINDS[].icon 指定元件名)
-  GiScrollQuill,
+  // 註：GiScrollQuill／GiTwoCoins 已在上方登記，這裡不重複——
+  //     重複的鍵在物件字面量裡是合法的，後者會靜默蓋掉前者（test:ui 有護欄擋這件事）。
   GiUpCard,
   GiScrollUnfurled,
   GiChest,
@@ -347,7 +348,6 @@ export const GAME_ICONS_MAP = {
   GiBackpack,
   GiSparkles,
   GiProgression,
-  GiTwoCoins,
   GiTrophyCup,
   GiQuillInk,
   GiPadlock,

@@ -32,15 +32,15 @@
   本機路徑與 repo 名稱無關；`.github/workflows/deploy.yml` 與 `vite.config.js` 皆用相對路徑，**不受搬遷影響**。
 - **可用工具**：`pwsh`、`read`、`write`、`edit`、`glob`、`grep`
 - **建置指令**：`npm run build`（Vite 6，實測約 4.2 秒，exit 0）
-- **建置產物**：`dist/`，JS 2,129 kB（gzip 612 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
-- **測試指令**：`npm test`（實測 **1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 38/38 + 86/86 + 99/99 + 270/270** 通過，exit 0）。
+- **建置產物**：`dist/`，JS 2,149 kB（gzip 618 kB）。chunk-size 警告為**已知既有現象**，非本次改動造成。
+- **測試指令**：`npm test`（實測 **1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 101/101 + 86/86 + 99/99 + 270/270** 通過，exit 0）。
   十六道測試關卡（其中兩道是自動化的規則關卡）：
   - `npm run test:emoji` —— **規則五.1 已自動化**（見 §3.2）；掃描範圍**已含 `shared/`**
   - `npm run test:affinity` —— 九相屬性標記（誤標表、正標表、資料層掃描、渲染器同步；見 §4 F）
   - `npm run test:equipment` —— 裝備配置（原書裝備表逐筆核對、裝備圖示對照表、熟練度與載入衝突、雙重盾牌、SSR 煙霧；見 `docs/decisions.md` §U）
   - `npm run test:creation` —— 開卡規則與生命週期（原書逐項對照、欄位集護欄、壞資料校正、`createNewCharacter`／`validateCharacter` 讀規則、定稿與進度清單、硬編碼不得回流的原始碼護欄；見 `docs/decisions.md` §V、§X）
   - `npm run test:log` —— 成長履歷（種類詞彙與圖示護欄、append-only 與合併時窗、摘要推導、建卡第一筆、寫入端原始碼護欄、SSR 煙霧；見 `docs/decisions.md` §W）
-  - `npm run test:ui` —— 角色卡介面契約（`parseStepperInput` 的輸入語意、六項資源必須可自行填寫、升級流程必須顯示技能效果全文、入口標籤與詞彙護欄；見 `docs/decisions.md` §Y）
+  - `npm run test:ui` —— 角色卡介面契約（`parseStepperInput` 的輸入語意、六項資源必須可自行填寫、升級流程必須顯示技能效果全文、入口標籤與詞彙護欄、**官方三頁匯出的欄位對應與版面**、圖示表重複鍵護欄；見 `docs/decisions.md` §Y、§Z）
   - `npm run test:sentinel` —— 哨兵遷移與回歸護欄
   - `npm run test:propernouns` —— 專有名詞對照與格式鐵律
   - `npm run test:projects` —— 造物專案成本與每日推進公式（對照原書官方範例）
@@ -399,10 +399,10 @@ Get-ChildItem -Path "src" -Recurse -File |
 - **結論**：目前無實際基線偏移；若未來啟用 `showLabel`，須先改為 `inline`。
 
 ### E. 建置與測試
-- `npm run build` 通過（exit 0，2026-10-05 實測 4.39 秒）。
-- JS bundle 2,129 kB / gzip 612 kB，觸發 Vite chunk-size 警告（>500 kB）。
+- `npm run build` 通過（exit 0，2026-10-05 實測 7.96 秒）。
+- JS bundle 2,149 kB / gzip 618 kB，觸發 Vite chunk-size 警告（>500 kB）。
   建議未來以 `manualChunks` 或 `import()` 拆分，但**非當前規範要求**。
-- `npm test` 通過（**1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 38/38 + 86/86 + 99/99 + 270/270**，exit 0）。
+- `npm test` 通過（**1 + 176/176 + 60/60 + 33/33 + 75/75 + 56/56 + 235/235 + 211/211 + 328/328 + 180/180 + 102/102 + 85/85 + 101/101 + 86/86 + 99/99 + 270/270**，exit 0）。
   已補上測試的模組：造物專案成本與每日推進（`test:projects`）、職業資源池（`test:resources`）、
   美食家食材／食譜書（`test:gourmet`）、專有名詞對照（`test:propernouns`）、
   哨兵遷移（`test:sentinel`）、零 Emoji（`test:emoji`）、卡牌大師牌組（`test:cards`）、
@@ -412,7 +412,7 @@ Get-ChildItem -Path "src" -Recurse -File |
   **裝備配置（`test:equipment`，2026-10-05 補上，見 `docs/decisions.md` §U）**、
   **開卡規則（`test:creation`，2026-10-05 補上，見 `docs/decisions.md` §V、§X）**、
   **成長履歷（`test:log`，2026-10-05 補上，見 `docs/decisions.md` §W）**、
-  **角色卡介面契約（`test:ui`，2026-10-05 補上，見 `docs/decisions.md` §Y）**。
+  **角色卡介面契約（`test:ui`，2026-10-05 補上，見 `docs/decisions.md` §Y、§Z）**。
   **剩餘覆蓋缺口**：戰鬥輪次狀態機、Fultimator 匯入匯出。
   > ✅ **角色卡數值引擎的缺口已於 2026-10-04 補上**（`test:engine`；2026-10-05 擴充至 **322 項**
   > ＝ 243 項基礎向量 ＋ 79 項數值構成公式與免費增益二選一，見 `docs/decisions.md` §N）。
@@ -541,6 +541,7 @@ Get-ChildItem -Path "src" -Recurse -File |
 | W | 成長履歷（§V 順序表的第 2 項） | 角色卡從「現在是什麼」變成「**怎麼變成這樣的**」。新增 `utils/characterLog.js`：`LOG_KINDS` 封閉詞彙（12 種）、`createLogEntry`、`appendLog`、`loggableChange`、`summarizeLog`、`formatChange`。**五個設計決定**：append-only；**帶前後值**（「HP 12 → 8」，只寫「HP 變成 8」沒有用）；**存在角色物件內**（名冊本來就是單一 blob，同步／備份免費，`keys.js` 不動）；種類**封閉詞彙**（未登記者拒收）；**連續同值合併**（每種 kind 宣告 `coalesce` 毫秒數——這是「可用的履歷」與「雜訊」的分界，等級 60 秒時窗順帶解決數字輸入的兩筆問題）。**寫入端只改兩個出口**（兩支 `updateField` 加 `meta` 參數）；技能變更逐技能比對 SL 寫成「【元素魔法】SL 1 → 2」；建卡那一筆寫在**引擎層**。新增 `CharacterLogModal`（摘要磚全部由 `changes` 推導、玩家可自由補記含日期），入口為名冊卡片與跑團卡標頭共用。**過程失誤**：`loggableChange` 起初只看 `changes` 是否為空 → 「`fields: []` ＋ 標題」的呼叫端靜默不記錄（**測試抓到**）；另有一次 `edit` 把 `useState` 吞進註解（**沒有測試抓到**，重讀時發現）。`test:log` **85 項** | 2026-10-05 |
 | X | 創角／編輯分流（§V1 診斷的第 1、3、4 點；使用者最初抱怨的「繁瑣不直觀」） | ① **定稿狀態**：`character.locked`／`lockedAt` ＋ `isCharacterLocked`／`lockCharacter`／`unlockCharacter`／`LOCKED_CREATION_TABS`，兩者都留下一筆履歷（新增第 13 種記錄種類 `lock`）。**新角色預設未定稿；舊存檔沒有這個欄位 → 一律視為未定稿，行為與以前完全相同**。② **導航列本身就是進度表**：`buildCreationChecklist` 把 `validateCharacter` 的結果按步驟分成「已完成／待處理／有問題」，**不新增驗證邏輯**；完成的步驟打勾，並**順手修掉一個既有缺陷**——側邊欄第二行原本印的是 `{t.label}`（與第一行一模一樣），現在顯示第一則提醒。③ **用 `<fieldset disabled>` 一次凍結整頁**（HTML 原生語意，不會漏掉任何控件；逐個 input 加 `disabled` 在 2,000 行元件裡必然會漏）；凍結範圍**刻意不含導航列**與解鎖按鈕。**刻意沒做**：分頁重組成決定導向流程、逐欄位權限、把定稿做成權限系統（那要等 campaign 與房間同步）。`test:creation` **102 項** | 2026-10-05 |
 | Y | 三項介面回報（升級流程、數值輸入、兩個入口按鈕的正名） | 三件都是「資訊在畫面上不存在」：下拉選單的一行字不是資訊、不可輸入的數字不是輸入、兩個都含「角色卡」的標籤不是標籤。① **升級流程：下拉選單 → 技能卡**——舊選項是 `元素魔法 (目前 SL 0 / 5)`，改成逐項卡片（技能名＋SL 進度＋`<SkillDescription>` 效果全文），**選取中的那一項以「升級後」的 SL 顯示**（你要看的是買到之後數字長什麼樣）；並補上連到構築工坊「職業與技能」分頁的入口（`CharacterEditor` 新增 `initialTab`）。② **`NumberStepper`**：`−`/`+` 為 ±1、中間數字可直接填**絕對值**、輸入 `+12`/`-12` 則以**增減**計算。**只有一個回呼 `onDelta(delta)`**——填絕對值時內部換算成「目標 − 現值」，所以兩種輸入共用同一條記錄邏輯，夾制規則也只留在呼叫端一處。六項資源全部換掉舊的固定 ±1／±5／±50；沒有實際變化時直接結束（不寫 localStorage、不留「0 → 0」空記錄）。③ **按鈕正名**：先定詞彙再改標籤——**構築與成長**（editor）／**跑團面板**（play）／**卡片預覽·唯讀**（preview），並**在按鈕上直接寫出那句話**。新增第 16 道關卡 `test:ui` **38 項**（介面契約的家）。**過程教訓**：標籤護欄一開始把「解釋舊標籤為什麼不好」的**註解**也判成違規——掃描使用者可見文案前必須先去掉註解（`stripComments`）：**護欄要對準「使用者看得到的字」，不是「檔案裡的字」** | 2026-10-05 |
+| Z | 官方三頁 PNG 匯出（使用者提供官方角色卡 PDF） | 依官方 `Fabula-Ultima-Character-Sheet.pdf` 的**版面**重繪三頁橫向 A4（P1 主卡／P2 續頁職業＋咒語／P3 咒語續頁）。新增 `components/CharacterSheetExport.jsx`：`buildSheetModel` 純函式負責全部欄位對應（羈絆 6 格與感情勾選、裝備四列含規則書說明、熟練度取自引擎、職業切 3＋4、咒語切 7＋其餘、HP/MP/IP 的 null＝滿值換算、**儀式學派由技能名稱推導**），匯出用 `toPng`（非 toJpeg，表格線條要無損）＋`pixelRatio: 2`＋白底＋逐頁下載；預覽縮放與光柵化分離（ref 掛在未縮放的內層）。**五個決定**：版面照官方但文字中文（規則三）；配色照官方（印出來的文件、不套羊皮紙色系，唯一例外）；物語點／經驗點框印**官方原表自己印的那段規則文字**（唯一由官方表直接翻譯的文案）；學派勾選資料推導；固定 1123×794 px。**過程失誤（同一類：驗證方式不夠強）**：一次「移除重複鍵」清掉了 5 個**只有 import、沒有登記**的圖示，而**既有圖示護欄是掃檔案文字、被 import 行滿足**所以完全沒響——已改成查執行期圖示表，並新增**重複鍵護欄**（物件字面量重複鍵合法、後者靜默蓋掉前者，只能用文字解析抓）。**教訓：護欄的「驗證方式」本身要被驗證——刻意破壞一次，確認它會響。** 驗證方式：SSR → HTML → `chrome --headless` 截圖親眼看版面。`test:ui` **38 → 101 項** | 2026-10-05 |
 
 ## 7. 本檔維護
 

@@ -59,6 +59,7 @@ import {
   getClassInfo
 } from '../data/sourcebookConfig';
 import StarterPresetsModal from './StarterPresetsModal';
+import CharacterSheetExportBody from './CharacterSheetExport';
 import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
@@ -102,6 +103,8 @@ export default function CharacterEditor({
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
+  // 角色卡檢視彈窗的兩個分頁：本專案卡片 / 官方三頁表格
+  const [previewTab, setPreviewTab] = useState('card');
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
   const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(character?.theme) && Boolean(character?.theme));
@@ -1915,7 +1918,7 @@ export default function CharacterEditor({
         isOpen={isCardPreviewModalOpen}
         onClose={() => setIsCardPreviewModalOpen(false)}
         title="冒險者角色卡檢視"
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-5xl"
         theme={theme}
         actionButtons={
           <div className="flex items-center gap-2">
@@ -1943,19 +1946,51 @@ export default function CharacterEditor({
         }
       >
         <div className="space-y-3">
-          <div className="text-xs text-slate-500 flex items-center justify-between px-1">
-            <span>隨時檢視角色卡排版與構築進度</span>
-            <span className="font-mono text-[11px]" style={{ color: theme.accent }}>（填寫中未完成欄位均以空格標註）</span>
+          {/* 兩種檢視：本專案的卡片，與官方三頁表格（後者可匯出 PNG） */}
+          <div className="flex items-center gap-1.5">
+            {[['card', '卡片檢視'], ['official', '官方三頁（可匯出 PNG）']].map(([key, label]) => {
+              const active = previewTab === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setPreviewTab(key)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: active ? theme.accent : theme.panelBg,
+                    borderColor: theme.border,
+                    color: active ? '#fffdf9' : theme.textDark
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
-          <CharacterCard
-            character={character}
-            themeId={character.themeColor || themeId}
-            onAvatarClick={() => {
-              setIsCardPreviewModalOpen(false);
-              setActiveTab(1);
-            }}
-          />
+          {previewTab === 'official' ? (
+            <CharacterSheetExportBody
+              character={character}
+              stats={stats}
+              showToast={showToast}
+            />
+          ) : (
+            <>
+              <div className="text-xs text-slate-500 flex items-center justify-between px-1">
+                <span>隨時檢視角色卡排版與構築進度</span>
+                <span className="font-mono text-[11px]" style={{ color: theme.accent }}>（填寫中未完成欄位均以空格標註）</span>
+              </div>
+
+              <CharacterCard
+                character={character}
+                themeId={character.themeColor || themeId}
+                onAvatarClick={() => {
+                  setIsCardPreviewModalOpen(false);
+                  setActiveTab(1);
+                }}
+              />
+            </>
+          )}
         </div>
       </JRPGModal>
 

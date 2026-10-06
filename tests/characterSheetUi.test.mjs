@@ -15,6 +15,22 @@ import fs from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import NumberStepper, { parseStepperInput } from '../src/components/ui/NumberStepper.jsx';
+import {
+  buildSheetModel,
+  OfficialSheetPage1,
+  OfficialSheetPage2,
+  OfficialSheetPage3,
+  SHEET_PAGE_WIDTH,
+  SHEET_PAGE_HEIGHT,
+  FABULA_POINT_RULES,
+  EXPERIENCE_POINT_RULES,
+  SHEET_DISCIPLINES
+} from '../src/features/character-sheet/components/CharacterSheetExport.jsx';
+import { createNewCharacter, getProficiencies } from '../src/features/character-sheet/utils/characterEngine.js';
+import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js';
+import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
+import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
+import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
 
 let pass = 0;
 let fail = 0;
@@ -126,6 +142,157 @@ check('麵包屑不再用「構建／實戰」',
   [sheetCode.includes('`構建：'), sheetCode.includes('`實戰：')], [false, false]);
 check('全站使用者可見文案不再出現「跑團卡」',
   [editorCode, hudCode, sheetCode].filter((src) => src.includes('跑團卡')).length, 0);
+
+// ─────────────────────────────────────────────────────────── E
+section('E. 官方三頁匯出：欄位對應');
+
+const sheetChar = createNewCharacter({
+  name: '測試勇者',
+  identity: '流浪劍士',
+  theme: '希望',
+  origin: '邊境村落',
+  zenit: 320,
+  exp: 7,
+  fabulaPoints: 2,
+  currentHp: 12,
+  currentMp: null,
+  backpackNotes: '乾糧三份',
+  quirk: '倖存者',
+  attributes: { dex: 10, ins: 8, mig: 6, wlp: 8 },
+  statusAfflictions: { dazed: true, weak: true },
+  bonds: [
+    { id: 'b1', target: '同行夥伴', feelings: ['admiration', 'loyalty'] },
+    { id: 'b2', target: '宿敵', feelings: ['hatred'] }
+  ],
+  equipment: { mainHand: '青銅劍', offHand: '青銅圓盾', armor: '旅行皮甲', accessory: '守護護符' },
+  classes: [
+    { className: '守護者', level: 3, chosenBenefit: 'hp', skills: [{ name: '鐵壁', sl: 2 }] },
+    { className: '元素師', level: 2, skills: [{ name: '元素學派儀式', sl: 1 }] },
+    { className: '博學士', level: 1, skills: [] },
+    { className: '靈師', level: 1, skills: [{ name: '靈魂學派儀式', sl: 1 }] },
+    { className: '熵師', level: 1, skills: [] }
+  ],
+  heroicSkills: ['英雄的覺悟'],
+  spells: [
+    { name: '火球', mp: 10, target: '一個生物', duration: '瞬發', desc: '造成【HR + 5】火屬性傷害。' },
+    { name: '治療', mp: 8, target: '一個生物', duration: '瞬發', desc: '回復【SL × 5】HP。' },
+    { name: '冰錐', mp: 10, target: '一個生物', duration: '瞬發', desc: '造成冰屬性傷害。' },
+    { name: '雷擊', mp: 12, target: '一個生物', duration: '瞬發', desc: '造成電屬性傷害。' },
+    { name: '護盾', mp: 6, target: '自身', duration: '場景', desc: '物防 +2。' },
+    { name: '淨化', mp: 5, target: '一個生物', duration: '瞬發', desc: '解除一個異常狀態。' },
+    { name: '疾風', mp: 9, target: '一個生物', duration: '瞬發', desc: '造成風屬性傷害。' },
+    { name: '暗影', mp: 11, target: '一個生物', duration: '瞬發', desc: '造成暗屬性傷害。' }
+  ]
+});
+const model = buildSheetModel(sheetChar);
+
+check('身世三欄', [model.identity, model.theme, model.origin], ['流浪劍士', '希望', '邊境村落']);
+check('姓名', model.name, '測試勇者');
+check('物語點／經驗值／資金',
+  [model.fabulaPoints, model.exp, model.zenit], [2, 7, 320]);
+check('羈絆固定 6 格', model.bonds.length, 6);
+check('羈絆帶目標與感情勾選',
+  [model.bonds[0].target, model.bonds[0].feelings.admiration, model.bonds[0].feelings.hatred, model.bonds[1].feelings.hatred],
+  ['同行夥伴', true, false, true]);
+check('空的羈絆格是空白的', model.bonds[5].target, '');
+check('HP 當前值取自角色', model.pools.hp.current, 12);
+check('MP 當前值 null 代表滿值', model.pools.mp.current, model.pools.mp.max);
+check('IP 當前值 null 代表滿值', model.pools.ip.current, model.pools.ip.max);
+check('HP 上限與危機值來自引擎', [model.pools.hp.max > 0, model.crisisThreshold > 0], [true, true]);
+check('四維基礎值', model.attributes.base.map((a) => a.value), [10, 8, 6, 8]);
+check('四維當前值（眩暈降 INS 一階；虛弱時 MIG 已在 d6 下限）',
+  model.attributes.current.map((a) => a.value), [10, 6, 6, 8]);
+check('狀態勾選', model.statuses.filter((s) => s.on).map((s) => s.cn), ['眩暈', '虛弱']);
+check('裝備四列（配件／防具／主手／副手）',
+  model.equipmentRows.map((r) => r.label), ['配件', '防具', '主手', '副手']);
+check('裝備列帶規則書上的說明（武器為命中／傷害式）',
+  model.equipmentRows.find((r) => r.slot === 'mainHand').desc.includes('HR'), true);
+check('防具列帶說明', model.equipmentRows.find((r) => r.slot === 'armor').desc.length > 0, true);
+// 熟練度不另寫一份判定：直接取自引擎，測試只驗「有接上去」而不是「哪個職業給什麼」
+check('熟練度直接取自引擎', model.proficiencies, getProficiencies(sheetChar));
+check('熟練度不是全空（確實有讀到職業）',
+  Object.values(model.proficiencies).some(Boolean), true);
+check('P1 職業欄只放前 3 個', model.page1Classes.map((c) => c.className), ['守護者', '元素師', '博學士']);
+check('其他職業從第 4 個開始，最多 4 個', model.otherClasses.map((c) => c.className), ['靈師', '熵師']);
+check('免費增益翻成中文', model.page1Classes[0].freeBenefit, '最大 HP +5');
+check('技能資訊帶 SL', model.page1Classes[0].skills, ['鐵壁　SL 2']);
+check('咒語 P2 放前 7 條', model.page2Spells.map((s) => s.name),
+  ['火球', '治療', '冰錐', '雷擊', '護盾', '淨化', '疾風']);
+check('咒語 P3 接續（第 8 條起）', model.page3Spells.map((s) => s.name), ['暗影']);
+check('咒語列帶 MP／目標／持續時間',
+  [model.page2Spells[0].mp, model.page2Spells[0].targets, model.page2Spells[0].duration], [10, '一個生物', '瞬發']);
+check('儀式學派由技能名稱推導（元素師＋靈師 → 兩個學派）',
+  model.disciplines.filter((d) => d.on).map((d) => d.name), ['元素學派', '靈魂學派']);
+check('六個學派都在表上', model.disciplines.length, 6);
+check('英雄技能', model.heroicSkills, ['英雄的覺悟']);
+check('金手指「無」不顯示', buildSheetModel(createNewCharacter({ quirk: '無' })).quirk, '');
+check('金手指有值時顯示', model.quirk, '倖存者');
+check('行囊筆記', model.backpackNotes, '乾糧三份');
+
+check('空角色也能算出模型（不會炸）', (() => {
+  const m = buildSheetModel({});
+  return [m.name, m.bonds.length, m.equipmentRows.length, m.attributes.base.length];
+})(), ['', 6, 4, 4]);
+
+// ─────────────────────────────────────────────────────────── F
+section('F. 官方三頁匯出：版面與 SSR');
+
+check('頁面尺寸為 A4 橫向 @96dpi（官方 842×595 pt 等比）',
+  [SHEET_PAGE_WIDTH, SHEET_PAGE_HEIGHT], [1123, 794]);
+check('物語點規則文字（官方原表印的那段）有 7 條', FABULA_POINT_RULES.length, 7);
+check('經驗點規則文字有 4 條', EXPERIENCE_POINT_RULES.length, 4);
+check('規則文字不是空的', [...FABULA_POINT_RULES, ...EXPERIENCE_POINT_RULES].every((t) => t.length > 6), true);
+check('六個儀式學派名都在詞彙內', SHEET_DISCIPLINES.length, 6);
+
+const page1Html = renderToStaticMarkup(React.createElement(OfficialSheetPage1, { model }));
+const page2Html = renderToStaticMarkup(React.createElement(OfficialSheetPage2, { model }));
+const page3Html = renderToStaticMarkup(React.createElement(OfficialSheetPage3, { model }));
+
+check('P1 畫出姓名與特質', [page1Html.includes('測試勇者'), page1Html.includes('流浪劍士')], [true, true]);
+check('P1 畫出羈絆目標', page1Html.includes('同行夥伴'), true);
+check('P1 畫出物語點與經驗點的規則框',
+  [page1Html.includes('場景開始時若你沒有任何物語點'), page1Html.includes('每次聚會結束時')], [true, true]);
+check('P1 畫出先攻／物防／魔防', ['先攻修正', '物防', '魔防'].every((t) => page1Html.includes(t)), true);
+check('P1 畫出裝備四列', ['配件', '防具', '主手', '副手'].every((t) => page1Html.includes(t)), true);
+check('P1 畫出四維與狀態', ['d10', '眩暈'].every((t) => page1Html.includes(t)), true);
+check('P1 畫出職業與免費增益', [page1Html.includes('守護者'), page1Html.includes('最大 HP +5')], [true, true]);
+check('P1 只放前三個職業', page1Html.includes('靈師'), false);
+check('P2 放其他職業與咒語', [page2Html.includes('靈師'), page2Html.includes('火球')], [true, true]);
+check('P2 不放前三職業的欄位', page2Html.includes('守護者'), false);
+check('P3 放續頁咒語', [page3Html.includes('暗影'), page3Html.includes('奧祕與咒語（續）')], [true, true]);
+check('三頁都標了自己的頁碼', [
+  page1Html.includes('data-sheet-page="1"'),
+  page2Html.includes('data-sheet-page="2"'),
+  page3Html.includes('data-sheet-page="3"')
+], [true, true, true]);
+check('三頁都是固定尺寸的版面', page1Html.includes(`width:${SHEET_PAGE_WIDTH}px`), true);
+
+// ─────────────────────────────────────────────────────────── G
+section('G. 官方三頁匯出：匯出管線與原始碼護欄');
+
+const exportSrc = read('../src/features/character-sheet/components/CharacterSheetExport.jsx');
+check('用 toPng 而不是 toJpeg（表格線條需要無損）', [exportSrc.includes('toPng'), exportSrc.includes('toJpeg')], [true, false]);
+check('輸出以 pixelRatio 2 提高解析度', exportSrc.includes('pixelRatio: 2'), true);
+check('白底輸出（不是羊皮紙底色）', exportSrc.includes("backgroundColor: '#ffffff'"), true);
+check('逐頁匯出成三個檔案', exportSrc.includes('SHEET_PAGE_COMPONENTS.length'), true);
+check('檔名帶角色名與頁碼', exportSrc.includes('_角色卡_p'), true);
+check('預覽縮放與光柵化分離（ref 掛在未縮放的內層）',
+  [exportSrc.includes('transform: `scale(${PREVIEW_SCALE})`'), exportSrc.includes('pageRefs.current[i] = el')],
+  [true, true]);
+check('編輯器有兩個檢視分頁', [editorCode.includes('官方三頁（可匯出 PNG）'), editorCode.includes("previewTab === 'official'")], [true, true]);
+check('卡片檢視仍保留', editorCode.includes('<CharacterCard'), true);
+check('匯出面板有載入中狀態（避免重複點擊）', exportSrc.includes("exporting ? '匯出中…'"), true);
+
+// ─────────────────────────────────────────────────────────── H
+section('H. 圖示表本身的護欄（這一段是被自己的失誤逼出來的）');
+
+const iconKeys = readIconMapKeys();
+check('圖示表沒有重複的鍵（重複鍵會靜默蓋掉前者）', findDuplicateIconKeys(iconKeys), []);
+check('圖示表讀得到內容（解析沒有壞掉）', iconKeys.length > 150, true);
+check('成長履歷的 13 個圖示都登記在圖示表裡',
+  Object.values(LOG_KINDS).filter((m) => !GAME_ICONS_MAP[m.icon]).map((m) => m.icon), []);
+check('裝備圖示對照表也都登記在圖示表裡',
+  Object.values(EQUIPMENT_ICONS).filter((k) => !GAME_ICONS_MAP[k]), []);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
