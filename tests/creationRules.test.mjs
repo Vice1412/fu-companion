@@ -18,7 +18,9 @@ import {
   CREATION_RULE_FIELDS,
   resolveCreationRules,
   isDefaultCreationRules,
-  diffCreationRules
+  diffCreationRules,
+  getQuirkSource,
+  filterQuirksBySources
 } from '../src/features/character-sheet/data/creationRules.js';
 import {
   createNewCharacter,
@@ -33,6 +35,7 @@ import {
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
 import { SOURCEBOOKS } from '../src/features/character-sheet/data/sourcebookConfig.js';
+import rulesData from '../src/features/character-sheet/data/rulesData.json';
 
 let pass = 0;
 let fail = 0;
@@ -329,6 +332,50 @@ check('側邊欄不再重複顯示標籤，改顯示進度訊息',
   [editor.includes('step.message'), editor.includes('checklistById')], [true, true]);
 check('已定稿時仍可切換分頁（導航列不在凍結範圍內）',
   editor.includes('const frozenTab = locked && LOCKED_CREATION_TABS.includes(activeTab)'), true);
+
+// ─────────────────────────────────────────────────────────── N
+section('N. 金手指的來源過濾與「0 不是缺值」（2026-10-06）');
+
+check('金手指名稱裡的高奇標記 -> highFantasy', getQuirkSource('草木成精（高奇）'), 'highFantasy');
+check('自奇 -> naturalFantasy', getQuirkSource('倖存者（自奇）'), 'naturalFantasy');
+check('科奇 -> technoFantasy', getQuirkSource('機器人（科奇）'), 'technoFantasy');
+check('沒有標記 -> null（不設限，一律顯示）', getQuirkSource('空手道'), null);
+check('空字串也不會炸', getQuirkSource(''), null);
+
+const allQuirks = rulesData.quirks;
+const onlyCore = filterQuirksBySources(allQuirks, ['core']);
+check('關掉三本手冊後，有標記的金手指全部消失',
+  onlyCore.some((q) => getQuirkSource(q.name) !== null), false);
+check('沒標記的仍然顯示（無法判定來源就不猜）',
+  onlyCore.some((q) => q.name === '空手道'), true);
+check('開啟高度奇幻後，高奇金手指回來了',
+  filterQuirksBySources(allQuirks, ['core', 'highFantasy']).some((q) => q.name === '草木成精（高奇）'),
+  true);
+check('已選中的那一個永遠保留（否則角色身上的金手指會憑空消失）',
+  filterQuirksBySources(allQuirks, ['core'], '倖存者（自奇）').some((q) => q.name === '倖存者（自奇）'),
+  true);
+
+// 這條是「現況說明」不是期望：55 筆裡只有 17 筆有來源標記。
+// 數字變了代表有人補了標記 —— 那是好事，請一併更新這裡與 docs/decisions.md。
+check('有來源標記的金手指目前是 17 筆（其餘 38 筆待補來源）',
+  allQuirks.filter((q) => getQuirkSource(q.name) !== null).length, 17);
+
+// `0 || 3` 會把合法的 0 當成缺值。全站不得再出現這個寫法（一律用 `??`）。
+const sourceFiles = fs.readdirSync(new URL('../src/features/character-sheet', import.meta.url), { recursive: true })
+  .filter((p) => /\.(js|jsx)$/.test(p))
+  .map((p) => String(p).replace(/\\/g, '/'));
+check('全站沒有 fabulaPoints || N 這種「0 當缺值」的寫法',
+  sourceFiles.filter((p) => /fabulaPoints\s*\|\|\s*\d/.test(
+    read('../src/features/character-sheet/' + p)
+  )),
+  []);
+check('角色卡引擎不再寫死 Math.max(5',
+  read('../src/features/character-sheet/utils/characterEngine.js').includes('Math.max(5'),
+  false);
+check('等級一律經過 getCharacterLevel（不再直接讀 char.level）',
+  /getCharacterLevel/.test(read('../src/features/character-sheet/components/CharacterCard.jsx'))
+  && /getCharacterLevel/.test(read('../src/features/character-sheet/CharacterSheet.jsx')),
+  true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

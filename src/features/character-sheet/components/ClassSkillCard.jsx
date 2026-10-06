@@ -35,7 +35,7 @@ import {
   createDefaultCompanionData
 } from '../data/wayfarerCompanionData';
 import { getClassInfo } from '../data/sourcebookConfig';
-import { isHpMpChoiceBenefit } from '../utils/characterEngine';
+import { isHpMpChoiceBenefit, getCharacterLevel } from '../utils/characterEngine';
 import rulesData from '../data/rulesData.json';
 import { withEn } from '../../../utils/properNouns';
 
@@ -664,7 +664,7 @@ export default function ClassSkillCard({
                       <WayfarerCompanionSkillBar
                         sl={sk.sl}
                         companionData={character?.wayfarerData?.companion}
-                        characterLevel={character?.level || 5}
+                        characterLevel={getCharacterLevel(character)}
                         onOpenModal={() => {
                           setCurrentWayfarerSl(sk.sl);
                           setIsCompanionModalOpen(true);
@@ -807,7 +807,7 @@ export default function ClassSkillCard({
                       <WayfarerCompanionSkillBar
                         sl={currentSL}
                         companionData={character?.wayfarerData?.companion}
-                        characterLevel={character?.level || 5}
+                        characterLevel={getCharacterLevel(character)}
                         onOpenModal={() => {
                           setCurrentWayfarerSl(currentSL);
                           setIsCompanionModalOpen(true);
@@ -903,7 +903,7 @@ export default function ClassSkillCard({
         onClose={() => setIsCompanionModalOpen(false)}
         companionData={character?.wayfarerData?.companion}
         wayfarerSl={currentWayfarerSl}
-        characterLevel={character?.level || 5}
+        characterLevel={getCharacterLevel(character)}
         onSave={(newCompData) => {
           if (onUpdateCharacter) {
             onUpdateCharacter({
@@ -923,7 +923,7 @@ export default function ClassSkillCard({
         onClose={() => setIsGadgetsModalOpen(false)}
         gadgetsData={character?.tinkererData?.gadgets}
         tinkererSL={currentTinkererSl}
-        characterLevel={character?.level || 5}
+        characterLevel={getCharacterLevel(character)}
         onSave={(newGadgetsData) => {
           if (onUpdateCharacter) {
             onUpdateCharacter({

@@ -43,8 +43,10 @@ import {
   applyLevelUp,
   validateCharacter,
   exportCharacterToCombatant,
-  isHpMpChoiceBenefit
+  isHpMpChoiceBenefit,
+  getCharacterLevel
 } from '../src/features/character-sheet/utils/characterEngine.js';
+import { DEFAULT_CREATION_RULES } from '../src/features/character-sheet/data/creationRules.js';
 
 let pass = 0;
 let fail = 0;
@@ -451,13 +453,14 @@ check('新職業：最大 MP 因吟唱者而 +5（等級 6 -> 46 + 5 = 51）', c
 const capped = mk({ level: 50, exp: 100, classes: [{ className: '武器大師', level: 3, skills: [] }] });
 check('已達 50 級 -> 原物件原樣回傳', applyLevelUp(capped, { className: '武器大師', skillName: '碎骨擊' }) === capped, true);
 
-// TODO(bug): applyLevelUp 在 className 不存在於 classes 時，仍會扣 10 EXP 並提升角色等級，
-//   但職業與技能完全沒有變動（characterEngine.js:349-358 的 targetClass 為 undefined 時靜默跳過）。
-//   結果：玩家付出 10 EXP 卻什麼都沒得到。以下記錄現況。
+// 已修正（2026-10-06）：className 不存在於 classes 時，原本會扣 10 EXP 並提升角色等級，
+//   但職業與技能完全沒動 → 玩家付出 10 EXP 卻什麼都沒得到。
+//   現在改成「找不到那個職業就原物件原樣回傳」——EXP 不能被扣掉。
 const lostExp = applyLevelUp(growBase, { className: '不存在的職業', skillName: '不存在的技能' });
-check('未知職業升級：角色等級仍被提升為 6（現況）', lostExp.level, 6);
-check('未知職業升級：EXP 仍被扣除為 0（現況）', lostExp.exp, 0);
-check('未知職業升級：職業清單完全沒有變動（現況）', lostExp.classes.length, 1);
+check('未知職業升級：原物件原樣回傳（EXP 不會被扣）', lostExp === growBase, true);
+check('未知職業升級：角色等級維持 5', lostExp.level, 5);
+check('未知職業升級：EXP 維持 10', lostExp.exp, 10);
+check('未知職業升級：職業清單完全沒有變動', lostExp.classes.length, 1);
 
 // ─────────────────────────────────────────────────────────── H
 section('H. exportCharacterToCombatant：導出至戰鬥輪次追蹤器');
@@ -511,10 +514,12 @@ check('屬性帶入「當前」骰（緩慢 + 眩暈）', [exportedSet.attribute
 check('物防為當前 DEX = 6', exportedSet.defense, 6);
 check('魔防為當前 INS = 6', exportedSet.magicDefense, 6);
 
-// TODO(bug): `fabulaPoints: char.fabulaPoints || 3`（characterEngine.js:524）把 0 當成缺值。
-//   物語點是可以合法為 0 的資源，導出時卻會被還原成 3 點。以下記錄現況。
-check('物語點 0 -> 被還原成 3（現況）', exportCharacterToCombatant(mk({ fabulaPoints: 0 })).fabulaPoints, 3);
+// 已修正（2026-10-06）：`char.fabulaPoints || 3` 把 0 當成缺值，物語點 0 會被還原成 3 點。
+//   改成 `??`（只擋 null／undefined）之後，0 就是 0。
+check('物語點 0 -> 保持 0', exportCharacterToCombatant(mk({ fabulaPoints: 0 })).fabulaPoints, 0);
 check('物語點 2 -> 原值 2', exportCharacterToCombatant(mk({ fabulaPoints: 2 })).fabulaPoints, 2);
+check('物語點未設定 -> 才用預設 3',
+  exportCharacterToCombatant(mk({ fabulaPoints: null })).fabulaPoints, 3);
 
 // ─────────────────────────────────────────────────────────── I
 section('I. validateCharacter：創角完整度校驗');
@@ -736,6 +741,51 @@ const flexStats = calculateCharacterStats(mk({
 check('J9 柔性鍍層 物防 = 敏捷 8 + 2 = 10', flexStats.def, 10);
 check('J9 柔性鍍層 魔防 = 洞察 8 + 1 = 9', flexStats.mdef, 9);
 check('J9 柔性鍍層物防逐項相加 = 10', sumTerms(flexStats.breakdown.def), 10);
+
+// ─────────────────────────────────────────────────────────── K
+section('K. 等級的單一讀取點、裝備回退、物語點（2026-10-06 修正）');
+
+// 等級：玩家可以直接編輯那個欄位（編輯器有 5～50 的數字框），所以它才是權威。
+// 以前「卡片讀 char.level、三頁表格讀職業等級總和」，同一張卡會顯示兩個不同的等級。
+check('getCharacterLevel 讀玩家設定的等級', getCharacterLevel(mk({ level: 7 })), 7);
+check('沒有等級時退回開卡規則的起始等級',
+  getCharacterLevel({}), DEFAULT_CREATION_RULES.startingLevel);
+check('等級最低就是開卡規則的起始等級（使用者裁定：開卡規則就是最低 5）',
+  calculateCharacterStats(mk({ level: 1 })).maxHp,
+  calculateCharacterStats(mk({ level: 5 })).maxHp);
+check('起始等級由開卡規則決定（不是寫死 5）',
+  calculateCharacterStats(mk({ level: 3 })).maxHp
+    === calculateCharacterStats(mk({ level: DEFAULT_CREATION_RULES.startingLevel })).maxHp,
+  true);
+
+// 職業等級總和與角色等級對不上時，要**講出來**，而不是偷偷用另一個數字蓋掉
+const drifted = mk({ level: 5, classes: [{ className: '武器大師', level: 2, skills: [] }] });
+check('職業等級總和與角色等級不一致 -> 產生一則提醒',
+  validateCharacter(drifted).warnings.some((w) => w.message.includes('職業等級總和為 2')),
+  true);
+check('兩者一致時不提醒',
+  validateCharacter(mk({ level: 5, classes: [{ className: '武器大師', level: 3, skills: [] }, { className: '吟唱者', level: 2, skills: [] }] }))
+    .warnings.some((w) => w.message.includes('職業等級總和')),
+  false);
+
+// 裝備回退：一律回**具名的中性條目**，不是「資料表第一筆」
+// （第一筆剛好是中性值只是運氣；哪天有人把新裝備插到最前面就會靜默多給加值）
+const noArmorName = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  equipment: { armor: '資料表裡沒有的名字', mainHand: '徒手打擊', offHand: '無盾牌' }
+}));
+const neutralArmor = calculateCharacterStats(mk({ attributes: ALL_8 }));
+check('防具名字查不到 -> 等同中性裝甲（物防）', noArmorName.def, neutralArmor.def);
+check('防具名字查不到 -> 等同中性裝甲（魔防）', noArmorName.mdef, neutralArmor.mdef);
+check('回退是「具名中性條目」而不是陣列第一筆',
+  rulesData.equipment.armors[0].name, '無裝甲 / 冒險服');
+check('盾牌表的第一筆也是中性條目（回退才不會白送加值）',
+  rulesData.equipment.shields[0].name, '無盾牌');
+const unknownShield = calculateCharacterStats(mk({
+  attributes: ALL_8,
+  equipment: { armor: '無裝甲 / 冒險服', mainHand: '徒手打擊', offHand: '資料表裡沒有的盾' }
+}));
+check('副手名字查不到 -> 等同無盾牌', unknownShield.def, neutralArmor.def);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

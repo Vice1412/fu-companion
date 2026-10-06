@@ -26,7 +26,7 @@ import FUIcon from '../../components/ui/FUIcon';
 import CharacterEditor from './components/CharacterEditor';
 import CharacterPlayHUD from './components/CharacterPlayHUD';
 import CharacterLogModal from './components/CharacterLogModal';
-import { createNewCharacter, calculateCharacterStats } from './utils/characterEngine';
+import { createNewCharacter, calculateCharacterStats, getCharacterLevel } from './utils/characterEngine';
 import { CHARACTER_THEMES, getCharacterTheme } from './utils/characterThemes';
 import {
   isFultimatorCharacter,
@@ -135,7 +135,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
         name: char.name || '冒險者',
         avatar: char.avatar || null,
         faction: '玩家隊伍',
-        level: char.level || 5,
+        level: getCharacterLevel(char),
         rank: '玩家',
         role: (char.classes || []).map(c => c.className).join(' / ') || '冒險者',
         species: '玩家',
@@ -152,7 +152,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           current: curIp,
           max: stats.maxIp
         },
-        fabulaPoints: char.fabulaPoints || 3,
+        fabulaPoints: char.fabulaPoints ?? 3,
         attributes: {
           dex: stats.currentDex,
           ins: stats.currentIns,
@@ -313,10 +313,10 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
         return (a.name || '').localeCompare(b.name || '');
       }
       if (sortBy === 'level_desc') {
-        return (b.level || 5) - (a.level || 5);
+        return getCharacterLevel(b) - getCharacterLevel(a);
       }
       if (sortBy === 'level_asc') {
-        return (a.level || 5) - (b.level || 5);
+        return getCharacterLevel(a) - getCharacterLevel(b);
       }
       // 'recent'
       return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
@@ -590,7 +590,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                             {char.name || '冒險者'}
                           </h4>
                           <JRPGBadge variant={charTheme.badgeVariant} size="xs">
-                            Lv {char.level || 5}
+                            Lv {getCharacterLevel(char)}
                           </JRPGBadge>
                           {isCrisis && (
                             <JRPGBadge variant="rose" size="xs" className="flex items-center gap-1 font-mono">

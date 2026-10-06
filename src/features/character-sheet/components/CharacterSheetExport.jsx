@@ -6,7 +6,7 @@ import GameIcon from '../../../components/ui/GameIcon';
 import rulesData from '../data/rulesData.json';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import iconFontUrl from '../../../assets/FabulaUltimaIcons-Regular.otf';
-import { calculateCharacterStats, getProficiencies } from '../utils/characterEngine';
+import { calculateCharacterStats, getProficiencies, getCharacterLevel } from '../utils/characterEngine';
 import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 
 /**
@@ -306,6 +306,8 @@ export const buildSheetModel = (character, stats = null) => {
 
   return {
     name: ch.name || '',
+    // 用角色自己的等級，不是職業等級的總和——兩者漂移時以前會顯示不同的數字
+    level: getCharacterLevel(ch),
     pronouns: '',
     identity: ch.identity || '',
     theme: ch.theme || '',
@@ -677,7 +679,7 @@ export const OfficialSheetPage1 = ({ model, vars = null }) => (
 
       <Box
         title="角色等級"
-        note={`Lv ${model.classes.reduce((sum, c) => sum + c.level, 0)}`}
+        note={`Lv ${model.level}`}
         style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}
         bodyStyle={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}
       >

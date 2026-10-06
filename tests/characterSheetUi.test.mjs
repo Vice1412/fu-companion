@@ -107,7 +107,8 @@ const resourceCalls = [
   ['IP', /<NumberStepper\s+value=\{curIp\}/],
   ['EXP', /<NumberStepper\s+value=\{character\.exp \|\| 0\}/],
   ['資金', /<NumberStepper\s+value=\{character\.zenit \|\| 0\}/],
-  ['物語點', /<NumberStepper\s+value=\{character\.fabulaPoints \|\| 3\}/]
+  // `??` 不是 `||`：物語點 0 是合法值，不能被當成缺值（2026-10-06 修）
+  ['物語點', /<NumberStepper\s+value=\{character\.fabulaPoints \?\? 3\}/]
 ];
 check('六項資源都改用 NumberStepper',
   resourceCalls.filter(([, re]) => !re.test(hud)).map(([name]) => name), []);

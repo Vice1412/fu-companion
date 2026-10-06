@@ -15,7 +15,7 @@ import {
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import FUIcon from '../../../components/ui/FUIcon';
-import { calculateCharacterStats } from '../utils/characterEngine';
+import { calculateCharacterStats, getCharacterLevel } from '../utils/characterEngine';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import ClockTracker from '../../../components/ui/ClockTracker';
@@ -96,7 +96,7 @@ export default function CharacterCard({
               )}
             </h3>
             <JRPGBadge variant={theme.badgeVariant} size="xs">
-              Lv {character.level || 5}
+              Lv {getCharacterLevel(character)}
             </JRPGBadge>
             {isCrisis && (
               <JRPGBadge variant="rose" size="xs" className="flex items-center gap-1">
@@ -172,7 +172,7 @@ export default function CharacterCard({
                 {/* Check if total SL is below required level */}
                 {(() => {
                   const totalSL = character.classes.reduce((sum, c) => sum + (c.skills || []).reduce((s, sk) => s + (sk.sl || 0), 0), 0);
-                  const reqSL = character.level || 5;
+                  const reqSL = getCharacterLevel(character);
                   if (totalSL < reqSL) {
                     return (
                       <span className="text-[10px] px-2 py-0.5 rounded-md border border-dashed border-amber-400 bg-amber-50 text-amber-900 font-mono font-bold">
@@ -253,7 +253,7 @@ export default function CharacterCard({
               <GiSparkles className="w-3.5 h-3.5 text-amber-700" /> 物語點
             </div>
             <div className="text-base font-mono font-black text-amber-950 mt-0.5">
-              {character.fabulaPoints || 3}
+              {character.fabulaPoints ?? 3}
             </div>
           </div>
         </div>

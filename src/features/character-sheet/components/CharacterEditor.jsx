@@ -44,7 +44,7 @@ import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
-import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
+import { DEFAULT_CREATION_RULES, resolveCreationRules, filterQuirksBySources } from '../data/creationRules';
 import { loggableChange, formatLogTime } from '../utils/characterLog';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
@@ -68,7 +68,8 @@ import {
   lockCharacter,
   unlockCharacter,
   buildCreationChecklist,
-  LOCKED_CREATION_TABS
+  LOCKED_CREATION_TABS,
+  getCharacterLevel
 } from '../utils/characterEngine';
 import {
   EQUIPMENT_SLOTS,
@@ -561,7 +562,7 @@ export default function CharacterEditor({
                     {character.name || '新冒險者'}
                   </h3>
                   <JRPGBadge variant={theme.badgeVariant} size="xs">
-                    Lv {character.level || 5}
+                    Lv {getCharacterLevel(character)}
                   </JRPGBadge>
                 </div>
                 <p className="text-[11px] truncate" style={{ color: theme.textMuted }}>
@@ -828,7 +829,7 @@ export default function CharacterEditor({
                 {character.name || '新冒險者'}
               </span>
               <JRPGBadge variant={theme.badgeVariant} size="xs">
-                Lv {character.level || 5}
+                Lv {getCharacterLevel(character)}
               </JRPGBadge>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
@@ -1179,7 +1180,7 @@ export default function CharacterEditor({
                 }
               >
                 <span>
-                  已分配技能: <strong>{stats.totalSkillLevels}</strong> / {character.level || 5} 級
+                  已分配技能: <strong>{stats.totalSkillLevels}</strong> / {getCharacterLevel(character)} 級
                 </span>
                 <span className="flex items-center gap-1">
                   {stats.isLevelMatched ? (
@@ -1191,9 +1192,9 @@ export default function CharacterEditor({
                     <>
                       <GiHazardSign className="w-3.5 h-3.5" style={{ color: theme.accent }} />
                       <span>
-                        {stats.totalSkillLevels < (character.level || 5)
-                          ? `尚缺 ${(character.level || 5) - stats.totalSkillLevels} 點`
-                          : `超出 ${stats.totalSkillLevels - (character.level || 5)} 點`}
+                        {stats.totalSkillLevels < (getCharacterLevel(character))
+                          ? `尚缺 ${(getCharacterLevel(character)) - stats.totalSkillLevels} 點`
+                          : `超出 ${stats.totalSkillLevels - (getCharacterLevel(character))} 點`}
                       </span>
                     </>
                   )}
@@ -1579,7 +1580,7 @@ export default function CharacterEditor({
                   style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                 >
                   <option value="無">無特殊金手指</option>
-                  {rulesData.quirks.map(q => (
+                  {filterQuirksBySources(rulesData.quirks, rules.allowedSourcebooks, character.quirk).map(q => (
                     <option key={q.name} value={q.name}>{q.name}</option>
                   ))}
                 </select>

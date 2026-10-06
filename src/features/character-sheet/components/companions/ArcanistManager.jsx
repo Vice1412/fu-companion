@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GiSparkles, GiCancel, GiCheckMark, GiBroadsword, GiFlame } from 'react-icons/gi';
 import { Plus } from 'lucide-react';
 import { RULE_CODEX } from '../../data/ruleCodexData';
+import { getCharacterLevel } from '../../utils/characterEngine';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
 
 export default function ArcanistManager({
@@ -112,7 +113,7 @@ export default function ArcanistManager({
     showToast('已刪除自訂阿爾卡納');
   };
 
-  const charLevel = character.level || 5;
+  const charLevel = getCharacterLevel(character);
   const levelDamageBonus = charLevel >= 40 ? 20 : charLevel >= 20 ? 10 : 0;
 
   return (

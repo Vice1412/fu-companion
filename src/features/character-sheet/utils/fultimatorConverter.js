@@ -5,7 +5,7 @@
  * 2. 支援將《物語手帳》角色導出為 Fultimator 標準 JSON 格式
  */
 
-import { createNewCharacter, calculateCharacterStats } from './characterEngine.js';
+import { createNewCharacter, calculateCharacterStats, getCharacterLevel } from './characterEngine.js';
 
 // 官方 28 職業英漢雙向對照字典
 export const CLASS_TRANSLATION_MAP = {
@@ -95,7 +95,9 @@ export const convertFultimatorToFUCompanion = (fChar) => {
   const avatar = info.imgurl || fChar.avatar || null;
   const exp = parseInt(info.exp || fChar.exp, 10) || 0;
   const zenit = parseInt(info.zenit || fChar.zenit, 10) || 0;
-  const fabulaPoints = parseInt(info.fabulapoints ?? fChar.fabulaPoints, 10) ?? 3;
+  // parseInt 失敗會回 NaN，而 NaN ?? 3 仍然是 NaN（?? 只擋 null／undefined）
+  const parsedFp = parseInt(info.fabulapoints ?? fChar.fabulaPoints, 10);
+  const fabulaPoints = Number.isFinite(parsedFp) ? parsedFp : 3;
   const backpackNotes = info.description || fChar.backpackNotes || '';
 
   // 2. 屬性骰階 (attributes: dexterity, insight, might, willpower)
@@ -279,7 +281,7 @@ export const convertFUCompanionToFultimator = (char) => {
   return {
     uid: 'fu_companion_export',
     name: char.name || '冒險者',
-    lvl: char.level || 5,
+    lvl: getCharacterLevel(char),
     info: {
       pronouns: '',
       identity: char.identity || '',
@@ -295,7 +297,7 @@ export const convertFUCompanionToFultimator = (char) => {
         hatred: b.feelings?.includes('hatred') || false
       })),
       description: char.backpackNotes || '',
-      fabulapoints: char.fabulaPoints || 3,
+      fabulapoints: char.fabulaPoints ?? 3,
       exp: char.exp || 0,
       zenit: char.zenit || 0,
       imgurl: char.avatar || ''

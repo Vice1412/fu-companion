@@ -11,6 +11,7 @@ import {
   GiSparkles
 } from 'react-icons/gi';
 import WayfarerCompanionModal from './WayfarerCompanionModal';
+import { getCharacterLevel } from '../../utils/characterEngine';
 import {
   calculateCompanionMaxHp,
   calculateCompanionCrisisHp,
@@ -29,7 +30,7 @@ export default function WayfarerCompanionSheet({
   const wayfarerClass = (character.classes || []).find(c => c.className === '旅人');
   const companionSkill = (wayfarerClass?.skills || []).find(s => s.name === '忠實夥伴');
   const companionSL = companionSkill?.sl || 1;
-  const charLevel = character.level || 5;
+  const charLevel = getCharacterLevel(character);
 
   // 取得旅人夥伴數據
   const wayfarerData = character.wayfarerData || {};

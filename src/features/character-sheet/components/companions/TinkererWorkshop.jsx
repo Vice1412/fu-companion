@@ -20,7 +20,7 @@ import { Plus } from 'lucide-react';
 import ClockTracker from '../../../../components/ui/ClockTracker';
 import JRPGButton from '../../../../components/ui/JRPGButton';
 import { renderTextWithAffinities } from '../../../../components/ui/FUIcon';
-import { calculateCharacterStats } from '../../utils/characterEngine';
+import { calculateCharacterStats, getCharacterLevel } from '../../utils/characterEngine';
 import { openRuleCodex } from '../../utils/skillFormulaEvaluator';
 import rulesData from '../../data/rulesData.json';
 import {
@@ -245,7 +245,7 @@ export default function TinkererWorkshop({
   const freeCostDiscount = visionarySL * 100;
   const extraProgressPerDay = visionarySL;
 
-  const characterLevel = character.level || 5;
+  const characterLevel = getCharacterLevel(character);
 
   // 修補匠資料
   const tinkererData = character.tinkererData || {};

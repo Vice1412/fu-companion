@@ -148,12 +148,32 @@ export const getProficiencies = (char) => {
 };
 
 /**
+ * 角色的等級 —— **單一讀取點**。
+ *
+ * 為什麼要有這個函式：角色資料裡的 `level` 是**玩家可以直接編輯的欄位**
+ * （編輯器有一個 5～50 的數字框），所以它才是權威；每個職業另外各有一個等級，
+ * 那是「這些等級怎麼分配」的結果。兩者本來應該相等（升級時一起 +1），
+ * 但沒有東西在檢查，於是會**漂移**——同一張卡在卡片上顯示 Lv 5、在匯出的三頁表格上顯示 Lv 8。
+ *
+ * 處理方式是：**以玩家設定的等級為準**，並在 `validateCharacter` 用一則提醒
+ * 把「職業等級總和對不上」講出來，而不是偷偷拿另一個數字蓋掉玩家的輸入。
+ */
+export const getCharacterLevel = (char) => (
+  parseInt(char?.level, 10) || DEFAULT_CREATION_RULES.startingLevel
+);
+
+/**
  * 完整計算角色各項衍生數值、狀態減值與裝備聯動
  */
 export const calculateCharacterStats = (char) => {
   if (!char) return {};
 
-  const level = Math.max(5, parseInt(char.level, 10) || 5);
+  // 等級最低就是開卡規則的起始等級（核心規則 p.157：角色從 5 級開始）。
+  // 讀規則而不是寫死 5，是為了 GM 日後調整起始等級時，這裡會跟著走。
+  const level = Math.max(
+    DEFAULT_CREATION_RULES.startingLevel,
+    getCharacterLevel(char)
+  );
   const baseDex = char.attributes?.dex || 8;
   const baseIns = char.attributes?.ins || 8;
   const baseMig = char.attributes?.mig || 8;
@@ -268,13 +288,21 @@ export const calculateCharacterStats = (char) => {
 
   // 3. 裝備防禦與先攻計算
   const normName = (n) => (n || '').replace(/\s*\([^)]*\)/g, '').trim();
-  const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor || a.name === normName(char.equipment?.armor)) || rulesData.equipment.armors[0];
+  // 回退一律回**具名的中性條目**，不要回「資料表第一筆」——
+  // 第一筆剛好是中性值只是運氣，哪天有人把新裝備插到最前面，
+  // 所有沒穿防具的角色就會白拿那份加值，而且不會有任何警告。
+  const NEUTRAL_ARMOR = '無裝甲 / 冒險服';
+  const NEUTRAL_SHIELD = '無盾牌';
+  const findByName = (list, name) => list.find((x) => x.name === name) || null;
+  const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor || a.name === normName(char.equipment?.armor))
+    || findByName(rulesData.equipment.armors, NEUTRAL_ARMOR);
   // 雙手武器佔滿兩個手部欄位（Core p.131）→ 副手裝備不生效，回退到中性條目（無盾牌）
   const mainHandDef = rulesData.equipment.weapons.find(w => w.name === char.equipment?.mainHand || w.name === normName(char.equipment?.mainHand));
   const offHandSuppressed = Number(mainHandDef?.hands) === 2;
   const shieldDef = offHandSuppressed
-    ? rulesData.equipment.shields[0]
-    : (rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand || s.name === normName(char.equipment?.offHand)) || rulesData.equipment.shields[0]);
+    ? findByName(rulesData.equipment.shields, NEUTRAL_SHIELD)
+    : (rulesData.equipment.shields.find(s => s.name === char.equipment?.offHand || s.name === normName(char.equipment?.offHand))
+      || findByName(rulesData.equipment.shields, NEUTRAL_SHIELD));
 
   let def = currentDex;
   let mdef = currentIns;
@@ -490,14 +518,12 @@ export const calculateCharacterStats = (char) => {
  * 經驗值成長與升級邏輯 (10 EXP = 1 Level)
  */
 export const canLevelUp = (char) => {
-  return (char.exp || 0) >= 10 && (char.level || 5) < 50;
+  return (char.exp || 0) >= 10 && getCharacterLevel(char) < 50;
 };
 
 export const applyLevelUp = (char, { className, skillName, isNewClass = false }) => {
   if (!canLevelUp(char)) return char;
 
-  const newLevel = (char.level || 5) + 1;
-  const newExp = (char.exp || 0) - 10;
   let updatedClasses = JSON.parse(JSON.stringify(char.classes || []));
 
   if (isNewClass) {
@@ -508,14 +534,16 @@ export const applyLevelUp = (char, { className, skillName, isNewClass = false })
     });
   } else {
     const targetClass = updatedClasses.find(c => c.className === className);
-    if (targetClass) {
-      targetClass.level += 1;
-      const targetSkill = targetClass.skills.find(s => s.name === skillName);
-      if (targetSkill) {
-        targetSkill.sl += 1;
-      } else {
-        targetClass.skills.push({ name: skillName, sl: 1 });
-      }
+    // 找不到那個職業就**什麼都不要動**：EXP 不能被扣掉。
+    // 原本的寫法是「扣 EXP、角色等級 +1」照樣執行，但職業與技能都沒動——
+    // 結果是玩家少了 10 點經驗值、等級數字 +1，卻沒有學到任何東西（實測確認）。
+    if (!targetClass) return char;
+    targetClass.level += 1;
+    const targetSkill = targetClass.skills.find(s => s.name === skillName);
+    if (targetSkill) {
+      targetSkill.sl += 1;
+    } else {
+      targetClass.skills.push({ name: skillName, sl: 1 });
     }
   }
 
@@ -524,11 +552,12 @@ export const applyLevelUp = (char, { className, skillName, isNewClass = false })
   const curHp = char.currentHp ?? oldStats.maxHp;
   const curMp = char.currentMp ?? oldStats.maxMp;
 
+  const leveled = { ...char, classes: updatedClasses };
   return {
-    ...char,
-    level: newLevel,
-    exp: newExp,
-    classes: updatedClasses,
+    ...leveled,
+    // 等級與職業一起 +1（兩者本來就該同步；對不上時由 validateCharacter 提醒）
+    level: getCharacterLevel(char) + 1,
+    exp: (char.exp || 0) - 10,
     currentHp: curHp + 1,
     currentMp: curMp + 1,
     updatedAt: new Date().toISOString()
@@ -622,6 +651,18 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
         message: `此團規定必須修習：${missingRequired.join('、')}`
       });
     }
+  }
+
+  // 職業等級總和應該等於角色等級（升級時兩者一起 +1）。對不上就是**漂移**——
+  // 以前沒有任何地方檢查這件事，於是同一張卡在卡片上顯示 Lv 5、在三頁表格上顯示 Lv 8。
+  const classLevelSum = (char.classes || []).reduce((sum, cl) => sum + (parseInt(cl.level, 10) || 0), 0);
+  if (classCount > 0 && classLevelSum !== getCharacterLevel(char)) {
+    warnings.push({
+      step: 3,
+      field: 'classes',
+      type: 'warning',
+      message: `職業等級總和為 ${classLevelSum}，與角色等級 ${getCharacterLevel(char)} 不一致`
+    });
   }
 
   if (stats.totalSkillLevels !== char.level) {
@@ -790,7 +831,7 @@ export const exportCharacterToCombatant = (char) => {
     name: char.name || '冒險者',
     avatar: char.avatar || null,
     faction: '玩家隊伍',
-    level: char.level || 5,
+    level: getCharacterLevel(char),
     rank: '玩家',
     role: (char.classes || []).map(c => c.className).join(' / ') || '冒險者',
     species: '玩家',
@@ -807,7 +848,7 @@ export const exportCharacterToCombatant = (char) => {
       current: char.currentIp !== undefined && char.currentIp !== null ? char.currentIp : stats.maxIp,
       max: stats.maxIp
     },
-    fabulaPoints: char.fabulaPoints || 3,
+    fabulaPoints: char.fabulaPoints ?? 3,
     attributes: {
       dex: stats.currentDex,
       ins: stats.currentIns,

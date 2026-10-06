@@ -39,7 +39,8 @@ import { hasLegacyOffensiveSentinel } from '../../npc-workshop/data/spells';
 import {
   calculateCharacterStats,
   canLevelUp,
-  applyLevelUp
+  applyLevelUp,
+  getCharacterLevel
 } from '../utils/characterEngine';
 import rulesData from '../data/rulesData.json';
 import CharacterPreviewModal from './CharacterPreviewModal';
@@ -271,7 +272,7 @@ export default function CharacterPlayHUD({
   };
 
   const adjustFp = (delta) => {
-    const cur = character.fabulaPoints || 3;
+    const cur = character.fabulaPoints ?? 3;
     const next = Math.max(0, cur + delta);
     if (next === cur) return;
     updateField('fabulaPoints', next, {
@@ -356,7 +357,7 @@ export default function CharacterPlayHUD({
         name: character.name || '冒險者',
         avatar: character.avatar || null,
         faction: '玩家隊伍',
-        level: character.level || 5,
+        level: getCharacterLevel(character),
         rank: '玩家',
         role: (character.classes || []).map(c => c.className).join(' / ') || '冒險者',
         species: '玩家',
@@ -373,7 +374,7 @@ export default function CharacterPlayHUD({
           current: curIp,
           max: stats.maxIp
         },
-        fabulaPoints: character.fabulaPoints || 3,
+        fabulaPoints: character.fabulaPoints ?? 3,
         attributes: {
           dex: stats.currentDex,
           ins: stats.currentIns,
@@ -630,7 +631,7 @@ export default function CharacterPlayHUD({
                   {character.name || '冒險者'}
                 </h3>
                 <JRPGBadge variant={theme.badgeVariant} size="sm">
-                  Lv {character.level || 5}
+                  Lv {getCharacterLevel(character)}
                 </JRPGBadge>
                 {isCrisis && (
                   <JRPGBadge variant="rose" size="xs" className="flex items-center gap-1 font-mono animate-pulse">
@@ -763,12 +764,12 @@ export default function CharacterPlayHUD({
                 物語點
               </span>
               <span className="font-mono font-black text-sm text-indigo-950">
-                {character.fabulaPoints || 3} FP
+                {character.fabulaPoints ?? 3} FP
               </span>
             </div>
             <div className="flex items-center gap-1.5 mt-auto pt-2">
               <NumberStepper
-                value={character.fabulaPoints || 3}
+                value={character.fabulaPoints ?? 3}
                 onDelta={adjustFp}
                 ariaLabel="物語點"
                 width="w-14"
@@ -1855,7 +1856,7 @@ export default function CharacterPlayHUD({
                               gadgetsData={character.tinkererData?.gadgets}
                               sl={sk.sl}
                               onOpenCodex={() => openRuleCodex('小工具')}
-                              characterLevel={character.level || 5}
+                              characterLevel={getCharacterLevel(character)}
                             />
                           )}
                         </div>
@@ -1992,7 +1993,7 @@ export default function CharacterPlayHUD({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
-                        if ((character.fabulaPoints || 3) <= 0) {
+                        if ((character.fabulaPoints ?? 3) <= 0) {
                           showToast('物語點不足');
                           return;
                         }
