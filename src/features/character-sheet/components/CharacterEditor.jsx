@@ -45,6 +45,7 @@ import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
+import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
@@ -84,7 +85,10 @@ export default function CharacterEditor({
   onChange,
   onBackToRoster,
   onEnterPlayMode = null,
-  showToast = null
+  showToast = null,
+  // 開卡規則：預設為官方核心規則；GM 自訂開局時由上游傳入該團的規則
+  // （見 data/creationRules.js——起始等級、起始資金、必修職業、開放拓展都由此決定）
+  creationRules = DEFAULT_CREATION_RULES
 }) {
   const [activeTab, setActiveTab] = useState(1);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
@@ -102,8 +106,11 @@ export default function CharacterEditor({
 
   const theme = getCharacterTheme(character.themeColor || themeId);
 
-  // Validation checklist
-  const validation = validateCharacter(character);
+  // 開卡規則（起始等級／起始資金／必修職業／開放拓展…）
+  const rules = resolveCreationRules(creationRules);
+
+  // Validation checklist（以這一團的規則驗證，不是寫死的官方標準）
+  const validation = validateCharacter(character, rules);
   const stats = calculateCharacterStats(character);
 
   const updateField = (field, value) => {
@@ -126,14 +133,19 @@ export default function CharacterEditor({
   };
 
   const toggleSourcebook = (sbKey) => {
-    const cur = character.enabledSourcebooks ?? ['core'];
+    const cur = character.enabledSourcebooks ?? rules.defaultSourcebooks;
     const exists = cur.includes(sbKey);
+    // 超出這一團開放的上限時直接拒絕（GM 自訂開局）
+    if (!exists && !rules.allowedSourcebooks.includes(sbKey)) {
+      if (showToast) showToast(`此團未開放《${SOURCEBOOKS[sbKey]?.name || sbKey}》`);
+      return;
+    }
     const updated = exists ? cur.filter(k => k !== sbKey) : [...cur, sbKey];
     updateField('enabledSourcebooks', updated);
   };
 
   // Filter available classes according to enabled sourcebooks
-  const enabledBooks = character.enabledSourcebooks ?? ['core'];
+  const enabledBooks = character.enabledSourcebooks ?? rules.defaultSourcebooks;
   const availableClassNames = [
     ...new Set(
       Object.keys(SOURCEBOOKS)
@@ -322,7 +334,7 @@ export default function CharacterEditor({
   const curArmor = rulesData.equipment.armors.find(a => a.name === character.equipment?.armor);
   const curAcc = rulesData.equipment.accessories.find(acc => acc.name === character.equipment?.accessory);
   const totalEquipCost = (curMainHand?.cost || 0) + (curOffHand?.cost || 0) + (curArmor?.cost || 0) + (curAcc?.cost || 0);
-  const remainingBudget = 500 - totalEquipCost;
+  const remainingBudget = rules.startingZenit - totalEquipCost;
 
   const handleRollStartingZenit = () => {
     const d1 = Math.floor(Math.random() * 6) + 1;
@@ -400,7 +412,7 @@ export default function CharacterEditor({
     armor: armor?.cost || 0,
     accessory: 0
   };
-  const pickerBudget = Math.max(0, 500 - (totalEquipCost - (slotCost[pickerSlot] || 0)));
+  const pickerBudget = Math.max(0, rules.startingZenit - (totalEquipCost - (slotCost[pickerSlot] || 0)));
 
   const mainHandMetrics = mainWeaponEval
     ? [
@@ -841,15 +853,15 @@ export default function CharacterEditor({
                       className="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors"
                       style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                     >
-                      起始 5 級
+                      起始 {rules.startingLevel} 級
                     </span>
                   </div>
                   <input
                     type="number"
-                    min={5}
+                    min={rules.startingLevel}
                     max={50}
-                    value={character.level || 5}
-                    onChange={e => updateField('level', parseInt(e.target.value, 10) || 5)}
+                    value={character.level || rules.startingLevel}
+                    onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel)}
                     className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   />
@@ -1002,7 +1014,7 @@ export default function CharacterEditor({
                   <span style={{ color: theme.accent }}>3.</span> 職業組合與技能加點
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  起始 5 級必須分配在 2~3 個不同職業中，每級獲得 1 點技能。
+                  起始 {rules.startingLevel} 級必須分配在 {rules.classCountMin}~{rules.classCountMax} 個不同職業中，每級獲得 1 點技能。
                 </p>
               </div>
 
@@ -1079,7 +1091,7 @@ export default function CharacterEditor({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-700">
                     目前已選擇 <strong className="font-mono text-sm" style={{ color: theme.accent }}>{(character.classes || []).length}</strong> 個職業
-                    {character.level <= 5 && <span className="text-[11px] text-slate-500 ml-1">（創角規定：2~3 個職業）</span>}
+                    {character.level <= rules.startingLevel && <span className="text-[11px] text-slate-500 ml-1">（創角規定：{rules.classCountMin}~{rules.classCountMax} 個職業）</span>}
                   </span>
                 </div>
 
@@ -1110,7 +1122,7 @@ export default function CharacterEditor({
                     <div className="space-y-1">
                       <h4 className="font-serif font-black text-sm text-slate-800">尚未選擇任何職業</h4>
                       <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                        《Fabula Ultima》開局角色需要在 2~3 個職業中探索分配起始 5 級。
+                        《Fabula Ultima》開局角色需要在 {rules.classCountMin}~{rules.classCountMax} 個職業中探索分配起始 {rules.startingLevel} 級。
                       </p>
                     </div>
                     <JRPGButton
@@ -1149,6 +1161,7 @@ export default function CharacterEditor({
                 onToggleSourcebook={toggleSourcebook}
                 existingClassNames={(character.classes || []).map(c => c.className)}
                 onSelectClass={handleSelectClassFromPicker}
+                creationRules={rules}
               />
             </div>
           )}
@@ -1240,10 +1253,10 @@ export default function CharacterEditor({
                 <div className="flex items-center justify-between text-xs flex-wrap gap-2">
                   <div className="flex items-center gap-1.5 font-bold" style={{ color: theme.textDark }}>
                     <GiCoins className="w-4 h-4" style={{ color: theme.accent }} />
-                    <span>起始裝備預算 500z</span>
+                    <span>起始裝備預算 {rules.startingZenit}z</span>
                   </div>
                   <div className="flex items-center gap-3 font-mono text-xs">
-                    <span>已花費: <strong style={{ color: theme.accent }}>{totalEquipCost}z</strong> / 500z</span>
+                    <span>已花費: <strong style={{ color: theme.accent }}>{totalEquipCost}z</strong> / {rules.startingZenit}z</span>
                     <span className={remainingBudget < 0 ? 'text-red-700 font-bold' : 'font-bold'} style={remainingBudget >= 0 ? { color: theme.accent } : undefined}>
                       剩餘: {remainingBudget}z
                     </span>

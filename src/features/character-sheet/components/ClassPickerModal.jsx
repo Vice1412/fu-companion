@@ -13,6 +13,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import SkillStarPips from './SkillStarPips';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import { SOURCEBOOKS, getClassInfo } from '../data/sourcebookConfig';
+import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import rulesData from '../data/rulesData.json';
 import { withEn } from '../../../utils/properNouns';
 
@@ -22,7 +23,8 @@ import { withEn } from '../../../utils/properNouns';
  * 1. 手機端 (< md)：雙步驟分步導航 (步驟 1 選職 ⇄ 步驟 2 加點確認)，吸底操作列，單一全域順滑捲軸，絕不卡死。
  * 2. 電腦端 (≥ md)：左右雙欄並排 (Master-Detail)，左側名冊即時聯動右側詳情，保持大螢幕最高操作效率。
  * 3. 官方四方星芒：Max SL 採用官方字型 'w' 四角銳星指示器。
- * 4. 創角規則因果正確：起始 5 級必須分配於 2~3 個不同職業，不可全數投入單一職業。
+ * 4. 創角規則因果正確：起始等級必須分配於 N~M 個不同職業，不可全數投入單一職業。
+ *    實際的等級與職業數上下限來自 `creationRules`（預設為官方核心規則），不寫死在這裡。
  * 5. 全面呈現免費增益：完整對齊官方規則與繁中 Excel 角色卡名詞（職業近戰、職業防具等）。
  */
 export default function ClassPickerModal({
@@ -32,8 +34,11 @@ export default function ClassPickerModal({
   enabledBooks = ['core'],
   onToggleSourcebook,
   existingClassNames = [],
-  onSelectClass
+  onSelectClass,
+  // 開卡規則：技能點數上限與職業數上下限由此決定（見 data/creationRules.js）
+  creationRules = DEFAULT_CREATION_RULES
 }) {
+  const rules = resolveCreationRules(creationRules);
   const [search, setSearch] = useState('');
   const [selectedClassName, setSelectedClassName] = useState(null);
   const [draftSkills, setDraftSkills] = useState({});
@@ -149,7 +154,7 @@ export default function ClassPickerModal({
   // 確認修習此職業
   const handleConfirm = () => {
     if (!activeClassItem || isClassAlreadyAdded) return;
-    if (totalAllocatedSL < 1 || totalAllocatedSL >= 5) return;
+    if (totalAllocatedSL < 1 || totalAllocatedSL >= rules.skillPointBudget) return;
 
     const allSkills = activeClassItem.def.skills || [];
     const chosenSkills = [];
@@ -508,7 +513,7 @@ export default function ClassPickerModal({
                     <strong className={`font-mono text-sm px-1.5 py-0.2 rounded ${
                       totalAllocatedSL === 0
                         ? 'text-slate-500 bg-slate-100'
-                        : totalAllocatedSL >= 5
+                        : totalAllocatedSL >= rules.skillPointBudget
                           ? 'text-rose-700 bg-rose-100'
                           : 'text-amber-800 bg-amber-100'
                     }`}>
@@ -518,13 +523,13 @@ export default function ClassPickerModal({
                   <p className="text-[11px] text-slate-500">
                     {totalAllocatedSL === 0 ? (
                       <span className="text-amber-700">請至少為此職業分配 1 級技能</span>
-                    ) : totalAllocatedSL >= 5 ? (
+                    ) : totalAllocatedSL >= rules.skillPointBudget ? (
                       <span className="text-rose-600 font-bold flex items-center justify-center sm:justify-start gap-1">
                         <GiHazardSign className="w-3.5 h-3.5 shrink-0" />
-                        開局必須修習 2~3 個職業，請至少保留等級給其他職業
+                        開局必須修習 {rules.classCountMin}~{rules.classCountMax} 個職業，請至少保留等級給其他職業
                       </span>
                     ) : (
-                      <span>起始 5 級必須分配於 2~3 個不同職業</span>
+                      <span>起始 {rules.startingLevel} 級必須分配於 {rules.classCountMin}~{rules.classCountMax} 個不同職業</span>
                     )}
                   </p>
                 </div>
@@ -542,17 +547,17 @@ export default function ClassPickerModal({
                   <JRPGButton
                     variant={theme.buttonVariant || 'primary'}
                     size="sm"
-                    icon={totalAllocatedSL >= 1 && totalAllocatedSL <= 4 ? GiCheckMark : GiSparkles}
+                    icon={totalAllocatedSL >= 1 && totalAllocatedSL < rules.skillPointBudget ? GiCheckMark : GiSparkles}
                     onClick={handleConfirm}
-                    disabled={isClassAlreadyAdded || totalAllocatedSL < 1 || totalAllocatedSL >= 5}
+                    disabled={isClassAlreadyAdded || totalAllocatedSL < 1 || totalAllocatedSL >= rules.skillPointBudget}
                     className="w-full sm:w-auto min-h-[38px]"
                   >
                     {isClassAlreadyAdded
                       ? '該職業已修習'
                       : totalAllocatedSL === 0
                         ? '請先分配技能等級'
-                        : totalAllocatedSL >= 5
-                          ? '開局需兼修 2~3 個職業'
+                        : totalAllocatedSL >= rules.skillPointBudget
+                          ? `開局需兼修 ${rules.classCountMin}~${rules.classCountMax} 個職業`
                           : `確認修習【${withEn(activeClassItem.className)}】（投入 ${totalAllocatedSL} 級）`}
                   </JRPGButton>
                 </div>

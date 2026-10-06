@@ -1602,6 +1602,111 @@ YG 提供了一份他自己用 Google Sheets 做的**裝備設計器**（v5.1，
 2. 新增欄位時，**同時寫一條「欄位集」護欄**（見 U15），否則下次沒人知道它是幻覺。
 3. 值對得上不代表條目對得上——`重型火槍` 的數值完全合理，出處卻不存在。
 
+---
+
+### V. 開卡規則抽離：GM 自訂開局的地基 —— ✅ 2026-10-05
+
+#### V1. 起點：使用者對「功能範圍」的迷茫
+
+使用者問了一件比單一功能更大的事：這張角色卡助手到底該做到什麼程度？
+他列出的願景是——車初始卡 → 檢查動態與微調成長 → 匯出 PNG／PDF → 跨裝置同步 →
+開團時全員與 GM 綁定、GM 審卡、**GM 自訂開局**（等級、資金、必修職業、開放拓展、能否選金手指／底力）→
+玩家照該設定車卡 → 之後固定，一路記錄 HP/MP/IP/物語點/EXP、升級選技、買裝備（含日期）→
+GM 統一發放獎勵 → 進衝突時錄入房間同步狀態。他的問題是：「先繼續完善開角色卡，還是有辦法大刀闊斧改功能？」
+
+**診斷**（以當前源碼為證）：
+
+1. **創角與編輯是同一個介面，意圖卻相反**：`CharacterSheet.jsx:76` 的 `handleCreateCharacter`
+   與 `handleEdit` 走同一條 `setViewMode('editor')`。「把決定做完」與「改一個已定案的東西」是兩種任務。
+2. **分頁是角色卡的章節，不是玩家的決定**：六個分頁即卡片欄位順序，且每個分頁一次攤開整個章節
+   （`CharacterEditor` 1,749 行、`ClassSkillCard` 881 行、`AttributeMatrixPicker` 759 行）。
+3. **「現在還缺什麼」不是主線**：`validateCharacter` 的警告只以小紅點與 modal 呈現。
+4. **「開好就固定」沒有對應狀態**：編輯器任何時候全開，所以 UI 不敢簡化。
+5. **開卡規則硬編碼在六個檔案**：500z 在 `CharacterEditor`／`EquipmentPickerModal`、
+   等級 5 在 `characterEngine` 與 `CharacterSheet`、屬性總和 32 與 2~3 職業在 `characterEngine` 與 `ClassPickerModal`。
+
+**結論：不要大刀闊斧重寫，先做一次外科手術。** 理由：引擎已被 328 項測試釘住、裝備規則層剛整理、
+資料層已收斂；重寫會把護欄全部歸零，而真正的病灶是「意圖沒有被區分」——那是可以用一條縫解決的。
+那條縫就是 **把開卡規則從散落的常數抽成一份資料**。
+
+#### V2. 這條縫同時解決三件事
+
+| 表面需求 | 其實都是同一件事 |
+|---|---|
+| GM 自訂開局 | 就是「換一份規則物件」 |
+| 創角／編輯分流 | 有了規則物件，「還缺什麼、哪裡不合規矩」才可計算 |
+| Playtest 勾選（先攻變體等） | 本來就是同一種「規則開關」 |
+
+#### V3. 實作：`data/creationRules.js`
+
+- `DEFAULT_CREATION_RULES`（凍結）：起始等級 5／起始資金 500z／屬性總和 32／職業數 2~3／
+  技能點數 5／拓展上限／預設勾選／必修職業／是否允許金手指。
+- `resolveCreationRules(overrides)`：補齊並校正。**校正原則是「寧可退回官方預設，也不要讓壞資料流進引擎」**——
+  一條規則寫錯就讓整張卡算不出數值，比忽略那條規則更糟。所以等級 0、負資金、超界職業數、
+  含錯字的手冊鍵一律退回預設；`classCountMin > classCountMax` 則把上限拉齊。
+- 讀取端（**全部改成讀規則**）：
+  `createNewCharacter(overrides, rules)`、`validateCharacter(char, rules)`、
+  `CharacterEditor`（起始預算、起始等級、所有相關文案、拓展開關的上限）、
+  `ClassPickerModal`（技能點數上限、職業數文案）、`EquipmentPickerModal`（預算預設）。
+- `CharacterEditor` 新增選用 prop `creationRules`（預設＝官方規則）；
+  未來 campaign 只要把該團的規則從 `CharacterSheet` 傳下來即可，引擎與 UI 都不用再改。
+
+#### V4. 兩個刻意的設計決定
+
+**① 只放「有讀取端」的欄位。** 使用者提到「能不能選金手指或者底力」，但原書特典的底力技（Zero Power）
+與自訂武器本專案**尚未收錄**，因此不預先開旗標——沒有讀取端的設定欄位就是幻覺欄位（見 §U15）。
+金手指有實際的選擇介面，所以 `allowQuirk` 是真的（未開放卻填了會報 error）。
+護欄：`test:creation` A 區段比對 `Object.keys(DEFAULT_CREATION_RULES)` 與 `CREATION_RULE_FIELDS`
+**欄位集必須完全相等**——新欄位一定要先想清楚誰讀它。
+
+**② 拓展的「上限」與「預設勾選」是兩個欄位。**
+`allowedSourcebooks`（上限）預設為**全部手冊**：在還沒有 campaign 的情況下，玩家就是自己的 GM，
+不該被擋——若預設成「只有核心」，所有既有使用者會在不知情下被鎖住拓展，
+而擴充職業搭配（81 組 preset）正是靠那些拓展運作。`defaultSourcebooks`（新角色的起始勾選）預設只開核心，
+否則 35 個職業會一次灌進選單。GM 自訂開局時把上限收窄，它才成為真正的上限
+（`CharacterEditor` 的切換鈕會拒絕、`validateCharacter` 會報 error）。
+
+#### V5. 刻意**沒有**動的地方
+
+`characterEngine` 的 `Math.max(5, …)`（起始等級下限）**沒有**改成讀規則。
+它是已記錄的既有缺陷 #3（見 §L4），屬「待裁定」——本次不預先替那個決定背書。
+而且它不影響 GM 自訂開局：把起始等級**調高**（例如 10）不受它影響（`max(5, 10) = 10`），
+只有調到 5 以下才會踩到。真要修，把那個 5 換成 `rules.startingLevel` 就是一行，但那是另一個決定。
+
+#### V6. 測試：`npm run test:creation`（`tests/creationRules.test.mjs`，69 項）
+
+| 區段 | 內容 |
+|---|---|
+| A | 官方標準逐項對照原書（p.157／p.155–156／p.158／p.164）＋**欄位集護欄** |
+| B | `resolveCreationRules` 的壞資料校正（19 種情境：0 級、負資金、超界職業數、錯字手冊鍵、非 boolean…） |
+| C | `createNewCharacter` 讀規則、overrides 仍優先、規則物件不被角色共用參考 |
+| D | `validateCharacter` 讀規則（屬性總和、職業數上下限、必修職業、金手指開放、拓展上限） |
+| E | **原始碼護欄**：`500 - totalEquipCost`／`起始 5 級`／`totalAllocatedSL >= 5`／`attrSum !== 32`／`char.level === 5` 都不得回流 |
+
+#### V7. 過程失誤：第四次把 `⚠️` 寫進自己的註解
+
+寫 `creationRules.js` 時在註解裡用了 `⚠️`，被 `npm run test:emoji` 當場攔下
+（`U+26A0`，檔案:行都指得出來）。這是本專案第四次同型失誤，也是**第一次由自動關卡而不是人工掃描抓到**——
+§3.2 把掃描升格成測試的理由在此再次成立。
+
+#### V8. 這條縫打開了什麼（下一步）
+
+campaign 層現在只剩「把規則從上層傳下來」這一步：
+
+```
+campaign = { id, gmName, rules: <creationRules>, members: [...] }
+```
+
+- 玩家端：`character.campaignId` 有值 → `CharacterSheet` 把 `campaign.rules` 傳給 `CharacterEditor`。
+- 分享：最便宜的 MVP 是把 `diffCreationRules(rules)` 的結果序列化進一條連結／房號，
+  **不需要後端就能先跑起來**（`diffCreationRules` 已實作並測試：只帶與官方預設不同的欄位）。
+- 之後才接 `docs/room-sync-plan.md` 的房間同步（那條線是獨立的）。
+
+其餘三項的可行性（本輪查證）：PNG 匯出**技術已具備**（`html-to-image` 已安裝，NPC 工坊在用，
+角色卡只是還沒接）；跨裝置同步與 GM 統一發放獎勵都掛在房間同步那條線上；
+「一路記錄（含日期）」是**唯一需要新增資料模型**的一項——角色卡目前沒有 log 欄位，
+`src/data/keys.js` 也沒有對應的鍵。
+
 
 
 

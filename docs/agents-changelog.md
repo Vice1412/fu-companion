@@ -298,3 +298,13 @@
 *　教訓：**呈現要誠實，前提是資料層先對**——只做視覺的話，長卡片會說謊（宣稱副手被佔用，數字卻還在吃盾牌加值）。*
 *② **法杖「魔攻檢定 +1」是幻覺**（使用者：「規則書沒有啊？哪裡看到的」）。`git log -S'magicBonus'` 只命中 repo 第一個 commit `a7232b0`——與 `闊劍`／`長槍`／`重型火槍`／`重型塔盾`／六個飾品**同一批手寫種子資料**。原書 Core p.130 的法杖是 `No Quality`；書中「+1 魔法檢定」只存在於 ① **Magic Up** Quality（+1000z，但屬**防具／盾牌／飾品**的 Quality 表 p.280／p.287，武器表 p.269 沒有）② 稀有武器樣本 `Ferula`（1050z，自訂稀有武器）。**更糟的是這個欄位全專案沒有任何程式在讀，我卻在選裝彈窗把它當「特性」顯示出來——等於把幻覺從資料層搬進 UI。** 已移除欄位與顯示分支，並新增兩道**欄位集**護欄（法杖的欄位集必須恰好等於 `[attr, category, cost, damage, hands, name, range]`；全表不得有武器帶 `magicBonus`）——**用「欄位集」而不是「值」來守，因為幻覺的特徵就是多出一個原書沒有的欄位。***
 *驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + **328** + **180** + 86 + 99 + 270 全過，exit 0；`npm run test:emoji` 91 檔 0 命中；`npm run build` exit 0（2,107.01 kB / gzip 603.48 kB）。決策紀錄見 `docs/decisions.md` §U14–U16。*
+
+*2026-10-05（開卡規則抽離 —— GM 自訂開局的地基）：使用者提出對「角色卡助手功能範圍」的迷茫（車卡→成長記錄→匯出→同步→開團綁定 GM、GM 審卡、**GM 自訂開局**→獎勵發放→衝突房間），並問「先繼續完善開卡，還是有辦法大刀闊斧改功能」。*
+*① **診斷**（以源碼為證）：創角與編輯走同一條 `setViewMode('editor')`（意圖相反卻共用介面）；六個分頁是「角色卡的章節」而不是「玩家的決定」，且每個分頁一次攤開整個章節（編輯器 1,749 行）；「現在還缺什麼」只以小紅點與 modal 呈現；「開好就固定」沒有對應狀態；**開卡規則硬編碼在六個檔案**（500z／等級 5／屬性 32／2~3 職業）。*
+*② **結論：不要重寫，先做外科手術**——引擎已被 328 項測試釘住、裝備規則層剛整理、資料層已收斂，重寫會把護欄歸零；真正的病灶是「意圖沒有被區分」，而那可以用一條縫解決：**把開卡規則抽成一份資料**。這條縫同時解決三件事——GM 自訂開局、創角／編輯分流、Playtest 規則開關。*
+*③ **實作**：新增 `data/creationRules.js`（`DEFAULT_CREATION_RULES` ＋ `resolveCreationRules` ＋ `isDefaultCreationRules` ＋ `diffCreationRules`）；讀取端全部改讀規則——`createNewCharacter(overrides, rules)`、`validateCharacter(char, rules)`、`CharacterEditor`（預算／起始等級／所有文案／拓展上限）、`ClassPickerModal`（技能點上限）、`EquipmentPickerModal`（預算預設）。校正原則是**寧可退回官方預設，也不要讓壞資料流進引擎**。*
+*④ **兩個刻意的設計決定**：(a) **只放有讀取端的欄位**——底力技／自訂武器本專案未收錄，故不預開旗標（沒有讀取端的欄位就是幻覺欄位，見 §U15），並以**欄位集護欄**把關；(b) 拓展的**上限**（`allowedSourcebooks`，預設全部手冊，否則會靜默鎖住既有使用者的拓展與 81 組擴充 preset）與**預設勾選**（`defaultSourcebooks`，預設只開核心，否則 35 個職業一次灌進選單）是兩個欄位。*
+*⑤ **刻意沒動**：`characterEngine` 的 `Math.max(5, …)`（既有缺陷 #3，屬待裁定）；且它不影響 GM 自訂開局——調高起始等級不受影響，只有調到 5 以下才踩到。*
+*⑥ **測試**：新增 `npm run test:creation`（`tests/creationRules.test.mjs`，**69 項**）：原書逐項對照、欄位集護欄、19 種壞資料校正情境、`createNewCharacter`／`validateCharacter` 讀規則、以及**原始碼護欄**（`500 - totalEquipCost`／`起始 5 級`／`totalAllocatedSL >= 5`／`attrSum !== 32`／`char.level === 5` 不得回流）。*
+*⑦ **過程失誤**：寫 `creationRules.js` 時第四次把 `⚠️` 寫進自己的註解，被 `npm run test:emoji` 當場攔下——**第一次由自動關卡而不是人工掃描抓到**。*
+*驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + 328 + 180 + **69** + 86 + 99 + 270 全過，exit 0（共 14 道關卡）；`npm run build` exit 0（2,110.04 kB / gzip 604.56 kB）。決策紀錄見 `docs/decisions.md` §V。*

@@ -13,6 +13,7 @@ import JRPGButton from '../../../components/ui/JRPGButton';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import GameIcon from '../../../components/ui/GameIcon';
 import rulesData from '../data/rulesData.json';
+import { DEFAULT_CREATION_RULES } from '../data/creationRules';
 import {
   WEAPON_CATEGORIES,
   CATEGORY_ICON,
@@ -53,7 +54,7 @@ export function EquipmentPickerBody({
   theme,
   character,
   stats,
-  remainingBudget = 500,
+  remainingBudget = DEFAULT_CREATION_RULES.startingZenit,
   onSelect,
   onClose
 }) {
@@ -742,7 +743,7 @@ export default function EquipmentPickerModal({
   theme,
   character,
   stats,
-  remainingBudget = 500,
+  remainingBudget = DEFAULT_CREATION_RULES.startingZenit,
   onSelect
 }) {
   const slotDef = EQUIPMENT_SLOTS[slot] || EQUIPMENT_SLOTS.mainHand;

@@ -2,6 +2,7 @@ import rulesData from '../data/rulesData.json';
 import { SOURCEBOOKS, STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
+import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 
 // Dice ladder for step reductions
 const DICE_STEPS = [6, 8, 10, 12];
@@ -30,8 +31,13 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
 
 /**
  * 建立全新角色卡預設結構
+ *
+ * 起始等級、起始資金與開放的拓展都由**開卡規則**決定（見 `data/creationRules.js`），
+ * 不再寫死在這裡——GM 自訂開局就是傳一份不同的規則進來。
+ * `overrides` 仍為最上層覆寫，優先於規則。
  */
-export const createNewCharacter = (overrides = {}) => {
+export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULES) => {
+  const creation = resolveCreationRules(rules);
   return {
     id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     name: "新冒險者",
@@ -41,14 +47,14 @@ export const createNewCharacter = (overrides = {}) => {
     avatar: null,
     avatarRaw: null,
 
-    // 冒險等級與成長
-    level: 5,
+    // 冒險等級與成長（由開卡規則決定）
+    level: creation.startingLevel,
     exp: 0,
-    zenit: 500,
+    zenit: creation.startingZenit,
     fabulaPoints: 3,
 
-    // 啟用的手冊拓展 (預設僅核心)
-    enabledSourcebooks: ['core'],
+    // 啟用的手冊拓展（由開卡規則決定；上限另由 allowedSourcebooks 把關）
+    enabledSourcebooks: [...creation.defaultSourcebooks],
 
     // 四維屬性基礎骰階 (起始總和為 32)
     attributes: {
@@ -525,8 +531,13 @@ export const applyLevelUp = (char, { className, skillName, isNewClass = false })
 /**
  * 創角完整度校驗器 (Validation Checklist)
  * 不阻斷操作，提供即時提醒與跳轉定位
+ *
+ * 驗證的「標準」來自開卡規則（`data/creationRules.js`）——
+ * 預設是官方核心規則，GM 自訂開局時傳入不同的規則即可，
+ * 不必改這支函式。訊息一律引用規則裡的數值，不寫死。
  */
-export const validateCharacter = (char) => {
+export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
+  const creation = resolveCreationRules(rules);
   const warnings = [];
   const stats = calculateCharacterStats(char);
 
@@ -544,26 +555,65 @@ export const validateCharacter = (char) => {
     warnings.push({ step: 1, field: 'origin', type: 'info', message: '尚未填寫故鄉' });
   }
 
-  // 步驟 2: 四維屬性 (起始總點數應為 32)
+  // 步驟 3 前置: 手冊拓展不得超出這一團開放的上限（GM 自訂開局）
+  const booksOutOfRange = (char.enabledSourcebooks || [])
+    .filter((key) => !creation.allowedSourcebooks.includes(key));
+  if (booksOutOfRange.length > 0) {
+    warnings.push({
+      step: 3,
+      field: 'enabledSourcebooks',
+      type: 'error',
+      message: `此團未開放：${booksOutOfRange.join('、')}，請在職業分頁關閉`
+    });
+  }
+
+  // 步驟 2: 四維屬性（起始總點數由開卡規則決定）
   const attrSum = (char.attributes?.dex || 0) + (char.attributes?.ins || 0) + (char.attributes?.mig || 0) + (char.attributes?.wlp || 0);
-  if (attrSum !== 32) {
+  if (attrSum !== creation.attributeTotal) {
     warnings.push({
       step: 2,
       field: 'attributes',
       type: 'warning',
-      message: `屬性骰階點數總和為 ${attrSum} (官方標準起始為 32)`
+      message: `屬性骰階點數總和為 ${attrSum} (起始標準為 ${creation.attributeTotal})`
     });
   }
 
-  // 步驟 3: 職業與特技 (5 級起始限制: 2~3 個職業)
+  // 步驟 3: 職業與特技（起始等級的職業數限制由開卡規則決定）
   const classCount = (char.classes || []).length;
-  if (char.level === 5) {
+  if (char.level === creation.startingLevel) {
     if (classCount === 0) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '尚未選擇任何職業 (規則書規定：起始 5 級需配置 2~3 個職業)' });
-    } else if (classCount === 1) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級必須選擇至少 2 個職業 (規則書規定：最少 2 個職業，不可純單職)' });
-    } else if (classCount > 3) {
-      warnings.push({ step: 3, field: 'classes', type: 'error', message: '起始 5 級不可選擇超過 3 個職業 (規則書規定：最多 3 個職業)' });
+      warnings.push({
+        step: 3,
+        field: 'classes',
+        type: 'error',
+        message: `尚未選擇任何職業 (起始 ${creation.startingLevel} 級需配置 ${creation.classCountMin}~${creation.classCountMax} 個職業)`
+      });
+    } else if (classCount < creation.classCountMin) {
+      warnings.push({
+        step: 3,
+        field: 'classes',
+        type: 'error',
+        message: `起始需至少 ${creation.classCountMin} 個職業，目前只有 ${classCount} 個 (不可純單職)`
+      });
+    } else if (classCount > creation.classCountMax) {
+      warnings.push({
+        step: 3,
+        field: 'classes',
+        type: 'error',
+        message: `起始不可超過 ${creation.classCountMax} 個職業，目前有 ${classCount} 個`
+      });
+    }
+
+    // GM 指定的必修職業（開卡規則 requiredClasses）
+    const missingRequired = creation.requiredClasses
+      .filter((name) => !(char.classes || []).some((cl) => cl.className === name));
+    if (missingRequired.length > 0) {
+      warnings.push({
+        step: 3,
+        field: 'classes',
+        type: 'error',
+        message: `此團規定必須修習：${missingRequired.join('、')}`
+      });
     }
   }
 
@@ -623,6 +673,16 @@ export const validateCharacter = (char) => {
   // 步驟 5: 羈絆 (官方強烈建議起始至少 1 個)
   if (!char.bonds || char.bonds.length === 0) {
     warnings.push({ step: 5, field: 'bonds', type: 'warning', message: '尚未建立任何情感羈絆，建議至少建立 1 個' });
+  }
+
+  // 步驟 6: 特質與金手指（是否開放由開卡規則決定）
+  if (!creation.allowQuirk && char.quirk && char.quirk !== '無') {
+    warnings.push({
+      step: 6,
+      field: 'quirk',
+      type: 'error',
+      message: `此團未開放金手指，請移除「${char.quirk}」`
+    });
   }
 
   const errors = warnings.filter(w => w.type === 'error');
