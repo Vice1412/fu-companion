@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as htmlToImage from 'html-to-image';
 import { GiScrollUnfurled, GiCheckMark } from 'react-icons/gi';
 import JRPGButton from '../../../components/ui/JRPGButton';
@@ -704,6 +704,58 @@ export const SHEET_PAGE_COMPONENTS = [OfficialSheetPage1, OfficialSheetPage2, Of
 const PREVIEW_SCALE = 0.46;
 
 /**
+ * 讓瀏覽器有機會重繪與處理點擊。
+ *
+ * **這不是可有可無的**：光柵化是同步的 DOM 複製 ＋ SVG 序列化 ＋ canvas 繪製，
+ * 一次要好幾秒。`await` 只會讓出 microtask，**瀏覽器處理點擊是 macrotask**——
+ * 所以連續三頁不讓出的話，整段匯出期間畫面是死的、任何點擊都沒反應，
+ * 使用者看到的就是「一按就死機」。
+ * `setTimeout`（macrotask）＋ `requestAnimationFrame`（等一次重繪）才真的讓得出去。
+ */
+const yieldToBrowser = () => new Promise((resolve) => {
+  setTimeout(() => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+    else resolve();
+  }, 0);
+});
+
+/**
+ * 光柵化的選項。**`skipFonts` 是修一個「一按就死機」的關鍵。**
+ *
+ * `html-to-image` 預設會把頁面上的網頁字型「抓下來內嵌」：它對每一張
+ * `document.styleSheets` 的 `href` 發 `fetch()`，再對 CSS 裡的每個 `url(...)`
+ * 抓字型檔轉成 data URL（`embed-webfonts.js` 的 `fetchCSS`／`embedResources`）。
+ * 本專案 `index.html` 掛著 Google Fonts（Cinzel／JetBrains Mono／Noto Sans TC／Noto Serif TC），
+ * 於是**只要那個網域連不上或很慢，這個 promise 就永遠不會 resolve**——
+ * 匯出卡住、兩顆按鈕永遠停用、彈窗關不掉，看起來就是整頁死掉。
+ *
+ * `skipFonts: true` 讓它整段跳過（`embedWebFonts` 直接回傳 null），
+ * 改由瀏覽器在 foreignObject 裡用**系統字型**渲染；本表本來就用
+ * `"Segoe UI", "Microsoft JhengHei", ...` 這種系統字型堆疊，外觀不受影響。
+ */
+const RASTER_OPTIONS = Object.freeze({
+  pixelRatio: 2,
+  backgroundColor: '#ffffff',
+  width: SHEET_PAGE_WIDTH,
+  height: SHEET_PAGE_HEIGHT,
+  skipFonts: true
+});
+
+/**
+ * 單頁光柵化的上限。就算真的卡住，也要讓 UI 有辦法回來，而不是永遠轉圈。
+ * 放寬到 45 秒：光柵化本身就慢（實測一頁 toPng 要好幾秒），
+ * 這裡的用意是「永遠不會卡死」，不是「失敗要快」。
+ */
+const RASTER_TIMEOUT_MS = 45000;
+
+const withTimeout = (promise, label) => Promise.race([
+  promise,
+  new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`${label} 逾時（${RASTER_TIMEOUT_MS / 1000} 秒）`)), RASTER_TIMEOUT_MS);
+  })
+]);
+
+/**
  * 匯出面板：三頁預覽 ＋ 匯出三個 PNG 或一個三頁 PDF。
  * 預覽用 `transform: scale()` 縮小，但**光柵化的是未縮放的節點**，
  * 所以輸出仍是 1123×794 × pixelRatio 的原始尺寸。
@@ -712,6 +764,10 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
   const model = useMemo(() => buildSheetModel(character, stats), [character, stats]);
   const pageRefs = useRef([]);
   const [exporting, setExporting] = useState(null); // null | 'png' | 'pdf'
+  const [progress, setProgress] = useState('');
+
+  // 匯出結束／元件卸載後，ref 還指著已經被移除的 DOM 節點；清掉才不會抱著整棵樹不放
+  useEffect(() => () => { pageRefs.current = []; }, []);
 
   const safeName = (model.name || '冒險者').replace(/[\\/:*?"<>|]/g, '_');
   const fileName = (ext, index) => (index ? `${safeName}_角色卡_p${index}.${ext}` : `${safeName}_角色卡.${ext}`);
@@ -719,18 +775,19 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
   /** 逐頁光柵化；PNG 走無損、PDF 內嵌 JPEG（DCTDecode 可直接原樣嵌入） */
   const rasterizePages = async (type) => {
     const out = [];
-    for (let i = 0; i < SHEET_PAGE_COMPONENTS.length; i += 1) {
+    const total = SHEET_PAGE_COMPONENTS.length;
+    for (let i = 0; i < total; i += 1) {
       const node = pageRefs.current[i];
       if (!node) continue;
-      const options = {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        width: SHEET_PAGE_WIDTH,
-        height: SHEET_PAGE_HEIGHT
-      };
-      const dataUrl = type === 'jpeg'
-        ? await htmlToImage.toJpeg(node, { ...options, quality: 0.95 })
-        : await htmlToImage.toPng(node, options);
+      setProgress(`正在處理第 ${i + 1} / ${total} 頁…`);
+      // 每一頁之前都先讓出，否則從第一頁開始畫面就是死的
+      await yieldToBrowser();
+      const dataUrl = await withTimeout(
+        type === 'jpeg'
+          ? htmlToImage.toJpeg(node, { ...RASTER_OPTIONS, quality: 0.95 })
+          : htmlToImage.toPng(node, RASTER_OPTIONS),
+        `第 ${i + 1} 頁`
+      );
       out.push({ index: i + 1, dataUrl });
     }
     return out;
@@ -762,6 +819,7 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
       if (showToast) showToast('匯出失敗，請再試一次');
     } finally {
       setExporting(null);
+      setProgress('');
     }
   };
 
@@ -770,6 +828,8 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
     setExporting('pdf');
     try {
       const pages = await rasterizePages('jpeg');
+      setProgress('正在組裝 PDF…');
+      await yieldToBrowser();
       const pdf = buildImagePdf(pages.map((page) => ({
         bytes: dataUrlToBytes(page.dataUrl),
         // 尺寸由 JPEG 檔頭讀出（pdfWriter 內部處理），這裡不必傳
@@ -788,6 +848,7 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
       if (showToast) showToast('匯出失敗，請再試一次');
     } finally {
       setExporting(null);
+      setProgress('');
     }
   };
 
@@ -797,6 +858,7 @@ export function CharacterSheetExportBody({ character, stats = null, showToast = 
         <p className="text-xs" style={{ color: C.faint }}>
           依官方三頁橫向 A4 表格的版面重繪，內容取自這張卡的實際資料。
           選圖片會得到三個 PNG 檔（瀏覽器可能會詢問是否允許下載多個檔案）；選 PDF 會得到單一三頁檔案。
+          {progress ? <span className="font-bold" style={{ color: C.bar }}>　{progress}</span> : null}
         </p>
         <div className="flex items-center gap-2 shrink-0">
           <JRPGButton

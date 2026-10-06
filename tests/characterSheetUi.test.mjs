@@ -390,6 +390,49 @@ check('PDF 用 object URL 下載並事後釋放',
   [true, true]);
 check('匯出中會鎖住兩顆按鈕', exportSrc.includes('disabled={Boolean(exporting)}'), true);
 
+// ─────────────────────────────────────────────────────────── J
+section('J. 匯出不能把主執行緒鎖死（使用者回報「一按就死機」）');
+
+// 光柵化一次要好幾秒。`await` 只讓出 microtask，而瀏覽器處理點擊是 macrotask——
+// 連續三頁不讓出的話，整段匯出期間任何點擊都沒反應。
+check('每一頁之前都讓出 macrotask（setTimeout ＋ requestAnimationFrame）',
+  [exportSrc.includes('const yieldToBrowser = ()'), exportSrc.includes('setTimeout(() => {'),
+    exportSrc.includes('requestAnimationFrame(() => resolve())')],
+  [true, true, true]);
+check('rasterizePages 每一頁之前都呼叫讓出',
+  (exportSrc.match(/await yieldToBrowser\(\)/g) || []).length >= 2, true);
+check('PDF 組裝前也讓出一次', exportSrc.includes("setProgress('正在組裝 PDF…')"), true);
+check('有逐頁進度文字', /正在處理第 \$\{i \+ 1\} \/ \$\{total\} 頁/.test(exportSrc), true);
+check('卸載後清掉 ref（不抱著已移除的 DOM 樹）',
+  exportSrc.includes('pageRefs.current = []'), true);
+
+const modalSrc = read('../src/components/ui/JRPGModal.jsx');
+check('彈窗的 keydown effect 不依賴 onClose（行內箭頭會讓它每次 render 重跑）',
+  /}, \[isOpen\]\);/.test(modalSrc) && !/\}, \[isOpen, onClose\]\);/.test(modalSrc), true);
+check('onClose 走 ref（effect 內仍拿得到最新的）',
+  [modalSrc.includes('onCloseRef.current = onClose'), modalSrc.includes('onCloseRef.current?.()')], [true, true]);
+check('body 捲動鎖是計數式的（重疊彈窗不會互相覆寫）',
+  [modalSrc.includes('let bodyLockCount = 0'), modalSrc.includes('bodyLockCount += 1'),
+    modalSrc.includes('bodyLockCount === 0'), modalSrc.includes('bodyOverflowBeforeLock')],
+  [true, true, true, true]);
+check('計數歸零才還原（不是每個彈窗各自還原）',
+  /bodyLockCount = Math\.max\(0, bodyLockCount - 1\)/.test(modalSrc), true);
+
+// 這一段是「一按就死機」的真正根因：html-to-image 預設會去 fetch 網頁字型內嵌，
+// 而 index.html 掛著 Google Fonts——那個網域連不上時 promise 永遠不 resolve，匯出就永遠卡住。
+check('光柵化一定要 skipFonts（否則會去抓 Google Fonts，抓不到就永遠卡住）',
+  [exportSrc.includes('skipFonts: true'), exportSrc.includes('RASTER_OPTIONS')], [true, true]);
+check('單頁有逾時上限（卡住也要讓 UI 回得來）',
+  [exportSrc.includes('RASTER_TIMEOUT_MS'), exportSrc.includes('withTimeout(')], [true, true]);
+
+const npcSrc = read('../src/features/npc-workshop/NPCWorkshop.jsx');
+check('NPC 工坊的兩個匯出也 skipFonts（同一顆地雷）',
+  (npcSrc.match(/skipFonts: true/g) || []).length, 2);
+check('NPC 工坊不再 await document.fonts.ready（那個 promise 可能永遠不 resolve）',
+  stripComments(npcSrc).includes('await document.fonts.ready'), false);
+check('index.html 確實有外部字型（這就是為什麼要 skipFonts）',
+  read('../index.html').includes('fonts.googleapis.com'), true);
+
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
 console.log(`\n${'='.repeat(56)}`);

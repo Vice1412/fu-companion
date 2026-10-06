@@ -3158,15 +3158,17 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     showToast("正在處理並匯出高畫質 JPG，請稍候...");
 
     try {
-      // 確保字體完全加載
-      if (document.fonts) {
-        await document.fonts.ready;
-      }
+      // 不要 await document.fonts.ready：
+      // 本頁掛著 Google Fonts（index.html 的 <link>），那個網域連不上或很慢時
+      // 這個 promise 永遠不會 resolve，匯出就卡死、按鈕永遠停用——看起來像整頁當掉。
+      // 字型改用系統字型堆疊渲染即可（見下方 skipFonts）。
 
       const dataUrl = await htmlToImage.toJpeg(sheetRef.current, {
         quality: 0.95,
         pixelRatio: 2,
         backgroundColor: currentTheme.exportBg || '#fbf7ee',
+        // 不要讓 html-to-image 去抓網頁字型內嵌（同一顆地雷，見上）
+        skipFonts: true,
         filter: (node) => {
           if (node?.classList?.contains('hide-on-export')) {
             return false;
@@ -3202,15 +3204,14 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
     showToast("正在處理圖片並複製到剪貼簿，請稍候...");
 
     try {
-      if (document.fonts) {
-        await document.fonts.ready;
-      }
+      // 同上：不要 await document.fonts.ready，也不要讓 html-to-image 去抓網頁字型
 
       // 剪貼簿 API 在多數瀏覽器中僅支援寫入 image/png
       const blob = await htmlToImage.toBlob(sheetRef.current, {
         quality: 0.95,
         pixelRatio: 2,
         backgroundColor: currentTheme.exportBg || '#fbf7ee',
+        skipFonts: true,
         filter: (node) => {
           if (node?.classList?.contains('hide-on-export')) {
             return false;

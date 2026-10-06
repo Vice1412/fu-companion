@@ -356,3 +356,14 @@
 *依 §Z5 的紀律**刻意破壞一次確認它會響**：把底部那顆改回「查看當前角色卡」→ 兩條護欄都 FAIL；還原 → 全過。**一個不會失敗的護欄等於沒有護欄，而列舉式的護欄特別容易變成那種護欄。***
 *測試：`test:ui` 132 → **135 項**。*
 *驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + 328 + 180 + 102 + 85 + **135** + 86 + 99 + 270 全過，exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,152.24 kB / gzip 619.60 kB）。決策紀錄見 `docs/decisions.md` §Y7。*
+
+*2026-10-05（「一按就死機」的調查）：使用者說「返回角色卡的按鈕一按就死機了」。*
+*① **先重現，不要猜**：架了 headless Chrome 駕駛艙（`scratch/repro*.jsx`，掛真實 `CharacterSheet`、用程式點按鈕），沿四條路徑各走一遍（編輯器／跑團面板／卡片預覽→官方三頁→返回編輯／進入跑團實戰），每步記渲染次數、console 錯誤、`body.overflow`、殘留遮罩——**全部沒有凍結**。導覽與返回路徑是乾淨的，我重現不了他描述的那件事。*
+*② **換角度量「匯出」本身，就中了**：匯出三頁 PDF **20 秒輪詢逾時仍未完成**，但期間計時器跑了 2000 次 → **主執行緒沒被鎖死，是 promise 永遠不 settle**；PNG 按鈕被停用點不動；殘留遮罩 2、`body overflow=hidden` → 彈窗關不掉、按鈕永遠停用 = 死機。*
+*③ **隔離定位**：同一頁 `toJpeg 2× ＋ skipFonts` → **OK（485 KB）**；不 `skipFonts`（對照組）→ 逾時。*
+*④ **根因**：`html-to-image` 預設把網頁字型抓下來內嵌（`embed-webfonts.js` 的 `fetchCSS` → `fetch(stylesheet.href)` → `embedResources` → `fetchAsDataURL`），而 `index.html` 掛著 **Google Fonts**——**那個網域連不上或很慢時，promise 永遠不 resolve**。NPC 工坊更直接：`await document.fonts.ready` 在開始光柵化前就卡住。*
+*⑤ **修法四層**：`skipFonts: true`（角色卡＋NPC 兩個匯出點）；移除 NPC 的 `fonts.ready` await；逐頁讓出 **macrotask**（`setTimeout` ＋ `rAF`）＋逐頁進度文字（`await` 只讓出 microtask，而瀏覽器處理點擊是 macrotask）；**單頁 45 秒逾時**——卡住也要讓 UI 回得來，這是「永遠不會再死機」的保底。*
+*⑥ **順手修掉兩個也是死機的缺陷**：`JRPGModal` 的 body 捲動鎖改成**計數式**（重疊彈窗互相覆寫，外層關掉後頁面永遠鎖住、完全不能捲）；`onClose` 不再放進 keydown effect 依賴（行內箭頭會讓 effect 每次 render 重跑）；匯出 ref 卸載後清空。*
+*⑦ **我沒能重現的部分**：導覽／返回路徑的凍結。所以不宣稱修好了它，而是在回覆裡問使用者是哪一顆按鈕。**「我重現不了」是一個結論，不是失敗。***
+*測試：`test:ui` 135 → **149 項**（新增 J 區段）；刻意破壞 `skipFonts` → 護欄 FAIL；還原 → 全過。*
+*驗證：`npm test` 1 + 176 + 60 + 33 + 75 + 56 + 235 + 211 + 328 + 180 + 102 + 85 + **149** + 86 + 99 + 270 全過，exit 0；`npm run build` exit 0（2,152.94 kB / gzip 619.96 kB）。決策紀錄見 `docs/decisions.md` §AA。*

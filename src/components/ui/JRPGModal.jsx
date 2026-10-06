@@ -1,6 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { X } from 'lucide-react';
+
+/**
+ * body 捲動鎖 —— **計數**，不是直接覆寫。
+ *
+ * 原本的寫法是「進場時記下當前的 overflow，關閉時還原」，兩個彈窗重疊時就會壞掉：
+ * 內層彈窗進場時看到的是外層設的 `hidden`，它關閉時就把 `hidden` 還原回去，
+ * 外層也關了之後**頁面永遠鎖住、完全不能捲**——使用者看到的就是「當掉了」。
+ * 這種「一按就死」最常見的成因之一就是這個。
+ */
+let bodyLockCount = 0;
+let bodyOverflowBeforeLock = '';
+
+const lockBodyScroll = () => {
+  if (typeof document === 'undefined') return () => {};
+  if (bodyLockCount === 0) {
+    bodyOverflowBeforeLock = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  bodyLockCount += 1;
+  return () => {
+    bodyLockCount = Math.max(0, bodyLockCount - 1);
+    if (bodyLockCount === 0) document.body.style.overflow = bodyOverflowBeforeLock;
+  };
+};
 
 export default function JRPGModal({
   isOpen,
@@ -17,25 +41,30 @@ export default function JRPGModal({
     setMounted(true);
   }, []);
 
+  // onClose 通常是行內箭頭函式（每次 render 都是新的 identity）。
+  // 若把它放進下面那個 effect 的依賴陣列，effect 就會**每次 render 都重跑**
+  // （拆掉再裝一次 keydown、鎖一次 body），純粹是白工；改用 ref 讓 effect 只跟 isOpen 走。
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (!isOpen) return;
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-
-    // Lock body scroll while modal is active
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const releaseScrollLock = lockBodyScroll();
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = originalOverflow;
+      releaseScrollLock();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
