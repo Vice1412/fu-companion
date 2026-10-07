@@ -296,6 +296,7 @@ check('清單狀態與 validateCharacter 的分組一致',
 const finished = createNewCharacter({
   name: '完成測試',
   identity: '流浪劍士',
+  theme: '希望',
   origin: '邊境村落',
   // 第 6 步「命名與背景」的另外兩格（原書第 8 步的稱呼與外貌描述在本專案的對應）
   gender: '女',
@@ -404,12 +405,17 @@ check('CREATION_STEPS 的順序是職業(2) 先於四維(3)，姓名在最後(6)
 check('姓名不再落在第 1 步（原書第 8 步，p.154／p.170）',
   validateCharacter(createNewCharacter()).warnings
     .filter((w) => w.field === 'name').map((w) => w.step), [6]);
-// 主題不會出現在這裡：`createNewCharacter` 預設 '希望'，所以那條檢查對新角色本來就不會響。
-check('第 1 步只剩身分／故鄉（姓名已移出）',
+check('第 1 步只剩身分／主題／故鄉（姓名已移出）',
   validateCharacter(createNewCharacter()).warnings
-    .filter((w) => w.step === 1).map((w) => w.field), ['identity', 'origin']);
+    .filter((w) => w.step === 1).map((w) => w.field), ['identity', 'theme', 'origin']);
 check('新角色有性別與角色背景兩個欄位（都預設空字串）',
   [createNewCharacter().gender, createNewCharacter().background], ['', '']);
+// 主題不代選：原書 p.158 只「建議」第一位角色從列表選，不是系統替他選。
+// 舊版預設 '希望'，等於替玩家決定了最核心的情感，也讓「尚未選擇個人主題」永不觸發。
+check('主題預設為空（不擅自先選希望）', createNewCharacter().theme, '');
+check('主題為空會被提醒（第 1 步）',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'theme').map((w) => w.message), ['尚未選擇個人主題']);
 check('未填姓名／性別／背景會被提醒（第 6 步）',
   validateCharacter(createNewCharacter()).warnings
     .filter((w) => w.step === 6).map((w) => w.field), ['name', 'gender', 'background']);
@@ -440,7 +446,9 @@ check('舊譯名職責 → 責任', normalizeTheme('職責'), '責任');
 check('自訂主題原樣傳回', normalizeTheme('救贖'), '救贖');
 check('別名表只有這兩個（新增要一起改這裡）',
   Object.keys(THEME_ALIASES).sort(), ['負疚', '職責'].sort());
-check('新角色的預設主題仍在官方清單內', CANONICAL_THEMES.includes(createNewCharacter().theme), true);
+// 主題沒有預設值（見 O 區段的「主題預設為空」）——所以這裡只確認清單本身是官方那十個
+check('官方清單裡的每一個都是合法主題',
+  CANONICAL_THEMES.every((t) => typeof t === 'string' && t.length > 0), true);
 
 // O4 屬性陣列：官方三組（Core p.162）
 check('三組屬性陣列的名稱與骰組照官方',

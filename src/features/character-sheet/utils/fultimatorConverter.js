@@ -90,7 +90,9 @@ export const convertFultimatorToFUCompanion = (fChar) => {
   // 1. 基礎身份資訊 (info)
   const info = fChar.info || {};
   const identity = info.identity || fChar.identity || '';
-  const theme = info.theme || fChar.theme || '希望';
+  // 主題不代填：本專案的角色主題預設是空的（見 createNewCharacter 的註解），
+  // 匯入時若對方也沒有就維持空字串，不要替玩家選一個。
+  const theme = info.theme || fChar.theme || '';
   const origin = info.origin || fChar.origin || '';
   const avatar = info.imgurl || fChar.avatar || null;
   // 反向對應：Fultimator 的 `info.pronouns` 回到本專案的「性別」（見導出端的註解）
@@ -290,7 +292,7 @@ export const convertFUCompanionToFultimator = (char) => {
       // 本專案的角色欄位是「性別」，對應過去最接近的就是這一格。
       pronouns: char.gender || '',
       identity: char.identity || '',
-      theme: char.theme || '希望',
+      theme: char.theme || '',
       origin: char.origin || '',
       bonds: (char.bonds || []).map(b => ({
         name: b.target,

@@ -641,7 +641,7 @@ export default function CharacterPlayHUD({
                 )}
               </div>
               <p className="text-xs text-slate-600 mt-0.5">
-                {character.identity || '未設定身份'} · <strong style={{ color: theme.accent }}>{character.theme || '希望'}</strong>
+                {character.identity || '未設定身份'} · <strong style={{ color: theme.accent }}>{character.theme || '未設定主題'}</strong>
                 {character.origin && ` · 來自 ${character.origin}`}
               </p>
             </div>

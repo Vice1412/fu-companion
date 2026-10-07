@@ -53,7 +53,10 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     name: PLACEHOLDER_CHARACTER_NAME,
     identity: "",
-    theme: "希望",
+    // 主題**預設為空**：原書 p.158 說「如果這是你的第一位角色，強烈建議你從下面的
+    // 列表選擇」——那是建議玩家選，不是系統替他選。舊版預設 '希望'，等於替玩家
+    // 決定了角色最核心的那個情感，而且讓「尚未選擇個人主題」那條提醒永遠不響。
+    theme: "",
     origin: "",
     // 性別與角色背景屬於原書第 8 步（p.154「描述你的角色並選擇名字和稱呼」）。
     // 官方角色卡上與姓名並排的那一格是「稱呼」，本專案依使用者裁定（2026-10-06）

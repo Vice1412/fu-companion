@@ -1052,7 +1052,8 @@ export default function CharacterEditor({
                             const checked = e.target.checked;
                             setIsCustomTheme(checked);
                             if (!checked && !CANONICAL_THEMES.includes(normalizeTheme(character.theme))) {
-                              updateField('theme', CANONICAL_THEMES[0]);
+                              // 從自訂切回清單時**不代選**——退回「請選擇主題」，讓玩家自己挑
+                              updateField('theme', '');
                             }
                           }}
                           className="w-3.5 h-3.5 rounded cursor-pointer"
@@ -1070,11 +1071,14 @@ export default function CharacterEditor({
                       />
                     ) : (
                       <select
-                        value={normalizeTheme(character.theme) || CANONICAL_THEMES[0]}
+                        value={normalizeTheme(character.theme)}
                         onChange={e => updateField('theme', e.target.value)}
                         className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border cursor-pointer"
                         style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                       >
+                        {/* 主題預設是空的——**不替玩家先選一個**。原書 p.158 說「如果這是你的
+                            第一位角色，強烈建議你從下面的列表選擇」，那是建議玩家選，不是系統代選。 */}
+                        <option value="">請選擇主題</option>
                         {CANONICAL_THEMES.map(tName => (
                           <option key={tName} value={tName}>{tName}</option>
                         ))}

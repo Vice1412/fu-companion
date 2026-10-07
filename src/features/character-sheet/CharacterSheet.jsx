@@ -601,7 +601,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                         </div>
 
                         <p className="text-[11px] text-[#7c6a58] mt-0.5 line-clamp-1">
-                          {char.identity || '未設定身份'} · <span style={{ color: charTheme.accent, fontWeight: 'bold' }}>{char.theme || '希望'}</span>
+                          {char.identity || '未設定身份'} · <span style={{ color: charTheme.accent, fontWeight: 'bold' }}>{char.theme || '未設定主題'}</span>
                         </p>
 
                         {/* Classes Badges */}
