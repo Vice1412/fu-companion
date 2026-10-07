@@ -309,7 +309,13 @@ export const buildSheetModel = (character, stats = null) => {
     name: ch.name || '',
     // 用角色自己的等級，不是職業等級的總和——兩者漂移時以前會顯示不同的數字
     level: getCharacterLevel(ch),
-    pronouns: '',
+    // 官方角色卡上與姓名並排的那一格是「稱呼」；本專案依使用者裁定改為性別。
+    //
+    // 角色背景**不在三頁匯出裡**：三頁是固定 1123×794 的官方表格複刻，
+    // 2026-10-06 實測六個欄位的餘裕都只有 0～4px，塞不下任何新的敘事區塊
+    // （硬加一個背景框會讓 P1 的每個框各被裁掉一行，而且是靜默裁掉）。
+    // 它顯示在編輯器分頁 6 與角色卡（CharacterCard，不限高）。
+    gender: ch.gender || '',
     identity: ch.identity || '',
     theme: ch.theme || '',
     origin: ch.origin || '',
@@ -374,8 +380,8 @@ const NameHeader = ({ model, full = false }) => (
     </span>
     {!full && (
       <>
-        <span style={{ ...S.label, fontSize: '10px', marginLeft: '8px' }}>代名詞</span>
-        <span style={{ ...S.line, flex: '0 0 120px' }}>{model.pronouns}</span>
+        <span style={{ ...S.label, fontSize: '10px', marginLeft: '8px' }}>性別</span>
+        <span style={{ ...S.line, flex: '0 0 120px' }}>{model.gender}</span>
       </>
     )}
   </div>

@@ -93,6 +93,8 @@ export const convertFultimatorToFUCompanion = (fChar) => {
   const theme = info.theme || fChar.theme || '希望';
   const origin = info.origin || fChar.origin || '';
   const avatar = info.imgurl || fChar.avatar || null;
+  // 反向對應：Fultimator 的 `info.pronouns` 回到本專案的「性別」（見導出端的註解）
+  const gender = info.pronouns || fChar.gender || '';
   const exp = parseInt(info.exp || fChar.exp, 10) || 0;
   const zenit = parseInt(info.zenit || fChar.zenit, 10) || 0;
   // parseInt 失敗會回 NaN，而 NaN ?? 3 仍然是 NaN（?? 只擋 null／undefined）
@@ -253,6 +255,7 @@ export const convertFultimatorToFUCompanion = (fChar) => {
     identity,
     theme,
     origin,
+    gender,
     avatar,
     exp,
     zenit,
@@ -283,7 +286,9 @@ export const convertFUCompanionToFultimator = (char) => {
     name: char.name || '冒險者',
     lvl: getCharacterLevel(char),
     info: {
-      pronouns: '',
+      // 這個鍵名是 Fultimator 的 schema（`info.pronouns`），不能改；
+      // 本專案的角色欄位是「性別」，對應過去最接近的就是這一格。
+      pronouns: char.gender || '',
       identity: char.identity || '',
       theme: char.theme || '希望',
       origin: char.origin || '',

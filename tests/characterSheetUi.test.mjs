@@ -34,6 +34,7 @@ import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebook
 import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
 import CharacterEditor from '../src/features/character-sheet/components/CharacterEditor.jsx';
+import CharacterCard from '../src/features/character-sheet/components/CharacterCard.jsx';
 import {
   buildImagePdf,
   buildImagePdfBytes,
@@ -174,6 +175,8 @@ const sheetChar = createNewCharacter({
   identity: '流浪劍士',
   theme: '希望',
   origin: '邊境村落',
+  gender: '女',
+  background: '普拉塔王室最後的倖存者。',
   zenit: 320,
   exp: 7,
   fabulaPoints: 2,
@@ -255,6 +258,16 @@ check('英雄技能帶效果全文欄位',
 check('金手指「無」不顯示', buildSheetModel(createNewCharacter({ quirk: '無' })).quirk, '');
 check('金手指有值時顯示', model.quirk, '倖存者');
 check('行囊筆記', model.backpackNotes, '乾糧三份');
+
+// 官方表上與姓名並排的那一格是「稱呼」；本專案依使用者裁定（2026-10-06）改為性別。
+// 舊版這一格永遠是空的——`pronouns` 在模型裡被寫死成 ''，印出來是一條空白線。
+check('性別帶進匯出模型', model.gender, '女');
+check('匯出模型不再有 pronouns 這個欄位',
+  Object.prototype.hasOwnProperty.call(model, 'pronouns'), false);
+// 角色背景**不進三頁**：三頁是固定 1123×794 的官方表格複刻，六欄餘裕只有 0～4px
+// （2026-10-06 實測），硬加一個背景框會讓 P1 每個框各被裁掉一行。它由角色卡承載。
+check('匯出模型沒有 background 欄位（版面滿載，見 CharacterSheetExport 的註解）',
+  Object.prototype.hasOwnProperty.call(model, 'background'), false);
 
 check('空角色也能算出模型（不會炸）', (() => {
   const m = buildSheetModel({});
@@ -497,8 +510,14 @@ check('編輯器對 initialTab 做夾制（最後一道防線）',
   [true, true]);
 check('TAB_COUNT 與實際分頁數綁在一起（改了一邊就會在執行時拋錯）',
   editorCode.includes('TABS.length !== TAB_COUNT'), true);
-check('分頁總數是 5（情感羈絆已移除：羈絆不屬創角，原書 p.154）',
-  (editorCode.match(/icon: '[a-z]+' \}/g) || []).length, 5);
+check('分頁標籤序列就是創角步驟（順序即流程）',
+  (editorCode.match(/id: \d+, label: '([^']+)' \}/g) || [])
+    .map((row) => /label: '([^']+)'/.exec(row)[1]),
+  ['基礎身世', '職業與技能', '四維屬性', '裝備配置', '特質與命刻', '命名與背景']);
+// 這條以前是數 `icon: 'xxx' }` 的個數——但那個欄位**從來沒有被讀取**（導航列畫的是編號徽章），
+// 等於用死資料當護欄：只要有人照著補一個 icon，數字就對了，標籤寫什麼都不會被抓到。
+check('TABS 不再帶著沒有人讀取的 icon 欄位',
+  /icon: '[a-z]+' \}/.test(editorCode), false);
 check('編輯器不再有情感羈絆分頁與其處理函式',
   [
     editorCode.includes("label: '情感羈絆'"),
@@ -520,6 +539,20 @@ check('彈窗元件同時提供卡片檢視與三頁表格',
   [previewSrc.includes('CharacterSheetExportBody'), previewSrc.includes('<CharacterCard')], [true, true]);
 check('從跑團面板開的關閉標籤是「返回跑團面板」',
   hudCode.includes('closeLabel="返回跑團面板"'), true);
+
+// 角色背景不進三頁匯出（版面滿載），由角色卡承載——所以卡片必須真的畫得出來
+const cardHtml = renderToStaticMarkup(React.createElement(CharacterCard, {
+  character: createNewCharacter({
+    name: '測試',
+    identity: '流浪劍士',
+    origin: '邊境村落',
+    gender: '女',
+    background: '邊境來的流浪劍士，為了找一個答案而上路。'
+  })
+}));
+check('角色卡顯示性別與角色背景',
+  [cardHtml.includes('女'), cardHtml.includes('邊境來的流浪劍士，為了找一個答案而上路。')],
+  [true, true]);
 
 // 「各種信息應該都要完整才對，比如技能等資料」
 check('技能帶效果全文（不是只有技能名）',
@@ -579,6 +612,17 @@ check('未結算起始資金的卡會顯示提醒',
   renderEditorAt(1, { startingFundsRolled: false }).includes('起始資金尚未結算'), true);
 check('已結算的卡不顯示那則提醒',
   tab2Html.includes('起始資金尚未結算'), false);
+
+// 姓名搬到第 6 步（原書第 8 步，p.154／p.170）——第 1 步不該再有姓名輸入框
+const tab1Html = renderEditorAt(1);
+const tab6Html = renderEditorAt(6);
+check('第 1 步不再有姓名輸入框（原書把姓名放在最後）',
+  tab1Html.includes('角色姓名'), false);
+check('第 6 步有姓名、性別與角色背景',
+  [tab6Html.includes('角色姓名'), tab6Html.includes('性別'), tab6Html.includes('角色背景')],
+  [true, true, true]);
+check('第 6 步排在特質與命刻之後（導航列的最後一格）',
+  tab6Html.lastIndexOf('命名與背景') > tab6Html.lastIndexOf('特質與命刻'), true);
 
 // ─────────────────────────────────────────────────────────── N
 section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');

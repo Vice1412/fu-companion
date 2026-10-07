@@ -145,6 +145,19 @@ export default function CharacterCard({
                 </span>
               )}
             </span>
+            <span>·</span>
+            <span>
+              性別:{' '}
+              {character.gender && character.gender.trim() ? (
+                <strong className="font-sans font-bold" style={{ color: theme.textDark }}>
+                  {character.gender}
+                </strong>
+              ) : (
+                <span className="text-[#a08f7f] italic font-normal border-b border-dashed border-[#d6c7ab]">
+                  【 尚未設定性別 】
+                </span>
+              )}
+            </span>
           </div>
 
           {/* Classes pill tags with Game-Icons */}
@@ -185,6 +198,16 @@ export default function CharacterCard({
               </>
             )}
           </div>
+
+          {/* 角色背景：只在填過之後才顯示——空白時不佔卡片版面 */}
+          {character.background && character.background.trim() ? (
+            <div
+              className="mt-2 p-2 rounded-lg border text-[11px] leading-relaxed whitespace-pre-wrap"
+              style={{ backgroundColor: theme.panelBg, borderColor: theme.border, color: theme.textDark }}
+            >
+              {character.background}
+            </div>
+          ) : null}
         </div>
 
         {onEdit && (

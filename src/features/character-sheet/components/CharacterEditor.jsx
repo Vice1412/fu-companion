@@ -59,7 +59,7 @@ import StarterPresetsModal from './StarterPresetsModal';
 import CharacterPreviewModal from './CharacterPreviewModal';
 
 /** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
-const TAB_COUNT = 5;
+const TAB_COUNT = 6;
 import { applyPreset } from '../utils/presetApply';
 import {
   calculateCharacterStats,
@@ -361,12 +361,18 @@ export default function CharacterEditor({
   // 創角步驟＝原書 p.154 的八個步驟（身世／四維／職業與技能／裝備／特質與命刻，
   // 其中「名字」併入身世、「HP/MP/IP 等數值」由引擎自動算）。
   // **沒有情感羈絆**：羈絆不屬創角，見 CREATION_STEPS 的說明。
+  // 分頁標籤描述的是「玩家在這裡做什麼決定」，不是「角色卡的章節」（見 §V1 的診斷）。
+  //
+  // 原本每列還帶著一個 `icon` 欄位，但**它從來沒有被讀取**——導航列畫的是編號徽章
+  // （見下面的 `{t.id}`），而 `test:ui` 卻用它來數分頁，等於用死資料當護欄。
+  // 2026-10-06 移除，護欄改成直接比對標籤序列。
   const TABS = [
-    { id: 1, label: '基礎身世', icon: 'edit' },
-    { id: 2, label: '職業與技能', icon: 'swords' },
-    { id: 3, label: '四維屬性', icon: 'dice' },
-    { id: 4, label: '裝備配置', icon: 'shield' },
-    { id: 5, label: '特質與命刻', icon: 'clock' }
+    { id: 1, label: '基礎身世' },
+    { id: 2, label: '職業與技能' },
+    { id: 3, label: '四維屬性' },
+    { id: 4, label: '裝備配置' },
+    { id: 5, label: '特質與命刻' },
+    { id: 6, label: '命名與背景' }
   ];
   // 上面那個 useState 的夾制用 TAB_COUNT（不能讀 TABS，會踩 TDZ）；test:ui 有一條護欄綁住兩者相等。
   if (TABS.length !== TAB_COUNT) {
@@ -970,36 +976,28 @@ export default function CharacterEditor({
                 onToast={showToast}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <JRPGInput
-                  label="角色姓名"
-                  value={character.name || ''}
-                  onChange={e => updateField('name', e.target.value)}
-                  placeholder="例：雷恩"
-                  theme={theme}
-                />
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                      角色等級
-                    </label>
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors"
-                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                    >
-                      起始 {rules.startingLevel} 級
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    min={rules.startingLevel}
-                    max={50}
-                    value={character.level || rules.startingLevel}
-                    onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel, { kind: 'levelup', title: '調整等級' })}
-                    className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
-                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                  />
+              {/* 姓名不在這裡——原書第 8 步把它放在最後，見分頁 6「命名與背景」 */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                    角色等級
+                  </label>
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors"
+                    style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                  >
+                    起始 {rules.startingLevel} 級
+                  </span>
                 </div>
+                <input
+                  type="number"
+                  min={rules.startingLevel}
+                  max={50}
+                  value={character.level || rules.startingLevel}
+                  onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel, { kind: 'levelup', title: '調整等級' })}
+                  className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
+                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                />
               </div>
 
               <div className="space-y-3">
@@ -1751,6 +1749,55 @@ export default function CharacterEditor({
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== TAB 6: 命名與背景 ====================
+              原書第 8 步（p.154）：「描述你的角色並選擇名字和稱呼」。
+              p.170 說明了為什麼放在最後——「先掌握了角色的外貌與能力，取名就容易多了」。
+              官方角色卡上與姓名並排的那一格是「稱呼」，本專案依使用者裁定改為**性別**；
+              原書同一步的「外貌描述」改為**角色背景**（頭像已由分頁 1 的頭像上傳承載）。 */}
+          {activeTab === 6 && (
+            <div className="space-y-5 animate-fade-in">
+              <div>
+                <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
+                  <span style={{ color: theme.accent }}>6.</span> 命名與背景
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  最後一步。看過職業、屬性與裝備之後再取名字，通常比一開始就想容易得多。
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <JRPGInput
+                  label="角色姓名"
+                  value={character.name || ''}
+                  onChange={e => updateField('name', e.target.value)}
+                  placeholder="例：雷恩"
+                  theme={theme}
+                />
+                <JRPGInput
+                  label="性別"
+                  value={character.gender || ''}
+                  onChange={e => updateField('gender', e.target.value)}
+                  placeholder="例：女"
+                  theme={theme}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                  角色背景
+                </label>
+                <textarea
+                  value={character.background || ''}
+                  onChange={e => updateField('background', e.target.value)}
+                  rows={7}
+                  placeholder="他從哪裡來、經歷過什麼、為什麼會走上這條路……（NPC 工坊也有一格同樣用途的「背景故事」）"
+                  className="w-full rounded-lg px-3.5 py-2.5 text-xs outline-none shadow-sm border leading-relaxed resize-y"
+                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                />
               </div>
             </div>
           )}

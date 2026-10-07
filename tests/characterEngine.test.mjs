@@ -533,6 +533,9 @@ const validChar = mk({
   identity: '流浪劍客',
   origin: '無名村落',
   theme: '希望',
+  // 第 6 步「命名與背景」的另外兩格（原書第 8 步的稱呼與外貌描述在本專案的對應）
+  gender: '女',
+  background: '四處漂泊的劍客。',
   equipment: { ...NEUTRAL_EQUIP, mainHand: '青銅劍' },
   classes: [
     { className: '武器大師', level: 3, skills: [{ name: '碎骨擊', sl: 3 }] },

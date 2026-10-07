@@ -260,13 +260,13 @@ check('解鎖也留下一筆履歷（查得到什麼時候解鎖過）',
   getLog(unlockedAgain).map((e) => e.kind), ['creation', 'lock', 'lock']);
 check('解鎖的標題說明原因', getLog(unlockedAgain)[2].title, '解除定稿（重新開放創角欄位）');
 
-check('凍結的分頁是身世與四維（四維現在是第 3 步）', [...LOCKED_CREATION_TABS], [1, 3]);
+check('凍結的分頁是身世、四維與命名（姓名在最後一步，也是創角決定）', [...LOCKED_CREATION_TABS], [1, 3, 6]);
 
 // ─────────────────────────────────────────────────────────── G
 section('G. 創角進度清單：把驗證結果變成一條主線');
 
 const blankList = buildCreationChecklist(createNewCharacter());
-check('清單有五個步驟且與 CREATION_STEPS 一致',
+check('清單有六個步驟且與 CREATION_STEPS 一致',
   blankList.map((i) => i.id), CREATION_STEPS.map((i) => i.id));
 check('清單不含情感羈絆（羈絆不屬創角，原書 p.154）',
   blankList.some((i) => i.label.includes('羈絆')), false);
@@ -276,7 +276,7 @@ check('空白角色：職業有問題（0 個職業）', blankList[1].status, 'e
 check('空白角色：四維已完成（預設 8×4 = 32）', blankList[2].status, 'done');
 check('有問題的步驟帶錯誤數', blankList[1].errorCount, 1);
 check('完成的步驟給出說明文字', blankList[2].message, '骰階點數已分配完成');
-check('待處理的步驟給出第一則提醒', blankList[0].message, '角色尚未填寫姓名');
+check('待處理的步驟給出第一則提醒', blankList[0].message, '尚未設定身份');
 
 // 清單不新增驗證邏輯：狀態必須與 validateCharacter 的分組一致
 const grouped = validateCharacter(createNewCharacter()).warnings.reduce((acc, w) => {
@@ -297,6 +297,9 @@ const finished = createNewCharacter({
   name: '完成測試',
   identity: '流浪劍士',
   origin: '邊境村落',
+  // 第 6 步「命名與背景」的另外兩格（原書第 8 步的稱呼與外貌描述在本專案的對應）
+  gender: '女',
+  background: '來自邊境的流浪劍士。',
   // 起始資金已結算（原書 p.165）。沒有這一項，第 4 步會是 error，這張卡不能定稿。
   startingFundsRolled: true,
   classes: [
@@ -305,8 +308,8 @@ const finished = createNewCharacter({
   ]
 });
 const finishedList = buildCreationChecklist(finished);
-check('填完的卡：五步全部完成',
-  finishedList.map((i) => i.status), ['done', 'done', 'done', 'done', 'done']);
+check('填完的卡：六步全部完成',
+  finishedList.map((i) => i.status), ['done', 'done', 'done', 'done', 'done', 'done']);
 check('填完的卡：沒有阻擋定稿的項目',
   finishedList.filter((i) => i.status === 'error').length, 0);
 check('GM 規則會反映在清單上（必修職業未修習 → 該步有問題）',
@@ -395,9 +398,24 @@ check('等級一律經過 getCharacterLevel（不再直接讀 char.level）',
 section('O. 2026-10-06 稽核修正：步驟次序、主題、姓名、屬性陣列、起始資金');
 
 // O1 步驟次序：原書是「先選職業（第 4 步）再分配屬性（第 5 步）」（p.154／p.162）
-check('CREATION_STEPS 的順序是職業(2) 先於四維(3)',
+check('CREATION_STEPS 的順序是職業(2) 先於四維(3)，姓名在最後(6)',
   CREATION_STEPS.map((s) => s.label),
-  ['基礎身世', '職業與技能', '四維屬性', '裝備配置', '特質與命刻']);
+  ['基礎身世', '職業與技能', '四維屬性', '裝備配置', '特質與命刻', '命名與背景']);
+check('姓名不再落在第 1 步（原書第 8 步，p.154／p.170）',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'name').map((w) => w.step), [6]);
+// 主題不會出現在這裡：`createNewCharacter` 預設 '希望'，所以那條檢查對新角色本來就不會響。
+check('第 1 步只剩身分／故鄉（姓名已移出）',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.step === 1).map((w) => w.field), ['identity', 'origin']);
+check('新角色有性別與角色背景兩個欄位（都預設空字串）',
+  [createNewCharacter().gender, createNewCharacter().background], ['', '']);
+check('未填姓名／性別／背景會被提醒（第 6 步）',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.step === 6).map((w) => w.field), ['name', 'gender', 'background']);
+check('三格都填了就沒有第 6 步的提醒',
+  validateCharacter(createNewCharacter({ name: '雷恩', gender: '女', background: '邊境流浪劍士' }))
+    .warnings.filter((w) => w.step === 6), []);
 check('validateCharacter 的職業警告落在第 2 步',
   validateCharacter(createNewCharacter()).warnings
     .filter((w) => w.field === 'classes').map((w) => w.step), [2]);

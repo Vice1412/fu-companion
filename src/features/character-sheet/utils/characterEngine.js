@@ -55,6 +55,11 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     identity: "",
     theme: "希望",
     origin: "",
+    // 性別與角色背景屬於原書第 8 步（p.154「描述你的角色並選擇名字和稱呼」）。
+    // 官方角色卡上與姓名並排的那一格是「稱呼」，本專案依使用者裁定（2026-10-06）
+    // 改為**性別**；原書同一步的「外貌描述」則改為**角色背景**（頭像已由 avatar 承載）。
+    gender: "",
+    background: "",
     avatar: null,
     avatarRaw: null,
 
@@ -584,14 +589,10 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   const warnings = [];
   const stats = calculateCharacterStats(char);
 
-  // 步驟 1: 基礎身世
+  // 步驟 1: 基礎身世（身分／主題／故鄉）。
   //
-  // 姓名由 `createNewCharacter` 以佔位符初始化，所以「有值」不等於「填過」——
-  // 舊版只檢查空字串，於是新角色永遠不會被提醒，這條檢查實際上是死的。
-  const nameFilled = Boolean(char.name && char.name.trim()) && char.name.trim() !== PLACEHOLDER_CHARACTER_NAME;
-  if (!nameFilled) {
-    warnings.push({ step: 1, field: 'name', type: 'warning', message: '角色尚未填寫姓名' });
-  }
+  // 姓名**不在這裡**——原書第 8 步（p.154）把它與稱呼、外貌描述一起放在最後，
+  // 理由是「先掌握了角色的外貌與能力，取名就容易多了」（p.170）。見步驟 6。
   if (!char.identity || !char.identity.trim()) {
     warnings.push({ step: 1, field: 'identity', type: 'info', message: '尚未設定身份' });
   }
@@ -773,6 +774,21 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
     });
   }
 
+  // 步驟 6: 命名與背景（原書第 8 步，p.154／p.170）
+  //
+  // 姓名由 `createNewCharacter` 以佔位符初始化，所以「有值」不等於「填過」——
+  // 舊版把這條檢查放在第 1 步又只檢查空字串，於是對任何新角色都不會觸發。
+  const nameFilled = Boolean(char.name && char.name.trim()) && char.name.trim() !== PLACEHOLDER_CHARACTER_NAME;
+  if (!nameFilled) {
+    warnings.push({ step: 6, field: 'name', type: 'warning', message: '角色尚未填寫姓名' });
+  }
+  if (!char.gender || !char.gender.trim()) {
+    warnings.push({ step: 6, field: 'gender', type: 'info', message: '尚未填寫性別' });
+  }
+  if (!char.background || !char.background.trim()) {
+    warnings.push({ step: 6, field: 'background', type: 'info', message: '尚未填寫角色背景' });
+  }
+
   const errors = warnings.filter(w => w.type === 'error');
   const nonErrors = warnings.filter(w => w.type !== 'error');
 
@@ -799,8 +815,8 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
  */
 export const isCharacterLocked = (char) => char?.locked === true;
 
-/** 定稿後凍結的分頁（對應 CharacterEditor 的分頁 id：1 基礎身世、3 四維屬性） */
-export const LOCKED_CREATION_TABS = Object.freeze([1, 3]);
+/** 定稿後凍結的分頁（對應 CharacterEditor 的分頁 id：1 基礎身世、3 四維屬性、6 命名與背景） */
+export const LOCKED_CREATION_TABS = Object.freeze([1, 3, 6]);
 
 /** 定稿：留下 `locked` 旗標與一筆履歷 */
 export const lockCharacter = (char, { at, note = '' } = {}) => {
@@ -830,13 +846,18 @@ export const unlockCharacter = (char, { at, note = '' } = {}) => {
  * 為什麼職業（第 2 步）排在四維（第 3 步）之前：原書是「先選職業（第 4 步）再分配屬性
  * （第 5 步）」，且 p.162 明說分配屬性骰時要考慮職業與技能選擇。舊版把兩者對調，
  * 玩家得在還不知道職業會給什麼免費增益時就決定四維。
+ *
+ * 為什麼姓名在**最後**（第 6 步）而不是第 1 步：原書第 8 步是「描述你的角色並選擇
+ * 名字和稱呼」（p.154），p.170 給了理由——「先掌握了角色的外貌與能力，取名就容易多了」。
+ * 舊版把它併進「基礎身世」，等於要玩家在還不知道自己是誰之前先取名字。
  */
 export const CREATION_STEPS = Object.freeze([
-  { id: 1, label: '基礎身世', doneHint: '姓名、身分、主題、故鄉都已填寫' },
+  { id: 1, label: '基礎身世', doneHint: '身分、主題、故鄉都已填寫' },
   { id: 2, label: '職業與技能', doneHint: '職業組合與技能點數已配置' },
   { id: 3, label: '四維屬性', doneHint: '骰階點數已分配完成' },
   { id: 4, label: '裝備配置', doneHint: '武裝與防具已就緒' },
-  { id: 5, label: '特質與命刻', doneHint: '特質與命刻已確認' }
+  { id: 5, label: '特質與命刻', doneHint: '特質與命刻已確認' },
+  { id: 6, label: '命名與背景', doneHint: '姓名、性別與角色背景都已填寫' }
 ]);
 
 /**
