@@ -51,7 +51,7 @@ import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
   SOURCEBOOKS,
   CANONICAL_THEMES,
-  ATTRIBUTE_STARTING_ARRAYS,
+  normalizeTheme,
   generateRandomIdentity,
   getClassInfo
 } from '../data/sourcebookConfig';
@@ -79,6 +79,7 @@ import {
   computeShieldOutcome,
   checkEquippable,
   buildLoadoutIssues,
+  totalStartingEquipCost,
   getEquipmentIcon,
   getDualShieldState,
   applyEquipmentChoice,
@@ -114,7 +115,8 @@ export default function CharacterEditor({
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [isCardPreviewModalOpen, setIsCardPreviewModalOpen] = useState(false);
-  const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(character?.theme) && Boolean(character?.theme));
+  // 舊譯名（負疚／職責）先正規化成官方主題名，否則舊卡的選單會落在「自訂」那一側
+  const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(normalizeTheme(character?.theme)) && Boolean(character?.theme));
   const [isClassPickerOpen, setIsClassPickerOpen] = useState(false);
   const [newlyAddedClassName, setNewlyAddedClassName] = useState(null);
   const [selectedHeroicToAdd, setSelectedHeroicToAdd] = useState('');
@@ -155,16 +157,23 @@ export default function CharacterEditor({
 
   /**
    * 所有欄位變更的唯一出口。
+   *
+   * `field` 可傳字串（單一欄位）或物件（一次改多個欄位）。物件形式是必要的：
+   * 結算起始資金要同時寫入 `zenit` 與 `startingFundsRolled`，分兩次呼叫會各自
+   * 以同一個過期的 `character` 為基礎，第二次會把第一次的結果蓋掉。
+   *
    * `meta` 有值時會留下一筆成長履歷（見 utils/characterLog.js）；
    * `fields: []` 表示「只留標題、不比對欄位」（用於職業／技能這類陣列變更）。
    */
   const updateField = (field, value, meta = null) => {
+    const patch = typeof field === 'object' && field !== null ? field : { [field]: value };
     const base = {
       ...character,
-      [field]: value,
+      ...patch,
       updatedAt: new Date().toISOString()
     };
-    onChange(meta ? loggableChange(character, base, { fields: [field], ...meta }) : base);
+    const changedFields = Object.keys(patch);
+    onChange(meta ? loggableChange(character, base, { fields: changedFields, ...meta }) : base);
   };
 
   const updateAttribute = (attr, val) => {
@@ -354,8 +363,8 @@ export default function CharacterEditor({
   // **沒有情感羈絆**：羈絆不屬創角，見 CREATION_STEPS 的說明。
   const TABS = [
     { id: 1, label: '基礎身世', icon: 'edit' },
-    { id: 2, label: '四維屬性', icon: 'dice' },
-    { id: 3, label: '職業與技能', icon: 'swords' },
+    { id: 2, label: '職業與技能', icon: 'swords' },
+    { id: 3, label: '四維屬性', icon: 'dice' },
     { id: 4, label: '裝備配置', icon: 'shield' },
     { id: 5, label: '特質與命刻', icon: 'clock' }
   ];
@@ -367,24 +376,6 @@ export default function CharacterEditor({
   // Attribute sum
   const attrSum = (character.attributes?.dex || 0) + (character.attributes?.ins || 0) + (character.attributes?.mig || 0) + (character.attributes?.wlp || 0);
 
-  // Equipment costs & 500 Zenit Starting Budget (Rulebook p. 166)
-  const curMainHand = rulesData.equipment.weapons.find(w => w.name === character.equipment?.mainHand);
-  const curOffHand = rulesData.equipment.shields.find(s => s.name === character.equipment?.offHand)
-    || rulesData.equipment.weapons.find(w => w.name === character.equipment?.offHand);
-  const curArmor = rulesData.equipment.armors.find(a => a.name === character.equipment?.armor);
-  const curAcc = rulesData.equipment.accessories.find(acc => acc.name === character.equipment?.accessory);
-  const totalEquipCost = (curMainHand?.cost || 0) + (curOffHand?.cost || 0) + (curArmor?.cost || 0) + (curAcc?.cost || 0);
-  const remainingBudget = rules.startingZenit - totalEquipCost;
-
-  const handleRollStartingZenit = () => {
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
-    const rollSum = (d1 + d2) * 10;
-    const finalZenit = Math.max(0, remainingBudget) + rollSum;
-    updateField('zenit', finalZenit, { kind: 'zenit', title: '擲起始資金 2d6 × 10' });
-    alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
-  };
-
   // ── 裝備配置：所有顯示數字都以「目前這張卡的四維骰」即時換算。
   // 換算規則集中在 utils/equipmentRules.js，選裝彈窗與這裡共用同一份實作，
   // 避免「選單上算一套、角色卡上算另一套」。
@@ -393,6 +384,31 @@ export default function CharacterEditor({
   const armorByName = new Map(rulesData.equipment.armors.map(a => [a.name, a]));
   const shieldByName = new Map(rulesData.equipment.shields.map(s => [s.name, s]));
   const accessoryByName = new Map(rulesData.equipment.accessories.map(a => [a.name, a]));
+
+  // 起始裝備花費（原書 p.164）：只計**基本武器／防具／盾牌**。
+  // 飾品是稀有物品，不從起始預算出——以前這裡把飾品算進去，而 equipmentRules 的
+  // buildLoadoutIssues 不算，同一張卡在兩處得到不同的「已花費」。現在兩邊共用同一支函式。
+  const totalEquipCost = totalStartingEquipCost(character.equipment, {
+    weaponMap: weaponByName,
+    shieldMap: shieldByName,
+    armorMap: armorByName
+  });
+  const remainingBudget = rules.startingZenit - totalEquipCost;
+
+  const handleRollStartingZenit = () => {
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const rollSum = (d1 + d2) * 10;
+    const finalZenit = Math.max(0, remainingBudget) + rollSum;
+    // 一次寫入兩個欄位（`updateField` 的物件形式）：`startingFundsRolled` 是
+    // 「起始資金尚未結算」那條提醒的開關，分兩次呼叫會互相蓋掉。
+    updateField(
+      { zenit: finalZenit, startingFundsRolled: true },
+      null,
+      { kind: 'zenit', title: '擲起始資金 2d6 × 10' }
+    );
+    alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
+  };
 
   const mainHandName = character.equipment?.mainHand || '';
   const mainShield = shieldByName.get(mainHandName) || null;
@@ -1037,7 +1053,7 @@ export default function CharacterEditor({
                           onChange={e => {
                             const checked = e.target.checked;
                             setIsCustomTheme(checked);
-                            if (!checked && !CANONICAL_THEMES.includes(character.theme)) {
+                            if (!checked && !CANONICAL_THEMES.includes(normalizeTheme(character.theme))) {
                               updateField('theme', CANONICAL_THEMES[0]);
                             }
                           }}
@@ -1056,7 +1072,7 @@ export default function CharacterEditor({
                       />
                     ) : (
                       <select
-                        value={character.theme || '希望'}
+                        value={normalizeTheme(character.theme) || CANONICAL_THEMES[0]}
                         onChange={e => updateField('theme', e.target.value)}
                         className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border cursor-pointer"
                         style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
@@ -1081,8 +1097,12 @@ export default function CharacterEditor({
                   <JRPGInput
                     label="初始持有金幣"
                     type="number"
-                    value={character.zenit !== undefined ? character.zenit : 500}
-                    onChange={e => updateField('zenit', parseInt(e.target.value, 10) || 0, { kind: 'zenit', title: '調整資金' })}
+                    value={character.zenit !== undefined ? character.zenit : rules.startingZenit}
+                    onChange={e => updateField(
+                      { zenit: parseInt(e.target.value, 10) || 0, startingFundsRolled: true },
+                      null,
+                      { kind: 'zenit', title: '調整資金' }
+                    )}
                     theme={theme}
                   />
                   <JRPGInput
@@ -1097,12 +1117,14 @@ export default function CharacterEditor({
             </div>
           )}
 
-          {/* ==================== TAB 2: 四維屬性 ==================== */}
-          {activeTab === 2 && (
+          {/* ==================== TAB 3: 四維屬性 ====================
+              排在職業之後：原書的順序是先選職業（第 4 步）再分配屬性（第 5 步），
+              且 p.162 明說分配屬性骰時要考慮職業與技能的選擇。 */}
+          {activeTab === 3 && (
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>2.</span> 四維基礎屬性骰配置
+                  <span style={{ color: theme.accent }}>3.</span> 四維基礎屬性骰配置
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   四維屬性代表骰子面數（d6~d12），將骰子分配至各項體質。
@@ -1124,12 +1146,12 @@ export default function CharacterEditor({
             </div>
           )}
 
-          {/* ==================== TAB 3: 職業與技能 ==================== */}
-          {activeTab === 3 && (
+          {/* ==================== TAB 2: 職業與技能 ==================== */}
+          {activeTab === 2 && (
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>3.</span> 職業組合與技能加點
+                  <span style={{ color: theme.accent }}>2.</span> 職業組合與技能加點
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   起始 {rules.startingLevel} 級必須分配在 {rules.classCountMin}~{rules.classCountMax} 個不同職業中，每級獲得 1 點技能。

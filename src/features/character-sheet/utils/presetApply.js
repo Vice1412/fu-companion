@@ -31,6 +31,9 @@ export const applyPreset = (character, preset) => {
     classes: JSON.parse(JSON.stringify(preset.classes)),
     equipment: { ...preset.equipment },
     zenit: preset.zenit,
+    // 官方經典搭配的 zenit 是原書印好的剩餘金額（p.172–175），等於已經結算過，
+    // 所以不再要求玩家按「擲 2d6 × 10 結算」（見 characterEngine 的 startingFundsRolled）。
+    startingFundsRolled: true,
     enabledSourcebooks: Array.from(enabledBooks),
     updatedAt: new Date().toISOString()
   };

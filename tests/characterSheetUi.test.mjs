@@ -30,6 +30,7 @@ import {
 import { createNewCharacter, getProficiencies } from '../src/features/character-sheet/utils/characterEngine.js';
 import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js';
 import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
+import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebookConfig.js';
 import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
 import CharacterEditor from '../src/features/character-sheet/components/CharacterEditor.jsx';
@@ -551,6 +552,64 @@ check('只內嵌本機圖示字型（fontEmbedCSS 自己組，不讓 html-to-ima
   [true, true, true]);
 check('字型內嵌失敗也不會讓匯出卡住（catch 後回空字串）',
   exportSrc.includes(".catch(() => '')"), true);
+
+// ─────────────────────────────────────────────────────────── M
+section('M. 創角步驟次序：職業在四維之前（原書 p.154 第 4 步 vs 第 5 步）');
+
+// 這一組是「換過分頁編號」的迴歸測試：只換導航列的標籤而忘了換內容，
+// 畫面會變成「第 2 步寫著職業與技能、內容卻是四維屬性面板」——建置與型別都不會發現。
+const renderEditorAt = (tab, over = {}) => renderToStaticMarkup(React.createElement(CharacterEditor, {
+  character: createNewCharacter({ name: '次序測試', startingFundsRolled: true, ...over }),
+  themeId: 'emerald',
+  onChange: () => {},
+  showToast: () => {},
+  initialTab: tab
+}));
+
+const tab2Html = renderEditorAt(2);
+const tab3Html = renderEditorAt(3);
+
+check('第 2 步畫的是職業與技能',
+  [tab2Html.includes('職業組合與技能加點'), tab2Html.includes('四維基礎屬性骰配置')], [true, false]);
+check('第 3 步畫的是四維屬性',
+  [tab3Html.includes('四維基礎屬性骰配置'), tab3Html.includes('職業組合與技能加點')], [true, false]);
+check('導航列的順序也是職業在四維之前',
+  tab2Html.indexOf('職業與技能') < tab2Html.indexOf('四維屬性'), true);
+check('未結算起始資金的卡會顯示提醒',
+  renderEditorAt(1, { startingFundsRolled: false }).includes('起始資金尚未結算'), true);
+check('已結算的卡不顯示那則提醒',
+  tab2Html.includes('起始資金尚未結算'), false);
+
+// ─────────────────────────────────────────────────────────── N
+section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');
+
+// 這一段是被自己的不一致逼出來的：`StatBadge` 寫「力量」，而編輯器、跑團面板與三頁匯出
+// 寫「體魄」——同一組屬性在站上有兩個名字。收斂成 `ATTRIBUTE_NAMES` 之後，
+// 這裡同時盯「常數本身對不對」與「四個顯示點有沒有真的讀它」。
+const attrPickerSrc = read('../src/features/character-sheet/components/AttributeMatrixPicker.jsx');
+const statBadgeSrc = read('../src/components/ui/StatBadge.jsx');
+const exportSrcN = read('../src/features/character-sheet/components/CharacterSheetExport.jsx');
+const renderers = [attrPickerSrc, statBadgeSrc, exportSrcN, hud];
+
+check('官方四個屬性名', ATTRIBUTE_NAMES, { dex: '靈巧', ins: '洞察', mig: '力量', wlp: '意志' });
+check('三頁匯出的屬性欄位帶的是官方名（不是只有常數對，資料流也要對）',
+  model.attributes.base.map((a) => a.cn),
+  [ATTRIBUTE_NAMES.dex, ATTRIBUTE_NAMES.ins, ATTRIBUTE_NAMES.mig, ATTRIBUTE_NAMES.wlp]);
+check('四個顯示點都不再寫死舊譯名 敏捷／體魄',
+  renderers.map((src) => /(name|zhName):\s*'(敏捷|體魄)'|'(敏捷|體魄)',/.test(src)),
+  [false, false, false, false]);
+check('四個顯示點都改讀 ATTRIBUTE_NAMES',
+  renderers.map((src) => src.includes('ATTRIBUTE_NAMES')),
+  [true, true, true, true]);
+check('資料層不再出現屬性名舊譯（rulesData 的裝備說明與元素源泉）',
+  ['敏捷', '體魄'].filter((old) => read('../src/features/character-sheet/data/rulesData.json').includes(old)),
+  []);
+check('「敏捷」仍可作為普通形容詞（NPC 特質輸入框的範例、Boss 敘述）',
+  [
+    read('../src/features/npc-workshop/NPCWorkshop.jsx').includes('placeholder="例如: 敏捷, 致命..."'),
+    read('../src/features/npc-workshop/data/bossSkillsData.js').includes('此 Boss 特別敏捷或隱蔽')
+  ],
+  [true, true]);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

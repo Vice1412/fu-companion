@@ -231,13 +231,13 @@ check('職業防具標記正確',
   rulesData.equipment.armors.filter((a) => a.martial).map((a) => a.name),
   ['板條甲', '青銅胸甲', '符文甲冑', '鋼鐵板甲']);
 
-// 官方 Camilla 向量：敏捷 d8、洞察 d10、旅行皮甲 → 物防 9、魔防 11、先攻 -1
+// 官方 Camilla 向量：靈巧 d8、洞察 d10、旅行皮甲 → 物防 9、魔防 11、先攻 -1
 const camillaDice = { DEX: 8, INS: 10, MIG: 8, WLP: 8 };
 check('官方向量：旅行皮甲（DEX d8 / INS d10）',
   computeArmorOutcome(armorsByName.get('旅行皮甲'), camillaDice), { def: 9, mdef: 11, initMod: -1 });
 check('官方向量：鋼鐵板甲固定物防 12、魔防 = 洞察 10',
   computeArmorOutcome(armorsByName.get('鋼鐵板甲'), camillaDice), { def: 12, mdef: 10, initMod: -4 });
-check('不穿防具時物防 = 敏捷骰、魔防 = 洞察骰',
+check('不穿防具時物防 = 靈巧骰、魔防 = 洞察骰',
   computeArmorOutcome(null, camillaDice), { def: 8, mdef: 10, initMod: 0 });
 
 // ─────────────────────────────────────────────────────────── G
@@ -267,7 +267,7 @@ check('換算結果不含期望值欄位（刻意）',
 
 const waraxeBig = evaluateWeapon(weaponsByName.get('戰斧'), { DEX: 8, INS: 8, MIG: 12, WLP: 8 });
 const waraxeSmall = evaluateWeapon(weaponsByName.get('戰斧'), { DEX: 8, INS: 8, MIG: 6, WLP: 8 });
-check('同一把戰斧、不同體魄 → 命中檢定顯示的骰不同',
+check('同一把戰斧、不同力量 → 命中檢定顯示的骰不同',
   [waraxeBig.accuracyLabel, waraxeSmall.accuracyLabel], ['MIG d12 + MIG d12', 'MIG d6 + MIG d6']);
 check('傷害式不因角色而變（書上的數字）',
   [waraxeBig.damageFormula, waraxeSmall.damageFormula], ['HR + 14', 'HR + 14']);
@@ -357,7 +357,7 @@ check('雙盾視為格鬥類別雙手近戰武器',
   [DUAL_SHIELD.category, DUAL_SHIELD.hands, DUAL_SHIELD.range], ['鬥毆', 2, '近戰']);
 
 const dualEval = evaluateWeapon(DUAL_SHIELD, { DEX: 8, INS: 8, MIG: 10, WLP: 8 });
-check('雙盾對體魄 d10 的角色：命中檢定 MIG d10 + MIG d10',
+check('雙盾對力量 d10 的角色：命中檢定 MIG d10 + MIG d10',
   dualEval.accuracyLabel, 'MIG d10 + MIG d10');
 check('雙盾傷害式 HR + 5', dualEval.damageFormula, 'HR + 5');
 check('雙重盾牌狀態帶出防守掌握 SL（額外傷害）',
@@ -459,7 +459,7 @@ section('M. 規則書與本團玩法的已知差異（刻意記錄，不是漏�
  * 使用者已裁定：該變體日後以「Playtest 勾選」統一開啟，屆時才會連同新技能一併套用。
  * 應用程式目前仍以核心規則書的數值為準，這條測試把現況釘住。
  */
-check('目前戰鬥輕甲仍為核心規則值（敏捷 +1／洞察 +1／先攻 ±0）',
+check('目前戰鬥輕甲仍為核心規則值（靈巧 +1／洞察 +1／先攻 ±0）',
   [armorsByName.get('戰鬥輕甲').defFormula, armorsByName.get('戰鬥輕甲').mdefFormula, armorsByName.get('戰鬥輕甲').initMod],
   ['dex+1', 'ins+1', 0]);
 check('目前防具仍保留先攻欄（核心規則值，未套用變體）',

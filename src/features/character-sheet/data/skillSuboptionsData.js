@@ -403,7 +403,7 @@ export const MUTANT_THERIOFORMS = [
     id: 'form_tachytheria',
     name: '靈巧形態',
     examples: '獵豹、羚羊、迅敏野兔',
-    effect: '【DEX】骰面視為提升一階（最高 d12）。推進或回撥包含敏捷的命刻檢定成功時，額外推進或回撥 1 格。'
+    effect: '【DEX】骰面視為提升一階（最高 d12）。推進或回撥包含靈巧的命刻檢定成功時，額外推進或回撥 1 格。'
   },
   {
     id: 'form_toxicophora',

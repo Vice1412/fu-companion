@@ -3838,12 +3838,12 @@ export default function App({ setHeaderExtraLeft, setHeaderExtraRight, onSubNavC
       const cmdLines = [];
       cmdLines.push(`// ===== 屬性檢定與先攻 (Fabula Ultima) =====`);
       cmdLines.push(`1d{DEX}+1d{INS} 【先攻檢定 DEX+INS】`);
-      cmdLines.push(`1d{DEX}+1d{INS} 【敏捷+洞察檢定】`);
-      cmdLines.push(`1d{DEX}+1d{MIG} 【敏捷+體魄檢定】`);
-      cmdLines.push(`1d{DEX}+1d{WLP} 【敏捷+意志檢定】`);
-      cmdLines.push(`1d{INS}+1d{MIG} 【洞察+體魄檢定】`);
+      cmdLines.push(`1d{DEX}+1d{INS} 【靈巧+洞察檢定】`);
+      cmdLines.push(`1d{DEX}+1d{MIG} 【靈巧+力量檢定】`);
+      cmdLines.push(`1d{DEX}+1d{WLP} 【靈巧+意志檢定】`);
+      cmdLines.push(`1d{INS}+1d{MIG} 【洞察+力量檢定】`);
       cmdLines.push(`1d{INS}+1d{WLP} 【洞察+意志檢定】`);
-      cmdLines.push(`1d{MIG}+1d{WLP} 【體魄+意志檢定】`);
+      cmdLines.push(`1d{MIG}+1d{WLP} 【力量+意志檢定】`);
 
       // 基本攻擊
       const validSkills = processedSkills.filter(s => !s.isOverBudget);

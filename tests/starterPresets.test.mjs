@@ -94,7 +94,7 @@ check('group 與 sourcebook 同源（預組不會跨手冊）',
 section('C. 四維屬性：官方 32 點陣列、骰階僅 d6/d8/d10');
 // 官方原書在 Techno Fantasy Atlas p.147 把「魂流靈刃」印成 d6/d6/d8/d10（＝30），
 // 是**筆誤**：全 81 組中僅此組不成官方 32 點陣列。使用者裁定依技能與武器組合補回
-// 敏捷 d6 → d8，成為正典 (10,8,8,6)。詳見 docs/decisions.md §P5。
+// 靈巧 d6 → d8，成為正典 (10,8,8,6)。詳見 docs/decisions.md §P5。
 check('四維總和皆為 32',
   [...new Set(ALL_STARTER_PRESETS.map((p) => p.attributes.dex + p.attributes.ins + p.attributes.mig + p.attributes.wlp))],
   [32]);

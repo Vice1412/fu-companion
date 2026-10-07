@@ -47,6 +47,8 @@ import {
   getCharacterLevel
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { DEFAULT_CREATION_RULES } from '../src/features/character-sheet/data/creationRules.js';
+// 屬性名只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）
+import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebookConfig.js';
 
 let pass = 0;
 let fail = 0;
@@ -66,9 +68,9 @@ const section = (t) => lines.push(`\n=== ${t} ===`);
 
 // ─────────────────────────────────────────────────────────── 共用夾具
 
-// 中性裝備：無裝甲 / 冒險服（armors[0]，物防 = 敏捷、魔防 = 洞察）、無盾牌（shields[0]，加值 0）
+// 中性裝備：無裝甲 / 冒險服（armors[0]，物防 = 靈巧、魔防 = 洞察）、無盾牌（shields[0]，加值 0）
 const NEUTRAL_EQUIP = { mainHand: '', offHand: '無盾牌', armor: '無裝甲 / 冒險服', accessory: '' };
-// 輕甲組合：旅行皮甲（物防 = 敏捷 + 1、魔防 = 洞察 + 1、先攻 -1）+ 青銅圓盾（物防 +2）
+// 輕甲組合：旅行皮甲（物防 = 靈巧 + 1、魔防 = 洞察 + 1、先攻 -1）+ 青銅圓盾（物防 +2）
 const LIGHT_EQUIP = { mainHand: '', offHand: '青銅圓盾', armor: '旅行皮甲', accessory: '' };
 // 重甲組合：板條甲（物防為固定值 10、魔防 = 洞察、先攻 -2）+ 無盾牌
 const HEAVY_EQUIP = { mainHand: '', offHand: '無盾牌', armor: '板條甲', accessory: '' };
@@ -80,7 +82,9 @@ const HP_MP_CLASSES = [
 ];
 const AFF_KEYS = ['dazed', 'enraged', 'poisoned', 'shaken', 'slow', 'weak'];
 
-const mk = (over = {}) => createNewCharacter({ equipment: NEUTRAL_EQUIP, ...over });
+// `startingFundsRolled: true`：起始資金已結算（原書 p.165）。
+// 沒有它，每一張 `mk()` 出來的卡都會多一筆「起始資金尚未結算」的 error。
+const mk = (over = {}) => createNewCharacter({ equipment: NEUTRAL_EQUIP, startingFundsRolled: true, ...over });
 const stats = (over = {}) => calculateCharacterStats(mk(over));
 const aff = (...on) => Object.fromEntries(AFF_KEYS.map((k) => [k, on.includes(k)]));
 const dice = (s) => [s.currentDex, s.currentIns, s.currentMig, s.currentWlp];
@@ -183,7 +187,7 @@ check('乾淨角色：四項減值皆為 0', pen(clean), [0, 0, 0, 0]);
 check('六狀態全開：當前骰確實下降為 6/6/6/6', dice(allAff), [6, 6, 6, 6]);
 check('六狀態全開：減值確實累計為 2/2/2/2', pen(allAff), [2, 2, 2, 2]);
 
-// 後半：最大 HP / MP 完全沒有變動（HP 用基礎體魄、MP 用基礎意志）
+// 後半：最大 HP / MP 完全沒有變動（HP 用基礎力量、MP 用基礎意志）
 check('六狀態全開：最大 HP 仍是 50（不受當前骰影響）', allAff.maxHp, clean.maxHp);
 check('六狀態全開：最大 MP 仍是 50（不受當前骰影響）', allAff.maxMp, clean.maxMp);
 check('六狀態全開：危機門檻仍是 25', allAff.crisisThreshold, 25);
@@ -193,7 +197,7 @@ check('六狀態全開：baseWlp 仍回報 8', allAff.baseWlp, 8);
 // 單一狀態逐一驗證：只降當前骰，不動 HP / MP
 const weakOnly = stats({ attributes: ALL_8, statusAfflictions: aff('weak') });
 check('僅虛弱：當前 MIG 8 -> 6', weakOnly.currentMig, 6);
-check('僅虛弱：最大 HP 仍為 45（體魄 d8 × 5 + 等級 5）', weakOnly.maxHp, 45);
+check('僅虛弱：最大 HP 仍為 45（力量 d8 × 5 + 等級 5）', weakOnly.maxHp, 45);
 check('僅虛弱：當前骰其餘三項不動', [weakOnly.currentDex, weakOnly.currentIns, weakOnly.currentWlp], [8, 8, 8]);
 
 const shakenOnly = stats({ attributes: ALL_8, statusAfflictions: aff('shaken') });
@@ -248,7 +252,7 @@ check('重甲 + 眩暈：魔防仍隨當前 INS 降至 6', heavyDazed.mdef, 6);
 // TODO(bug): 回退到 armors[0] / shields[0] 的語意是錯的——角色沒穿防具時不該套用任何防具公式。
 //   目前因 armors[0] 恰為中性而未產生數值偏差；一旦 armors[0] 換成帶加值的防具，
 //   所有未指定防具（或防具名稱對不上）的角色都會被靜默套用該防具的物防／魔防公式。
-check('資料：armors[0] 為中性無裝甲（物防 = 敏捷、魔防 = 洞察、先攻 0）',
+check('資料：armors[0] 為中性無裝甲（物防 = 靈巧、魔防 = 洞察、先攻 0）',
   [rulesData.equipment.armors[0].name, rulesData.equipment.armors[0].defFormula, rulesData.equipment.armors[0].mdefFormula, rulesData.equipment.armors[0].initMod],
   ['無裝甲 / 冒險服', 'dex', 'ins', 0]);
 check('資料：shields[0] 為中性無盾牌（加值 0）',
@@ -359,7 +363,7 @@ check('當前 HP / MP / IP 皆為 null（null 代表等於最大值）',
 check('職業清單預設為空', fresh.classes, []);
 check('啟用來源手冊預設僅核心', fresh.enabledSourcebooks, ['core']);
 check('情感羈絆預設 0 條（原書 p.154 創角八步驟無羈絆；羈絆於遊戲中建立 p.57）', fresh.bonds.length, 0);
-check('個人命刻預設 1 座', fresh.clocks.length, 1);
+check('個人命刻預設 0 座（原書創角八步驟無命刻，不預先種一條；見 §AB 的預設羈絆）', fresh.clocks.length, 0);
 check('咒語與英雄技能預設為空', [fresh.spells.length, fresh.heroicSkills.length], [0, 0]);
 check('預設主手為徒手打擊', fresh.equipment.mainHand, '徒手打擊');
 check('預設副手也為徒手打擊（開卡兩手皆空手）', fresh.equipment.offHand, '徒手打擊');
@@ -544,16 +548,16 @@ check('合規角色：errors 為空', validRes.errors.length, 0);
 const hasField = (res, field) => res.warnings.some((w) => w.field === field);
 const findField = (res, field) => res.warnings.find((w) => w.field === field);
 
-// 步驟 2：屬性總和必須為 32
+// 步驟 3：屬性總和必須為 32（屬性排在職業之後——原書 p.154 第 4 步職業、第 5 步屬性）
 const badSum = validateCharacter({ ...validChar, attributes: { dex: 10, ins: 8, mig: 8, wlp: 8 } });
 check('屬性總和 34 -> 產生 attributes 警告', hasField(badSum, 'attributes'), true);
 check('屬性總和 34 -> 警告層級為 warning', findField(badSum, 'attributes').type, 'warning');
-check('屬性總和 34 -> 警告屬於步驟 2', findField(badSum, 'attributes').step, 2);
+check('屬性總和 34 -> 警告屬於步驟 3', findField(badSum, 'attributes').step, 3);
 check('屬性總和 34 -> 訊息載明實得總和', findField(badSum, 'attributes').message.includes('34'), true);
 check('屬性總和 34 -> 不是 error，isValid 仍為 true', badSum.isValid, true);
 check('屬性總和 32 -> 不產生 attributes 警告', hasField(validRes, 'attributes'), false);
 
-// 步驟 3：5 級起始必須配置 2~3 個職業
+// 步驟 2：5 級起始必須配置 2~3 個職業
 const cls = (n) => ['武器大師', '吟唱者', '暗黑之刃', '元素師'].slice(0, n)
   .map((c) => ({ className: c, level: 1, skills: [] }));
 const zero = validateCharacter({ ...validChar, classes: cls(0) });
@@ -561,8 +565,9 @@ const one = validateCharacter({ ...validChar, classes: cls(1) });
 const two = validateCharacter({ ...validChar, classes: cls(2) });
 const three = validateCharacter({ ...validChar, classes: cls(3) });
 const four = validateCharacter({ ...validChar, classes: cls(4) });
-check('0 個職業 -> 1 筆 error', zero.errors.length, 1);
+check('0 個職業 -> 2 筆 error（職業數 ＋ 沒有職業卻拿著職業武器）', zero.errors.length, 2);
 check('0 個職業 -> error 欄位為 classes', zero.errors[0].field, 'classes');
+check('0 個職業 -> 另一筆是裝備的職業武器熟練度（青銅劍是職業武器）', zero.errors[1].field, 'equipment');
 check('0 個職業 -> isValid = false', zero.isValid, false);
 check('1 個職業 -> 1 筆 error', one.errors.length, 1);
 check('1 個職業 -> isValid = false', one.isValid, false);
@@ -575,9 +580,10 @@ check('4 個職業 -> isValid = false', four.isValid, false);
 
 // 職業數量限制只在 5 級創角時生效
 const lv6 = validateCharacter({ ...validChar, level: 6, classes: cls(0) });
-check('6 級時 0 個職業 -> 不觸發創角 error', lv6.errors.length, 0);
+check('6 級時 0 個職業 -> 不再有職業數 error（只剩裝備的熟練度那筆）',
+  lv6.errors.map((w) => w.field), ['equipment']);
 
-// 步驟 3：技能 SL 總和必須等於角色等級
+// 步驟 2：技能 SL 總和必須等於角色等級
 const badSkills = validateCharacter({
   ...validChar,
   classes: [
@@ -633,7 +639,7 @@ check('J2 危機第二項為 ÷ 2', fortStats.breakdown.crisis.terms[1].value, '
 
 // ── J3 標籤必須說明這筆數字的身分
 const hpLabels = fortStats.breakdown.hp.terms.map((t) => t.label);
-check('J3 HP 首項標籤為基礎體魄', hpLabels[0], '基礎體魄 d8 × 5');
+check('J3 HP 首項標籤為基礎力量', hpLabels[0], `基礎${ATTRIBUTE_NAMES.mig} d8 × 5`);
 check('J3 HP 次項標籤為角色等級', hpLabels[1], '角色等級 Lv 5');
 check('J3 HP 含職業免費增益項', hpLabels.includes('守護者 免費增益'), true);
 check('J3 HP 含特技 SL 項（帶職業名與 SL 與倍率）', hpLabels.includes('守護者 不動要塞 SL 5 × 3'), true);
@@ -647,8 +653,8 @@ check('J4 中性裝備魔防逐項相加 = 8', sumTerms(neutralStats.breakdown.m
 check('J4 中性裝備先攻沒有任何加成項', neutralStats.breakdown.init.terms.length, 0);
 
 const lightStats = calculateCharacterStats(mk({ attributes: ALL_8, equipment: LIGHT_EQUIP }));
-check('J4 輕甲物防 = 敏捷 8 + 防具 1 + 盾牌 2 = 11', sumTerms(lightStats.breakdown.def), lightStats.def);
-check('J4 輕甲物防第一項標籤為當前敏捷', lightStats.breakdown.def.terms[0].label, '當前敏捷 d8');
+check('J4 輕甲物防 = 靈巧 8 + 防具 1 + 盾牌 2 = 11', sumTerms(lightStats.breakdown.def), lightStats.def);
+check('J4 輕甲物防第一項標籤為當前靈巧', lightStats.breakdown.def.terms[0].label, `當前${ATTRIBUTE_NAMES.dex} d8`);
 check('J4 輕甲魔防 = 洞察 8 + 防具 1 = 9', sumTerms(lightStats.breakdown.mdef), lightStats.mdef);
 check('J4 輕甲先攻逐項相加 = -1', sumTerms(lightStats.breakdown.init), lightStats.init);
 
@@ -738,7 +744,7 @@ const flexStats = calculateCharacterStats(mk({
   attributes: ALL_8,
   pilotVehicle: { isMounted: true, activeModules: ['flexible_plating'] }
 }));
-check('J9 柔性鍍層 物防 = 敏捷 8 + 2 = 10', flexStats.def, 10);
+check('J9 柔性鍍層 物防 = 靈巧 8 + 2 = 10', flexStats.def, 10);
 check('J9 柔性鍍層 魔防 = 洞察 8 + 1 = 9', flexStats.mdef, 9);
 check('J9 柔性鍍層物防逐項相加 = 10', sumTerms(flexStats.breakdown.def), 10);
 

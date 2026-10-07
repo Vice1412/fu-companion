@@ -398,6 +398,30 @@ export const BOND_FEELINGS = [
 ];
 
 /**
+ * 四維屬性的官方中文名。
+ *
+ * 譯名來源：**繁中版角色卡 Excel V2.17**（使用者裁定）；核心規則漢化 PDF 同義
+ * （靈巧度／洞察力／力量值／意志力）。
+ *
+ * 為什麼要有這張表：這四個名字原本散在四處各自寫死——`StatBadge` 的 `STAT_CONFIG`、
+ * `AttributeMatrixPicker` 的 `ATTRIBUTE_DETAILS`、`CharacterSheetExport` 的三頁表頭、
+ * `CharacterPlayHUD` 的資源磚與下拉選單——而它們**當場就不一致**：
+ * `StatBadge` 寫「力量」，其餘三處寫「體魄」。收斂成一張表之後，
+ * `tests/characterSheetUi.test.mjs` 可以直接斷言這四個名字，不會再各自漂移。
+ *
+ * 注意：`敏捷`／`體魄` 是舊譯名（來源不明、`docs/` 內查無裁定紀錄），已全面汰換。
+ * 但**「敏捷」本身仍是普通中文形容詞**——NPC 的特質輸入框拿它當範例
+ * （`NPCWorkshop.jsx` 的 `placeholder="例如: 敏捷, 致命..."`）、Boss 敘述也用它形容動作快
+ * （`bossSkillsData.js` 的「此 Boss 特別敏捷或隱蔽」）。那些地方**不是屬性名，不要改**。
+ */
+export const ATTRIBUTE_NAMES = Object.freeze({
+  dex: '靈巧',
+  ins: '洞察',
+  mig: '力量',
+  wlp: '意志'
+});
+
+/**
  * 官方六大狀態異常 (Status Afflictions)
  */
 export const STATUS_AFFLICTIONS = {
@@ -413,14 +437,14 @@ export const STATUS_AFFLICTIONS = {
     name: '憤怒',
     short: '憤怒',
     affectedStats: ['dex', 'ins'],
-    desc: '敏捷 與 洞察 骰階下降 1 級 (最低降至 d6)'
+    desc: `${ATTRIBUTE_NAMES.dex} 與 ${ATTRIBUTE_NAMES.ins} 骰階下降 1 級 (最低降至 d6)`
   },
   poisoned: {
     id: 'poisoned',
     name: '中毒',
     short: '中毒',
     affectedStats: ['mig', 'wlp'],
-    desc: '體魄 與 意志 骰階下降 1 級 (最低降至 d6)'
+    desc: `${ATTRIBUTE_NAMES.mig} 與 ${ATTRIBUTE_NAMES.wlp} 骰階下降 1 級 (最低降至 d6)`
   },
   shaken: {
     id: 'shaken',
@@ -434,53 +458,83 @@ export const STATUS_AFFLICTIONS = {
     name: '緩慢',
     short: '緩慢',
     affectedStats: ['dex'],
-    desc: '敏捷 骰階下降 1 級 (最低降至 d6)'
+    desc: `${ATTRIBUTE_NAMES.dex} 骰階下降 1 級 (最低降至 d6)`
   },
   weak: {
     id: 'weak',
     name: '虛弱',
     short: '虛弱',
     affectedStats: ['mig'],
-    desc: '體魄 骰階下降 1 級 (最低降至 d6)'
+    desc: `${ATTRIBUTE_NAMES.mig} 骰階下降 1 級 (最低降至 d6)`
   }
 };
 
 /**
- * 官方身份主題靈感池 (Canonical Themes)
+ * 官方十個主題（Core p.158／核心規則漢化 p.158）。
+ *
+ * 譯名一律照官方核心規則漢化 PDF：`野心 憤怒 歸屬 懷疑 責任 內疚 希望 正義 慈悲 復仇`。
+ * 舊版只有九個（漏了「憤怒」），而且「責任」「內疚」被寫成「職責」「負疚」。
+ * `tests/creationRules.test.mjs` 有一條護欄把這裡綁在官方清單上。
  */
 export const CANONICAL_THEMES = [
-  '希望',
   '野心',
+  '憤怒',
   '歸屬',
-  '負疚',
+  '懷疑',
+  '責任',
+  '內疚',
+  '希望',
   '正義',
   '慈悲',
-  '復仇',
-  '懷疑',
-  '職責'
+  '復仇'
 ];
 
 /**
- * 官方三大起始四維屬性陣列 (總點數均為 32)
+ * 舊譯名 → 官方譯名的對照。
+ *
+ * 只有 `負疚`／`職責` 兩個：它們是本次修正之前寫進程式的名稱，可能已經落在玩家的存檔裡。
+ * 讀取端一律經過 `normalizeTheme`，所以舊卡的主題會落在正確的選項上，
+ * 而**不必改寫玩家的存檔**（比照「舊存檔沒有新欄位 → 一律視為舊行為」的處理原則）。
  */
-export const ATTRIBUTE_STARTING_ARRAYS = [
+export const THEME_ALIASES = Object.freeze({
+  '負疚': '內疚',
+  '職責': '責任'
+});
+
+/** 把舊譯名正規化成官方主題名；不認識的一律原樣傳回（＝玩家的自訂主題） */
+export const normalizeTheme = (theme) => THEME_ALIASES[theme] || theme || '';
+
+/**
+ * 官方三大起始四維屬性陣列配置（Core p.162；總點數嚴格等於 32）。
+ *
+ * 名稱照官方核心規則漢化：`萬事通 d8d8d8d8`／`標準 d10d8d8d6`／`特化型 d10d10d6d6`。
+ * 舊版把「標準」寫成「專精型」、「萬事通」寫成「均衡型」，於是「專精型」與「特化型」
+ * 這兩個中文近義詞掛著完全不同的骰組；`tag` 原本還寫著「最推薦」——原書沒有推薦哪一組
+ * （p.162 只說「選擇以下預設配置之一」），那句話沒有出處。
+ *
+ * 放在 data/ 而不是元件裡：骰組與名稱要能被 `tests/creationRules.test.mjs` 直接比對。
+ */
+export const ATTRIBUTE_PRESET_ARRAYS = [
   {
     id: 'specialized',
-    name: '專精型',
-    dice: { dex: 10, ins: 8, mig: 8, wlp: 6 },
-    desc: 'd10, d8, d8, d6 —— 官方最推薦！一項主專精、兩項均等、一項略低。'
+    name: '標準',
+    tag: '一主一短',
+    diceList: [10, 8, 8, 6],
+    desc: 'd10, d8, d8, d6 —— 1 卓越專精、2 穩定基準、1 短板。'
   },
   {
     id: 'standard',
-    name: '均衡型',
-    dice: { dex: 8, ins: 8, mig: 8, wlp: 8 },
-    desc: 'd8, d8, d8, d8 —— 四項全能，無論面對任何檢定都能穩定應對。'
+    name: '萬事通',
+    tag: '四項均等',
+    diceList: [8, 8, 8, 8],
+    desc: 'd8, d8, d8, d8 —— 四項能力完全平衡，泛用穩健。'
   },
   {
     id: 'focused',
     name: '特化型',
-    dice: { dex: 10, ins: 10, mig: 6, wlp: 6 },
-    desc: 'd10, d10, d6, d6 —— 極端特化，雙主屬性極強，但在短板領域需要隊友支援。'
+    tag: '雙強雙弱',
+    diceList: [10, 10, 6, 6],
+    desc: 'd10, d10, d6, d6 —— 雙強雙弱，極度依賴隊友戰術互補。'
   }
 ];
 

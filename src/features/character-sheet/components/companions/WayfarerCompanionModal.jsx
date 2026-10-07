@@ -389,7 +389,7 @@ export default function WayfarerCompanionModal({
             {/* 四維屬性骰下拉分配 */}
             <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 grid grid-cols-4 gap-2 text-center">
               <div>
-                <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1">敏捷 (DEX)</span>
+                <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1">靈巧 (DEX)</span>
                 <select
                   value={formData.dex}
                   onChange={e => setFormData(prev => ({ ...prev, dex: Number(e.target.value) }))}

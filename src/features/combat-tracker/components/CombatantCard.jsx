@@ -18,11 +18,11 @@ import JRPGBadge from '../../../components/ui/JRPGBadge';
 import GameIcon from '../../../components/ui/GameIcon';
 
 const STATUS_EFFECTS = [
-  { key: 'slow', name: '遲緩', en: 'Slow', desc: '敏捷降階', color: 'border-amber-400 text-amber-800 bg-amber-50' },
+  { key: 'slow', name: '遲緩', en: 'Slow', desc: '靈巧降階', color: 'border-amber-400 text-amber-800 bg-amber-50' },
   { key: 'dazed', name: '眩暈', en: 'Dazed', desc: '洞察降階', color: 'border-sky-400 text-sky-800 bg-sky-50' },
   { key: 'weak', name: '虛弱', en: 'Weak', desc: '力量降階', color: 'border-rose-400 text-rose-800 bg-rose-50' },
   { key: 'shaken', name: '動搖', en: 'Shaken', desc: '意志降階', color: 'border-purple-400 text-purple-800 bg-purple-50' },
-  { key: 'enraged', name: '憤怒', en: 'Enraged', desc: '敏洞降階·限普攻', color: 'border-red-400 text-red-800 bg-red-50' },
+  { key: 'enraged', name: '憤怒', en: 'Enraged', desc: '靈巧·洞察降階·限普攻', color: 'border-red-400 text-red-800 bg-red-50' },
   { key: 'poisoned', name: '中毒', en: 'Poison', desc: '回合結束受到5毒傷', color: 'border-emerald-400 text-emerald-800 bg-emerald-50' }
 ];
 

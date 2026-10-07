@@ -564,7 +564,7 @@ export const EXPANSION_PRESETS = [
   {
     // 官方原書印作 d6/d6/d8/d10（總和 30），是**筆誤**：全 81 組中僅此組不成官方 32 點陣列。
     // 使用者裁定依技能與武器組合補回——武器為 (DEX + MIG)、【念動力】可把一顆骰換成 WLP，
-    // 故缺的是敏捷（d6 → d8），補回後即為正典 (10,8,8,6) 陣列；洞察維持 d6（本組合無洞察系技能）。
+    // 故缺的是靈巧（d6 → d8），補回後即為正典 (10,8,8,6) 陣列；洞察維持 d6（本組合無洞察系技能）。
     // 已以 pypdf 逐字元座標確認原書數值，非抽取誤差（見 docs/decisions.md §P5）。
     id: 'tf_soulstream_psyblade', sourcebook: 'technoFantasy', group: null,
     title: '魂流靈刃', en: 'SOULSTREAM PSYBLADE',

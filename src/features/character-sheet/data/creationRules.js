@@ -18,6 +18,8 @@
  * - 起始四維總和 32 → p.155–156（屬性骰階配置）
  * - 起始 2~3 個職業 → p.158（起始 5 級需分配於 2~3 個職業）
  * - 起始裝備預算 500z → p.164（Purchase Starting Equipment）
+ * - 高階角色的起始預算每級 +50z → p.229（Creating High Level Characters）
+ *   `2000 = 500 + 50 × 30`，由 `ZENIT_PER_LEVEL` 套用在起始等級高於 5 的預設值上
  *
  * ※ 這份物件**只放真的有東西在讀的欄位**。原書特典的底力技（Zero Power）、
  * 自訂武器（Custom Weapon）等子系統本專案尚未收錄，因此不預先開旗標——
@@ -41,6 +43,19 @@ export const CREATION_RULE_FIELDS = Object.freeze([
 
 /** 全部手冊的鍵（上限的預設值） */
 const ALL_SOURCEBOOK_KEYS = Object.freeze(Object.keys(SOURCEBOOKS));
+
+/**
+ * 高階角色的每級起始預算加給（原書 p.229）。
+ *
+ * 原書：「每級增加 50Z……例如一個 30 級的角色起始預算是 2000Z」——
+ * `2000 = 500 + 50 × 30`。所以起始等級高於 5 時，**預設值**自動變成
+ * `500 + 50 × 起始等級`；GM 想用別的數字就直接指定 `startingZenit`（明確值優先）。
+ *
+ * 不做成獨立的規則欄位是刻意的：那會讓 `startingZenit` 變成「基礎值」而實際生效的是
+ * 另一個名字，於是 `diffCreationRules` 的輸出再餵回 `resolveCreationRules` 就不等值
+ * （分享出去的規則會愈套愈多錢）。這裡只有一個欄位、一個真相。
+ */
+export const ZENIT_PER_LEVEL = 50;
 
 /**
  * 金手指的名稱裡帶著來源標記（`（高奇）`／`（自奇）`／`（科奇）`）。
@@ -85,7 +100,7 @@ const ALL_CLASS_NAMES = Object.freeze([
 export const DEFAULT_CREATION_RULES = Object.freeze({
   /** 起始角色等級 */
   startingLevel: 5,
-  /** 起始裝備預算（zenit） */
+  /** 起始裝備預算（zenit）。這是 5 級角色的官方值（p.164）。 */
   startingZenit: 500,
   /** 起始四維骰階點數總和 */
   attributeTotal: 32,
@@ -135,7 +150,9 @@ export const resolveCreationRules = (overrides = {}) => {
   const d = DEFAULT_CREATION_RULES;
 
   const startingLevel = toInt(given.startingLevel, d.startingLevel, { min: 1, max: 50 });
-  const startingZenit = toInt(given.startingZenit, d.startingZenit, { min: 0 });
+  // 高階角色（原書 p.229）：預設預算隨起始等級提高；明確給了 `startingZenit` 就以它為準。
+  const levelBonus = startingLevel > d.startingLevel ? ZENIT_PER_LEVEL * startingLevel : 0;
+  const startingZenit = toInt(given.startingZenit, d.startingZenit + levelBonus, { min: 0 });
   const attributeTotal = toInt(given.attributeTotal, d.attributeTotal, { min: 4 });
 
   let classCountMin = toInt(given.classCountMin, d.classCountMin, { min: 1, max: 10 });

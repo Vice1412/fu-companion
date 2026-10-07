@@ -1,8 +1,9 @@
 import rulesData from '../data/rulesData.json';
-import { SOURCEBOOKS, STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
+import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
+import { buildLoadoutIssues } from './equipmentRules';
 import { appendLog, createLogEntry } from './characterLog';
 
 // Dice ladder for step reductions
@@ -31,6 +32,15 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
 );
 
 /**
+ * 新角色的佔位姓名。
+ *
+ * 它不是玩家填的名字，只是讓卡片在填之前有東西可顯示。
+ * `validateCharacter` 必須把它當成「尚未填寫」——否則那條提醒對任何新角色都不會觸發，
+ * 等於一條永遠不會響的檢查（測試以 `PLACEHOLDER_CHARACTER_NAME` 綁住兩邊）。
+ */
+export const PLACEHOLDER_CHARACTER_NAME = '新冒險者';
+
+/**
  * 建立全新角色卡預設結構
  *
  * 起始等級、起始資金與開放的拓展都由**開卡規則**決定（見 `data/creationRules.js`），
@@ -41,7 +51,7 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
   const creation = resolveCreationRules(rules);
   const character = {
     id: `char_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    name: "新冒險者",
+    name: PLACEHOLDER_CHARACTER_NAME,
     identity: "",
     theme: "希望",
     origin: "",
@@ -52,6 +62,10 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     level: creation.startingLevel,
     exp: 0,
     zenit: creation.startingZenit,
+    // 起始資金尚未結算：原書 p.165 的起始資金是「剩餘裝備預算 ＋ 2d6 × 10」，
+    // 不是裝備預算本身。在玩家按下結算之前，`zenit` 只是預算的佔位值。
+    // **舊存檔沒有這個欄位 → undefined → 一律視為已結算**，行為與以前完全相同。
+    startingFundsRolled: false,
     fabulaPoints: 3,
 
     // 啟用的手冊拓展（由開卡規則決定；上限另由 allowedSourcebooks 把關）
@@ -97,10 +111,11 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     quirk: "無",
     backpackNotes: "",
 
-    // 個人命刻 (Personal Clocks)
-    clocks: [
-      { id: 'c1', title: '個人誓約與命刻', totalSegments: 6, filledSegments: 0, theme: 'amber', type: 'circle' }
-    ],
+    // 個人命刻 (Personal Clocks)。
+    // 原書的創角八步驟（p.154）與同章都沒有命刻，所以**不預先種一條**——
+    // 「新角色一開始就有一條時鐘」是專案自己的假設，跟 §AB 移除的預設羈絆是同一類東西。
+    // 空陣列的空狀態由 `CharacterCard` 與跑團面板各自處理。
+    clocks: [],
 
     // 即時動態資源 (null 代表等於最大值)
     currentHp: null,
@@ -280,7 +295,7 @@ export const calculateCharacterStats = (char) => {
     addMp(`金手指 ${quirkName}`, 5, 'quirk');
   }
 
-  // 官方規則：最大 HP / MP 基礎計算採用 BASE 體魄與意志（不受異常狀態減骰影響）
+  // 官方規則：最大 HP / MP 基礎計算採用 BASE 力量與意志（不受異常狀態減骰影響）
   const maxHp = baseMig * 5 + level + bonusHp;
   const maxMp = baseWlp * 5 + level + bonusMp;
   const maxIp = 6 + bonusIp;
@@ -314,19 +329,19 @@ export const calculateCharacterStats = (char) => {
   const armorLabel = char.equipment?.armor || armorDef?.name || '';
   const shieldLabel = char.equipment?.offHand || shieldDef?.name || '';
 
-  // 防具防禦公式 (輕甲使用當前敏捷，重甲使用固定數值)
+  // 防具防禦公式 (輕甲使用當前靈巧，重甲使用固定數值)
   if (armorDef) {
     if (armorDef.defFormula === 'dex') {
       def = currentDex;
-      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+      defTerms.push({ label: `當前${ATTRIBUTE_NAMES.dex} d${currentDex}`, value: currentDex, kind: 'base' });
     } else if (armorDef.defFormula === 'dex+1') {
       def = currentDex + 1;
-      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
-      defTerms.push({ label: `${armorLabel} 敏捷 + 1`, value: 1, kind: 'equip' });
+      defTerms.push({ label: `當前${ATTRIBUTE_NAMES.dex} d${currentDex}`, value: currentDex, kind: 'base' });
+      defTerms.push({ label: `${armorLabel} ${ATTRIBUTE_NAMES.dex} + 1`, value: 1, kind: 'equip' });
     } else if (armorDef.defFormula === 'dex+2') {
       def = currentDex + 2;
-      defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
-      defTerms.push({ label: `${armorLabel} 敏捷 + 2`, value: 2, kind: 'equip' });
+      defTerms.push({ label: `當前${ATTRIBUTE_NAMES.dex} d${currentDex}`, value: currentDex, kind: 'base' });
+      defTerms.push({ label: `${armorLabel} ${ATTRIBUTE_NAMES.dex} + 2`, value: 2, kind: 'equip' });
     } else if (!isNaN(parseInt(armorDef.defFormula, 10))) {
       const fixedDef = parseInt(armorDef.defFormula, 10);
       def = fixedDef;
@@ -352,7 +367,7 @@ export const calculateCharacterStats = (char) => {
   }
 
   // 資料缺漏或公式無法辨識時，仍以「當前屬性骰」作為基準項顯示
-  if (defTerms.length === 0) defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+  if (defTerms.length === 0) defTerms.push({ label: `當前${ATTRIBUTE_NAMES.dex} d${currentDex}`, value: currentDex, kind: 'base' });
   if (mdefTerms.length === 0) mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
 
   // 盾牌防禦加值
@@ -375,7 +390,7 @@ export const calculateCharacterStats = (char) => {
       if (plating.id === 'flexible_plating') {
         def = currentDex + 2;
         mdef = currentIns + 1;
-        defTerms.push({ label: `當前敏捷 d${currentDex}`, value: currentDex, kind: 'base' });
+        defTerms.push({ label: `當前${ATTRIBUTE_NAMES.dex} d${currentDex}`, value: currentDex, kind: 'base' });
         defTerms.push({ label: `載具 ${plating.name} + 2`, value: 2, kind: 'equip' });
         mdefTerms.push({ label: `當前洞察 d${currentIns}`, value: currentIns, kind: 'base' });
         mdefTerms.push({ label: `載具 ${plating.name} + 1`, value: 1, kind: 'equip' });
@@ -413,15 +428,9 @@ export const calculateCharacterStats = (char) => {
 
   // 4. 熟練度比對
   const profs = getProficiencies(char);
-  const isWearingMartialArmor = !isNaN(parseInt(armorDef?.defFormula, 10));
-  // 職業盾牌優先用資料表的 martial 旗標；名稱／價格的啟發式只留給自訂或匯入的字串
-  const isWearingMartialShield = Boolean(shieldDef) && (
-    shieldDef.martial === true || (!('martial' in shieldDef) && shieldDef.cost >= 150)
-  );
+  // 「這件裝備穿不穿得上」不再由 stats 自己算一份：一律交給 equipmentRules 的
+  // `buildLoadoutIssues`（validateCharacter 與編輯器的提示框共用同一份判定）。
   
-  const armorWarning = isWearingMartialArmor && !profs.martialArmor;
-  const shieldWarning = isWearingMartialShield && !profs.martialShields;
-
   // 5. 職業精通狀況 (Mastery: 單一職業達到 10 級)
   const masteredClasses = (char.classes || []).filter(cl => cl.level >= 10).map(cl => cl.className);
   const totalSkillLevels = (char.classes || []).reduce((sum, cl) => sum + (cl.skills || []).reduce((sSum, sk) => sSum + sk.sl, 0), 0);
@@ -443,7 +452,7 @@ export const calculateCharacterStats = (char) => {
     hp: {
       total: maxHp,
       terms: [
-        { label: `基礎體魄 d${baseMig} × 5`, value: baseMig * 5, kind: 'base' },
+        { label: `基礎${ATTRIBUTE_NAMES.mig} d${baseMig} × 5`, value: baseMig * 5, kind: 'base' },
         { label: `角色等級 Lv ${level}`, value: level, kind: 'level' },
         ...hpTerms
       ]
@@ -505,8 +514,6 @@ export const calculateCharacterStats = (char) => {
     migPenalty,
     wlpPenalty,
     profs,
-    armorWarning,
-    shieldWarning,
     masteredClasses,
     totalSkillLevels,
     breakdown,
@@ -578,7 +585,11 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   const stats = calculateCharacterStats(char);
 
   // 步驟 1: 基礎身世
-  if (!char.name || !char.name.trim()) {
+  //
+  // 姓名由 `createNewCharacter` 以佔位符初始化，所以「有值」不等於「填過」——
+  // 舊版只檢查空字串，於是新角色永遠不會被提醒，這條檢查實際上是死的。
+  const nameFilled = Boolean(char.name && char.name.trim()) && char.name.trim() !== PLACEHOLDER_CHARACTER_NAME;
+  if (!nameFilled) {
     warnings.push({ step: 1, field: 'name', type: 'warning', message: '角色尚未填寫姓名' });
   }
   if (!char.identity || !char.identity.trim()) {
@@ -591,49 +602,53 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
     warnings.push({ step: 1, field: 'origin', type: 'info', message: '尚未填寫故鄉' });
   }
 
-  // 步驟 3 前置: 手冊拓展不得超出這一團開放的上限（GM 自訂開局）
+  // 步驟 2 前置: 手冊拓展不得超出這一團開放的上限（GM 自訂開局）
   const booksOutOfRange = (char.enabledSourcebooks || [])
     .filter((key) => !creation.allowedSourcebooks.includes(key));
   if (booksOutOfRange.length > 0) {
     warnings.push({
-      step: 3,
+      step: 2,
       field: 'enabledSourcebooks',
       type: 'error',
       message: `此團未開放：${booksOutOfRange.join('、')}，請在職業分頁關閉`
     });
   }
 
-  // 步驟 2: 四維屬性（起始總點數由開卡規則決定）
+  // 步驟 3: 四維屬性（起始總點數由開卡規則決定）
+  //
+  // 為什麼屬性排在職業之後：原書的順序是先選職業（第 4 步）再分配屬性（第 5 步），
+  // 而且 p.162 明說「當分配屬性骰子時，你應該考慮到你的職業和技能選擇！」。
+  // 舊版把屬性放在第 2 步，玩家得在還不知道職業會給什麼免費增益時就決定四維。
   const attrSum = (char.attributes?.dex || 0) + (char.attributes?.ins || 0) + (char.attributes?.mig || 0) + (char.attributes?.wlp || 0);
   if (attrSum !== creation.attributeTotal) {
     warnings.push({
-      step: 2,
+      step: 3,
       field: 'attributes',
       type: 'warning',
       message: `屬性骰階點數總和為 ${attrSum} (起始標準為 ${creation.attributeTotal})`
     });
   }
 
-  // 步驟 3: 職業與特技（起始等級的職業數限制由開卡規則決定）
+  // 步驟 2: 職業與特技（起始等級的職業數限制由開卡規則決定）
   const classCount = (char.classes || []).length;
   if (char.level === creation.startingLevel) {
     if (classCount === 0) {
       warnings.push({
-        step: 3,
+        step: 2,
         field: 'classes',
         type: 'error',
         message: `尚未選擇任何職業 (起始 ${creation.startingLevel} 級需配置 ${creation.classCountMin}~${creation.classCountMax} 個職業)`
       });
     } else if (classCount < creation.classCountMin) {
       warnings.push({
-        step: 3,
+        step: 2,
         field: 'classes',
         type: 'error',
         message: `起始需至少 ${creation.classCountMin} 個職業，目前只有 ${classCount} 個 (不可純單職)`
       });
     } else if (classCount > creation.classCountMax) {
       warnings.push({
-        step: 3,
+        step: 2,
         field: 'classes',
         type: 'error',
         message: `起始不可超過 ${creation.classCountMax} 個職業，目前有 ${classCount} 個`
@@ -645,7 +660,7 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
       .filter((name) => !(char.classes || []).some((cl) => cl.className === name));
     if (missingRequired.length > 0) {
       warnings.push({
-        step: 3,
+        step: 2,
         field: 'classes',
         type: 'error',
         message: `此團規定必須修習：${missingRequired.join('、')}`
@@ -658,7 +673,7 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   const classLevelSum = (char.classes || []).reduce((sum, cl) => sum + (parseInt(cl.level, 10) || 0), 0);
   if (classCount > 0 && classLevelSum !== getCharacterLevel(char)) {
     warnings.push({
-      step: 3,
+      step: 2,
       field: 'classes',
       type: 'warning',
       message: `職業等級總和為 ${classLevelSum}，與角色等級 ${getCharacterLevel(char)} 不一致`
@@ -667,14 +682,14 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
 
   if (stats.totalSkillLevels !== char.level) {
     warnings.push({
-      step: 3,
+      step: 2,
       field: 'skills',
       type: 'warning',
       message: `技能點數總和 (${stats.totalSkillLevels}) 與角色等級 (${char.level}) 不符`
     });
   }
 
-  // 步驟 3: 特技子項目配額檢驗 (如舞步、音調曲風、心靈天賦、魔法種子等)
+  // 步驟 2: 特技子項目配額檢驗 (如舞步、音調曲風、心靈天賦、魔法種子等)
   (char.classes || []).forEach(cl => {
     (cl.skills || []).forEach(sk => {
       if (sk.sl > 0) {
@@ -689,14 +704,14 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
           }
           if (currentCount < maxQuota) {
             warnings.push({
-              step: 3,
+              step: 2,
               field: `skill_suboptions_${cl.className}_${sk.name}`,
               type: 'warning',
               message: `【${cl.className}】的【${sk.name}】名額未滿：目前已配置 ${currentCount} 個，尚有 ${maxQuota - currentCount} 個名額可供選擇。請前往特技分頁完成構築。`
             });
           } else if (currentCount > maxQuota) {
             warnings.push({
-              step: 3,
+              step: 2,
               field: `skill_suboptions_${cl.className}_${sk.name}`,
               type: 'warning',
               message: `【${cl.className}】的【${sk.name}】超出配額：目前已配置 ${currentCount} 個，上限為 ${maxQuota} 個。請刪減 ${currentCount - maxQuota} 個選項。`
@@ -708,14 +723,40 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   });
 
   // 步驟 4: 裝備與熟練度
+  //
+  // 「能不能穿」「有沒有超支」只寫在 `equipmentRules.js` 一處——這裡直接呼叫同一支函式，
+  // 於是編輯器的琥珀色提示框與創角清單是同一份判定（以前清單看不到超支，
+  // 玩家可以帶著超額裝備直接定稿）。
   if (!char.equipment?.mainHand || char.equipment.mainHand === '無') {
     warnings.push({ step: 4, field: 'mainHand', type: 'info', message: '尚未裝備主手武器' });
   }
-  if (stats.armorWarning) {
-    warnings.push({ step: 4, field: 'armor', type: 'warning', message: '目前穿戴職業防具，但所選職業缺乏熟練度' });
-  }
-  if (stats.shieldWarning) {
-    warnings.push({ step: 4, field: 'offHand', type: 'warning', message: '目前裝備職業盾牌，但所選職業缺乏熟練度' });
+  buildLoadoutIssues({
+    character: char,
+    stats,
+    weaponMap: new Map(rulesData.equipment.weapons.map((w) => [w.name, w])),
+    shieldMap: new Map(rulesData.equipment.shields.map((s) => [s.name, s])),
+    armorMap: new Map(rulesData.equipment.armors.map((a) => [a.name, a])),
+    accessoryMap: new Map(rulesData.equipment.accessories.map((a) => [a.name, a])),
+    budget: creation.startingZenit
+  }).forEach((issue) => {
+    warnings.push({
+      step: 4,
+      field: 'equipment',
+      type: issue.level === 'error' ? 'error' : 'warning',
+      message: issue.message
+    });
+  });
+
+  // 起始資金尚未結算（原書 p.165：起始資金 = 剩餘裝備預算 ＋ 2d6 × 10）。
+  // `startingFundsRolled` 由三個結算點寫入 true：擲 2d6 × 10、手動填寫初始持有金幣、
+  // 套用官方經典職業搭配。**舊存檔沒有這個欄位 → 不提醒**，行為與以前完全相同。
+  if (char.startingFundsRolled === false) {
+    warnings.push({
+      step: 4,
+      field: 'zenit',
+      type: 'error',
+      message: `起始資金尚未結算（原書 p.165：剩餘預算 ＋ 2d6 × 10）——目前顯示的 ${char.zenit ?? 0}z 是裝備預算，不是起始資金`
+    });
   }
 
   // 步驟 5: 特質與金手指（是否開放由開卡規則決定）
@@ -758,8 +799,8 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
  */
 export const isCharacterLocked = (char) => char?.locked === true;
 
-/** 定稿後凍結的分頁（對應 CharacterEditor 的分頁 id：1 基礎身世、2 四維屬性） */
-export const LOCKED_CREATION_TABS = Object.freeze([1, 2]);
+/** 定稿後凍結的分頁（對應 CharacterEditor 的分頁 id：1 基礎身世、3 四維屬性） */
+export const LOCKED_CREATION_TABS = Object.freeze([1, 3]);
 
 /** 定稿：留下 `locked` 旗標與一筆履歷 */
 export const lockCharacter = (char, { at, note = '' } = {}) => {
@@ -785,11 +826,15 @@ export const unlockCharacter = (char, { at, note = '' } = {}) => {
  * 職業與等級／四維／HP·MP·IP·DEF·M.DEF·先攻／裝備 500z／名字），**沒有羈絆**（p.154）；
  * 羈絆是遊戲中透過休息場景等時機建立的（p.57），而「起始帶 1 條羈絆」是選用規則（p.220）。
  * 舊版把它列為創角第 5 步並在驗證時催填，屬無官方來源的杜撰。
+ *
+ * 為什麼職業（第 2 步）排在四維（第 3 步）之前：原書是「先選職業（第 4 步）再分配屬性
+ * （第 5 步）」，且 p.162 明說分配屬性骰時要考慮職業與技能選擇。舊版把兩者對調，
+ * 玩家得在還不知道職業會給什麼免費增益時就決定四維。
  */
 export const CREATION_STEPS = Object.freeze([
   { id: 1, label: '基礎身世', doneHint: '姓名、身分、主題、故鄉都已填寫' },
-  { id: 2, label: '四維屬性', doneHint: '骰階點數已分配完成' },
-  { id: 3, label: '職業與技能', doneHint: '職業組合與技能點數已配置' },
+  { id: 2, label: '職業與技能', doneHint: '職業組合與技能點數已配置' },
+  { id: 3, label: '四維屬性', doneHint: '骰階點數已分配完成' },
   { id: 4, label: '裝備配置', doneHint: '武裝與防具已就緒' },
   { id: 5, label: '特質與命刻', doneHint: '特質與命刻已確認' }
 ]);

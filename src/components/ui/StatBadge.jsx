@@ -1,12 +1,15 @@
 import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+// 四個屬性名只有一份定義（見 sourcebookConfig 的 ATTRIBUTE_NAMES）。
+// 這裡原本寫「力量」，而編輯器與三頁匯出寫「體魄」——同一組屬性在站上有兩個名字。
+import { ATTRIBUTE_NAMES } from '../../features/character-sheet/data/sourcebookConfig';
 
 const STAT_CONFIG = {
-  dex: { name: '敏捷', en: 'DEX', color: 'text-amber-800', border: 'border-amber-400', bg: 'bg-amber-50' },
-  ins: { name: '洞察', en: 'INS', color: 'text-blue-800', border: 'border-blue-400', bg: 'bg-blue-50' },
-  mig: { name: '力量', en: 'MIG', color: 'text-red-800', border: 'border-red-400', bg: 'bg-red-50' },
-  wlp: { name: '意志', en: 'WLP', color: 'text-emerald-800', border: 'border-emerald-400', bg: 'bg-emerald-50' }
+  dex: { name: ATTRIBUTE_NAMES.dex, en: 'DEX', color: 'text-amber-800', border: 'border-amber-400', bg: 'bg-amber-50' },
+  ins: { name: ATTRIBUTE_NAMES.ins, en: 'INS', color: 'text-blue-800', border: 'border-blue-400', bg: 'bg-blue-50' },
+  mig: { name: ATTRIBUTE_NAMES.mig, en: 'MIG', color: 'text-red-800', border: 'border-red-400', bg: 'bg-red-50' },
+  wlp: { name: ATTRIBUTE_NAMES.wlp, en: 'WLP', color: 'text-emerald-800', border: 'border-emerald-400', bg: 'bg-emerald-50' }
 };
 
 const VALID_TIERS = [6, 8, 10, 12];

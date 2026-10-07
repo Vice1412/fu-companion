@@ -44,7 +44,7 @@ import {
 } from '../utils/characterEngine';
 import rulesData from '../data/rulesData.json';
 import CharacterPreviewModal from './CharacterPreviewModal';
-import { STATUS_AFFLICTIONS } from '../data/sourcebookConfig';
+import { STATUS_AFFLICTIONS, ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
 import { getCharacterTheme } from '../utils/characterThemes';
 import { getDualShieldState } from '../utils/equipmentRules';
 import { loggableChange } from '../utils/characterLog';
@@ -1022,10 +1022,10 @@ export default function CharacterPlayHUD({
       {/* 5. Four Attributes Block (DEX / INS / MIG / WLP - Click-to-Roll) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { key: 'dex', enName: 'DEX', zhName: '敏捷', cur: stats.currentDex, base: stats.baseDex },
-          { key: 'ins', enName: 'INS', zhName: '洞察', cur: stats.currentIns, base: stats.baseIns },
-          { key: 'mig', enName: 'MIG', zhName: '體魄', cur: stats.currentMig, base: stats.baseMig },
-          { key: 'wlp', enName: 'WLP', zhName: '意志', cur: stats.currentWlp, base: stats.baseWlp }
+          { key: 'dex', enName: 'DEX', zhName: ATTRIBUTE_NAMES.dex, cur: stats.currentDex, base: stats.baseDex },
+          { key: 'ins', enName: 'INS', zhName: ATTRIBUTE_NAMES.ins, cur: stats.currentIns, base: stats.baseIns },
+          { key: 'mig', enName: 'MIG', zhName: ATTRIBUTE_NAMES.mig, cur: stats.currentMig, base: stats.baseMig },
+          { key: 'wlp', enName: 'WLP', zhName: ATTRIBUTE_NAMES.wlp, cur: stats.currentWlp, base: stats.baseWlp }
         ].map(attr => (
           <div key={attr.key} className="space-y-1.5">
             <button
@@ -2201,9 +2201,9 @@ export default function CharacterPlayHUD({
                 onChange={e => setFreeRollAttr1(e.target.value)}
                 className="w-full p-2 rounded-xl border border-slate-200 bg-white font-mono font-bold"
               >
-                <option value="dex">DEX (敏捷 d{stats.currentDex})</option>
+                <option value="dex">DEX ({ATTRIBUTE_NAMES.dex} d{stats.currentDex})</option>
                 <option value="ins">INS (洞察 d{stats.currentIns})</option>
-                <option value="mig">MIG (體魄 d{stats.currentMig})</option>
+                <option value="mig">MIG ({ATTRIBUTE_NAMES.mig} d{stats.currentMig})</option>
                 <option value="wlp">WLP (意志 d{stats.currentWlp})</option>
               </select>
             </div>
@@ -2215,9 +2215,9 @@ export default function CharacterPlayHUD({
                 onChange={e => setFreeRollAttr2(e.target.value)}
                 className="w-full p-2 rounded-xl border border-slate-200 bg-white font-mono font-bold"
               >
-                <option value="dex">DEX (敏捷 d{stats.currentDex})</option>
+                <option value="dex">DEX ({ATTRIBUTE_NAMES.dex} d{stats.currentDex})</option>
                 <option value="ins">INS (洞察 d{stats.currentIns})</option>
-                <option value="mig">MIG (體魄 d{stats.currentMig})</option>
+                <option value="mig">MIG ({ATTRIBUTE_NAMES.mig} d{stats.currentMig})</option>
                 <option value="wlp">WLP (意志 d{stats.currentWlp})</option>
               </select>
             </div>

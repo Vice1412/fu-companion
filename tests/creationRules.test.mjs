@@ -11,11 +11,13 @@
  * - 起始四維總和 32 → p.155–156
  * - 起始 2~3 個職業 → p.158
  * - 起始裝備預算 500z → p.164
+ * - 高階角色每級 +50z → p.229
  */
 import fs from 'node:fs';
 import {
   DEFAULT_CREATION_RULES,
   CREATION_RULE_FIELDS,
+  ZENIT_PER_LEVEL,
   resolveCreationRules,
   isDefaultCreationRules,
   diffCreationRules,
@@ -31,10 +33,18 @@ import {
   unlockCharacter,
   buildCreationChecklist,
   CREATION_STEPS,
-  LOCKED_CREATION_TABS
+  LOCKED_CREATION_TABS,
+  PLACEHOLDER_CHARACTER_NAME
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
-import { SOURCEBOOKS } from '../src/features/character-sheet/data/sourcebookConfig.js';
+import {
+  SOURCEBOOKS,
+  CANONICAL_THEMES,
+  THEME_ALIASES,
+  normalizeTheme,
+  ATTRIBUTE_PRESET_ARRAYS
+} from '../src/features/character-sheet/data/sourcebookConfig.js';
+import { totalStartingEquipCost } from '../src/features/character-sheet/utils/equipmentRules.js';
 import rulesData from '../src/features/character-sheet/data/rulesData.json';
 
 let pass = 0;
@@ -163,11 +173,13 @@ check('不傳規則等同官方標準',
 // ─────────────────────────────────────────────────────────── D
 section('D. validateCharacter：以這一團的規則驗證');
 
-// 基準角色：填好身世並具備 2 個職業，讓其他檢查單獨現形
+// 基準角色：填好身世並具備 2 個職業，讓其他檢查單獨現形。
+// `startingFundsRolled: true` 是必要的——否則「起始資金尚未結算」那筆 error 會混進每一條斷言。
 const base = (over = {}) => createNewCharacter({
   name: '測試',
   identity: '身分',
   origin: '故鄉',
+  startingFundsRolled: true,
   classes: [
     { className: '守護者', level: 1, skills: [] },
     { className: '元素師', level: 1, skills: [] }
@@ -248,7 +260,7 @@ check('解鎖也留下一筆履歷（查得到什麼時候解鎖過）',
   getLog(unlockedAgain).map((e) => e.kind), ['creation', 'lock', 'lock']);
 check('解鎖的標題說明原因', getLog(unlockedAgain)[2].title, '解除定稿（重新開放創角欄位）');
 
-check('凍結的分頁是身世與四維', [...LOCKED_CREATION_TABS], [1, 2]);
+check('凍結的分頁是身世與四維（四維現在是第 3 步）', [...LOCKED_CREATION_TABS], [1, 3]);
 
 // ─────────────────────────────────────────────────────────── G
 section('G. 創角進度清單：把驗證結果變成一條主線');
@@ -260,11 +272,11 @@ check('清單不含情感羈絆（羈絆不屬創角，原書 p.154）',
   blankList.some((i) => i.label.includes('羈絆')), false);
 check('每一步都有顯示名', blankList.every((i) => Boolean(i.label)), true);
 check('空白角色：身世待處理（缺姓名等）', blankList[0].status, 'todo');
-check('空白角色：四維已完成（預設 8×4 = 32）', blankList[1].status, 'done');
-check('空白角色：職業有問題（0 個職業）', blankList[2].status, 'error');
-check('有問題的步驟帶錯誤數', blankList[2].errorCount, 1);
-check('完成的步驟給出說明文字', blankList[1].message, '骰階點數已分配完成');
-check('待處理的步驟給出第一則提醒', blankList[0].message, '尚未設定身份');
+check('空白角色：職業有問題（0 個職業）', blankList[1].status, 'error');
+check('空白角色：四維已完成（預設 8×4 = 32）', blankList[2].status, 'done');
+check('有問題的步驟帶錯誤數', blankList[1].errorCount, 1);
+check('完成的步驟給出說明文字', blankList[2].message, '骰階點數已分配完成');
+check('待處理的步驟給出第一則提醒', blankList[0].message, '角色尚未填寫姓名');
 
 // 清單不新增驗證邏輯：狀態必須與 validateCharacter 的分組一致
 const grouped = validateCharacter(createNewCharacter()).warnings.reduce((acc, w) => {
@@ -285,6 +297,8 @@ const finished = createNewCharacter({
   name: '完成測試',
   identity: '流浪劍士',
   origin: '邊境村落',
+  // 起始資金已結算（原書 p.165）。沒有這一項，第 4 步會是 error，這張卡不能定稿。
+  startingFundsRolled: true,
   classes: [
     { className: '守護者', level: 5, skills: [{ name: '測試技能', sl: 5 }] },
     { className: '元素師', level: 0, skills: [] }
@@ -297,10 +311,10 @@ check('填完的卡：沒有阻擋定稿的項目',
   finishedList.filter((i) => i.status === 'error').length, 0);
 check('GM 規則會反映在清單上（必修職業未修習 → 該步有問題）',
   buildCreationChecklist(finished, { requiredClasses: ['靈師'] })
-    .find((i) => i.id === 3).status, 'error');
+    .find((i) => i.id === 2).status, 'error');
 check('GM 收窄職業數也會反映在清單上',
   buildCreationChecklist(finished, { classCountMin: 3, classCountMax: 3 })
-    .find((i) => i.id === 3).status, 'error');
+    .find((i) => i.id === 2).status, 'error');
 check('未開放金手指且有金手指 → 第 5 步有問題',
   buildCreationChecklist(createNewCharacter({ quirk: '倖存者' }), { allowQuirk: false })
     .find((i) => i.id === 5).status, 'error');
@@ -376,6 +390,114 @@ check('等級一律經過 getCharacterLevel（不再直接讀 char.level）',
   /getCharacterLevel/.test(read('../src/features/character-sheet/components/CharacterCard.jsx'))
   && /getCharacterLevel/.test(read('../src/features/character-sheet/CharacterSheet.jsx')),
   true);
+
+// ─────────────────────────────────────────────────────────── O
+section('O. 2026-10-06 稽核修正：步驟次序、主題、姓名、屬性陣列、起始資金');
+
+// O1 步驟次序：原書是「先選職業（第 4 步）再分配屬性（第 5 步）」（p.154／p.162）
+check('CREATION_STEPS 的順序是職業(2) 先於四維(3)',
+  CREATION_STEPS.map((s) => s.label),
+  ['基礎身世', '職業與技能', '四維屬性', '裝備配置', '特質與命刻']);
+check('validateCharacter 的職業警告落在第 2 步',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'classes').map((w) => w.step), [2]);
+check('validateCharacter 的屬性警告落在第 3 步',
+  validateCharacter(createNewCharacter({ attributes: { dex: 6, ins: 6, mig: 6, wlp: 6 } }))
+    .warnings.filter((w) => w.field === 'attributes').map((w) => w.step), [3]);
+
+// O2 姓名：佔位符不算填過（舊版只檢查空字串，這條提醒對新角色永遠不觸發）
+check('新角色的姓名是佔位符', createNewCharacter().name, PLACEHOLDER_CHARACTER_NAME);
+check('佔位符姓名會被提醒',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'name').map((w) => w.message), ['角色尚未填寫姓名']);
+check('真的填了名字就不提醒',
+  validateCharacter(createNewCharacter({ name: '卡米拉' }))
+    .warnings.filter((w) => w.field === 'name'), []);
+
+// O3 主題：官方十個（Core p.158）
+check('主題清單是官方十個、譯名照官方漢化', CANONICAL_THEMES,
+  ['野心', '憤怒', '歸屬', '懷疑', '責任', '內疚', '希望', '正義', '慈悲', '復仇']);
+check('舊譯名負疚 → 內疚', normalizeTheme('負疚'), '內疚');
+check('舊譯名職責 → 責任', normalizeTheme('職責'), '責任');
+check('自訂主題原樣傳回', normalizeTheme('救贖'), '救贖');
+check('別名表只有這兩個（新增要一起改這裡）',
+  Object.keys(THEME_ALIASES).sort(), ['負疚', '職責'].sort());
+check('新角色的預設主題仍在官方清單內', CANONICAL_THEMES.includes(createNewCharacter().theme), true);
+
+// O4 屬性陣列：官方三組（Core p.162）
+check('三組屬性陣列的名稱與骰組照官方',
+  ATTRIBUTE_PRESET_ARRAYS.map((p) => [p.name, p.diceList.join(',')]),
+  [['標準', '10,8,8,6'], ['萬事通', '8,8,8,8'], ['特化型', '10,10,6,6']]);
+check('三組總和都是 32',
+  ATTRIBUTE_PRESET_ARRAYS.map((p) => p.diceList.reduce((a, b) => a + b, 0)), [32, 32, 32]);
+check('沒有任何一組自稱「最推薦」（原書沒有推薦哪一組）',
+  ATTRIBUTE_PRESET_ARRAYS.some((p) => /推薦/.test(p.tag) || /推薦/.test(p.desc)), false);
+
+// O5 起始資金（原書 p.165）與裝備預算（p.164）
+check('新角色的起始資金尚未結算', createNewCharacter().startingFundsRolled, false);
+check('未結算會擋住第 4 步',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'zenit').map((w) => w.type), ['error']);
+check('舊存檔（沒有這個欄位）不受影響',
+  validateCharacter(createNewCharacter({ startingFundsRolled: undefined }))
+    .warnings.filter((w) => w.field === 'zenit'), []);
+check('已結算就不再提醒',
+  validateCharacter(createNewCharacter({ startingFundsRolled: true }))
+    .warnings.filter((w) => w.field === 'zenit'), []);
+
+const equipMaps = {
+  weaponMap: new Map(rulesData.equipment.weapons.map((w) => [w.name, w])),
+  shieldMap: new Map(rulesData.equipment.shields.map((s) => [s.name, s])),
+  armorMap: new Map(rulesData.equipment.armors.map((a) => [a.name, a]))
+};
+check('徒手＋無裝甲的花費是 0', totalStartingEquipCost(createNewCharacter().equipment, equipMaps), 0);
+check('飾品不計入起始裝備花費（即使飾品表有價格）',
+  totalStartingEquipCost(
+    { mainHand: '徒手打擊', offHand: '', armor: '無裝甲 / 冒險服', accessory: '守護護符' },
+    { ...equipMaps, accessoryMap: new Map([['守護護符', { name: '守護護符', cost: 999 }]]) }
+  ), 0);
+check('主手是盾牌時也算得到（守護者【雙重盾牌】）',
+  totalStartingEquipCost({ mainHand: '符文圓盾', offHand: '青銅圓盾', armor: '無裝甲 / 冒險服' }, equipMaps),
+  250);
+
+// 超支要進清單（以前只有編輯器的提示框看得到，清單與定稿關卡看不到）
+const overBudget = createNewCharacter({
+  startingFundsRolled: true,
+  equipment: { mainHand: '巨劍', offHand: '符文圓盾', armor: '鋼鐵板甲', accessory: '' }
+});
+check('超支會變成第 4 步的 error',
+  validateCharacter(overBudget).warnings
+    .filter((w) => w.step === 4 && /超出/.test(w.message))
+    .map((w) => [w.type, w.message]),
+  [['error', '起始裝備花費 650z 超出 500z 預算']]);
+
+// O6 高階角色（原書 p.229）：30 級 = 500 + 50 × 30 = 2000
+check('預設不加給（5 級維持 500z）', resolveCreationRules({}).startingZenit, 500);
+check('30 級自動加給到 2000z（原書 p.229 的例子）',
+  resolveCreationRules({ startingLevel: 30 }).startingZenit, 2000);
+check('明確給的 startingZenit 優先於加給',
+  resolveCreationRules({ startingLevel: 30, startingZenit: 3000 }).startingZenit, 3000);
+check('每級加給是官方值 50z', ZENIT_PER_LEVEL, 50);
+check('規則 diff 餵回 resolve 會得到同一份規則（分享不會愈套愈多錢）',
+  resolveCreationRules(diffCreationRules({ startingLevel: 30 })).startingZenit,
+  resolveCreationRules({ startingLevel: 30 }).startingZenit);
+
+// O7 原始碼護欄
+const editorSrc = read('../src/features/character-sheet/components/CharacterEditor.jsx');
+const engineSrc = read('../src/features/character-sheet/utils/characterEngine.js');
+check('編輯器的分頁標籤是職業在四維之前',
+  editorSrc.indexOf("label: '職業與技能'") < editorSrc.indexOf("label: '四維屬性'"), true);
+check('編輯器不再寫死初始持有金幣 500',
+  editorSrc.includes('character.zenit !== undefined ? character.zenit : 500'), false);
+check('編輯器不再自己算裝備花費（改呼叫 totalStartingEquipCost）',
+  editorSrc.includes('curAcc?.cost'), false);
+check('引擎不再用 stats.armorWarning（改讀 buildLoadoutIssues）',
+  engineSrc.includes('stats.armorWarning'), false);
+check('編輯器不再 import 已刪除的 ATTRIBUTE_STARTING_ARRAYS',
+  editorSrc.includes('ATTRIBUTE_STARTING_ARRAYS'), false);
+check('屬性陣列只有一份定義（在 data/，元件只 import）',
+  read('../src/features/character-sheet/components/AttributeMatrixPicker.jsx')
+    .includes('export const ATTRIBUTE_PRESET_ARRAYS'), false);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

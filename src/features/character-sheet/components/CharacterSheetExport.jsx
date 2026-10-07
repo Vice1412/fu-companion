@@ -7,6 +7,7 @@ import rulesData from '../data/rulesData.json';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import iconFontUrl from '../../../assets/FabulaUltimaIcons-Regular.otf';
 import { calculateCharacterStats, getProficiencies, getCharacterLevel } from '../utils/characterEngine';
+import { ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
 import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 
 /**
@@ -194,10 +195,10 @@ const FEELINGS = Object.freeze([
 ]);
 
 const ATTRIBUTES = Object.freeze([
-  ['dex', 'DEX', '敏捷'],
-  ['ins', 'INS', '洞察'],
-  ['mig', 'MIG', '體魄'],
-  ['wlp', 'WLP', '意志']
+  ['dex', 'DEX', ATTRIBUTE_NAMES.dex],
+  ['ins', 'INS', ATTRIBUTE_NAMES.ins],
+  ['mig', 'MIG', ATTRIBUTE_NAMES.mig],
+  ['wlp', 'WLP', ATTRIBUTE_NAMES.wlp]
 ]);
 
 /** 引擎算出來的「當前骰階」欄位名（狀態減值只影響這裡） */

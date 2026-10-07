@@ -55,6 +55,9 @@ export default function IdentityTablesModal({
   }, [pickedDetail, pickedAdj, pickedConcept]);
 
   // Filter items
+  //
+  // 搜尋同時比對英文：這是**檢索**用途，不是顯示（GEMINI.md 規則三管的是畫面上印什麼）。
+  // 知道英文原名的玩家可以打 "knight" 找到「騎士」。
   const filterList = (items) => {
     if (!searchTerm.trim()) return items;
     const term = searchTerm.toLowerCase();
@@ -102,6 +105,19 @@ export default function IdentityTablesModal({
               </h4>
               <p className="text-[11px] text-slate-600 mt-0.5">
                 依據官方英文最新版手冊，共有 60 種身分、40 種特質與 20 種細節，各組均明確對應骰面。
+              </p>
+              {/*
+                使用者裁定（2026-10-06）：「身份表照樣一個就可以了，這是官方給我們啟發用的，
+                並非硬性規則，只要提醒好這點就行」「骰子隨機決定就是來給玩家新想法的」。
+
+                所以這裡**不放**「還缺幾個」的進度、也不催玩家湊滿——原書 p.156 只寫
+                「你可以投擲 d6 和 d20，或從這些表格中選擇條目」，而且開宗明義說
+                「你不一定要按照這個確切的順序執行這些步驟」。它雖然允許核心概念與形容詞
+                各取最多兩個，但湊滿不是義務；這個按鈕的用途是**產生新點子**。
+              */}
+              <p className="text-[11px] mt-1 leading-relaxed" style={{ color: theme?.textMuted || '#7c6a58' }}>
+                <span className="font-bold" style={{ color: theme?.textDark || '#3c2415' }}>這張表是靈感，不是規則</span>
+                ：一次給你一組點子——不喜歡就再擲一次，或直接在「身分」欄自己寫。
               </p>
             </div>
 
@@ -152,7 +168,7 @@ export default function IdentityTablesModal({
                     d20=[#{rolledResult.rolls.detail.d20}]
                   </span>
                   <span className="font-bold block" style={{ color: theme?.textDark || '#3c2415' }}>
-                    {rolledResult.rolls.detail.item.zh} ({rolledResult.rolls.detail.item.en})
+                    {rolledResult.rolls.detail.item.zh}
                   </span>
                 </div>
 
@@ -162,7 +178,7 @@ export default function IdentityTablesModal({
                     d6=[{rolledResult.rolls.adjective.d6}] {rolledResult.rolls.adjective.group.split(' ')[0]} ➔ d20=[#{rolledResult.rolls.adjective.d20}]
                   </span>
                   <span className="font-bold block" style={{ color: theme?.textDark || '#3c2415' }}>
-                    {rolledResult.rolls.adjective.item.zh} ({rolledResult.rolls.adjective.item.en})
+                    {rolledResult.rolls.adjective.item.zh}
                   </span>
                 </div>
 
@@ -172,7 +188,7 @@ export default function IdentityTablesModal({
                     d6=[{rolledResult.rolls.concept.d6}] {rolledResult.rolls.concept.group.split(' ')[0]} ➔ d20=[#{rolledResult.rolls.concept.d20}]
                   </span>
                   <span className="font-bold block" style={{ color: theme?.textDark || '#3c2415' }}>
-                    {rolledResult.rolls.concept.item.zh} ({rolledResult.rolls.concept.item.en})
+                    {rolledResult.rolls.concept.item.zh}
                   </span>
                 </div>
               </div>
@@ -213,7 +229,7 @@ export default function IdentityTablesModal({
               }`}
               style={pickedDetail ? { backgroundColor: theme?.cardBg || '#ffffff', borderColor: theme?.accent || '#b45309', color: theme?.textDark || '#3c2415' } : {}}
             >
-              <span>1. 身世細節: {pickedDetail ? `${pickedDetail.zh} (${pickedDetail.en})` : '尚未選取'}</span>
+              <span>1. 身世細節: {pickedDetail ? pickedDetail.zh : '尚未選取'}</span>
               {pickedDetail && (
                 <button onClick={() => setPickedDetail(null)} className="text-slate-400 hover:text-slate-700">
                   <X className="w-3 h-3" />
@@ -230,7 +246,7 @@ export default function IdentityTablesModal({
               }`}
               style={pickedAdj ? { backgroundColor: theme?.cardBg || '#ffffff', borderColor: theme?.accent || '#b45309', color: theme?.textDark || '#3c2415' } : {}}
             >
-              <span>2. 形容特質: {pickedAdj ? `${pickedAdj.zh} (${pickedAdj.en})` : '尚未選取'}</span>
+              <span>2. 形容特質: {pickedAdj ? pickedAdj.zh : '尚未選取'}</span>
               {pickedAdj && (
                 <button onClick={() => setPickedAdj(null)} className="text-slate-400 hover:text-slate-700">
                   <X className="w-3 h-3" />
@@ -247,7 +263,7 @@ export default function IdentityTablesModal({
               }`}
               style={pickedConcept ? { backgroundColor: theme?.cardBg || '#ffffff', borderColor: theme?.accent || '#b45309', color: theme?.textDark || '#3c2415' } : {}}
             >
-              <span>3. 核心身分: {pickedConcept ? `${pickedConcept.zh} (${pickedConcept.en})` : '尚未選取'}</span>
+              <span>3. 核心身分: {pickedConcept ? pickedConcept.zh : '尚未選取'}</span>
               {pickedConcept && (
                 <button onClick={() => setPickedConcept(null)} className="text-slate-400 hover:text-slate-700">
                   <X className="w-3 h-3" />
@@ -382,11 +398,6 @@ export default function IdentityTablesModal({
                                 </span>
                                 <span className="font-bold truncate">{item.zh}</span>
                               </div>
-                              <span className={`text-[10px] truncate ml-1 ${
-                                isPicked ? 'text-white/80' : 'text-slate-500'
-                              }`}>
-                                {item.en}
-                              </span>
                             </div>
                           );
                         })}
@@ -456,11 +467,6 @@ export default function IdentityTablesModal({
                                 </span>
                                 <span className="font-bold truncate">{item.zh}</span>
                               </div>
-                              <span className={`text-[10px] truncate ml-1 ${
-                                isPicked ? 'text-white/80' : 'text-slate-500'
-                              }`}>
-                                {item.en}
-                              </span>
                             </div>
                           );
                         })}
@@ -511,11 +517,6 @@ export default function IdentityTablesModal({
                           </span>
                           <span className="font-bold truncate">{item.zh}</span>
                         </div>
-                        <span className={`text-[10px] truncate ml-1 ${
-                          isPicked ? 'text-white/80' : 'text-slate-500'
-                        }`}>
-                          {item.en}
-                        </span>
                       </div>
                     );
                   })}

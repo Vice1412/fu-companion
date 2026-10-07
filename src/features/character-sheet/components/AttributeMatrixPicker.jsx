@@ -7,6 +7,8 @@ import {
   GiDiceSixFacesSix
 } from 'react-icons/gi';
 import { Info, X, RotateCcw, Check } from 'lucide-react';
+// 三大屬性陣列與四個屬性名都是**資料**，放在 data/ 讓測試可以直接匯入（不必把 React 拉進 node 測試）
+import { ATTRIBUTE_PRESET_ARRAYS, ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
 
 /**
  * 骰階色彩漸層配置（視覺直覺區分，無文字贅述）：
@@ -60,33 +62,6 @@ export const getDieIcon = (val) => {
 };
 
 /**
- * 官方三大起始四維屬性陣列配置 (總點數嚴格等於 32)
- */
-export const ATTRIBUTE_PRESET_ARRAYS = [
-  {
-    id: 'specialized',
-    name: '專精型',
-    tag: '最推薦',
-    diceList: [10, 8, 8, 6],
-    desc: 'd10, d8, d8, d6 —— 1 卓越專精、2 穩定基準、1 短板。'
-  },
-  {
-    id: 'standard',
-    name: '均衡型',
-    tag: '無死角',
-    diceList: [8, 8, 8, 8],
-    desc: 'd8, d8, d8, d8 —— 四項能力完全平衡，泛用穩健。'
-  },
-  {
-    id: 'focused',
-    name: '特化型',
-    tag: '雙核心',
-    diceList: [10, 10, 6, 6],
-    desc: 'd10, d10, d6, d6 —— 雙強雙弱，極度依賴隊友戰術互補。'
-  }
-];
-
-/**
  * 四大屬性特質簡明解讀 (按需透過 ⓘ 彈窗查看)
  * 嚴格遵循：先寫 DEX 再寫中文，無圖標干擾
  */
@@ -94,19 +69,19 @@ const ATTRIBUTE_DETAILS = {
   dex: {
     key: 'dex',
     enName: 'DEX',
-    name: '敏捷',
+    name: ATTRIBUTE_NAMES.dex,
     tags: '先攻順序 · 輕刃/遠程命中 · 基礎迴避 DEF',
     mechanics: [
       { label: '命中判定', desc: '單手劍、匕首、弓弩、投擲武器的主判定骰' },
       { label: '先攻速度', desc: '決定戰鬥輪次的先手判定加值' },
-      { label: '物理迴避', desc: '未著重鎧甲時，直接以敏捷骰階作為 DEF' },
+      { label: '物理迴避', desc: `未著重鎧甲時，直接以${ATTRIBUTE_NAMES.dex}骰階作為 DEF` },
       { label: '狀態扣減', desc: '陷入【緩慢】或【憤怒】時下降一階' }
     ]
   },
   ins: {
     key: 'ins',
     enName: 'INS',
-    name: '洞察',
+    name: ATTRIBUTE_NAMES.ins,
     tags: '法術導引 · 弱點研究 · 基礎魔防 M.DEF',
     mechanics: [
       { label: '法術命中', desc: '攻擊性咒語、法杖導引與秘術奇蹟核心判定' },
@@ -118,10 +93,10 @@ const ATTRIBUTE_DETAILS = {
   mig: {
     key: 'mig',
     enName: 'MIG',
-    name: '體魄',
+    name: ATTRIBUTE_NAMES.mig,
     tags: '生命上限 HP · 危機門檻 Crisis · 重兵器',
     mechanics: [
-      { label: '生命上限', desc: 'HP MAX 核心基底：【體魄骰面 × 5 ＋ 等級】' },
+      { label: '生命上限', desc: `HP MAX 核心基底：【${ATTRIBUTE_NAMES.mig}骰面 × 5 ＋ 等級】` },
       { label: '危機門檻', desc: '生命上限的一半（≤ 此值觸發英雄特技加成）' },
       { label: '重型近戰', desc: '巨劍、巨錘、戰斧之命中判定與主要威力來源' },
       { label: '狀態扣減', desc: '陷入【虛弱】或【中毒】時下降一階' }
@@ -130,7 +105,7 @@ const ATTRIBUTE_DETAILS = {
   wlp: {
     key: 'wlp',
     enName: 'WLP',
-    name: '意志',
+    name: ATTRIBUTE_NAMES.wlp,
     tags: '魔力上限 MP · 奇蹟燃料 · 心智抗性',
     mechanics: [
       { label: '魔力上限', desc: 'MP MAX 核心基底：【意志骰面 × 5 ＋ 等級】' },

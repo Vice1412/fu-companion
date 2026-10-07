@@ -4,7 +4,7 @@
  * 為什麼要有這一層：
  * 原書的裝備表只寫「規格」——`HR + 6`、`DEX + MIG`、`先攻 -2`；
  * 但玩家選裝備時想知道的是「這件裝備在我身上會變成什麼」。
- * 同一件賢者長袍，敏捷 d6 與 d10 的角色物防差 4 點；原書把這件事寫在說明文字裡
+ * 同一件賢者長袍，靈巧 d6 與 d10 的角色物防差 4 點；原書把這件事寫在說明文字裡
  * （Core p.127：物防／魔防取**當前**骰尺寸），資料表卻看不出來。
  *
  * 本模組把「規格 → 對這個角色的後果」集中成一處純函式：
@@ -383,6 +383,29 @@ export const getDualShieldState = (character, { mainIsShield = false, offIsShiel
  * 3. 起始 500z 預算（Core p.164；飾品屬稀有物品，不計入）
  * 4. 資料表中查無該名稱（自訂或匯入的字串）
  */
+/**
+ * 起始裝備預算的實際花費（原書 p.164）。
+ *
+ * 只計**基本武器／防具／盾牌**——飾品屬稀有物品，原書說要另外與團隊討論，不從起始預算出
+ * （見檔頭說明）。主手可能是盾牌（守護者【雙重盾牌】），所以兩張表都要查。
+ *
+ * 這是唯一的計算處：編輯器的預算追蹤條、`validateCharacter` 與 `buildLoadoutIssues`
+ * 都讀這裡，同一張卡不會再出現兩個不同的「已花費」。
+ */
+export const totalStartingEquipCost = (equipment = {}, { weaponMap, shieldMap, armorMap } = {}) => {
+  const costOf = (name, ...maps) => {
+    if (!name) return 0;
+    for (const map of maps) {
+      const item = map?.get(name);
+      if (item) return Number(item.cost) || 0;
+    }
+    return 0;
+  };
+  return costOf(equipment.mainHand, weaponMap, shieldMap)
+    + costOf(equipment.offHand, weaponMap, shieldMap)
+    + costOf(equipment.armor, armorMap);
+};
+
 export const buildLoadoutIssues = ({ character, stats, weaponMap, armorMap, shieldMap, accessoryMap, budget = 500 }) => {
   const issues = [];
   const equipment = character?.equipment || {};
@@ -428,9 +451,8 @@ export const buildLoadoutIssues = ({ character, stats, weaponMap, armorMap, shie
     if (!arm.ok) issues.push({ level: 'error', message: `${armor.name}：${arm.reason}` });
   }
 
-  // 3. 起始預算（飾品為稀有物品，不計入 500z）
-  const spent = (mainWeapon?.cost || 0) + (mainShield?.cost || 0)
-    + ((offShield || offWeapon)?.cost || 0) + (armor?.cost || 0);
+  // 3. 起始預算（飾品為稀有物品，不計入）——與編輯器的追蹤條共用同一支函式
+  const spent = totalStartingEquipCost(equipment, { weaponMap, shieldMap, armorMap });
   if (spent > budget) {
     issues.push({ level: 'error', message: `起始裝備花費 ${spent}z 超出 ${budget}z 預算` });
   }

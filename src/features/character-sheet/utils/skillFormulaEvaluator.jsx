@@ -193,7 +193,7 @@ function evaluateFormulaString(formulaStr, sl) {
     };
   }
 
-  // 7. 帶變數的加法：如 SL + 體魄骰數值、SL + 目標身上狀態效果數量
+  // 7. 帶變數的加法：如 SL + 力量骰數值、SL + 目標身上狀態效果數量
   const varAddMatch = norm.match(/^SL\s*\+\s*(.+)$/i);
   if (varAddMatch) {
     const varName = varAddMatch[1];
@@ -206,7 +206,7 @@ function evaluateFormulaString(formulaStr, sl) {
     };
   }
 
-  // 8. 帶變數的乘法：如 SL × 夥伴基礎體魄骰尺寸
+  // 8. 帶變數的乘法：如 SL × 夥伴基礎力量骰尺寸
   const varMultMatch = norm.match(/^SL\s*×\s*(.+)$/i);
   if (varMultMatch) {
     const varName = varMultMatch[1];
