@@ -6,7 +6,7 @@ import GameIcon from '../../../components/ui/GameIcon';
 import rulesData from '../data/rulesData.json';
 import SkillDescription from '../utils/skillFormulaEvaluator';
 import iconFontUrl from '../../../assets/FabulaUltimaIcons-Regular.otf';
-import { calculateCharacterStats, getProficiencies, getCharacterLevel } from '../utils/characterEngine';
+import { calculateCharacterStats, getProficiencies, getCharacterLevel, HEROIC_SKILLS } from '../utils/characterEngine';
 import { ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
 import { buildImagePdf, dataUrlToBytes } from '../utils/pdfWriter';
 
@@ -356,7 +356,7 @@ export const buildSheetModel = (character, stats = null) => {
     heroicSkills: (ch.heroicSkills || []).map((h) => {
       const name = typeof h === 'string' ? h : h.name;
       const sl = typeof h === 'string' ? null : h.sl;
-      const def = (rulesData.heroicSkills || []).find((x) => x.name === name);
+      const def = HEROIC_SKILLS.find((x) => x.name === name);
       return { name, sl, requirement: def?.requirement || '', effect: def?.effect || '' };
     }),
     spells: spellRows,

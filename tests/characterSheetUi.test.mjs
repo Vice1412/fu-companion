@@ -639,6 +639,15 @@ check('停用的選項寫出原因', masterHtml.includes('✕ 需精通【暗黑
 check('未精通時整支選單說明需要什麼',
   noMasterHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
 
+// 出處（使用者要求「必須要標出出處」）：選項標籤帶手冊名
+check('英雄技能選項標出出處（核心）', masterHtml.includes('· 核心'), true);
+check('Playtest 的技能也在選單裡，且標著 Playtest',
+  renderEditorAt(5, { classes: [{ className: '秘儀師', level: 10, skills: [] }] })
+    .includes('· Playtest'), true);
+check('Playtest 的技能出現在選單裡（抽樣：瘴氣）',
+  renderEditorAt(5, { classes: [{ className: '元素師', level: 10, skills: [] }] })
+    .includes('瘴氣'), true);
+
 // 開局英雄技能（Playtest Materials 2026-10-01 p.4 的選用規則）
 const startRuleHtml = renderEditorAt(5, {
   classes: [{ className: '暗黑之刃', level: 3, skills: [] }],

@@ -38,8 +38,11 @@ import {
   checkHeroicSkillRequirement,
   snapToAttributeDie,
   ATTRIBUTE_DICE_TIERS,
-  STARTING_HEROIC_SKILL_BLOCKLIST
+  STARTING_HEROIC_SKILL_BLOCKLIST,
+  HEROIC_SKILLS,
+  HEROIC_SKILL_SOURCE_LABELS
 } from '../src/features/character-sheet/utils/characterEngine.js';
+import { PLAYTEST_HEROIC_SKILLS } from '../src/features/character-sheet/data/playtestHeroicSkills.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
 import {
   SOURCEBOOKS,
@@ -667,6 +670,61 @@ check('開局模式但一個職業都沒有 → 擋',
   checkHeroicSkillRequirement({ requirement: '通用' }, { classes: [], atCreation: true }).ok, false);
 check('規則關閉時，開局模式不適用（沒有名額這回事）',
   creationWarn({ heroicSkills: ['背水'], classes: L3('暗黑之刃') }).map((w) => w.type), ['error']);
+
+// ─────────────────────────────────────────────────────────── R
+section('R. 英雄技能出處（使用者要求「必須要標出出處」）與 Playtest 收錄');
+
+const sourceCounts = () => {
+  const c = {};
+  rulesData.heroicSkills.forEach((h) => { c[h.source] = (c[h.source] || 0) + 1; });
+  // 排序後回傳，避免物件鍵的插入順序影響斷言
+  return Object.keys(c).sort().map((k) => `${k}:${c[k]}`);
+};
+
+check('正式規則書 111 筆 ＋ Playtest 43 筆 ＝ 154',
+  [HEROIC_SKILLS.length, rulesData.heroicSkills.length, PLAYTEST_HEROIC_SKILLS.length], [154, 111, 43]);
+// 出處回填自繁中版角色卡 Excel V2.17 的來源區段（位置對齊，已驗證順序完全一致）
+check('既有 111 筆的出處分佈就是 Excel 的六個區段',
+  sourceCounts(),
+  ['bonus:17', 'core:31', 'highFantasy:24', 'naturalFantasy:21', 'technoFantasy:18']);
+check('每一筆都有出處，且顯示表裡有對應的中文名',
+  HEROIC_SKILLS.filter((h) => !HEROIC_SKILL_SOURCE_LABELS[h.source]).map((h) => h.name), []);
+check('Playtest 那批全部標 playtest',
+  PLAYTEST_HEROIC_SKILLS.every((h) => h.source === 'playtest'), true);
+check('正式與 Playtest 之間沒有重名',
+  HEROIC_SKILLS.length - new Set(HEROIC_SKILLS.map((h) => h.name)).size, 0);
+check('Playtest 每一筆都有名稱、要求與效果',
+  PLAYTEST_HEROIC_SKILLS.filter((h) => !h.name || !h.requirement || !h.effect).map((h) => h.name), []);
+
+// 判定要能吃下 Playtest 的 requirement 寫法（「需精通 X」「通用」「已學會…」）
+check('Playtest 技能的要求都判得出來（不會一律擋）',
+  PLAYTEST_HEROIC_SKILLS.filter((h) => !checkHeroicSkillRequirement(h, {
+    masteredClasses: ['秘儀師', '暗黑之刃', '元素師', '狂怒鬥士', '神射手', '武器大師', '遊蕩者',
+      '博學士', '吟唱者', '靈師', '修補匠', '旅人', '守護者', '熵師', '嵌合師',
+      '指揮官', '舞者', '魔奏者', '徽記師', '美食家', '祈喚者', '商人', '植物學家',
+      '機師', '靈能者', '突變體'],
+    classes: ['秘儀師', '暗黑之刃', '元素師', '狂怒鬥士', '神射手', '武器大師', '遊蕩者',
+      '博學士', '吟唱者', '靈師', '修補匠', '旅人', '守護者', '熵師', '嵌合師',
+      '指揮官', '舞者', '魔奏者', '徽記師', '美食家', '祈喚者', '商人', '植物學家',
+      '機師', '靈能者', '突變體'],
+    level: 50
+  }).ok).map((h) => [h.name, h.requirement]), []);
+
+// 【銃劍士】官方原文是「have acquired … (even if you have not mastered them)」
+// ——精通路徑也只要求「擁有」，不是「精通」
+const gunbreaker = PLAYTEST_HEROIC_SKILLS.find((h) => h.name === '銃劍士');
+check('【銃劍士】不必精通，只要擁有神射手或武器大師',
+  checkHeroicSkillRequirement(gunbreaker, {
+    masteredClasses: ['守護者'],
+    classes: ['守護者', '神射手'],
+    level: 5
+  }).ok, true);
+check('【銃劍士】連擁有都沒有 → 擋',
+  checkHeroicSkillRequirement(gunbreaker, {
+    masteredClasses: ['守護者'],
+    classes: ['守護者'],
+    level: 5
+  }).ok, false);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

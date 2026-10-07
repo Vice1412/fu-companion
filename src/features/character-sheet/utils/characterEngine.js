@@ -1,4 +1,5 @@
 import rulesData from '../data/rulesData.json';
+import { PLAYTEST_HEROIC_SKILLS } from '../data/playtestHeroicSkills';
 import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
@@ -64,6 +65,35 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
  * 等於一條永遠不會響的檢查（測試以 `PLACEHOLDER_CHARACTER_NAME` 綁住兩邊）。
  */
 export const PLACEHOLDER_CHARACTER_NAME = '新冒險者';
+
+/**
+ * 全部英雄技能：正式規則書 111 筆 ＋ Playtest 新增 43 筆。
+ *
+ * 兩份分開存是因為**出處不同**——Playtest 那批官方自己標為「NEW HEROIC SKILLS，
+ * designed for inclusion within the Strategy Guide」，也就是還沒進正式規則書。
+ * 這一支是唯一的合併入口，所有讀取端（引擎、編輯器、三頁匯出）都走它，
+ * 免得有人只讀 `rulesData.heroicSkills` 而看不到 Playtest 那批。
+ */
+export const HEROIC_SKILLS = Object.freeze([
+  ...(rulesData.heroicSkills || []),
+  ...PLAYTEST_HEROIC_SKILLS
+]);
+
+/**
+ * 英雄技能出處的顯示名（`source` 欄位 → 中文）。
+ *
+ * 出處回填自繁中版角色卡 Excel V2.17 的來源區段標記（位置對齊、已驗證順序一致）：
+ * 核心 31／死亡饋贈 3／高度奇幻 24／科技奇幻 18／自然奇幻 21／24年萬聖 14。
+ * 「死亡饋贈」與「24年萬聖」都屬 DLC 內容，一併歸到 `bonus`。
+ */
+export const HEROIC_SKILL_SOURCE_LABELS = Object.freeze({
+  core: '核心',
+  highFantasy: '高度奇幻',
+  naturalFantasy: '自然奇幻',
+  technoFantasy: '科技奇幻',
+  bonus: '特典',
+  playtest: 'Playtest'
+});
 
 /**
  * 開局名額**不能**取得的英雄技能（Playtest Materials 2026-10-01, p.4 明文列出）。
@@ -139,7 +169,11 @@ export const checkHeroicSkillRequirement = (skill, {
   const required = Object.keys(rulesData.classes).filter((name) => classPart.includes(name));
   if (required.length === 0) return { ok: true, reason: '' }; // 抓不到職業名 → 不擋
 
-  const owned = atCreation ? classes : masteredClasses;
+  // 少數技能明文寫著「不必精通」（例：Playtest 的【銃劍士】「you must have acquired the
+  // Sharpshooter Class and/or the Weaponmaster Class (even if you have not mastered them)」）。
+  // 這種情況兩種模式都只要求**擁有**該職業，不要求精通。
+  const anyClassEnough = /不必精通/.test(req);
+  const owned = (atCreation || anyClassEnough) ? classes : masteredClasses;
   if (required.some((name) => owned.includes(name))) return { ok: true, reason: '' };
 
   const shown = [...new Set(required.map((n) => n.replace('【Playtest】', '')))];
@@ -944,6 +978,9 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   const ownedClasses = (char.classes || []).map((c) => c.className);
   const masteryGate = (def) => checkHeroicSkillRequirement(def, {
     masteredClasses: stats.masteredClasses,
+    // 「不必精通」型的技能（例：銃劍士）在精通路徑也要比對「擁有」，
+    // 所以這裡一律把現有職業一起傳進去
+    classes: ownedClasses,
     level: charLevel
   });
   const creationGate = (def) => checkHeroicSkillRequirement(def, {
@@ -955,7 +992,7 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   const viaCreationSlot = [];
   heroic.forEach((entry) => {
     const name = typeof entry === 'string' ? entry : entry?.name;
-    const def = (rulesData.heroicSkills || []).find((h) => h.name === name);
+    const def = HEROIC_SKILLS.find((h) => h.name === name);
     if (!def) return; // 資料表裡沒有這個英雄技能 → 無法判定，不擋（寧漏不誤）
     if (masteryGate(def).ok) return; // 靠精通取得 → 沒問題
     if (creation.startingHeroicSkill && creationGate(def).ok) {

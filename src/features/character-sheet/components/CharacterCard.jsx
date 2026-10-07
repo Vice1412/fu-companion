@@ -15,7 +15,7 @@ import {
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import FUIcon from '../../../components/ui/FUIcon';
-import { calculateCharacterStats, getCharacterLevel } from '../utils/characterEngine';
+import { calculateCharacterStats, getCharacterLevel, HEROIC_SKILLS, HEROIC_SKILL_SOURCE_LABELS } from '../utils/characterEngine';
 import StatBadge from '../../../components/ui/StatBadge';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import ClockTracker from '../../../components/ui/ClockTracker';
@@ -484,6 +484,19 @@ export default function CharacterCard({
                   <div className="font-bold mb-1 flex items-center gap-1.5" style={{ color: theme.textDark }}>
                     <GiLaurelCrown className="w-3.5 h-3.5" style={{ color: theme.accent }} />
                     {hs.name}
+                    {/* 出處（使用者要求「必須要標出出處」）：Playtest 那批還沒進正式規則書 */}
+                    {(() => {
+                      const found = HEROIC_SKILLS.find((x) => x.name === hs.name);
+                      const label = HEROIC_SKILL_SOURCE_LABELS[hs.source || found?.source];
+                      return label ? (
+                        <span
+                          className="text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0"
+                          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.accent }}
+                        >
+                          {label}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                   <p className="text-[#574c43] leading-relaxed font-sans text-[11px]">{hs.effect}</p>
                 </div>

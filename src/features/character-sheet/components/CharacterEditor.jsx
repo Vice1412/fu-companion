@@ -70,7 +70,9 @@ import {
   buildCreationChecklist,
   LOCKED_CREATION_TABS,
   getCharacterLevel,
-  checkHeroicSkillRequirement
+  checkHeroicSkillRequirement,
+  HEROIC_SKILLS,
+  HEROIC_SKILL_SOURCE_LABELS
 } from '../utils/characterEngine';
 import {
   EQUIPMENT_SLOTS,
@@ -144,7 +146,7 @@ export default function CharacterEditor({
   // 英雄技能的前提（原書 p.232；開局名額見 Playtest Materials 2026-10-01 p.4）：
   // **不能選的原因要在選之前看見**，不是選完才被擋。判定與 `validateCharacter` 共用同一份。
   const ownedClassNames = (character.classes || []).map((c) => c.className);
-  const heroicOptions = rulesData.heroicSkills.map((skill) => {
+  const heroicOptions = HEROIC_SKILLS.map((skill) => {
     const mastery = checkHeroicSkillRequirement(skill, {
       masteredClasses: stats.masteredClasses,
       level: getCharacterLevel(character)
@@ -174,6 +176,14 @@ export default function CharacterEditor({
   // 開局名額只有一個（Playtest 原文：an additional Heroic Skill）
   const creationSlotUsed = heroicOptions.filter((o) => o.already && o.needsSlot).length;
   const creationSlotFull = Boolean(rules.startingHeroicSkill) && creationSlotUsed >= 1;
+
+  // 英雄技能的出處（使用者要求「必須要標出出處」）。
+  // 舊存檔的技能物件沒有 `source`，所以一律回查 `HEROIC_SKILLS` 而不是只讀物件上的欄位。
+  const heroicSourceOf = (entry) => {
+    const name = entry?.name || entry;
+    const found = HEROIC_SKILLS.find((x) => x.name === name);
+    return HEROIC_SKILL_SOURCE_LABELS[entry?.source || found?.source] || '';
+  };
 
   // 定稿狀態：創角欄位凍結，只留成長相關的欄位可以動
   const locked = isCharacterLocked(character);
@@ -1705,7 +1715,7 @@ export default function CharacterEditor({
                       const slotBlocked = needsSlot && creationSlotFull;
                       return (
                         <option key={h.name} value={h.name} disabled={!verdict.ok || already || slotBlocked}>
-                          {h.name} [{h.requirement}]
+                          {h.name} · {HEROIC_SKILL_SOURCE_LABELS[h.source] || h.source} [{h.requirement}]
                           {already
                             ? ' ✕ 已習得'
                             : !verdict.ok
@@ -1749,6 +1759,14 @@ export default function CharacterEditor({
                         <div className="font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
                           <GiLaurelCrown className="w-4 h-4 shrink-0" style={{ color: theme.accent }} />
                           <span>{hs.name}</span>
+                          {heroicSourceOf(hs) && (
+                            <span
+                              className="text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0"
+                              style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textMuted }}
+                            >
+                              {heroicSourceOf(hs)}
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-slate-600 mt-0.5">{renderTextWithAffinities(hs.effect)}</p>
                       </div>

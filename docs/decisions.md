@@ -2859,6 +2859,104 @@ Excel 和 CHM 只是參考翻譯，效果未必是最新版」。
 `test:creation` 175 → **191**（新增 Q 區段）、`test:ui` 200 → **204**、
 `test:engine` 342 → **345**（四維預設契約改寫：0 是「尚未指派」而不是 d8）。
 
+### AI. 英雄技能出處回填 ＋ Playtest 43 筆收錄（含一處自我更正）
+
+#### AI1. ⚠️ 更正：上一輪的「Core 只列 29 個」是錯的
+
+§AH5 我寫「Excel 核心區段 31 筆，但官方 Core 只列了 29 個，`消失`、`超魔法` 出處未確認」，
+並把它列為待查。**這個結論是錯的**，使用者因此下了一道「Excel 有但規則書沒有的就刪掉」的指示。
+
+實際查核：官方 Core 的**全文區**（PDF p.234 起）有 **31 筆**：
+
+- `VANISH`（PDF p.247）→ **消失**，`Requirements: you must have mastered the Rogue Class.` ✓
+- `VOLCANO`（PDF p.247）→ **超魔法**，`Requirements: you must have mastered the Elementalist Class.` ✓
+
+Excel 與 Core **31:31 完全對齊，逐位一致**。**沒有任何一筆需要刪除。**
+
+**錯在哪裡**：我當時只讀了 Core 的**索引表**（p.232–235），而且用 `Select-Object -First 60`
+截斷了輸出——索引表的最後兩筆正好被切掉，於是我把「我沒看到」當成「書上沒有」。
+**教訓：把「輸出被截斷」誤判成「資料不存在」，是同一種錯誤的第三次**（前兩次見 §X 的
+假失敗與 §AD 的假缺值）。查「有沒有」時要讀全文區或明確計數，不要靠肉眼掃被截斷的輸出。
+
+#### AI2. 六個來源區段的筆數（實測）
+
+繁中版角色卡 Excel V2.17 的「英雄技能列表」**自帶來源區段標記**，且順序與官方書一致：
+
+| 區段 | 筆數 | 專案來源鍵 |
+|---|---|---|
+| 核心規則 | 31 | `core` |
+| 死亡饋贈 | 3 | `bonus` |
+| 高度奇幻 | 24 | `highFantasy` |
+| 科技奇幻 | 18 | `technoFantasy` |
+| 自然奇幻 | 21 | `naturalFantasy` |
+| 24年萬聖 | 14 | `bonus` |
+| **合計** | **111** | |
+
+（§AH5 我記的「24年萬聖 8」也是錯的，實際是 **14**。）
+
+#### AI3. 出處回填
+
+`rulesData.heroicSkills` 的每一筆加上 **`source`** 欄位，依上表逐位回填
+（`scratch/backfill_heroic_source.py`：先 assert 筆數與順序都與 Excel 一致才寫入，
+所以回填不是靠位置猜的）。欄位順序統一為 `name / requirement / source / effect`。
+
+新增 `HEROIC_SKILL_SOURCE_LABELS`（`core`→核心、`highFantasy`→高度奇幻、…、
+`playtest`→Playtest）與 **`HEROIC_SKILLS`**——後者是唯一的合併入口
+（正式 111 ＋ Playtest 43），引擎、編輯器、三頁匯出、角色卡都改讀它，
+免得有人只讀 `rulesData.heroicSkills` 而看不到 Playtest 那批。
+
+介面顯示出處的位置：編輯器的選項標籤（`名稱 · 出處 [要求]`）、編輯器已選清單的小標籤、
+角色卡的小標籤。**三頁匯出沒有加**——§AF 實測那裡六欄餘裕只有 0～4px。
+
+#### AI4. Playtest 43 筆收錄
+
+新增 `src/features/character-sheet/data/playtestHeroicSkills.js`，
+收錄 Playtest Materials 2026-10-01（p.4–21）的 **43 筆**新英雄技能，每筆都帶
+`source: 'playtest'`。
+
+獨立成一個檔的理由：官方自己把這批標為「NEW HEROIC SKILLS — designed for inclusion
+within the Strategy Guide」，也就是**還沒進正式規則書**。日後它們進 Core 時，
+把這個檔併回 `rulesData.json` 即可。
+
+**譯名來源（規則二：嚴禁憑記憶編造）**：職業名與被引用的技能／咒語名**一律沿用專案既有譯名**，
+逐筆反查自 `rulesData.json`、`skillSuboptionsData.js` 與咒語表，不是自己翻的。對照表完整寫在
+該檔的檔頭註解裡（37 條），例如：
+
+- `Barrage`→連續射擊、`Cheap Shot`→偷襲、`Provoke`→挑釁、`Withstand`→忍耐
+- `Cataclysm`→災難、`Shadow Strike`→暗影突襲、`Charging Cavalry`→騎兵衝鋒
+- `Theriomorphosis`→無拘形態（反推自「進階無拘形態＝Greater Theriomorphosis」）
+- `Peacock Dance`→孔雀舞、`Hydra Dance`→九頭蛇（反查 `skillSuboptionsData.js` 的舞步表）
+- `Divination`→預測（效果與 Core p.194 逐字對上）、`Soaring Strike`→飛天打擊、`Cleanse`→淨化
+- `Miasma` 與 `Prophecy Point` 是 Playtest 首度出現、專案沒有既有譯名 → 依既有構詞法譯為
+  **瘴氣**與**預言點數**
+
+#### AI5. 順手修掉一個判定瑕疵
+
+Playtest 的【銃劍士】官方原文是「you must have acquired the Sharpshooter Class and/or the
+Weaponmaster Class **(even if you have not mastered them)**」——**精通路徑也只要求「擁有」**，
+不是「精通」。`checkHeroicSkillRequirement` 原本在非開局模式下只比對 `masteredClasses`，
+會誤擋。修法：requirement 含「不必精通」時，兩種模式都比對 `classes`；
+`validateCharacter` 的 `masteryGate` 也一併傳入 `classes`。
+
+#### AI6. **仍未執行**：既有 111 筆的「效果文字」逐筆核對
+
+§AH5 的原始要求是「所有英雄技能資料**效果**都必須跟著官方規則書與 playtest 為準」。
+本輪做到的是**筆數、順序、出處**的核對（已證明 31:31 對齊），**沒有**逐筆比對效果文字。
+
+已發現的實例（待整批處理）：`背水`（Adversity）的繁中版寫著「最多 +3 點／最多 6 點」的**上限**，
+但官方 Core 原文沒有這兩個上限。
+
+另外，Playtest 的 changelog 明列了約 20 個**修訂既有技能**的項目
+（Fūma Shuriken、Just a Humble Merchant!、Quaking Titan、Trapmaster、Psychic Ascension、
+Stabilized Mutation、Humble Strength、Skyjump、Wheel of Sun and Moon、Vampiric Elation、
+Versatile Tactics、Piercing Sorcery、Thaumaturge、Spell Buffet…），
+其中屬於「新技能」的已在本輪收錄，但**屬於既有技能修訂的尚未套用**。
+
+#### AI7. 測試
+
+`test:creation` 191 → **200**（新增 R 區段）、`test:ui` 204 → **207**。
+
+
 
 
 
