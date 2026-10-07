@@ -327,6 +327,9 @@ export const buildSheetModel = (character, stats = null) => {
     defense: s.def ?? 0,
     magicDefense: s.mdef ?? 0,
     crisisThreshold: s.crisisThreshold ?? 0,
+    // 四維還沒指派完 → 六項數值不成立（見 calculateCharacterStats 的 attributesUnset）。
+    // 三頁表格照樣可以預覽，但數值欄位印「—」而不是拿 0 算出來的假數字。
+    attributesUnset: Boolean(s.attributesUnset),
     proficiencies: profs,
     equipmentRows,
     backpackNotes: ch.backpackNotes || '',
@@ -545,15 +548,17 @@ export const OfficialSheetPage1 = ({ model, vars = null }) => (
         <div style={{ ...S.box, flex: '1 1 40%' }}>
           <div style={S.bar}><span>先攻修正</span></div>
           <div style={{ padding: '4px 8px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.border}` }}>
-            {model.initiative}
+            {model.attributesUnset ? (
+              <span style={{ fontSize: '14px', fontWeight: 700 }}>—</span>
+            ) : model.initiative}
           </div>
           <div style={S.bar}><span>物防</span></div>
           <div style={{ padding: '4px 8px', fontSize: '14px', fontWeight: 700, borderBottom: `1px solid ${C.border}` }}>
-            {model.defense}
+            {model.attributesUnset ? '—' : model.defense}
           </div>
           <div style={S.bar}><span>魔防</span></div>
           <div style={{ padding: '4px 8px', fontSize: '14px', fontWeight: 700 }}>
-            {model.magicDefense}
+            {model.attributesUnset ? '—' : model.magicDefense}
           </div>
         </div>
       </div>
@@ -644,9 +649,9 @@ export const OfficialSheetPage1 = ({ model, vars = null }) => (
             {model.attributes.base.map((a, i) => (
               <div key={a.key} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', alignItems: 'center' }}>
                 <span style={{ fontSize: '9.5px', fontWeight: 700 }}>{a.cn} {a.en}</span>
-                <span style={{ fontSize: '11px', fontWeight: 700 }}>d{a.value}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700 }}>{model.attributesUnset ? '—' : `d${a.value}`}</span>
                 <span style={{ fontSize: '11px', fontWeight: 700 }}>
-                  d{model.attributes.current[i].value}
+                  {model.attributesUnset ? '—' : `d${model.attributes.current[i].value}`}
                 </span>
               </div>
             ))}
@@ -667,10 +672,10 @@ export const OfficialSheetPage1 = ({ model, vars = null }) => (
                 {[['hp', 'HP', '生命值'], ['mp', 'MP', '魔力值'], ['ip', 'IP', '物品點']].map(([key, en, cn]) => (
                   <React.Fragment key={key}>
                     <span style={{ fontSize: '10px', fontWeight: 700 }}>{en}</span>
-              <span style={{ fontSize: '12px', fontWeight: 700 }}>{model.pools[key].max}</span>
+              <span style={{ fontSize: '12px', fontWeight: 700 }}>{model.attributesUnset ? '—' : model.pools[key].max}</span>
               <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                {model.pools[key].current}
-                {key === 'hp' ? (
+                {model.attributesUnset ? '—' : model.pools[key].current}
+                {key === 'hp' && !model.attributesUnset ? (
                   <span style={{ ...S.faint, fontSize: '8px', marginLeft: '6px' }}>
                     危機 {model.crisisThreshold}
                   </span>

@@ -38,7 +38,8 @@ export const CREATION_RULE_FIELDS = Object.freeze([
   'allowedSourcebooks',
   'defaultSourcebooks',
   'requiredClasses',
-  'allowQuirk'
+  'allowQuirk',
+  'startingHeroicSkill'
 ]);
 
 /** 全部手冊的鍵（上限的預設值） */
@@ -120,7 +121,26 @@ export const DEFAULT_CREATION_RULES = Object.freeze({
   /** GM 指定必須修習的職業（空陣列＝不指定） */
   requiredClasses: Object.freeze([]),
   /** 是否允許金手指 */
-  allowQuirk: true
+  allowQuirk: true,
+  /**
+   * 選用規則：開局就給一個英雄技能（Playtest Materials 2026-10-01, p.4）。
+   *
+   * 官方原文（OPTIONAL: HEROIC SKILL AT CHARACTER CREATION）：
+   * 「If you use this optional rule, each Player Character gains an additional Heroic
+   *   Skill during character creation; however, the first time they would normally gain
+   *   a Heroic Skill by mastering one of their Classes, instead they gain no Heroic
+   *   Skill from that.」
+   *
+   * 三個附帶條件（實作時逐條落實，見 `checkHeroicSkillRequirement` 的 `atCreation`）：
+   * ① 需要特定職業才能學的英雄技能 → 開局只要**擁有**那個職業其中之一即可，
+   *    不要求精通（開局不可能有 10 級職業）；其他前提（等級、已習得特定技能／咒語）不變。
+   * ② 同一團**不得有兩個角色用這個名額拿到同一個英雄技能**。
+   * ③ 下列核心英雄技能**不能**用這個名額取得：Deep Pockets／Extra HP／Extra IP／
+   *    Extra MP／Powerful Shot／Powerful Spell／Powerful Strike／Revelation。
+   *
+   * 預設 false：這是「給想把角色從一級就做得很複雜的老手團」的選用規則，不是核心規則。
+   */
+  startingHeroicSkill: false
 });
 
 const toInt = (value, fallback, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) => {
@@ -175,6 +195,9 @@ export const resolveCreationRules = (overrides = {}) => {
     : [...d.requiredClasses];
 
   const allowQuirk = typeof given.allowQuirk === 'boolean' ? given.allowQuirk : d.allowQuirk;
+  const startingHeroicSkill = typeof given.startingHeroicSkill === 'boolean'
+    ? given.startingHeroicSkill
+    : d.startingHeroicSkill;
 
   return {
     startingLevel,
@@ -186,7 +209,8 @@ export const resolveCreationRules = (overrides = {}) => {
     allowedSourcebooks,
     defaultSourcebooks,
     requiredClasses,
-    allowQuirk
+    allowQuirk,
+    startingHeroicSkill
   };
 };
 

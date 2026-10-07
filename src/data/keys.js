@@ -34,6 +34,14 @@ export const STORAGE_KEYS = Object.freeze({
   npcCardTheme: 'fabula-npc-card-theme',
   /** 角色卡配色 */
   characterTheme: 'fu_companion_character_theme',
+  /**
+   * 團務開卡規則（GM 自訂開局）。
+   *
+   * 這本機名冊就是「這一團」——規則存在這裡而不是每個角色身上，因為它是團務層級的
+   * （例如「開局贈送一個英雄技能」是全團一起用的選用規則）。
+   * 內容是 `data/creationRules.js` 的覆寫物件，經 `resolveCreationRules` 補齊預設值。
+   */
+  creationRules: 'fu_companion_creation_rules',
 });
 
 /**

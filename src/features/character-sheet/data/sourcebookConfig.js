@@ -422,6 +422,14 @@ export const ATTRIBUTE_NAMES = Object.freeze({
 });
 
 /**
+ * 四維屬性的識別字（順序即介面順序）。
+ *
+ * 以前這個陣列在三處各寫一份：`characterEngine` 的加總／範圍檢查與狀態減值推導、
+ * `AttributeMatrixPicker` 的 `STAT_KEYS`。收斂成一份，動到屬性集合時才不會漏改。
+ */
+export const ATTRIBUTE_KEYS = Object.freeze(['dex', 'ins', 'mig', 'wlp']);
+
+/**
  * 官方六大狀態異常 (Status Afflictions)
  */
 export const STATUS_AFFLICTIONS = {

@@ -8,7 +8,7 @@ import {
 } from 'react-icons/gi';
 import { Info, X, RotateCcw, Check } from 'lucide-react';
 // 三大屬性陣列與四個屬性名都是**資料**，放在 data/ 讓測試可以直接匯入（不必把 React 拉進 node 測試）
-import { ATTRIBUTE_PRESET_ARRAYS, ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
+import { ATTRIBUTE_PRESET_ARRAYS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS } from '../data/sourcebookConfig';
 
 /**
  * 骰階色彩漸層配置（視覺直覺區分，無文字贅述）：
@@ -116,10 +116,12 @@ const ATTRIBUTE_DETAILS = {
   }
 };
 
-const STAT_KEYS = ['dex', 'ins', 'mig', 'wlp'];
+const STAT_KEYS = ATTRIBUTE_KEYS;
 
 export default function AttributeMatrixPicker({
-  attributes = { dex: 8, ins: 8, mig: 8, wlp: 8 },
+  // 預設是空的（0 = 尚未指派）——不替玩家先套「萬事通」，見 createNewCharacter 的註解。
+  // 四顆骰子會留在左側托盤、右側四宮格清空，玩家從三組建議陣列裡挑一組再指派。
+  attributes = { dex: 0, ins: 0, mig: 0, wlp: 0 },
   onChange = () => {},
   theme = {}
 }) {
@@ -468,7 +470,10 @@ export default function AttributeMatrixPicker({
         {/* 三套起始陣列卡片 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {ATTRIBUTE_PRESET_ARRAYS.map(preset => {
-            const isMatch = preset.diceList.every((v, i) => v === poolSortedVals[i]);
+            // 「目前」只有在四顆骰子都真的指派完、且組合等於這一組時才顯示。
+            // 空托盤本來就放著「標準」那四顆（d10/d8/d8/d6），少了 assignedCount 這一項，
+            // 一個還沒選配置的角色會被標成「標準（目前）」——等於又替他選了一次。
+            const isMatch = assignedCount === 4 && preset.diceList.every((v, i) => v === poolSortedVals[i]);
 
             return (
               <button

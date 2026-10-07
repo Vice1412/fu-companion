@@ -200,6 +200,8 @@ export default function CharacterPlayHUD({
   const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : stats.maxMp;
   const curIp = character.currentIp !== null && character.currentIp !== undefined ? character.currentIp : stats.maxIp;
   const isCrisis = curHp <= stats.crisisThreshold;
+  // 四維還沒指派完 → 六項數值不成立（見 `calculateCharacterStats` 的 `attributesUnset`）
+  const statsUnset = Boolean(stats.attributesUnset);
   const isReadyToLevelUp = canLevelUp(character);
 
   /**
@@ -806,7 +808,7 @@ export default function CharacterPlayHUD({
               title="點擊查看公式"
               className="font-mono font-black text-base text-red-950 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
-              {curHp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxHp}</span>
+              {statsUnset ? '—' : <>{curHp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxHp}</span></>}
             </button>
           </div>
 
@@ -841,7 +843,7 @@ export default function CharacterPlayHUD({
               title="點擊查看公式"
               className="text-[10px] font-mono font-bold text-red-900 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
-              危機門檻 {stats.crisisThreshold}
+              危機門檻 {statsUnset ? '—' : stats.crisisThreshold}
             </button>
           </div>
 
@@ -874,7 +876,7 @@ export default function CharacterPlayHUD({
               title="點擊查看公式"
               className="font-mono font-black text-base text-blue-950 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
-              {curMp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxMp}</span>
+              {statsUnset ? '—' : <>{curMp} <span className="text-xs text-slate-500 font-normal">/ {stats.maxMp}</span></>}
             </button>
           </div>
 
@@ -1142,7 +1144,7 @@ export default function CharacterPlayHUD({
                     className="p-2 rounded-lg bg-[#fffdf9] border border-[#d6c7ab] hover:border-[#3c2415]/30 transition-colors cursor-pointer"
                   >
                     <span className="text-slate-500 block text-[11px] font-sans font-medium">物理防禦</span>
-                    <span className="text-2xl font-black" style={{ color: theme.textDark }}>{stats.def}</span>
+                    <span className="text-2xl font-black" style={{ color: theme.textDark }}>{statsUnset ? '—' : stats.def}</span>
                     <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
                       {stats.currentDex !== stats.def ? `DEX(d${stats.currentDex}) + 盾/裝甲` : `當前 DEX(d${stats.currentDex})`}
                     </span>

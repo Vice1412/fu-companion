@@ -45,6 +45,9 @@ export default function CharacterCard({
   const curHp = character.currentHp !== null && character.currentHp !== undefined ? character.currentHp : stats.maxHp;
   const curMp = character.currentMp !== null && character.currentMp !== undefined ? character.currentMp : stats.maxMp;
   const isCrisis = curHp <= stats.crisisThreshold;
+  // 四維還沒指派完 → 六項數值還不成立（見 `calculateCharacterStats` 的 `attributesUnset`）。
+  // 顯示「—」而不是拿 0 算出來的假數字；卡片其他地方也已經用「尚未設定…」表達同一件事。
+  const statsUnset = Boolean(stats.attributesUnset);
 
   return (
     <div
@@ -236,7 +239,7 @@ export default function CharacterCard({
               title="點擊查看公式"
               className="text-base font-mono font-black text-red-900 mt-0.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
-              {curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span>
+              {statsUnset ? '—' : <>{curHp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxHp}</span></>}
             </button>
           </div>
 
@@ -251,7 +254,7 @@ export default function CharacterCard({
               title="點擊查看公式"
               className="text-base font-mono font-black text-blue-900 mt-0.5 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
-              {curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span>
+              {statsUnset ? '—' : <>{curMp} <span className="text-xs text-stone-500 font-normal">/ {stats.maxMp}</span></>}
             </button>
           </div>
 
@@ -326,7 +329,7 @@ export default function CharacterCard({
               className="flex items-center gap-1 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
               <GiShield className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-              <span>物防: <strong className="font-bold" style={{ color: theme.textDark }}>{stats.def}</strong></span>
+              <span>物防: <strong className="font-bold" style={{ color: theme.textDark }}>{statsUnset ? '—' : stats.def}</strong></span>
             </button>
             <button
               type="button"
@@ -335,7 +338,7 @@ export default function CharacterCard({
               className="flex items-center gap-1 hover:underline decoration-dotted underline-offset-2 cursor-pointer"
             >
               <GiShield className="w-3.5 h-3.5 text-blue-800" />
-              <span>魔防: <strong className="text-blue-900 font-bold">{stats.mdef}</strong></span>
+              <span>魔防: <strong className="text-blue-900 font-bold">{statsUnset ? '—' : stats.mdef}</strong></span>
             </button>
             <button
               type="button"

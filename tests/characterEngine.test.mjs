@@ -353,9 +353,19 @@ check('等級預設 5', fresh.level, 5);
 check('EXP 預設 0', fresh.exp, 0);
 check('澤尼特預設 500（官方起始裝備預算）', fresh.zenit, 500);
 check('物語點預設 3', fresh.fabulaPoints, 3);
-check('四項屬性預設皆為 d8', [fresh.attributes.dex, fresh.attributes.ins, fresh.attributes.mig, fresh.attributes.wlp], [8, 8, 8, 8]);
-check('屬性骰階總和 = 32（官方創角鐵律）',
-  fresh.attributes.dex + fresh.attributes.ins + fresh.attributes.mig + fresh.attributes.wlp, 32);
+// 四維屬性**預設是空的**（0 = 尚未指派）——原書 p.162 給了三組建議陣列，
+// 但選哪一組是玩家的決定，系統不替他先套「萬事通」（使用者指示 2026-10-06）。
+check('四項屬性預設為 0（尚未指派，不先套萬事通）',
+  [fresh.attributes.dex, fresh.attributes.ins, fresh.attributes.mig, fresh.attributes.wlp], [0, 0, 0, 0]);
+check('屬性骰階總和預設為 0（尚未分配，不是 32）',
+  fresh.attributes.dex + fresh.attributes.ins + fresh.attributes.mig + fresh.attributes.wlp, 0);
+// 0 不能被當成「d0 的屬性」偷偷算進六項數值——`attributesUnset` 讓介面顯示「—」
+check('四維未指派時，六項數值標記為不成立',
+  calculateCharacterStats(fresh).attributesUnset, true);
+check('指派完成後就不再是不成立',
+  calculateCharacterStats(mk({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 } })).attributesUnset, false);
+check('只指派一項仍算不成立',
+  calculateCharacterStats(mk({ attributes: { dex: 10, ins: 0, mig: 0, wlp: 0 } })).attributesUnset, true);
 check('六大狀態旗標齊備且全為 false',
   AFF_KEYS.map((k) => fresh.statusAfflictions[k]), [false, false, false, false, false, false]);
 check('當前 HP / MP / IP 皆為 null（null 代表等於最大值）',
@@ -533,6 +543,8 @@ const validChar = mk({
   identity: '流浪劍客',
   origin: '無名村落',
   theme: '希望',
+  // 四維預設是空的（見「四項屬性預設為 0」），合規角色必須自己帶上配置
+  attributes: ALL_8,
   // 第 6 步「命名與背景」的另外兩格（原書第 8 步的稱呼與外貌描述在本專案的對應）
   gender: '女',
   background: '四處漂泊的劍客。',

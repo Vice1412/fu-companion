@@ -2751,6 +2751,115 @@ JSX 巢狀當場壞掉。`npx esbuild` 直接指出
 `test:creation` 157 → **175**（新增 P 區段）、`test:ui` 195 → **200**
 （英雄技能的選項層面用 SSR 斷言——`<select>` 的展開清單截不到圖，斷言比截圖強）。
 
+### AH. 四維預設為空 ＋ 開局英雄技能（Playtest 2026-10-01）
+
+#### AH1. 四維屬性預設為空（使用者指示）
+
+使用者指示：「四維屬性預設為空，讓玩家自己選那三組的其中一種。」
+
+**舊行為**：`createNewCharacter` 預設 `attributes: { dex: 8, ins: 8, mig: 8, wlp: 8 }`
+——那正好是官方三組建議陣列之一的「萬事通」。等於系統替玩家選好了，而且
+`calculateCharacterStats` 裡的 `char.attributes?.dex || 8` 會讓**任何**空值都變成 d8，
+所以就算把預設改成 0，六項數值還是會照「萬事通」算出來——一個安靜的謊。
+
+**改法**：
+
+- `createNewCharacter`：四項皆為 **0 = 尚未指派**。
+- `calculateCharacterStats`：拿掉 `|| 8`，改用 `|| 0`；新增 **`attributesUnset`**
+  （只要有一項是 0 就為 true——HP 要 MIG、物防要 DEX，任一缺就整組不成立）。
+- `validateCharacter` 第 3 步分成三種狀態，因為「怎麼了」不一樣、訊息也該不一樣：
+  ① 四項全空 → `info`「尚未選擇四維屬性配置」（還沒開始，不是玩家的錯）；
+  ② 部分空 → `warning`「四維屬性還有 N 項未指派（力量、意志）」；
+  ③ 都指派了 → 才檢查總和（`warning`）與單顆骰階範圍（`error`）。
+  **0 不會被誤判成「非法骰階」**。
+- 介面：`attributesUnset` 為真時，六項數值顯示「—」而不是拿 0 算出來的假數字
+  （`CharacterCard`／`CharacterPlayHUD`／`CharacterSheet`／`CharacterSheetExport`／
+  `CharacterEditor` 的數值磚）。IP 不受屬性影響，照常顯示。
+- `AttributeMatrixPicker` 的預設 prop 改為 0（它本來就支援空狀態：四顆骰子留在托盤、
+  四宮格顯示「空置 拖入/點入」）。
+- **順手修掉一個同類的 bug**：三組建議陣列的「目前」標記原本只看骰面組合，
+  而空托盤裡放的就是「標準」那四顆，所以一個還沒選配置的角色會被標成
+  **「標準（目前）」**——又是替玩家選了一次。加上 `assignedCount === 4` 的條件才修好。
+- 識別字收斂：`ATTRIBUTE_KEYS` 移到 `sourcebookConfig`（原本引擎、驗證、選擇器各一份）。
+
+#### AH2. 開局英雄技能（Playtest Materials 2026-10-01, p.4）
+
+官方原文（`OPTIONAL: HEROIC SKILL AT CHARACTER CREATION`）：
+
+> If you use this optional rule, each Player Character gains an additional Heroic Skill
+> during character creation; however, the first time they would normally gain a Heroic
+> Skill by mastering one of their Classes, instead they gain no Heroic Skill from that.
+> - If a Heroic Skill requires mastery of one or more specific Classes, the character must
+>   **have at least one of those Classes at character creation**. Any other requirements of
+>   the Skill, such as being a specific level or having acquired specific Skills or learned
+>   specific spells, **remain unchanged**.
+> - … **no two characters may acquire the same Heroic Skill this way**, and the following
+>   Heroic Skills from the Core Rulebook cannot be obtained: Deep Pockets, Extra HP,
+>   Extra IP, Extra MP, Powerful Shot, Powerful Spell, Powerful Strike, Revelation.
+
+實作（逐條對應）：
+
+| 官方條件 | 實作 |
+|---|---|
+| 開局多一個 | `checkHeroicSkillRequirement` 新增 `atCreation` 模式 |
+| 職業前提改為「擁有」 | `atCreation` 時比對 `char.classes`（不是 `masteredClasses`） |
+| 其他前提不變 | 等級門檻（`等級必須為 N 或更高`）兩種模式共用同一段程式 |
+| 同團不得重複 | `validateCharacter` 只能看到一張卡，**這條是團務層級**（見下） |
+| 8 個禁用技能 | `STARTING_HEROIC_SKILL_BLOCKLIST` |
+| 名額只有一個 | `validateCharacter` 統計「靠開局名額過關」的技能數，>1 即 `error` |
+
+判定**與技能在陣列裡的順序無關**：每個技能先用「精通」判，不過的再看能不能用開局名額，
+最後才檢查名額有沒有被用超過一次。
+
+**名額的開關**：這是團務規則，所以存在**這一團**而不是每個角色身上——
+新增儲存鍵 `fu_companion_creation_rules`（`keys.js`），名冊頁標頭有一個
+「開局英雄技能：開／關」的切換，經 `resolveCreationRules` 補齊預設值後傳進編輯器。
+
+#### AH3. 8 個禁用技能的中英對應（方法，不是猜的）
+
+官方列的是英文名，專案的資料是中文名。對應方式是**官方字母序**：
+核心規則書的英雄技能章（英文 p.232–235）按字母排列，而繁中版角色卡 Excel V2.17 的
+「英雄技能列表」核心區段**順序完全一致**——所以逐位對齊即可，已逐筆核對：
+
+`Deep Pockets→大口袋`、`Extra HP→額外HP`、`Extra IP→額外IP`、`Extra MP→額外MP`、
+`Powerful Shot→強力射擊`、`Powerful Spell→強力咒語`、`Powerful Strike→強力攻擊`、
+`Revelation→啟示`。
+
+#### AH4. 過程失誤：一個沒有原因的「✕」
+
+編輯器選項的 `verdict` 第一版寫成 `mastery.ok ? mastery : creation`。規則**關閉**時
+`creation` 是 `{ ok: false, reason: '' }`，於是每個不合格的選項都變成
+`背水 [暗黑之刃] ✕ `——**有叉、沒有原因**，正好違反 §U 的「不能選的原因要在選之前看見」。
+
+是 SSR 斷言抓到的（`停用的選項寫出原因` 由 true 變 false）。修法：規則關閉時一律用
+`mastery` 的理由；規則開啟時用 `creation` 的理由（那才是玩家正在嘗試的路）。引擎端
+`validateCharacter` 的錯誤訊息同步採用同一條規則，否則會出現「規則開著、卻說你沒精通」
+這種答非所問的提示。
+
+#### AH5. **尚未執行**：111 個英雄技能的效果逐筆核對
+
+使用者指示「所有的英雄技能資料效果都必須跟著官方的規則書和 playtest 為準，
+Excel 和 CHM 只是參考翻譯，效果未必是最新版」。
+
+**本輪只建立了方法與來源，尚未逐筆重寫資料**。已完成的前置：
+
+- 確認**英文 Core 有完整效果全文**（PDF p.234 起，字母序；p.232–235 只是索引表）。
+- 確認 Excel 的「英雄技能列表」**自帶來源區段標記**，且順序與官方一致：
+  核心 31／死亡饋贈 3／高度奇幻 24／科技奇幻 18／自然奇幻 21／24年萬聖 8 ＝ 111。
+- **發現一處需要追查的差異**：Excel 的核心區段是 **31 筆**，但官方 Core 只列了 **29 個**
+  （`消失`、`超魔法` 兩筆在 Core 的英雄技能索引表裡找不到）。尚未確認它們的出處。
+- 已順手核對到的實例：`背水`（Adversity）的繁中版寫著「最多 +3 點／最多 6 點」的**上限**，
+  但官方 Core 原文**沒有這兩個上限**——待整批核對時一併處理。
+
+整批核對的作法已定：以來源區段為單位，用「官方書的順序 ↔ Excel 的順序」對齊
+（並以職業前提序列驗證對齊正確），再逐筆比對效果文字。**這是獨立的資料工程，不在本輪。**
+
+#### AH6. 測試
+
+`test:creation` 175 → **191**（新增 Q 區段）、`test:ui` 200 → **204**、
+`test:engine` 342 → **345**（四維預設契約改寫：0 是「尚未指派」而不是 d8）。
+
+
 
 
 

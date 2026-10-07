@@ -1,5 +1,5 @@
 import rulesData from '../data/rulesData.json';
-import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES } from '../data/sourcebookConfig';
+import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
@@ -66,6 +66,28 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
 export const PLACEHOLDER_CHARACTER_NAME = '新冒險者';
 
 /**
+ * 開局名額**不能**取得的英雄技能（Playtest Materials 2026-10-01, p.4 明文列出）。
+ *
+ * 官方原文列的是英文名，這裡是對應的繁中名——對應方式是**官方字母序**：
+ * 核心規則書的英雄技能章（英文 p.232–235）按字母排列，而繁中版角色卡 Excel V2.17
+ * 的「英雄技能列表」核心區段**順序完全一致**，所以逐位對齊即可（已逐筆核對）：
+ * Deep Pockets→大口袋、Extra HP→額外HP、Extra IP→額外IP、Extra MP→額外MP、
+ * Powerful Shot→強力射擊、Powerful Spell→強力咒語、Powerful Strike→強力攻擊、Revelation→啟示。
+ *
+ * 官方理由：這些是「通用型」的強化技能，開局就給會讓角色失去成長曲線。
+ */
+export const STARTING_HEROIC_SKILL_BLOCKLIST = Object.freeze([
+  '大口袋',
+  '額外HP',
+  '額外IP',
+  '額外MP',
+  '強力射擊',
+  '強力咒語',
+  '強力攻擊',
+  '啟示'
+]);
+
+/**
  * 英雄技能的前提判定（原書 p.232）。
  *
  * 官方原文：「當一個玩家角色將一個職業提升到 10 級時，這個角色可以從下面的列表中
@@ -83,11 +105,25 @@ export const PLACEHOLDER_CHARACTER_NAME = '新冒險者';
  * 職業名互為子字串（`吟唱者` ⊂ `吟唱者【Playtest】`）不會誤判：兩者都進候選清單，
  * 精通任一個都算過。
  */
-export const checkHeroicSkillRequirement = (skill, { masteredClasses = [], level = 5 } = {}) => {
+export const checkHeroicSkillRequirement = (skill, {
+  masteredClasses = [],
+  classes = [],
+  level = 5,
+  atCreation = false
+} = {}) => {
   const req = String(skill?.requirement || '').trim();
   if (!req) return { ok: true, reason: '' }; // 沒有前提資料 → 無法判定，不擋
 
-  if (masteredClasses.length === 0) {
+  // 開局名額（Playtest Materials 2026-10-01, p.4）：
+  // 官方原文「the character must have at least one of those Classes at character creation」
+  // ——不要求精通，只要**擁有**那個職業其中之一（開局本來就不可能有 10 級職業）。
+  // 官方同時明說「Any other requirements … remain unchanged」，所以等級前提照舊。
+  if (atCreation) {
+    if (STARTING_HEROIC_SKILL_BLOCKLIST.includes(skill?.name)) {
+      return { ok: false, reason: '這個英雄技能不能用開局名額取得' };
+    }
+    if (classes.length === 0) return { ok: false, reason: '開局名額需要至少一個職業' };
+  } else if (masteredClasses.length === 0) {
     return { ok: false, reason: '需先精通一個職業（單一職業達 10 級）' };
   }
   if (req === '通用') return { ok: true, reason: '' };
@@ -102,10 +138,17 @@ export const checkHeroicSkillRequirement = (skill, { masteredClasses = [], level
   const classPart = req.split(/且|並/)[0];
   const required = Object.keys(rulesData.classes).filter((name) => classPart.includes(name));
   if (required.length === 0) return { ok: true, reason: '' }; // 抓不到職業名 → 不擋
-  if (required.some((name) => masteredClasses.includes(name))) return { ok: true, reason: '' };
+
+  const owned = atCreation ? classes : masteredClasses;
+  if (required.some((name) => owned.includes(name))) return { ok: true, reason: '' };
 
   const shown = [...new Set(required.map((n) => n.replace('【Playtest】', '')))];
-  return { ok: false, reason: `需精通【${shown.join('／')}】其中之一` };
+  return {
+    ok: false,
+    reason: atCreation
+      ? `開局需擁有【${shown.join('／')}】其中之一`
+      : `需精通【${shown.join('／')}】其中之一`
+  };
 };
 
 /**
@@ -147,12 +190,17 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
     // 啟用的手冊拓展（由開卡規則決定；上限另由 allowedSourcebooks 把關）
     enabledSourcebooks: [...creation.defaultSourcebooks],
 
-    // 四維屬性基礎骰階 (起始總和為 32)
+    // 四維屬性基礎骰階（起始總和為 32）
+    //
+    // **預設是空的（0 = 尚未指派）**，不替玩家先套「萬事通」。原書 p.162 給了
+    // 三組建議陣列，但選哪一組是玩家的決定——舊版預設 d8×4 等於偷偷替他選了。
+    // 0 會在 `calculateCharacterStats` 被視為「尚未指派」（`attributesUnset`），
+    // 六項數值因此在畫面上顯示為未定，而不是拿一個假的 d8 算出來。
     attributes: {
-      dex: 8,
-      ins: 8,
-      mig: 8,
-      wlp: 8
+      dex: 0,
+      ins: 0,
+      mig: 0,
+      wlp: 0
     },
 
     // 六大狀態異常 (Status Afflictions)
@@ -265,10 +313,15 @@ export const calculateCharacterStats = (char) => {
     DEFAULT_CREATION_RULES.startingLevel,
     getCharacterLevel(char)
   );
-  const baseDex = char.attributes?.dex || 8;
-  const baseIns = char.attributes?.ins || 8;
-  const baseMig = char.attributes?.mig || 8;
-  const baseWlp = char.attributes?.wlp || 8;
+  // 0 = 尚未指派（見 `createNewCharacter`）。**不要**寫成 `|| 8`——那會讓一個
+  // 還沒選屬性配置的角色，被當成「萬事通 d8×4」算出六項數值，畫面上看起來
+  // 像一個真的角色。0 就讓它是 0，由 `attributesUnset` 告訴介面「還沒有數值」。
+  const baseDex = char.attributes?.dex || 0;
+  const baseIns = char.attributes?.ins || 0;
+  const baseMig = char.attributes?.mig || 0;
+  const baseWlp = char.attributes?.wlp || 0;
+  // 只要有一項沒指派，六項數值就都還不成立（HP 要 MIG、物防要 DEX…）。
+  const attributesUnset = [baseDex, baseIns, baseMig, baseWlp].some((v) => !v);
 
   // 1. 計算六大異常狀態對屬性骰階的削減
   // 減值一律由 STATUS_AFFLICTIONS.affectedStats 推導（單一資料來源），
@@ -574,6 +627,8 @@ export const calculateCharacterStats = (char) => {
     def,
     mdef,
     init,
+    // true = 四維還沒指派完，六項數值不成立。介面據此顯示「未設定」而不是假數字。
+    attributesUnset,
     bonusHp,
     bonusMp,
     bonusIp,
@@ -691,30 +746,45 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
   // 為什麼屬性排在職業之後：原書的順序是先選職業（第 4 步）再分配屬性（第 5 步），
   // 而且 p.162 明說「當分配屬性骰子時，你應該考慮到你的職業和技能選擇！」。
   // 舊版把屬性放在第 2 步，玩家得在還不知道職業會給什麼免費增益時就決定四維。
-  const attrSum = (char.attributes?.dex || 0) + (char.attributes?.ins || 0) + (char.attributes?.mig || 0) + (char.attributes?.wlp || 0);
-  if (attrSum !== creation.attributeTotal) {
+  // 四維屬性：0 = 尚未指派（`createNewCharacter` 的預設）。分成三種狀態處理，
+  // 因為它們的「怎麼了」不一樣，訊息也該不一樣：
+  //   ① 四項全空 → 還沒開始（info，不是玩家的錯）
+  //   ② 部分空   → 做到一半（warning）
+  //   ③ 都指派了 → 才檢查總和與單顆骰階（原書 p.162）
+  const unassigned = ATTRIBUTE_KEYS.filter((key) => !char.attributes?.[key]);
+  if (unassigned.length === ATTRIBUTE_KEYS.length) {
+    warnings.push({ step: 3, field: 'attributes', type: 'info', message: '尚未選擇四維屬性配置' });
+  } else if (unassigned.length > 0) {
     warnings.push({
       step: 3,
       field: 'attributes',
       type: 'warning',
-      message: `屬性骰階點數總和為 ${attrSum} (起始標準為 ${creation.attributeTotal})`
+      message: `四維屬性還有 ${unassigned.length} 項未指派（${unassigned.map((k) => ATTRIBUTE_NAMES[k]).join('、')}）`
     });
-  }
+  } else {
+    const attrSum = ATTRIBUTE_KEYS.reduce((sum, key) => sum + char.attributes[key], 0);
+    if (attrSum !== creation.attributeTotal) {
+      warnings.push({
+        step: 3,
+        field: 'attributes',
+        type: 'warning',
+        message: `屬性骰階點數總和為 ${attrSum} (起始標準為 ${creation.attributeTotal})`
+      });
+    }
 
-  // 單顆骰階必須落在 d6~d12（原書 p.162「從最小 d6 到最大 d12」）。
-  // UI 的步進器本來就有界，但 Fultimator 匯入與手改存檔可以繞過——那是 **error**：
-  // d20 不是合法的角色，而 `calculateCharacterStats` 會照樣把它算成 DEF 20。
-  const offLadder = ['dex', 'ins', 'mig', 'wlp']
-    .filter((key) => !ATTRIBUTE_DICE_TIERS.includes(char.attributes?.[key]));
-  if (offLadder.length > 0) {
-    const label = { dex: 'DEX', ins: 'INS', mig: 'MIG', wlp: 'WLP' };
-    warnings.push({
-      step: 3,
-      field: 'attributes',
-      type: 'error',
-      message: `屬性骰階必須是 ${ATTRIBUTE_DICE_TIERS.map((d) => `d${d}`).join('／')}：`
-        + offLadder.map((key) => `${label[key]} 為 d${char.attributes?.[key]}`).join('、')
-    });
+    // 單顆骰階必須落在 d6~d12（原書 p.162「從最小 d6 到最大 d12」）。
+    // UI 的步進器本來就有界，但 Fultimator 匯入與手改存檔可以繞過——那是 **error**：
+    // d20 不是合法的角色，而 `calculateCharacterStats` 會照樣把它算成 DEF 20。
+    const offLadder = ATTRIBUTE_KEYS.filter((key) => !ATTRIBUTE_DICE_TIERS.includes(char.attributes[key]));
+    if (offLadder.length > 0) {
+      warnings.push({
+        step: 3,
+        field: 'attributes',
+        type: 'error',
+        message: `屬性骰階必須是 ${ATTRIBUTE_DICE_TIERS.map((d) => `d${d}`).join('／')}：`
+          + offLadder.map((key) => `${key.toUpperCase()} 為 d${char.attributes[key]}`).join('、')
+      });
+    }
   }
 
   // 步驟 2: 職業與特技（起始等級的職業數限制由開卡規則決定）
@@ -863,31 +933,51 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
 
   // 英雄技能的前提（原書 p.232）。以前這裡完全沒有檢查——5 級、零精通也能從選單
   // 直接加英雄技能，而畫面只印了一行「已精通職業: …【具備英雄技能資格】」當裝飾。
+  //
+  // 現在分兩條路徑判，**與技能在陣列裡的順序無關**：
+  //   ① 精通路徑（規則的預設）：該職業已達 10 級。
+  //   ② 開局名額路徑（選用規則，Playtest 2026-10-01 p.4）：規則有開、且該技能過得了
+  //      「開局版」前提（擁有指定職業其中之一、不在 8 個禁用清單裡）。
+  // ②的名額只有一個，所以最後要檢查「有幾個技能是靠它過關的」。
   const heroic = char.heroicSkills || [];
-  if (heroic.length > 0 && stats.masteredClasses.length === 0) {
+  const charLevel = getCharacterLevel(char);
+  const ownedClasses = (char.classes || []).map((c) => c.className);
+  const masteryGate = (def) => checkHeroicSkillRequirement(def, {
+    masteredClasses: stats.masteredClasses,
+    level: charLevel
+  });
+  const creationGate = (def) => checkHeroicSkillRequirement(def, {
+    classes: ownedClasses,
+    level: charLevel,
+    atCreation: true
+  });
+
+  const viaCreationSlot = [];
+  heroic.forEach((entry) => {
+    const name = typeof entry === 'string' ? entry : entry?.name;
+    const def = (rulesData.heroicSkills || []).find((h) => h.name === name);
+    if (!def) return; // 資料表裡沒有這個英雄技能 → 無法判定，不擋（寧漏不誤）
+    if (masteryGate(def).ok) return; // 靠精通取得 → 沒問題
+    if (creation.startingHeroicSkill && creationGate(def).ok) {
+      viaCreationSlot.push(name);
+      return;
+    }
+    // 訊息要說玩家「正在嘗試的那條路」為什麼不通：規則有開就講開局名額的條件，
+    // 否則講精通。兩者混用會出現「規則開著、卻說你沒精通」這種答非所問的提示。
     warnings.push({
       step: 5,
       field: 'heroicSkills',
       type: 'error',
-      message: `英雄技能需先精通一個職業（單一職業達 10 級），目前有 ${heroic.length} 個`
+      message: `【${name}】${creation.startingHeroicSkill ? creationGate(def).reason : masteryGate(def).reason}`
     });
-  } else {
-    heroic.forEach((entry) => {
-      const name = typeof entry === 'string' ? entry : entry?.name;
-      const def = (rulesData.heroicSkills || []).find((h) => h.name === name);
-      if (!def) return; // 資料表裡沒有這個英雄技能 → 無法判定，不擋（寧漏不誤）
-      const verdict = checkHeroicSkillRequirement(def, {
-        masteredClasses: stats.masteredClasses,
-        level: getCharacterLevel(char)
-      });
-      if (!verdict.ok) {
-        warnings.push({
-          step: 5,
-          field: 'heroicSkills',
-          type: 'error',
-          message: `【${name}】${verdict.reason}`
-        });
-      }
+  });
+  if (viaCreationSlot.length > 1) {
+    warnings.push({
+      step: 5,
+      field: 'heroicSkills',
+      type: 'error',
+      message: `開局名額只能選一個英雄技能（目前有 ${viaCreationSlot.length} 個用到它：`
+        + `${viaCreationSlot.join('、')}）`
     });
   }
 

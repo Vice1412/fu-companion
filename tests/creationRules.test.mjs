@@ -37,7 +37,8 @@ import {
   PLACEHOLDER_CHARACTER_NAME,
   checkHeroicSkillRequirement,
   snapToAttributeDie,
-  ATTRIBUTE_DICE_TIERS
+  ATTRIBUTE_DICE_TIERS,
+  STARTING_HEROIC_SKILL_BLOCKLIST
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
 import {
@@ -45,7 +46,8 @@ import {
   CANONICAL_THEMES,
   THEME_ALIASES,
   normalizeTheme,
-  ATTRIBUTE_PRESET_ARRAYS
+  ATTRIBUTE_PRESET_ARRAYS,
+  ATTRIBUTE_KEYS
 } from '../src/features/character-sheet/data/sourcebookConfig.js';
 import { totalStartingEquipCost } from '../src/features/character-sheet/utils/equipmentRules.js';
 import rulesData from '../src/features/character-sheet/data/rulesData.json';
@@ -276,9 +278,12 @@ check('清單不含情感羈絆（羈絆不屬創角，原書 p.154）',
 check('每一步都有顯示名', blankList.every((i) => Boolean(i.label)), true);
 check('空白角色：身世待處理（缺姓名等）', blankList[0].status, 'todo');
 check('空白角色：職業有問題（0 個職業）', blankList[1].status, 'error');
-check('空白角色：四維已完成（預設 8×4 = 32）', blankList[2].status, 'done');
+// 四維預設是空的（0 = 尚未指派），所以空白角色的第 3 步是待處理，不是已完成。
+// 舊版預設 d8×4 = 32 剛好等於標準總和，第 3 步對新角色永遠是「done」——
+// 那正是「系統替玩家選好了萬事通」的另一個症狀。
+check('空白角色：四維待處理（預設未指派）', blankList[2].status, 'todo');
 check('有問題的步驟帶錯誤數', blankList[1].errorCount, 1);
-check('完成的步驟給出說明文字', blankList[2].message, '骰階點數已分配完成');
+check('待處理的步驟給出說明文字', blankList[2].message, '尚未選擇四維屬性配置');
 check('待處理的步驟給出第一則提醒', blankList[0].message, '尚未設定身份');
 
 // 清單不新增驗證邏輯：狀態必須與 validateCharacter 的分組一致
@@ -304,6 +309,8 @@ const finished = createNewCharacter({
   // 第 6 步「命名與背景」的另外兩格（原書第 8 步的稱呼與外貌描述在本專案的對應）
   gender: '女',
   background: '來自邊境的流浪劍士。',
+  // 四維預設是空的（0 = 尚未指派），填完的卡必須自己帶上配置
+  attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 },
   // 起始資金已結算（原書 p.165）。沒有這一項，第 4 步會是 error，這張卡不能定稿。
   startingFundsRolled: true,
   classes: [
@@ -599,6 +606,67 @@ check('合法階梯不會觸發範圍 error',
 check('snapToAttributeDie 取最接近的一階（同距取低，不替玩家灌水）',
   [20, 11, 7, 6, 12, 5].map(snapToAttributeDie), [12, 10, 6, 6, 12, 6]);
 check('階梯常數就是官方那四階', [...ATTRIBUTE_DICE_TIERS], [6, 8, 10, 12]);
+
+// ─────────────────────────────────────────────────────────── Q
+section('Q. 四維預設為空 ＋ 開局英雄技能（Playtest Materials 2026-10-01 p.4）');
+
+// 四維屬性預設 0 = 尚未指派（使用者指示：讓玩家自己選三組之一，不先套「萬事通」）
+check('新角色四維預設為 0（不是 d8×4）',
+  ATTRIBUTE_KEYS.map((k) => createNewCharacter().attributes[k]), [0, 0, 0, 0]);
+check('四項全空 → 第 3 步是 info（還沒開始，不是玩家的錯）',
+  validateCharacter(createNewCharacter()).warnings.filter((w) => w.step === 3).map((w) => w.type), ['info']);
+check('四項全空的訊息是「尚未選擇四維屬性配置」',
+  validateCharacter(createNewCharacter()).warnings.filter((w) => w.step === 3).map((w) => w.message),
+  ['尚未選擇四維屬性配置']);
+check('部分指派 → warning 並列出還缺哪幾項',
+  validateCharacter(createNewCharacter({ attributes: { dex: 10, ins: 8, mig: 0, wlp: 0 } }))
+    .warnings.filter((w) => w.field === 'attributes').map((w) => [w.type, w.message]),
+  [['warning', '四維屬性還有 2 項未指派（力量、意志）']]);
+check('全部指派且總和正確 → 第 3 步沒有任何提醒',
+  validateCharacter(createNewCharacter({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 } }))
+    .warnings.filter((w) => w.step === 3), []);
+// 0 不能被當成「非法骰階」——那是「還沒指派」，不是 d0 這個違法值
+check('未指派不會被誤判成非法骰階',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'attributes' && w.type === 'error'), []);
+
+// 開局英雄技能：官方原文「each Player Character gains an additional Heroic Skill during
+// character creation; however, the first time they would normally gain a Heroic Skill by
+// mastering one of their Classes, instead they gain no Heroic Skill from that.」
+const START_RULE = { startingHeroicSkill: true };
+const creationWarn = (over, rules) => validateCharacter(createNewCharacter(over), rules)
+  .warnings.filter((w) => w.field === 'heroicSkills');
+const L3 = (className) => [{ className, level: 3, skills: [] }];
+
+check('規則關閉時，開局拿英雄技能仍然被擋（維持原行為）',
+  creationWarn({ heroicSkills: ['額外HP'], classes: L3('守護者') }).map((w) => w.type), ['error']);
+check('規則開啟時，**擁有**該職業即可（不必精通）',
+  creationWarn({ heroicSkills: ['背水'], classes: L3('暗黑之刃') }, START_RULE), []);
+check('規則開啟但沒有那個職業 → 仍然擋，且訊息說的是「開局需擁有」',
+  creationWarn({ heroicSkills: ['背水'], classes: L3('守護者') }, START_RULE).map((w) => w.message),
+  ['【背水】開局需擁有【暗黑之刃】其中之一']);
+check('8 個官方禁用技能都不能用開局名額',
+  STARTING_HEROIC_SKILL_BLOCKLIST.map((name) =>
+    checkHeroicSkillRequirement({ name, requirement: '通用' }, { classes: ['守護者'], atCreation: true }).ok),
+  STARTING_HEROIC_SKILL_BLOCKLIST.map(() => false));
+check('禁用清單就是官方列的那 8 個（逐字）',
+  [...STARTING_HEROIC_SKILL_BLOCKLIST],
+  ['大口袋', '額外HP', '額外IP', '額外MP', '強力射擊', '強力咒語', '強力攻擊', '啟示']);
+check('開局名額只有一個：兩個技能都靠它 → error',
+  creationWarn({ heroicSkills: ['背水', '夢之刃'], classes: L3('暗黑之刃') }, START_RULE)
+    .map((w) => w.message.includes('開局名額只能選一個')), [true]);
+check('精通之後就不佔開局名額（同一組技能不再報錯）',
+  creationWarn({
+    heroicSkills: ['背水', '夢之刃'],
+    classes: [{ className: '暗黑之刃', level: 10, skills: [] }]
+  }, START_RULE), []);
+check('等級前提在開局模式下不變（Playtest 明文「remain unchanged」）',
+  checkHeroicSkillRequirement({ requirement: '秘儀師，且你的角色等級必須為30或更高' },
+    { classes: ['秘儀師'], level: 5, atCreation: true }).ok, false);
+check('開局模式但一個職業都沒有 → 擋',
+  checkHeroicSkillRequirement({ requirement: '通用' }, { classes: [], atCreation: true }).ok, false);
+check('規則關閉時，開局模式不適用（沒有名額這回事）',
+  creationWarn({ heroicSkills: ['背水'], classes: L3('暗黑之刃') }).map((w) => w.type), ['error']);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

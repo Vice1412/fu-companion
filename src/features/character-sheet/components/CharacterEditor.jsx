@@ -141,16 +141,39 @@ export default function CharacterEditor({
   const blockedCount = checklist.filter((item) => item.status === 'error').length;
   const canLock = blockedCount === 0;
 
-  // 英雄技能的前提（原書 p.232）：**不能選的原因要在選之前看見**，不是選完才被擋。
-  // 判定本身在引擎裡（`checkHeroicSkillRequirement`），與 validateCharacter 共用同一份。
-  const heroicOptions = rulesData.heroicSkills.map((skill) => ({
-    skill,
-    verdict: checkHeroicSkillRequirement(skill, {
+  // 英雄技能的前提（原書 p.232；開局名額見 Playtest Materials 2026-10-01 p.4）：
+  // **不能選的原因要在選之前看見**，不是選完才被擋。判定與 `validateCharacter` 共用同一份。
+  const ownedClassNames = (character.classes || []).map((c) => c.className);
+  const heroicOptions = rulesData.heroicSkills.map((skill) => {
+    const mastery = checkHeroicSkillRequirement(skill, {
       masteredClasses: stats.masteredClasses,
       level: getCharacterLevel(character)
-    }),
-    already: (character.heroicSkills || []).some((x) => (x?.name || x) === skill.name)
-  }));
+    });
+    const creation = rules.startingHeroicSkill
+      ? checkHeroicSkillRequirement(skill, {
+        classes: ownedClassNames,
+        level: getCharacterLevel(character),
+        atCreation: true
+      })
+      : { ok: false, reason: '' };
+    return {
+      skill,
+      mastery,
+      creation,
+      // 顯示哪一條理由：規則有開就講開局名額的條件（那是玩家正在嘗試的路），
+      // 否則講精通。**不能寫成 `mastery.ok ? mastery : creation`**——規則關閉時
+      // `creation.reason` 是空字串，選項會變成只有一個沒有原因的「✕」。
+      verdict: mastery.ok
+        ? mastery
+        : (rules.startingHeroicSkill ? creation : mastery),
+      // 只能靠開局名額取得（精通條件還沒到）
+      needsSlot: !mastery.ok && creation.ok,
+      already: (character.heroicSkills || []).some((x) => (x?.name || x) === skill.name)
+    };
+  });
+  // 開局名額只有一個（Playtest 原文：an additional Heroic Skill）
+  const creationSlotUsed = heroicOptions.filter((o) => o.already && o.needsSlot).length;
+  const creationSlotFull = Boolean(rules.startingHeroicSkill) && creationSlotUsed >= 1;
 
   // 定稿狀態：創角欄位凍結，只留成長相關的欄位可以動
   const locked = isCharacterLocked(character);
@@ -1360,7 +1383,9 @@ export default function CharacterEditor({
                           {tile.label}
                         </div>
                         <div className="font-mono font-black text-lg leading-tight" style={{ color: theme.textDark }}>
-                          {tile.key === 'init' && tile.value > 0 ? `+${tile.value}` : tile.value}
+                          {stats.attributesUnset
+                            ? '—'
+                            : (tile.key === 'init' && tile.value > 0 ? `+${tile.value}` : tile.value)}
                         </div>
                       </div>
                     </div>
@@ -1638,32 +1663,61 @@ export default function CharacterEditor({
                   <label className="text-xs font-bold" style={{ color: theme.textDark }}>
                     掌握之英雄技能
                   </label>
-                  {stats.masteredClasses.length > 0 ? (
-                    <span className="text-xs font-bold font-mono" style={{ color: theme.textDark }}>
-                      已精通職業: {stats.masteredClasses.join('、')} 【具備英雄技能資格】
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-bold" style={{ color: '#b45309' }}>
-                      需先精通一個職業（單一職業達 10 級）
-                    </span>
-                  )}
+                  <span className="flex items-center gap-2 flex-wrap">
+                    {stats.masteredClasses.length > 0 ? (
+                      <span className="text-xs font-bold font-mono" style={{ color: theme.textDark }}>
+                        已精通職業: {stats.masteredClasses.join('、')} 【具備英雄技能資格】
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold" style={{ color: '#b45309' }}>
+                        需先精通一個職業（單一職業達 10 級）
+                      </span>
+                    )}
+                    {rules.startingHeroicSkill && (
+                      <span
+                        className="text-[11px] font-bold"
+                        style={{ color: creationSlotFull ? '#b45309' : theme.accent }}
+                      >
+                        開局名額：{creationSlotFull ? '已使用' : '還有一個'}
+                      </span>
+                    )}
+                  </span>
                 </div>
+
+                {rules.startingHeroicSkill && (
+                  <p className="text-[11px] leading-relaxed" style={{ color: theme.textMuted }}>
+                    此團使用官方選用規則「開局贈送一個英雄技能」（Playtest Materials 2026-10-01）：
+                    開局可多拿一個，但第一次因精通職業而該拿到英雄技能時改為不拿。
+                    標著 ◈ 的技能靠這個名額取得（需要該職業，但不必精通）。
+                  </p>
+                )}
 
                 <div className="flex items-center gap-2">
                   <select
                     value={selectedHeroicToAdd}
                     onChange={e => setSelectedHeroicToAdd(e.target.value)}
-                    disabled={stats.masteredClasses.length === 0}
+                    disabled={stats.masteredClasses.length === 0 && !rules.startingHeroicSkill}
                     className="flex-1 border rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   >
                     <option value="">-- 選擇英雄技能 --</option>
-                    {heroicOptions.map(({ skill: h, verdict, already }) => (
-                      <option key={h.name} value={h.name} disabled={!verdict.ok || already}>
-                        {h.name} [{h.requirement}]
-                        {already ? ' ✕ 已習得' : verdict.ok ? '' : ` ✕ ${verdict.reason}`}
-                      </option>
-                    ))}
+                    {heroicOptions.map(({ skill: h, verdict, already, needsSlot }) => {
+                      const slotBlocked = needsSlot && creationSlotFull;
+                      return (
+                        <option key={h.name} value={h.name} disabled={!verdict.ok || already || slotBlocked}>
+                          {h.name} [{h.requirement}]
+                          {already
+                            ? ' ✕ 已習得'
+                            : !verdict.ok
+                              ? ` ✕ ${verdict.reason}`
+                              : slotBlocked
+                                ? ' ✕ 開局名額已用完'
+                                : needsSlot
+                                  ? ' ◈ 用開局名額'
+                                  : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                   <JRPGButton
                     variant={theme.buttonVariant || 'primary'}
@@ -1672,7 +1726,8 @@ export default function CharacterEditor({
                       if (!selectedHeroicToAdd) return;
                       const picked = heroicOptions.find((o) => o.skill.name === selectedHeroicToAdd);
                       // 選單已經停用不合格的選項，這裡是第二道防線
-                      if (picked && picked.verdict.ok && !picked.already) {
+                      if (picked && picked.verdict.ok && !picked.already
+                        && !(picked.needsSlot && creationSlotFull)) {
                         updateField('heroicSkills', [...(character.heroicSkills || []), picked.skill]);
                       }
                       setSelectedHeroicToAdd('');

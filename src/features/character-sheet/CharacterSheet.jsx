@@ -19,7 +19,8 @@ import {
   GiScrollQuill,
   GiQuillInk,
   GiScrollUnfurled,
-  GiShield
+  GiShield,
+  GiLaurelCrown
 } from 'react-icons/gi';
 import GameIcon from '../../components/ui/GameIcon';
 import FUIcon from '../../components/ui/FUIcon';
@@ -38,6 +39,7 @@ import JRPGBadge from '../../components/ui/JRPGBadge';
 import { withEn } from '../../utils/properNouns';
 import { STORAGE_KEYS } from '../../data/keys';
 import { readJSON, writeJSON } from '../../data/store';
+import { resolveCreationRules } from './data/creationRules';
 
 const STORAGE_KEY = STORAGE_KEYS.characterRoster;
 
@@ -61,6 +63,18 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   useEffect(() => {
     writeJSON(STORAGE_KEY, roster);
   }, [roster]);
+
+  // 團務開卡規則（GM 自訂開局）。存在這一團而不是每個角色身上——見 keys.js 的說明。
+  const [campaignRules, setCampaignRules] = useState(() => {
+    const parsed = readJSON(STORAGE_KEYS.creationRules, {});
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  });
+  useEffect(() => {
+    writeJSON(STORAGE_KEYS.creationRules, campaignRules);
+  }, [campaignRules]);
+  const patchCampaignRules = (patch) => setCampaignRules((prev) => ({ ...prev, ...patch }));
+  // 補齊預設值後的完整規則（顯示與傳給編輯器都用這一份，不要各自 resolve 一次）
+  const campaignCreationRules = resolveCreationRules(campaignRules);
 
   const showToast = (msg, type = 'info') => {
     setToastMessage(msg);
@@ -489,6 +503,20 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
 
               <button
                 type="button"
+                onClick={() => patchCampaignRules({ startingHeroicSkill: !campaignCreationRules.startingHeroicSkill })}
+                title="官方選用規則（Playtest Materials 2026-10-01）：每個角色開局多一個英雄技能；但第一次因精通職業而該拿到英雄技能時，改為不拿。需要特定職業的技能，開局只要擁有該職業其中之一即可；其他前提（等級、已習得技能）不變。同團不得有兩個角色用這個名額拿到同一個技能。"
+                className={`border px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs ${
+                  campaignCreationRules.startingHeroicSkill
+                    ? 'bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-600'
+                    : 'bg-white hover:bg-emerald-50 text-emerald-950 border-emerald-200'
+                }`}
+              >
+                <GiLaurelCrown className="w-3.5 h-3.5" />
+                <span>開局英雄技能：{campaignCreationRules.startingHeroicSkill ? '開' : '關'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleExportJSON}
                 disabled={roster.length === 0}
                 className="bg-white hover:bg-emerald-50 text-emerald-950 border border-emerald-200 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 justify-center text-xs disabled:opacity-40 disabled:pointer-events-none"
@@ -547,6 +575,8 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                 const curMp = char.currentMp ?? stats.maxMp;
                 const curIp = char.currentIp ?? stats.maxIp;
                 const isCrisis = curHp <= stats.crisisThreshold;
+                // 四維還沒指派完 → 六項數值不成立（見 calculateCharacterStats 的 attributesUnset）
+                const statsUnset = Boolean(stats.attributesUnset);
 
                 return (
                   <div
@@ -628,7 +658,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                             HP
                             {isCrisis && <FUIcon name="crisis" className="text-xs inline-block" />}
                           </span>
-                          <span className="font-bold text-[#3c2415]">{curHp} / {stats.maxHp}</span>
+                          <span className="font-bold text-[#3c2415]">{statsUnset ? '—' : `${curHp} / ${stats.maxHp}`}</span>
                         </div>
                         <div className="h-2 w-full bg-[#e8dec8] rounded-full overflow-hidden">
                           <div
@@ -642,7 +672,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
                       <div className="space-y-0.5">
                         <div className="flex items-center justify-between text-[11px] font-mono">
                           <span className="font-bold text-blue-800">MP</span>
-                          <span className="font-bold text-[#3c2415]">{curMp} / {stats.maxMp}</span>
+                          <span className="font-bold text-[#3c2415]">{statsUnset ? '—' : `${curMp} / ${stats.maxMp}`}</span>
                         </div>
                         <div className="h-2 w-full bg-[#e8dec8] rounded-full overflow-hidden">
                           <div
@@ -695,7 +725,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
 
                       {/* Defense & Initiative Row */}
                       <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-[#f5efdf] border border-[#d6c7ab] text-[11px] font-mono">
-                        <span className="text-[#6b5a4b]">DEF <strong className="text-[#3c2415]">{stats.def}</strong></span>
+                        <span className="text-[#6b5a4b]">DEF <strong className="text-[#3c2415]">{statsUnset ? '—' : stats.def}</strong></span>
                         <span className="text-[#d6c7ab]">|</span>
                         <span className="text-blue-900">M.DEF <strong className="text-blue-950">{stats.mdef}</strong></span>
                         <span className="text-[#d6c7ab]">|</span>
@@ -821,6 +851,7 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
           onBackToRoster={() => setViewMode('roster')}
           onEnterPlayMode={() => setViewMode('play')}
           initialTab={editorTab}
+          creationRules={campaignRules}
           showToast={showToast}
         />
       )}

@@ -591,12 +591,13 @@ section('M. 創角步驟次序：職業在四維之前（原書 p.154 第 4 步 
 
 // 這一組是「換過分頁編號」的迴歸測試：只換導航列的標籤而忘了換內容，
 // 畫面會變成「第 2 步寫著職業與技能、內容卻是四維屬性面板」——建置與型別都不會發現。
-const renderEditorAt = (tab, over = {}) => renderToStaticMarkup(React.createElement(CharacterEditor, {
+const renderEditorAt = (tab, over = {}, rules = null) => renderToStaticMarkup(React.createElement(CharacterEditor, {
   character: createNewCharacter({ name: '次序測試', startingFundsRolled: true, ...over }),
   themeId: 'emerald',
   onChange: () => {},
   showToast: () => {},
-  initialTab: tab
+  initialTab: tab,
+  ...(rules ? { creationRules: rules } : {})
 }));
 
 const tab2Html = renderEditorAt(2);
@@ -637,6 +638,20 @@ check('合格的不會被停用', /value="額外HP"[^>]*disabled/.test(masterHtm
 check('停用的選項寫出原因', masterHtml.includes('✕ 需精通【暗黑之刃】其中之一'), true);
 check('未精通時整支選單說明需要什麼',
   noMasterHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
+
+// 開局英雄技能（Playtest Materials 2026-10-01 p.4 的選用規則）
+const startRuleHtml = renderEditorAt(5, {
+  classes: [{ className: '暗黑之刃', level: 3, skills: [] }],
+  heroicSkills: []
+}, { startingHeroicSkill: true });
+check('規則開啟時，靠開局名額取得的技能標示 ◈',
+  startRuleHtml.includes('◈ 用開局名額'), true);
+check('規則開啟時說明這是哪一條規則',
+  startRuleHtml.includes('開局贈送一個英雄技能'), true);
+check('規則開啟時顯示名額狀態', startRuleHtml.includes('開局名額：'), true);
+check('規則關閉時不會出現開局名額的標示',
+  renderEditorAt(5, { classes: [{ className: '暗黑之刃', level: 3, skills: [] }] })
+    .includes('◈ 用開局名額'), false);
 
 // ─────────────────────────────────────────────────────────── N
 section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');
