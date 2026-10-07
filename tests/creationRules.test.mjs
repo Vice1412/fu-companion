@@ -34,7 +34,10 @@ import {
   buildCreationChecklist,
   CREATION_STEPS,
   LOCKED_CREATION_TABS,
-  PLACEHOLDER_CHARACTER_NAME
+  PLACEHOLDER_CHARACTER_NAME,
+  checkHeroicSkillRequirement,
+  snapToAttributeDie,
+  ATTRIBUTE_DICE_TIERS
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
 import {
@@ -524,6 +527,78 @@ check('編輯器不再 import 已刪除的 ATTRIBUTE_STARTING_ARRAYS',
 check('屬性陣列只有一份定義（在 data/，元件只 import）',
   read('../src/features/character-sheet/components/AttributeMatrixPicker.jsx')
     .includes('export const ATTRIBUTE_PRESET_ARRAYS'), false);
+
+// ─────────────────────────────────────────────────────────── P
+section('P. 英雄技能前提（原書 p.232）與四維骰階範圍（原書 p.162）');
+
+const heroicWarnings = (over) => validateCharacter(createNewCharacter(over))
+  .warnings.filter((w) => w.field === 'heroicSkills');
+const master = (className) => [{ className, level: 10, skills: [] }];
+
+// 共同前提：精通一個職業（原書 p.232「將一個職業提升到 10 級」）
+check('未精通任何職業時，英雄技能是 error',
+  heroicWarnings({ heroicSkills: ['額外HP'] }).map((w) => w.type), ['error']);
+check('精通後「通用」英雄技能就合法',
+  heroicWarnings({ heroicSkills: ['額外HP'], classes: master('守護者') }), []);
+check('精通了職業但沒到 10 級 → 仍算未精通',
+  heroicWarnings({ heroicSkills: ['額外HP'], classes: [{ className: '守護者', level: 9, skills: [] }] })
+    .map((w) => w.type), ['error']);
+
+// 個別技能指定的職業前提
+check('精通守護者拿不了【背水】（需暗黑之刃）',
+  heroicWarnings({ heroicSkills: ['背水'], classes: master('守護者') }).map((w) => w.message),
+  ['【背水】需精通【暗黑之刃】其中之一']);
+check('精通暗黑之刃就拿得了【背水】',
+  heroicWarnings({ heroicSkills: ['背水'], classes: master('暗黑之刃') }), []);
+check('「A或B」任一精通即可',
+  checkHeroicSkillRequirement({ requirement: '狂怒鬥士或武器大師' },
+    { masteredClasses: ['武器大師'], level: 5 }).ok, true);
+check('「A、B或C」任一個都沒有 → 擋',
+  checkHeroicSkillRequirement({ requirement: '嵌合師、元素師、熵師或靈師' },
+    { masteredClasses: ['守護者'], level: 5 }).ok, false);
+
+// 「且／並」後面的額外技能前提不猜（寧漏不誤）；等級前提抽得出來
+check('額外技能前提不猜，只判職業',
+  checkHeroicSkillRequirement({ requirement: '修補匠，且必須獲得小工具技能中的高級煉金術技能' },
+    { masteredClasses: ['修補匠'], level: 5 }).ok, true);
+check('等級前提抽得出來（不足 → 擋）',
+  checkHeroicSkillRequirement({ requirement: '秘儀師，且你的角色等級必須為30或更高' },
+    { masteredClasses: ['秘儀師'], level: 5 }).ok, false);
+check('等級前提抽得出來（足夠 → 過）',
+  checkHeroicSkillRequirement({ requirement: '秘儀師，且你的角色等級必須為30或更高' },
+    { masteredClasses: ['秘儀師'], level: 30 }).ok, true);
+check('沒有前提資料時不擋（無法判定）',
+  checkHeroicSkillRequirement({ name: '未知技能' }, { masteredClasses: ['守護者'], level: 5 }).ok, true);
+check('沒有任何精通 → 連「通用」也擋',
+  checkHeroicSkillRequirement({ requirement: '通用' }, { masteredClasses: [], level: 30 }).ok, false);
+
+// 荊棘之心的前提在官方繁中 Excel 裡寫成「暗影之刃」——但同一本 Excel 其他 8 處
+// （含職業技能合集）都寫「暗黑之刃」，而這個技能的說明提到「暗影突襲」（暗黑之刃的技能）。
+// 那是來源自己的不一致，已修正；否則這個關卡會誤擋精通暗黑之刃的角色。
+check('荊棘之心的前提是暗黑之刃（不是 Excel 那一處的暗影之刃）',
+  rulesData.heroicSkills.find((h) => h.name === '荊棘之心').requirement.includes('暗黑之刃'), true);
+check('沒有任何英雄技能的前提指向不存在的職業',
+  rulesData.heroicSkills
+    .filter((h) => h.requirement !== '通用')
+    .filter((h) => {
+      const part = h.requirement.split(/且|並/)[0];
+      const tokens = part.split(/[、,，]|或|：|:/).map((t) => t.trim())
+        .filter((t) => t && !/技能|咒語|等級|兩個|更多|職業|中$/.test(t));
+      return tokens.length > 0 && tokens.every((t) => !Object.keys(rulesData.classes).includes(t));
+    })
+    .map((h) => h.name), []);
+
+// 四維骰階範圍（原書 p.162：「從最小 d6 到最大 d12」）
+check('d20 不在階梯上 → error 並指出是哪一項',
+  validateCharacter(createNewCharacter({ attributes: { dex: 20, ins: 8, mig: 6, wlp: 6 } }))
+    .warnings.filter((w) => w.field === 'attributes' && w.type === 'error').map((w) => w.message),
+  ['屬性骰階必須是 d6／d8／d10／d12：DEX 為 d20']);
+check('合法階梯不會觸發範圍 error',
+  validateCharacter(createNewCharacter()).warnings
+    .filter((w) => w.field === 'attributes' && w.type === 'error'), []);
+check('snapToAttributeDie 取最接近的一階（同距取低，不替玩家灌水）',
+  [20, 11, 7, 6, 12, 5].map(snapToAttributeDie), [12, 10, 6, 6, 12, 6]);
+check('階梯常數就是官方那四階', [...ATTRIBUTE_DICE_TIERS], [6, 8, 10, 12]);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

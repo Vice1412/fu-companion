@@ -624,6 +624,20 @@ check('第 6 步有姓名、性別與角色背景',
 check('第 6 步排在特質與命刻之後（導航列的最後一格）',
   tab6Html.lastIndexOf('命名與背景') > tab6Html.lastIndexOf('特質與命刻'), true);
 
+// 英雄技能的資格關卡（原書 p.232）：不合格的選項要停用並寫出原因。
+// `<select>` 的展開清單截不到圖，所以用 SSR 斷言——比截圖更強。
+const masterHtml = renderEditorAt(5, {
+  classes: [{ className: '守護者', level: 10, skills: [] }],
+  heroicSkills: []
+});
+const noMasterHtml = renderEditorAt(5, { classes: [], heroicSkills: [] });
+check('已精通職業時顯示資格', masterHtml.includes('已精通職業'), true);
+check('不合格的英雄技能選項被停用', /value="背水"[^>]*disabled/.test(masterHtml), true);
+check('合格的不會被停用', /value="額外HP"[^>]*disabled/.test(masterHtml), false);
+check('停用的選項寫出原因', masterHtml.includes('✕ 需精通【暗黑之刃】其中之一'), true);
+check('未精通時整支選單說明需要什麼',
+  noMasterHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
+
 // ─────────────────────────────────────────────────────────── N
 section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');
 

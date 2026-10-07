@@ -5,7 +5,7 @@
  * 2. 支援將《物語手帳》角色導出為 Fultimator 標準 JSON 格式
  */
 
-import { createNewCharacter, calculateCharacterStats, getCharacterLevel } from './characterEngine.js';
+import { createNewCharacter, calculateCharacterStats, getCharacterLevel, snapToAttributeDie } from './characterEngine.js';
 
 // 官方 28 職業英漢雙向對照字典
 export const CLASS_TRANSLATION_MAP = {
@@ -106,11 +106,13 @@ export const convertFultimatorToFUCompanion = (fChar) => {
 
   // 2. 屬性骰階 (attributes: dexterity, insight, might, willpower)
   const rawAttrs = fChar.attributes || {};
+  // 骰階一律夾到合法階梯（原書 p.162：最小 d6、最大 d12）。
+  // 以前這裡完全不設防——匯入檔寫 `{"dexterity": 20}` 就會直接進引擎算出 DEF 20。
   const parseAttrVal = (val, fallback = 8) => {
-    if (typeof val === 'number') return val;
+    if (typeof val === 'number') return snapToAttributeDie(val);
     if (typeof val === 'string') {
       const match = val.match(/d?(\d+)/);
-      if (match) return parseInt(match[1], 10);
+      if (match) return snapToAttributeDie(parseInt(match[1], 10));
     }
     if (val && typeof val === 'object' && val.base) return parseAttrVal(val.base);
     return fallback;

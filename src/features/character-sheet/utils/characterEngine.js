@@ -9,6 +9,31 @@ import { appendLog, createLogEntry } from './characterLog';
 // Dice ladder for step reductions
 const DICE_STEPS = [6, 8, 10, 12];
 
+/**
+ * 四維屬性骰階的合法階梯（原書 p.162：最小 d6、最大 d12）。
+ *
+ * 這是唯一的來源：`AttributeMatrixPicker` 的步進器、`fultimatorConverter` 的匯入夾制、
+ * `validateCharacter` 的範圍檢查都讀它。以前 UI 有一份 `VALID_TIERS`、引擎有一份
+ * `DICE_STEPS`、匯入端則完全沒有——於是匯入的 `dex: 20` 會直接進引擎。
+ */
+export const ATTRIBUTE_DICE_TIERS = Object.freeze([...DICE_STEPS]);
+
+/** 把任意數字夾到合法骰階（取最接近的一階；同距取低的那一階，不替玩家灌水） */
+export const snapToAttributeDie = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 8;
+  let best = ATTRIBUTE_DICE_TIERS[0];
+  let bestDist = Infinity;
+  ATTRIBUTE_DICE_TIERS.forEach((tier) => {
+    const dist = Math.abs(tier - n);
+    if (dist < bestDist) {
+      best = tier;
+      bestDist = dist;
+    }
+  });
+  return best;
+};
+
 export const reduceDieStep = (baseDie, steps = 1) => {
   const currentIdx = DICE_STEPS.indexOf(baseDie);
   if (currentIdx === -1) return Math.max(6, baseDie - steps * 2);
@@ -39,6 +64,49 @@ export const isHpMpChoiceBenefit = (freeBenefitText = '') => (
  * 等於一條永遠不會響的檢查（測試以 `PLACEHOLDER_CHARACTER_NAME` 綁住兩邊）。
  */
 export const PLACEHOLDER_CHARACTER_NAME = '新冒險者';
+
+/**
+ * 英雄技能的前提判定（原書 p.232）。
+ *
+ * 官方原文：「當一個玩家角色將一個職業提升到 10 級時，這個角色可以從下面的列表中
+ * 獲得一個英雄技能。」——**精通一個職業是所有英雄技能的共同前提**，這一條 100% 可靠。
+ *
+ * `rulesData.heroicSkills[].requirement` 是自由文字，實際有六七種寫法：
+ * `通用`、單一職業、`A、B或C`、`A，且必須獲得 X 技能`、
+ * `兩個或更多：…，且角色等級必須為 30 或更高`……。這裡**只判定能精確判定的部分**：
+ * - 職業名是封閉集合（比對 `rulesData.classes` 的鍵）→ 可以抽出來；
+ * - 「等級必須為 N 或更高」→ 可以抽出來；
+ * - **「且／並」後面的額外技能前提不猜**——那是自由文字，猜錯會擋掉合法角色。
+ *   它已經顯示在選項標籤上（`[requirement]`），由玩家自己確認。
+ * - 「兩個或更多：A、B、C」這種寫法只要求**其中之一**（比原文寬鬆，寧漏不誤）。
+ *
+ * 職業名互為子字串（`吟唱者` ⊂ `吟唱者【Playtest】`）不會誤判：兩者都進候選清單，
+ * 精通任一個都算過。
+ */
+export const checkHeroicSkillRequirement = (skill, { masteredClasses = [], level = 5 } = {}) => {
+  const req = String(skill?.requirement || '').trim();
+  if (!req) return { ok: true, reason: '' }; // 沒有前提資料 → 無法判定，不擋
+
+  if (masteredClasses.length === 0) {
+    return { ok: false, reason: '需先精通一個職業（單一職業達 10 級）' };
+  }
+  if (req === '通用') return { ok: true, reason: '' };
+
+  const lv = /等級必須為\s*(\d+)\s*或更高/.exec(req);
+  if (lv) {
+    const need = parseInt(lv[1], 10);
+    if (level < need) return { ok: false, reason: `需角色等級 ${need} 或更高` };
+  }
+
+  // 職業段落：「且／並」之後是額外技能前提，不列入判定
+  const classPart = req.split(/且|並/)[0];
+  const required = Object.keys(rulesData.classes).filter((name) => classPart.includes(name));
+  if (required.length === 0) return { ok: true, reason: '' }; // 抓不到職業名 → 不擋
+  if (required.some((name) => masteredClasses.includes(name))) return { ok: true, reason: '' };
+
+  const shown = [...new Set(required.map((n) => n.replace('【Playtest】', '')))];
+  return { ok: false, reason: `需精通【${shown.join('／')}】其中之一` };
+};
 
 /**
  * 建立全新角色卡預設結構
@@ -633,6 +701,22 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
     });
   }
 
+  // 單顆骰階必須落在 d6~d12（原書 p.162「從最小 d6 到最大 d12」）。
+  // UI 的步進器本來就有界，但 Fultimator 匯入與手改存檔可以繞過——那是 **error**：
+  // d20 不是合法的角色，而 `calculateCharacterStats` 會照樣把它算成 DEF 20。
+  const offLadder = ['dex', 'ins', 'mig', 'wlp']
+    .filter((key) => !ATTRIBUTE_DICE_TIERS.includes(char.attributes?.[key]));
+  if (offLadder.length > 0) {
+    const label = { dex: 'DEX', ins: 'INS', mig: 'MIG', wlp: 'WLP' };
+    warnings.push({
+      step: 3,
+      field: 'attributes',
+      type: 'error',
+      message: `屬性骰階必須是 ${ATTRIBUTE_DICE_TIERS.map((d) => `d${d}`).join('／')}：`
+        + offLadder.map((key) => `${label[key]} 為 d${char.attributes?.[key]}`).join('、')
+    });
+  }
+
   // 步驟 2: 職業與特技（起始等級的職業數限制由開卡規則決定）
   const classCount = (char.classes || []).length;
   if (char.level === creation.startingLevel) {
@@ -774,6 +858,36 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
       field: 'quirk',
       type: 'error',
       message: `此團未開放金手指，請移除「${char.quirk}」`
+    });
+  }
+
+  // 英雄技能的前提（原書 p.232）。以前這裡完全沒有檢查——5 級、零精通也能從選單
+  // 直接加英雄技能，而畫面只印了一行「已精通職業: …【具備英雄技能資格】」當裝飾。
+  const heroic = char.heroicSkills || [];
+  if (heroic.length > 0 && stats.masteredClasses.length === 0) {
+    warnings.push({
+      step: 5,
+      field: 'heroicSkills',
+      type: 'error',
+      message: `英雄技能需先精通一個職業（單一職業達 10 級），目前有 ${heroic.length} 個`
+    });
+  } else {
+    heroic.forEach((entry) => {
+      const name = typeof entry === 'string' ? entry : entry?.name;
+      const def = (rulesData.heroicSkills || []).find((h) => h.name === name);
+      if (!def) return; // 資料表裡沒有這個英雄技能 → 無法判定，不擋（寧漏不誤）
+      const verdict = checkHeroicSkillRequirement(def, {
+        masteredClasses: stats.masteredClasses,
+        level: getCharacterLevel(char)
+      });
+      if (!verdict.ok) {
+        warnings.push({
+          step: 5,
+          field: 'heroicSkills',
+          type: 'error',
+          message: `【${name}】${verdict.reason}`
+        });
+      }
     });
   }
 

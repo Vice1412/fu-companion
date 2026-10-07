@@ -69,7 +69,8 @@ import {
   unlockCharacter,
   buildCreationChecklist,
   LOCKED_CREATION_TABS,
-  getCharacterLevel
+  getCharacterLevel,
+  checkHeroicSkillRequirement
 } from '../utils/characterEngine';
 import {
   EQUIPMENT_SLOTS,
@@ -139,6 +140,17 @@ export default function CharacterEditor({
   const checklistById = new Map(checklist.map((item) => [item.id, item]));
   const blockedCount = checklist.filter((item) => item.status === 'error').length;
   const canLock = blockedCount === 0;
+
+  // 英雄技能的前提（原書 p.232）：**不能選的原因要在選之前看見**，不是選完才被擋。
+  // 判定本身在引擎裡（`checkHeroicSkillRequirement`），與 validateCharacter 共用同一份。
+  const heroicOptions = rulesData.heroicSkills.map((skill) => ({
+    skill,
+    verdict: checkHeroicSkillRequirement(skill, {
+      masteredClasses: stats.masteredClasses,
+      level: getCharacterLevel(character)
+    }),
+    already: (character.heroicSkills || []).some((x) => (x?.name || x) === skill.name)
+  }));
 
   // 定稿狀態：創角欄位凍結，只留成長相關的欄位可以動
   const locked = isCharacterLocked(character);
@@ -1618,15 +1630,21 @@ export default function CharacterEditor({
                 )}
               </div>
 
-              {/* Heroic Skills */}
+              {/* Heroic Skills —— 原書 p.232：「當一個玩家角色將一個職業提升到 10 級時，
+                  這個角色可以從下面的列表中獲得一個英雄技能。」所以未精通就沒有資格；
+                  個別技能另有指定的職業與等級前提，不合格的選項直接停用並寫出原因。 */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold" style={{ color: theme.textDark }}>
                     掌握之英雄技能
                   </label>
-                  {stats.masteredClasses.length > 0 && (
+                  {stats.masteredClasses.length > 0 ? (
                     <span className="text-xs font-bold font-mono" style={{ color: theme.textDark }}>
                       已精通職業: {stats.masteredClasses.join('、')} 【具備英雄技能資格】
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-bold" style={{ color: '#b45309' }}>
+                      需先精通一個職業（單一職業達 10 級）
                     </span>
                   )}
                 </div>
@@ -1635,13 +1653,15 @@ export default function CharacterEditor({
                   <select
                     value={selectedHeroicToAdd}
                     onChange={e => setSelectedHeroicToAdd(e.target.value)}
-                    className="flex-1 border rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm cursor-pointer"
+                    disabled={stats.masteredClasses.length === 0}
+                    className="flex-1 border rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   >
                     <option value="">-- 選擇英雄技能 --</option>
-                    {rulesData.heroicSkills.map(h => (
-                      <option key={h.name} value={h.name}>
+                    {heroicOptions.map(({ skill: h, verdict, already }) => (
+                      <option key={h.name} value={h.name} disabled={!verdict.ok || already}>
                         {h.name} [{h.requirement}]
+                        {already ? ' ✕ 已習得' : verdict.ok ? '' : ` ✕ ${verdict.reason}`}
                       </option>
                     ))}
                   </select>
@@ -1650,9 +1670,10 @@ export default function CharacterEditor({
                     size="xs"
                     onClick={() => {
                       if (!selectedHeroicToAdd) return;
-                      const hObj = rulesData.heroicSkills.find(h => h.name === selectedHeroicToAdd);
-                      if (hObj && !(character.heroicSkills || []).some(h => h.name === hObj.name)) {
-                        updateField('heroicSkills', [...(character.heroicSkills || []), hObj]);
+                      const picked = heroicOptions.find((o) => o.skill.name === selectedHeroicToAdd);
+                      // 選單已經停用不合格的選項，這裡是第二道防線
+                      if (picked && picked.verdict.ok && !picked.already) {
+                        updateField('heroicSkills', [...(character.heroicSkills || []), picked.skill]);
                       }
                       setSelectedHeroicToAdd('');
                     }}
