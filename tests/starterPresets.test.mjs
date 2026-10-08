@@ -62,9 +62,10 @@ const DIE_FACES = [6, 8, 10];
 
 // ─────────────────────────────────────────────────────────── A
 section('A. 規模與分佈（對照官方五本手冊）');
-check('總組數 = 81', ALL_STARTER_PRESETS.length, 81);
+// 2026-10-06：+2 = 特典合輯的兩組卡牌大師範例（Bonus Collection 印刷 p.11 的 SAMPLE CHARACTERS）。
+check('總組數 = 83', ALL_STARTER_PRESETS.length, 83);
 check('核心 20', STARTER_PRESETS.length, 20);
-check('擴充 61', EXPANSION_PRESETS.length, 61);
+check('擴充 63', EXPANSION_PRESETS.length, 63);
 check('ALL = 核心 + 擴充',
   ALL_STARTER_PRESETS.length, STARTER_PRESETS.length + EXPANSION_PRESETS.length);
 
@@ -73,7 +74,8 @@ check('核心 20', byBook('core').length, 20);
 check('高度奇幻 18（印刷 p.132-135）', byBook('highFantasy').length, 18);
 check('自然奇幻 18（印刷 p.134-137）', byBook('naturalFantasy').length, 18);
 check('科技奇幻 17（印刷 p.146-149）', byBook('technoFantasy').length, 17);
-check('特典合輯 8（印刷 p.24-25）', byBook('bonus').length, 8);
+// 2026-10-06：+2 = 卡牌大師的兩組範例（印刷 p.11 的 SAMPLE CHARACTERS，與 p.24-25 的 Halloween 系列不同節）。
+check('特典合輯 10（p.24-25 的 Halloween 8 ＋ p.11 的卡牌大師 2）', byBook('bonus').length, 10);
 
 // ─────────────────────────────────────────────────────────── B
 section('B. 識別字與欄位完整性');
@@ -229,8 +231,8 @@ check('魔晶石僅作註記字串',
 // ─────────────────────────────────────────────────────────── K
 section('K. 篩選與分組（純函式，Modal 與測試共用）');
 const all = buildPresetSections(ALL_STARTER_PRESETS);
-check('不篩選時全部 81 組都在', all.reduce((a, s) => a + s.items.length, 0), 81);
-check('不篩選時切成 81 - 23 + 6 = 64 個區塊（預組收攏）', all.length, 64);
+check('不篩選時全部 83 組都在', all.reduce((a, s) => a + s.items.length, 0), 83);
+check('不篩選時切成 83 - 23 + 6 = 66 個區塊（預組收攏）', all.length, 66);
 check('第一個區塊是核心單人配置', [all[0].gid, all[0].title, all[0].items.length], [null, null, 1]);
 
 const hfOnly = buildPresetSections(ALL_STARTER_PRESETS, { sourcebook: 'highFantasy' });
@@ -351,7 +353,8 @@ ALL_STARTER_PRESETS.forEach((p) => {
 });
 check('子選擇全部合法（名稱存在於資料庫、數量未超上限、無重複）', subErrors, []);
 check('凡有子選項配置的技能都必須帶 selectedOptions', missingSub, []);
-check('帶子選擇的技能數 = 59', withSub, 59);
+// 2026-10-06：59 -> 60（新加的 TRICKSTER 有熵系魔法的咒語子選項）。
+check('帶子選擇的技能數 = 60', withSub, 60);
 
 // 抽樣核對官方原文（HF p.132 / TF p.147 / Bonus p.24）
 const findSkill = (pid, skill) => ALL_STARTER_PRESETS

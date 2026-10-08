@@ -829,5 +829,37 @@ export const EXPANSION_PRESETS = [
     quirk: '亡者歸來',
     zenit: 70,
     gadgets: { alchemy: 1, infusion: 0, magitech: 0, magitechSpells: [] }
-  }
+  },
+
+  // ── 特典合輯：卡牌大師的兩組官方範例（Bonus Collection 印刷 p.11 的 SAMPLE CHARACTERS）──
+  //    這兩組是「卡牌大師」唯一出現在官方範例角色的地方；先前的 8 組是 Halloween 系列，
+  //    沒有一組用卡牌大師。兩組都**沒有金手指**（範例角色卡沒列這一欄）。
+  {
+    id: 'bc_collector', sourcebook: 'bonus', group: null,
+    title: '收藏家', en: 'COLLECTOR',
+    attributes: { dex: 8, ins: 8, mig: 6, wlp: 10 },
+    classes: [
+      { className: '卡牌大師', level: 3, skills: [{ name: '魔力套牌', sl: 1 }, { name: '陷阱卡', sl: 2 }] },
+      { className: '嵌合師', level: 1, skills: [{ name: '咒語模仿', sl: 1 }] },
+      { className: '遊蕩者', level: 1, skills: [{ name: '靈魂竊取', sl: 1 }] }
+    ],
+    equipment: { mainHand: '魔導書', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    zenit: 170
+  },
+  {
+    id: 'bc_trickster', sourcebook: 'bonus', group: null,
+    title: '騙徒', en: 'TRICKSTER',
+    attributes: { dex: 8, ins: 8, mig: 8, wlp: 8 },
+    classes: [
+      { className: '卡牌大師', level: 2, skills: [{ name: '孤注一擲', sl: 1 }, { name: '魔力套牌', sl: 1 }] },
+      { className: '熵師', level: 2, skills: [{ name: '熵系魔法', sl: 1, selectedOptions: ['預測'] }, { name: '幸運七', sl: 1 }] },
+      { className: '神射手', level: 1, skills: [{ name: '交叉火力', sl: 1 }] }
+    ],
+    // 官方寫的是「疊牌（自訂武器）」，角色卡裝備欄沒有自訂武器這一格，
+      // 所以主手填最接近的基礎投擲武器（《核心規則》的賭徒範例也是「手裡劍，描述成擲牌」），
+      // 完整規格留在下面的 customWeapon。
+      equipment: { mainHand: '手裡劍', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapon: '疊牌（自訂武器：【DEX + INS】，投擲、遠程、精準、魔法防禦提升、強力）',
+    zenit: 70
+  },
 ];
