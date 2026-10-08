@@ -254,7 +254,7 @@ export default function ChimeristManager({
       {hasViciousCycle && (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200">
           <GiBiohazard className="text-base text-emerald-600 shrink-0" />
-          <span>已點亮《惡性循環》特技：當你的咒語對同源物種生物造成傷害時，將必定使其陷入中毒狀態！</span>
+          <span>已學習《惡性循環》特技：當你的咒語對同源物種生物造成傷害時，將必定使其陷入中毒狀態！</span>
         </div>
       )}
 

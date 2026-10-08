@@ -267,7 +267,7 @@ export default function TinkererGadgetsModal({
           </div>
 
           <span className="text-slate-500 dark:text-slate-400 text-[11px]">
-            點擊可解鎖節點點亮，點擊最末端已點亮節點可取消
+            點擊可解鎖節點，點擊最末端的已解鎖節點可取消
           </span>
         </div>
 
@@ -319,7 +319,7 @@ export default function TinkererGadgetsModal({
                     {/* 底層水平連接軌道 */}
                     <div className="absolute top-1/2 left-8 right-8 -translate-y-1/2 h-1 bg-slate-200 dark:bg-slate-700 z-0 rounded-full" />
                     
-                    {/* 點亮進度軌道 */}
+                    {/* 解鎖進度軌道 */}
                     <div
                       className="absolute top-1/2 left-8 -translate-y-1/2 h-1 bg-amber-500 z-0 rounded-full transition-all duration-300"
                       style={{

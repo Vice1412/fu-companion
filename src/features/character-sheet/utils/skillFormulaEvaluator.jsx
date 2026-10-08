@@ -242,7 +242,7 @@ export function openRuleCodex(keyword) {
 /**
  * 渲染單一純字串片段中的關鍵詞與攻擊性咒語圖標
  */
-function renderWordsAndKeywords(text, keyPrefix = '') {
+function renderWordsAndKeywords(text, keyPrefix = '', linkCodex = true) {
   if (!text || typeof text !== 'string') return text;
 
   // 組合正則：攻擊性咒語（（o）/(o)，另相容舊版閃電哨兵 U+26A1）以及非通用規則關鍵字
@@ -267,8 +267,8 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
       );
     }
 
-    // 2. 規則速查關鍵詞
-    if (CODEX_KEYWORDS.includes(part)) {
+    // 2. 規則速查關鍵詞（`linkCodex === false` 時不連結——金手指用）
+    if (linkCodex && CODEX_KEYWORDS.includes(part)) {
       return (
         <span
           key={k}
@@ -292,7 +292,7 @@ function renderWordsAndKeywords(text, keyPrefix = '') {
 /**
  * 渲染行內富文字（解析 **粗體** 與其中的關鍵詞）
  */
-function renderInlineRichText(line, linePrefix = '') {
+function renderInlineRichText(line, linePrefix = '', linkCodex = true) {
   if (!line) return null;
 
   // 匹配 **粗體內容**
@@ -307,14 +307,14 @@ function renderInlineRichText(line, linePrefix = '') {
       const innerText = chunk.slice(2, -2);
       return (
         <strong key={k} className="font-bold text-stone-900 dark:text-amber-100">
-          {renderWordsAndKeywords(innerText, `${k}-bold`)}
+          {renderWordsAndKeywords(innerText, `${k}-bold`, linkCodex)}
         </strong>
       );
     }
 
     return (
       <React.Fragment key={k}>
-        {renderWordsAndKeywords(chunk, `${k}-plain`)}
+        {renderWordsAndKeywords(chunk, `${k}-plain`, linkCodex)}
       </React.Fragment>
     );
   });
@@ -323,7 +323,7 @@ function renderInlineRichText(line, linePrefix = '') {
 /**
  * 完整渲染富文本區塊（解析 \n 換行、**粗體**、關鍵詞、公式）
  */
-export function renderRichTextContent(content, prefix = '') {
+export function renderRichTextContent(content, prefix = '', linkCodex = true) {
   if (!content || typeof content !== 'string') return content;
 
   const lines = content.split('\n');
@@ -333,7 +333,7 @@ export function renderRichTextContent(content, prefix = '') {
 
   return lines.map((line, lIdx) => (
     <React.Fragment key={`${prefix}-line-${lIdx}`}>
-      {renderInlineRichText(line, `${prefix}-line-${lIdx}`)}
+      {renderInlineRichText(line, `${prefix}-line-${lIdx}`, linkCodex)}
       {lIdx < lines.length - 1 && <br className="my-1" />}
     </React.Fragment>
   ));
@@ -394,8 +394,12 @@ function FormulaBadge({ seg, sl }) {
 
 /**
  * 技能動態敘述渲染組件
+ *
+ * `linkCodex`：要不要把 `CODEX_KEYWORDS` 裡的詞變成可點擊的規則速查連結。
+ * **金手指一律傳 `false`**——金手指的效果文剛好含有很多規則詞，但語意上大多無關，
+ * 使用者回報「有很多是剛好字對得上然後就被連過去了，實際完全沒有關係」。
  */
-export default function SkillDescription({ desc, sl = 0, className = '' }) {
+export default function SkillDescription({ desc, sl = 0, className = '', linkCodex = true }) {
   if (!desc) return null;
 
   const segments = parseSkillFormulaSegments(desc, sl);
@@ -406,7 +410,7 @@ export default function SkillDescription({ desc, sl = 0, className = '' }) {
         if (seg.type === 'text') {
           return (
             <React.Fragment key={idx}>
-              {renderRichTextContent(seg.content, `seg-${idx}`)}
+              {renderRichTextContent(seg.content, `seg-${idx}`, linkCodex)}
             </React.Fragment>
           );
         }

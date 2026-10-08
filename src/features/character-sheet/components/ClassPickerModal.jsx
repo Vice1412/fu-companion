@@ -552,8 +552,8 @@ export default function ClassPickerModal({
 
                         <div className="flex items-center gap-2">
                           <SkillStarPips
-                            value={currentSL}
-                            max={maxSL}
+                            currentSL={currentSL}
+                            maxSL={maxSL}
                             onChange={(v) => handleSetSkillSL(sk.name, v)}
                           />
                           <div className="flex items-center gap-1 font-mono">

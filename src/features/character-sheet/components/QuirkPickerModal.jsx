@@ -137,7 +137,7 @@ export function QuirkPickerBody({
                     className="text-[11px] italic leading-relaxed p-2.5 rounded-lg border"
                     style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textMuted }}
                   >
-                    <SkillDescription desc={opened.flavor} />
+                    <SkillDescription desc={opened.flavor} linkCodex={false} />
                   </p>
                 )}
                 <div className="text-xs sm:text-[13px] leading-relaxed space-y-2.5" style={{ color: theme.textDark }}>
@@ -146,7 +146,7 @@ export function QuirkPickerBody({
                   {splitParagraphs(opened.desc).map((block, bi) => (
                     <div key={bi} className="space-y-1">
                       {block.map((line, li) => (
-                        <p key={li}><SkillDescription desc={line} /></p>
+                        <p key={li}><SkillDescription desc={line} linkCodex={false} /></p>
                       ))}
                     </div>
                   ))}

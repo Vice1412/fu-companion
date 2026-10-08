@@ -111,7 +111,7 @@ export default function TinkererGadgetsQuickRef({
             尚未配置小工具科技樹節點（可分配 {sl} 點）
           </p>
           <p className="text-[11px] text-stone-500 dark:text-stone-400">
-            請在角色卡技能設定中點擊「配置科技樹」點亮煉金術、灌注術或魔科技節點。
+            請在角色卡技能設定中點擊「配置科技樹」解鎖煉金術、灌注術或魔科技節點。
           </p>
         </div>
       ) : isCollapsed ? (

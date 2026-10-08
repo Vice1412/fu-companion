@@ -340,7 +340,7 @@ function TinkererGadgetsSkillBar({
  * 職業特技管理卡片 (ClassSkillCard)
  * 滿足需求 1, 2, 3 與子項目挑選構築：
  * 1. 中英文名、專屬圖標並存，附帶一目了然的一句話風格描述。
- * 2. 展開點選模式：列出所有特技，Max SL 星星視覺化，點擊變色；點選儲存後恢復簡潔，僅顯示已點亮特技。
+ * 2. 展開點選模式：列出所有特技，Max SL 星星視覺化，點擊變色；點選儲存後恢復簡潔，僅顯示已學習特技。
  * 3. 動態公式求值：未點時顯示計算公式，點亮後自動算好精準數值。
  * 4. 子項目專屬挑選：為 9 大技能提供即時配額標籤與構建抽屜。
  * 5. 獨立實體/載具副卡：為機師【個人載具】與旅人【忠實夥伴】提供專屬配置條與管理彈窗。
@@ -750,7 +750,7 @@ export default function ClassSkillCard({
                       </span>
                       {isLearned && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-mono">
-                          已點亮
+                          已學習
                         </span>
                       )}
                     </div>
