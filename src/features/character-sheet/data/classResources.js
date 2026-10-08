@@ -64,6 +64,105 @@ export const CLASS_RESOURCES = [
     hint: '每次聚會開始時為 7',
     source: 'Core p.191',
   },
+
+  // ── 英雄技能的資源池（2026-10-06，見 `docs/skill-coverage.md` 第六節）──────────
+  // 這幾個是「跨場景累積、而且會被引用在傷害公式裡」的計數器。
+  // 文字寫得再清楚，跑團時玩家仍然需要一個地方記住現在有幾點。
+  {
+    id: 'courage',
+    kind: 'value',
+    min: 0,
+    heroicName: '怒潮拳',
+    label: '勇氣',
+    initial: 0,
+    resetLabel: '歸零',
+    resetTo: 0,
+    hint: '無上限。格鬥近戰攻擊 +【2+勇氣】傷害；回合或場景結束時若 ≥5 必須全消耗，每點回 10 HP/MP',
+    source: 'Playtest 2026-06-22 p.12',
+  },
+  {
+    id: 'momentum',
+    kind: 'pool',
+    heroicName: '旋風攻勢',
+    label: '氣勢',
+    max: 5,
+    resetLabel: '歸零',
+    resetTo: 0,
+    hint: '上限 5。投擲攻擊 +【氣勢】傷害；被命中時必須全消耗加物防；場景結束或裝備防具／盾牌時歸零',
+    source: 'Playtest 2026-06-22 p.12',
+  },
+  {
+    id: 'nebulization',
+    kind: 'pool',
+    heroicName: '藥水霧化',
+    label: '霧化點',
+    max: 5,
+    resetLabel: '場景結束',
+    resetTo: 0,
+    hint: '上限 5，每場景結束清空。藥水與元素碎片 +【霧化點】傷害；恢復藥水 +【霧化點×5】',
+    source: 'Playtest 2026-06-22 p.13',
+  },
+
+  // ── 金手指的資源池 ─────────────────────────────────────────────────────
+  // ※ 這幾個只在「角色拿了那個金手指」時才顯示——所以啟用條件是 `quirkName`，
+  //    不是職業技能。沒拿卻顯示一個用不到的計數器只是噪音。
+  {
+    id: 'fatigue',
+    kind: 'pool',
+    quirkName: '富家子弟',
+    label: '疲勞值',
+    max: 10,
+    resetLabel: '每章節恢復 1d6',
+    resetTo: 0,
+    hint: '上限 10。每次使用保鑣增益累積 1d6；達 10 就不能再依賴他們；每章節恢復 1d6',
+    source: 'Bonus Collection p.20',
+  },
+  {
+    id: 'instability',
+    kind: 'pool',
+    quirkName: '實驗逃亡體',
+    label: '不穩定值',
+    max: 10,
+    resetLabel: '歸零',
+    resetTo: 0,
+    hint: '上限 10。忽略 100 點以下的 HP/MP/IP 成本可換 1d8；每章節降 1d6；達 10 → HP 歸 0 並投降，然後歸零',
+    source: 'Techno Fantasy p.122',
+  },
+  {
+    id: 'subversion',
+    kind: 'value',
+    min: 0,
+    quirkName: '棄暗投明之人',
+    label: '顛覆點',
+    initial: 0,
+    resetLabel: null,
+    resetTo: null,
+    hint: '沒有上限，也不會被清空——只會被花掉。可代替 1 點物語點的花費',
+    source: 'Techno Fantasy p.124',
+  },
+  {
+    id: 'anomaly',
+    kind: 'pool',
+    quirkName: '遺物使用者',
+    label: '異常值',
+    max: 10,
+    resetLabel: '歸零',
+    resetTo: 0,
+    hint: '上限 10。每次顯現能力累積 1d6；達 10 → 歸零並骰 d6（1-4 沉睡／5-6 毀滅性釋放）',
+    source: 'Techno Fantasy p.125',
+  },
+  {
+    id: 'doubt',
+    kind: 'value',
+    min: 0,
+    quirkName: '固執的懷疑論者',
+    label: '懷疑點',
+    initial: 0,
+    resetLabel: '歸零',
+    resetTo: 0,
+    hint: '每次效果生效 +1；每章節可再擲 2d20 賺 1；達 20 以上觸發回想記憶',
+    source: 'Techno Fantasy p.126',
+  },
 ];
 
 /** 取得角色某職業某技能的 SL；沒有該職業或該技能時回傳 0。 */
@@ -84,9 +183,24 @@ export const getSkillSL = (character, className, skillName) => {
  */
 export const getActiveClassResources = (character) => {
   const out = [];
+  // 角色已取得的英雄技能名（`heroicSkills` 存的是物件，舊存檔可能是字串）
+  const heroicNames = (character?.heroicSkills || [])
+    .map((h) => (typeof h === 'string' ? h : h?.name))
+    .filter(Boolean);
+  const quirk = character?.quirk && character.quirk !== '無' ? character.quirk : null;
+
   for (const def of CLASS_RESOURCES) {
-    const sl = getSkillSL(character, def.className, def.skillName);
-    if (sl <= 0) continue;
+    let sl = 0;
+    if (def.quirkName) {
+      // 金手指的資源：只有拿了那個金手指才顯示（否則會憑空出現一個沒用的計數器）
+      if (quirk !== def.quirkName) continue;
+    } else if (def.heroicName) {
+      // 英雄技能的資源：以「有沒有拿那個英雄技能」為準，不是職業技能等級
+      if (!heroicNames.includes(def.heroicName)) continue;
+    } else {
+      sl = getSkillSL(character, def.className, def.skillName);
+      if (sl <= 0) continue;
+    }
     out.push({
       id: def.id,
       kind: def.kind,
@@ -95,8 +209,11 @@ export const getActiveClassResources = (character) => {
       resetLabel: def.resetLabel,
       source: def.source,
       sl,
-      max: def.kind === 'pool' ? def.maxFromSL(sl) : null,
+      max: def.kind === 'pool'
+        ? (def.maxFromSL ? def.maxFromSL(sl) : def.max)
+        : null,
       initial: def.kind === 'value' ? def.initial : null,
+      min: def.kind === 'value' ? (def.min ?? 1) : 0,
     });
   }
   return out;
@@ -118,12 +235,13 @@ export const readResource = (character, resource) => {
 /**
  * 寫入某資源的新值，並依類型夾在合法範圍。
  * - `pool`：夾在 `0 ~ max`
- * - `value`：至少 1（幸運數字不會是 0）
+ * - `value`：夾在 `min ~ ∞`。`min` 預設 1（幸運數字不會是 0），
+ *   但勇氣／顛覆點／懷疑點的原書起點就是 0，所以它們的 def 標了 `min: 0`。
  */
 export const clampResource = (resource, nextValue) => {
   const n = Math.floor(Number(nextValue));
   if (!Number.isFinite(n)) return resource.kind === 'value' ? resource.initial : 0;
-  if (resource.kind === 'value') return Math.max(1, n);
+  if (resource.kind === 'value') return Math.max(resource.min ?? 1, n);
   return Math.min(resource.max, Math.max(0, n));
 };
 

@@ -110,14 +110,18 @@ check('夾值生效', setResourceValue(mkChar([NECRO]), gp, 99).gravePoints, 4);
 // ─────────────────────────────────────────────────────────── G
 section('G. 設定完整性（防止新增資源時漏欄位）');
 for (const r of CLASS_RESOURCES) {
-  const ok = !!(r.id && r.kind && r.className && r.skillName && r.label && r.source);
+  // 2026-10-06：資源的「啟用條件」有三種——職業技能（className＋skillName）、
+  // 英雄技能（heroicName）、金手指（quirkName）。三者取其一即可。
+  const hasGate = !!(r.className && r.skillName) || !!r.heroicName || !!r.quirkName;
+  const ok = !!(r.id && r.kind && hasGate && r.label && r.source);
   check(`${r.id || '(未命名)'} 欄位齊備`, ok, true);
   check(`${r.id} kind 合法`, ['pool', 'value'].includes(r.kind), true);
   // 有 resetLabel 就必須有 resetTo（反之亦然）——避免出現按了沒作用的按鈕
   check(`${r.id} resetLabel/resetTo 成對`,
     (r.resetLabel === null) === (r.resetTo === null), true);
 }
-check('資源總數 = 3', CLASS_RESOURCES.length, 3);
+// 3（墳墓點／貿易點數／幸運數字）＋ 8（英雄技能 3 ＋ 金手指 5，2026-10-06）
+check('資源總數 = 11', CLASS_RESOURCES.length, 11);
 check('每個資源都有官方出處', CLASS_RESOURCES.every((r) => /p\.\d+/.test(r.source)), true);
 
 // ─────────────────────────────────────────────────────────── H

@@ -60,7 +60,8 @@ export default function ClassResourceStrip({ character, onChange, showToast = ()
           const Icon = ICONS[resource.id];
           const isPool = resource.kind === 'pool';
           const atMax = isPool && value >= resource.max;
-          const atMin = value <= (isPool ? 0 : 1);
+          // 單值的下限不一定是 1——幸運數字最小是 1，但勇氣／顛覆點／懷疑點的原書起點是 0。
+    const atMin = value <= (isPool ? 0 : (resource.min ?? 1));
 
           return (
             <div
