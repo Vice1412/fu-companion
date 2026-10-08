@@ -120,27 +120,23 @@ const STAT_KEYS = ATTRIBUTE_KEYS;
 
 export default function AttributeMatrixPicker({
   // 預設是空的（0 = 尚未指派）——不替玩家先套「萬事通」，見 createNewCharacter 的註解。
-  // 四顆骰子會留在左側托盤、右側四宮格清空，玩家從三組建議陣列裡挑一組再指派。
   attributes = { dex: 0, ins: 0, mig: 0, wlp: 0 },
   onChange = () => {},
   theme = {}
 }) {
   // 4 顆骰子物件（每個骰子有獨立 ID、面數、以及當前放置在何處 assignedTo: 'dex'|'ins'|'mig'|'wlp'|null）
+  //
+  // 四維還沒指派時（`createNewCharacter` 的預設 0）**托盤是空的**——使用者指示：
+  // 「要讓玩家自己選起始陣列才會在那邊出現 4 個骰子」。舊版會在空托盤先放
+  // d10/d8/d8/d6（正好是「標準」那四顆），等於又替玩家選了一次。
   const [dicePool, setDicePool] = useState(() => {
     const hasInitialAttrs = attributes && (attributes.dex || attributes.ins || attributes.mig || attributes.wlp);
-    if (hasInitialAttrs) {
-      return [
-        { id: 'd_0', val: attributes.dex || 10, assignedTo: 'dex' },
-        { id: 'd_1', val: attributes.ins || 8, assignedTo: 'ins' },
-        { id: 'd_2', val: attributes.mig || 8, assignedTo: 'mig' },
-        { id: 'd_3', val: attributes.wlp || 6, assignedTo: 'wlp' }
-      ];
-    }
+    if (!hasInitialAttrs) return [];
     return [
-      { id: 'd_0', val: 10, assignedTo: null },
-      { id: 'd_1', val: 8, assignedTo: null },
-      { id: 'd_2', val: 8, assignedTo: null },
-      { id: 'd_3', val: 6, assignedTo: null }
+      { id: 'd_0', val: attributes.dex || 10, assignedTo: 'dex' },
+      { id: 'd_1', val: attributes.ins || 8, assignedTo: 'ins' },
+      { id: 'd_2', val: attributes.mig || 8, assignedTo: 'mig' },
+      { id: 'd_3', val: attributes.wlp || 6, assignedTo: 'wlp' }
     ];
   });
 
@@ -229,8 +225,13 @@ export default function AttributeMatrixPicker({
 
   // 2. 一鍵填滿（按順序快速入座）
   const handleAutoFill = () => {
-    const keys = ['dex', 'ins', 'mig', 'wlp'];
-    const newPool = dicePool.map((die, idx) => ({
+    const keys = ATTRIBUTE_KEYS;
+    // 托盤是空的時候（還沒選起始陣列）先用第一組（標準）把骰子放進來，
+    // 否則「一鍵填入」在空托盤上會什麼都不做。
+    const source = dicePool.length > 0
+      ? dicePool
+      : ATTRIBUTE_PRESET_ARRAYS[0].diceList.map((v, i) => ({ id: `d_auto_${i}`, val: v, assignedTo: null }));
+    const newPool = source.map((die, idx) => ({
       ...die,
       assignedTo: keys[idx] || null
     }));
@@ -572,6 +573,15 @@ export default function AttributeMatrixPicker({
                 )}
               </span>
             </div>
+
+            {/* 托盤空的時候給一句提示——不然整塊會看起來像壞掉 */}
+            {dicePool.length === 0 && (
+              <div className="flex justify-center items-center py-3">
+                <span className="text-[10px] leading-snug text-slate-500 text-center">
+                  先從上方<br />選一組起始陣列
+                </span>
+              </div>
+            )}
 
             {/* 托盤內的 4 個正方形骰子位置：手機橫向 4 個，桌面直列 4 個 */}
             <div className="flex md:flex-col justify-center md:items-center gap-2.5">

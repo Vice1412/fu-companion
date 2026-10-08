@@ -40,7 +40,8 @@ import {
   ATTRIBUTE_DICE_TIERS,
   STARTING_HEROIC_SKILL_BLOCKLIST,
   HEROIC_SKILLS,
-  HEROIC_SKILL_SOURCE_LABELS
+  HEROIC_SKILL_SOURCE_LABELS,
+  heroicSkillsForClass
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { PLAYTEST_HEROIC_SKILLS } from '../src/features/character-sheet/data/playtestHeroicSkills.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
@@ -725,6 +726,22 @@ check('【銃劍士】連擁有都沒有 → 擋',
     classes: ['守護者'],
     level: 5
   }).ok, false);
+
+// 職業 → 可解鎖的英雄技能（職業彈窗下方那塊，使用者要求）
+check('heroicSkillsForClass：回傳的每一筆都真的提到該職業',
+  heroicSkillsForClass('守護者').every((h) => h.requirement.split(/且|並/)[0].includes('守護者')), true);
+check('heroicSkillsForClass：通用技能不會出現',
+  heroicSkillsForClass('守護者').some((h) => h.requirement === '通用'), false);
+check('heroicSkillsForClass：守護者至少解鎖 3 個',
+  heroicSkillsForClass('守護者').length >= 3, true);
+check('heroicSkillsForClass：Playtest 那批也算得出來',
+  heroicSkillsForClass('元素師').some((h) => h.source === 'playtest'), true);
+check('heroicSkillsForClass：沒有職業時回空陣列', heroicSkillsForClass(''), []);
+check('heroicSkillsForClass：【Playtest】變體對到同一組',
+  heroicSkillsForClass('守護者【Playtest】').length, heroicSkillsForClass('守護者').length);
+check('heroicSkillsForClass：「A或B」型在兩邊都查得到',
+  [heroicSkillsForClass('機師').some((h) => h.name === '震顫泰坦'),
+    heroicSkillsForClass('守護者').some((h) => h.name === '震顫泰坦')], [true, true]);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

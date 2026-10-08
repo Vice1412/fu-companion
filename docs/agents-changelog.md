@@ -463,3 +463,11 @@
 *⑥ **順手修掉一個判定瑕疵**：Playtest 的【銃劍士】原文是「have acquired … **(even if you have not mastered them)**」——精通路徑也只要求「擁有」。原本會誤擋；改成 requirement 含「不必精通」時兩種模式都比對 `classes`。*
 *⑦ **仍未執行（誠實標記）**：本輪做到的是**筆數、順序、出處**的核對，**沒有**逐筆比對既有 111 筆的**效果文字**。已發現的實例：`背水`（Adversity）的繁中版多出官方沒有的「最多 +3 點／最多 6 點」上限。另外 Playtest 的 changelog 明列約 20 個**修訂既有技能**的項目，屬於「新技能」的已收錄，屬於「修訂」的尚未套用。*
 *測試：`test:creation` 191 → **200**（新增 R 區段）、`test:ui` 204 → **207**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,189.04 kB / gzip 631.34 kB）。決策紀錄見 `docs/decisions.md` §AI。*
+
+*2026-10-06（逐字比對起步 ＋ 托盤預設空 ＋ 職業彈窗顯示可解鎖英雄技能）：三項指示。*
+*① **四維托盤預設為空**（使用者：「要讓玩家自己選起始陣列才會在那邊出現 4 個骰子」）。§AH 只改了 `attributes` 的預設值，但選擇器的 `useState` 在未指派時仍會放進 `d10/d8/d8/d6`——那正好是「標準」那四顆，等於又替玩家選了一次。改成空陣列＋提示「先從上方／選一組起始陣列」，`handleAutoFill` 也一併處理空托盤。*
+*② **職業彈窗顯示「精通後可解鎖的英雄技能」**。使用者的顧慮是「文字反而會太多」——解法是**只列名稱、效果放 tooltip**（小標籤 + `title`），面板高度幾乎不變但可一眼掃視。判定收進引擎的 `heroicSkillsForClass`（可測試），規則與 `checkHeroicSkillRequirement` 共用：「需精通守護者或機師」會同時出現在兩邊，`通用` 排除，`【Playtest】` 變體正規化後比對。*
+*③ **逐字比對（方法已建立，Core 區段 31 筆完成）**。`scratch/extract_en_heroic.py` 抽六本官方書的英雄技能全文、`scratch/align_heroic.py` 產生 `side_<source>.md` 中英對照。**Core 31 筆逐字讀完，確認 2 筆要改**：`背水` 的繁中版多了官方**沒有**的「最多 +3 點／最多 6 點」上限（還帶著來路不明的 `【Playtest】`），`阿爾卡納迴響` **漏譯**官方末句「GM 有最終裁決權」。其餘 29 筆判定不必改。判準明寫：**必修**＝數字／機制／限制的錯漏；**不改**＝純敘述句與詳略差異。*
+*④ **發現一個必須記下來的障礙**：位置對齊對 Atlas **不可靠**——HF 的偏移量開頭是 2、結尾是 1（中間有一筆對不上），NF 也不一致。Core 與 Bonus 可靠（用明列對照表）。Atlas 得改用「職業前提序列」對齊或讀各書自己的索引表，這是下一步。*
+*⑤ **附帶更正**：§AI 的抽取範圍（Bonus p.19 起）漏掉 p.14–15 的「NECROMANCER HEROIC SKILLS」，所以當時對不出「死亡饋贈」那 3 筆——它們就在同一本特典裡（`BIRTH OF THE CRUEL`／`HARVESTER OF SORROW`／`PULSE OF THE MAGGOTS`）。*
+*測試：`test:creation` 200 → **207**、`test:ui` 207 → **211**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,190.67 kB / gzip 631.71 kB）。目視驗證：托盤空狀態（「剩餘 0」＋提示、三個起始陣列卡都不標「目前」）。決策紀錄見 `docs/decisions.md` §AJ。*

@@ -35,6 +35,7 @@ import { GAME_ICONS_MAP } from '../src/components/ui/GameIcon.jsx';
 import { readIconMapKeys, findDuplicateIconKeys } from './helpers/gameIconMap.mjs';
 import CharacterEditor from '../src/features/character-sheet/components/CharacterEditor.jsx';
 import CharacterCard from '../src/features/character-sheet/components/CharacterCard.jsx';
+import AttributeMatrixPicker from '../src/features/character-sheet/components/AttributeMatrixPicker.jsx';
 import {
   buildImagePdf,
   buildImagePdfBytes,
@@ -661,6 +662,31 @@ check('規則開啟時顯示名額狀態', startRuleHtml.includes('開局名額�
 check('規則關閉時不會出現開局名額的標示',
   renderEditorAt(5, { classes: [{ className: '暗黑之刃', level: 3, skills: [] }] })
     .includes('◈ 用開局名額'), false);
+
+// 四維托盤預設是空的（使用者指示：「要讓玩家自己選起始陣列才會在那邊出現 4 個骰子」）
+const emptyPicker = renderToStaticMarkup(React.createElement(AttributeMatrixPicker, {
+  attributes: { dex: 0, ins: 0, mig: 0, wlp: 0 },
+  onChange: () => {},
+  theme: {}
+}));
+const filledPicker = renderToStaticMarkup(React.createElement(AttributeMatrixPicker, {
+  attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 },
+  onChange: () => {},
+  theme: {}
+}));
+check('未指派時托盤是空的（顯示提示、剩餘 0）',
+  [emptyPicker.includes('先從上方'), emptyPicker.includes('剩餘 0')], [true, true]);
+check('已指派時托盤有骰子（不再顯示空提示）',
+  filledPicker.includes('先從上方'), false);
+
+// 職業彈窗：精通該職業能解鎖哪些英雄技能（只列名稱，效果放 tooltip 以免文字塞爆面板）
+const classPickerSrc = read('../src/features/character-sheet/components/ClassPickerModal.jsx');
+check('職業彈窗有「精通後可解鎖的英雄技能」區塊，且判定走引擎',
+  [classPickerSrc.includes('精通後可解鎖的英雄技能'), classPickerSrc.includes('heroicSkillsForClass')],
+  [true, true]);
+check('那塊把效果全文放進 title（避免文字塞爆）',
+  [classPickerSrc.includes('cursor-help'), classPickerSrc.includes('title={`【${h.name}】')],
+  [true, true]);
 
 // ─────────────────────────────────────────────────────────── N
 section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');

@@ -4,7 +4,8 @@ import {
   GiCheckMark,
   GiMagnifyingGlass,
   GiHazardSign,
-  GiSpellBook
+  GiSpellBook,
+  GiLaurelCrown
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGModal from '../../../components/ui/JRPGModal';
@@ -15,6 +16,7 @@ import SkillDescription from '../utils/skillFormulaEvaluator';
 import { SOURCEBOOKS, getClassInfo } from '../data/sourcebookConfig';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import rulesData from '../data/rulesData.json';
+import { heroicSkillsForClass } from '../utils/characterEngine';
 import { withEn } from '../../../utils/properNouns';
 
 /**
@@ -118,6 +120,15 @@ export default function ClassPickerModal({
     if (!selectedClassName) return null;
     return availableClasses.find(c => c.className === selectedClassName);
   }, [availableClasses, selectedClassName]);
+
+  /**
+   * 精通這個職業之後能解鎖哪些英雄技能（原書 p.232）。
+   * 判定在引擎裡（`heroicSkillsForClass`），與 `checkHeroicSkillRequirement` 共用同一條規則。
+   */
+  const relatedHeroic = useMemo(
+    () => heroicSkillsForClass(activeClassItem?.className),
+    [activeClassItem]
+  );
 
   // 初始化職業技能草稿（全為 0 級空白）
   const handleInitClassDraft = (cName) => {
@@ -403,6 +414,44 @@ export default function ClassPickerModal({
                     </p>
                   )}
                 </div>
+
+                {/* 精通這個職業之後能解鎖的英雄技能（原書 p.232：把一個職業練到 10 級可獲得一個英雄技能）。
+                    這裡**只列名稱**——把效果全文塞進這一欄會把整個面板淹掉。
+                    效果全文放在 tooltip（title）與游標提示裡，要看細節再把游標移上去。 */}
+                {relatedHeroic.length > 0 && (
+                  <div
+                    className="p-2.5 sm:p-3 rounded-xl border space-y-1.5 shadow-2xs"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-xs flex items-center gap-1.5" style={{ color: theme.textDark }}>
+                        <GiLaurelCrown className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                        精通後可解鎖的英雄技能
+                      </span>
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded border font-mono"
+                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                      >
+                        {relatedHeroic.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {relatedHeroic.map((h) => (
+                        <span
+                          key={h.name}
+                          title={`【${h.name}】\n要求：${h.requirement}\n\n${h.effect}`}
+                          className="text-[10px] px-1.5 py-0.5 rounded border font-bold cursor-help"
+                          style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                        >
+                          {h.name}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] leading-snug text-slate-500">
+                      把這個職業練到 10 級即可獲得一個英雄技能；名稱移上去可看效果全文。
+                    </p>
+                  </div>
+                )}
 
                 {/* 職業技能清單指示標題 */}
                 <div className="flex items-center justify-between text-xs text-slate-600 pt-1 px-0.5">

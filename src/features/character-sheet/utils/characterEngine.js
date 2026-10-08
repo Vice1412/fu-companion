@@ -96,6 +96,23 @@ export const HEROIC_SKILL_SOURCE_LABELS = Object.freeze({
 });
 
 /**
+ * 精通某個職業之後能解鎖哪些英雄技能（原書 p.232：把一個職業練到 10 級可獲得一個英雄技能）。
+ *
+ * 判定與 `checkHeroicSkillRequirement` 共用同一條規則：取 `requirement` 的職業段落
+ * （「且／並」之前）比對是否提到這個職業。所以「需精通守護者或機師」會**同時**出現在
+ * 守護者與機師底下——那正是玩家要的（兩條路都能走）。
+ * `通用` 的技能與職業無關，一律排除。
+ *
+ * 放在引擎而不是元件裡：職業彈窗要顯示它，而它得能被測試直接驗。
+ */
+export const heroicSkillsForClass = (className) => {
+  if (!className) return [];
+  const bare = String(className).replace('【Playtest】', '');
+  return HEROIC_SKILLS.filter((h) => h.requirement !== '通用'
+    && h.requirement.split(/且|並/)[0].includes(bare));
+};
+
+/**
  * 開局名額**不能**取得的英雄技能（Playtest Materials 2026-10-01, p.4 明文列出）。
  *
  * 官方原文列的是英文名，這裡是對應的繁中名——對應方式是**官方字母序**：
