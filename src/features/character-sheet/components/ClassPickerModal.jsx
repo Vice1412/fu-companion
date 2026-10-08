@@ -15,18 +15,30 @@ import SkillDescription from '../utils/skillFormulaEvaluator';
 import { SOURCEBOOKS, getClassInfo } from '../data/sourcebookConfig';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import rulesData from '../data/rulesData.json';
-import ClassHeroicSkillsBlock from './ClassHeroicSkillsBlock';
 import { withEn } from '../../../utils/properNouns';
+import ClassHeroicSkillsBlock from './ClassHeroicSkillsBlock';
 
 /**
  * 職業選擇與技能分配彈窗 (ClassPickerModal)
- * 響應式雙模態架構：
- * 1. 手機端 (< md)：雙步驟分步導航 (步驟 1 選職 ⇄ 步驟 2 加點確認)，吸底操作列，單一全域順滑捲軸，絕不卡死。
- * 2. 電腦端 (≥ md)：左右雙欄並排 (Master-Detail)，左側名冊即時聯動右側詳情，保持大螢幕最高操作效率。
- * 3. 官方四方星芒：Max SL 採用官方字型 'w' 四角銳星指示器。
- * 4. 創角規則因果正確：起始等級必須分配於 N~M 個不同職業，不可全數投入單一職業。
- *    實際的等級與職業數上下限來自 `creationRules`（預設為官方核心規則），不寫死在這裡。
- * 5. 全面呈現免費增益：完整對齊官方規則與繁中 Excel 角色卡名詞（職業近戰、職業防具等）。
+ *
+ * ## 一次挑完所有職業（2026-10-06 使用者要求的流程重構）
+ *
+ * 舊流程是「選擇職業 → 點職業 → 點技能 → 確認 → 再按選擇職業 → 重複」——
+ * 使用者說「我覺得很繁瑣」。現在**草稿是跨職業累積的**（`draft` 是
+ * `{ 職業名: { 技能名: 級數 } }`），所以在同一個彈窗裡把 2~3 個職業點完，
+ * **按一次確定就全部寫進去**，然後回到顯示已選技能的畫面。
+ *
+ * ## 上排的「已選職業」欄位
+ *
+ * 使用者要求：「顯示目前已經給哪個職業點了幾級……一個標誌然後職業名字，用小框框起來，
+ * 然後那個框的右上角有寫一個數字」。所以每一顆徽章是 `圖示 ＋ 職業名 ＋ 右上角角標（投入等級）`，
+ * **點它就跳到那個職業**，可以立刻去別的職業繼續點。
+ *
+ * ## 佈局
+ *
+ * 1. 電腦端 (≥ md)：左右雙欄並排 (Master-Detail)，左側名冊即時聯動右側詳情。
+ * 2. 手機端：'list'（挑職業）與 'detail'（配點）兩步，用 `mobileStep` 切換。
+ * 3. 全面呈現免費增益：完整對齊官方規則與繁中 Excel 角色卡名詞。
  */
 export default function ClassPickerModal({
   isOpen,
@@ -34,8 +46,13 @@ export default function ClassPickerModal({
   theme,
   enabledBooks = ['core'],
   onToggleSourcebook,
+  /** 一次把某幾本手冊設為開放（上排「全部」鈕）；逐本呼叫會遺失更新，所以是獨立 prop */
+  onSetSourcebooks,
   existingClassNames = [],
-  onSelectClass,
+  /** `(entries) => void`，entries = `[{ className, skills: [{ name, sl }] }]`（只含有配點的） */
+  onSelectClasses,
+  /** 既有職業已經吃掉的技能等級總數——一次確定多個職業時要把總額算進去 */
+  budgetUsed = 0,
   // 開卡規則：技能點數上限與職業數上下限由此決定（見 data/creationRules.js）
   creationRules = DEFAULT_CREATION_RULES,
   // 角色已定稿 → 收掉英雄技能的**瀏覽**入口（目錄是創角輔助；自己已拿到的效果照常顯示）
@@ -43,8 +60,13 @@ export default function ClassPickerModal({
 }) {
   const rules = resolveCreationRules(creationRules);
   const [search, setSearch] = useState('');
-  const [selectedClassName, setSelectedClassName] = useState(null);
-  const [draftSkills, setDraftSkills] = useState({});
+  const [activeClassName, setActiveClassName] = useState(null);
+  /**
+   * 這一次挑選的草稿：`{ 職業名: { 技能名: 級數 } }`。
+   * **跨職業累積**——這是流程重構的核心，舊版只存「當前職業」那一份，
+   * 所以一次只能確定一個職業。
+   */
+  const [draft, setDraft] = useState({});
   // 手機端導航步驟：'list' (挑選名冊) | 'detail' (技能加點與確認)
   const [mobileStep, setMobileStep] = useState('list');
 
@@ -86,94 +108,110 @@ export default function ClassPickerModal({
     });
   }, [availableClasses, search]);
 
-  // 彈窗開啟或關閉時的狀態管理
-  useEffect(() => {
-    if (isOpen) {
-      setMobileStep('list');
-      if (!selectedClassName || !availableClasses.some(c => c.className === selectedClassName)) {
-        const firstAvailable = availableClasses.find(c => !existingClassNames.includes(c.className));
-        if (firstAvailable) {
-          handleInitClassDraft(firstAvailable.className);
-        }
-      }
-    } else {
-      setSelectedClassName(null);
-      setDraftSkills({});
-      setSearch('');
-      setMobileStep('list');
-    }
-  }, [isOpen]);
-
-  // 拓展切換時若當前選取職業被停用，自動平滑切換至下一個可用職業
-  useEffect(() => {
-    if (isOpen && selectedClassName && !availableClasses.some(c => c.className === selectedClassName)) {
-      const firstAvailable = availableClasses.find(c => !existingClassNames.includes(c.className));
-      if (firstAvailable) {
-        handleInitClassDraft(firstAvailable.className);
-      } else {
-        setSelectedClassName(null);
-        setDraftSkills({});
-      }
-    }
-  }, [availableClasses, isOpen, selectedClassName, existingClassNames]);
-
-  const activeClassItem = useMemo(() => {
-    if (!selectedClassName) return null;
-    return availableClasses.find(c => c.className === selectedClassName);
-  }, [availableClasses, selectedClassName]);
-
-  // 初始化職業技能草稿（全為 0 級空白）
-  const handleInitClassDraft = (cName) => {
-    setSelectedClassName(cName);
-    const cDef = rulesData.classes[cName] || {};
-    const initialMap = {};
-    (cDef.skills || []).forEach(sk => {
-      initialMap[sk.name] = 0;
-    });
-    setDraftSkills(initialMap);
+  /** 某個職業在草稿裡的技能表（沒有就補一份全 0 的） */
+  const draftSkillsOf = (cName) => {
+    if (!cName) return {};
+    if (draft[cName]) return draft[cName];
+    const map = {};
+    ((rulesData.classes[cName] || {}).skills || []).forEach(sk => { map[sk.name] = 0; });
+    return map;
   };
 
-  // 點擊名冊卡片：在手機端自動平滑切換至步驟 2，電腦端即時聯動右側
-  const handleSelectClassItem = (cName) => {
-    handleInitClassDraft(cName);
+  /** 把某個職業加進草稿（全 0）並切換到它 */
+  const focusClass = (cName) => {
+    setActiveClassName(cName);
+    setDraft(prev => (prev[cName] ? prev : { ...prev, [cName]: draftSkillsOf(cName) }));
     setMobileStep('detail');
   };
 
-  // 調整技能等級
+  // 彈窗開啟／關閉時的狀態管理
+  useEffect(() => {
+    if (isOpen) {
+      setMobileStep('list');
+      if (!activeClassName || !availableClasses.some(c => c.className === activeClassName)) {
+        const firstAvailable = availableClasses.find(c => !existingClassNames.includes(c.className));
+        if (firstAvailable) focusClass(firstAvailable.className);
+      }
+    } else {
+      // 關掉就整份草稿清空——沒有「確定」的配點不該留著
+      setActiveClassName(null);
+      setDraft({});
+      setSearch('');
+      setMobileStep('list');
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 拓展切換時若當前職業被停用，自動切換到下一個可用職業（草稿保留）
+  useEffect(() => {
+    if (isOpen && activeClassName && !availableClasses.some(c => c.className === activeClassName)) {
+      const firstAvailable = availableClasses.find(c => !existingClassNames.includes(c.className));
+      if (firstAvailable) focusClass(firstAvailable.className);
+      else setActiveClassName(null);
+    }
+  }, [availableClasses, isOpen, activeClassName, existingClassNames]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const activeClassItem = useMemo(() => {
+    if (!activeClassName) return null;
+    return availableClasses.find(c => c.className === activeClassName);
+  }, [availableClasses, activeClassName]);
+
+  const activeDraftSkills = draftSkillsOf(activeClassName);
+
+  /** 某個職業投入了幾級 */
+  const allocatedOf = (cName) => Object.values(draft[cName] || {}).reduce((s, v) => s + v, 0);
+
+  /** 這次挑選的總投入 */
+  const draftTotal = useMemo(
+    () => Object.values(draft).reduce(
+      (sum, skills) => sum + Object.values(skills).reduce((a, b) => a + b, 0), 0
+    ),
+    [draft]
+  );
+
+  /** 這次有配點的職業（徽章列與確定都用它；依名冊順序，不會跳來跳去） */
+  const assignedEntries = useMemo(
+    () => availableClasses
+      .filter(c => allocatedOf(c.className) >= 1)
+      .map(c => ({ className: c.className, total: allocatedOf(c.className), info: c.info })),
+    [availableClasses, draft] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const remainingBudget = Math.max(0, rules.skillPointBudget - budgetUsed);
+  const classesAfter = existingClassNames.length + assignedEntries.length;
+  const countOk = classesAfter >= rules.classCountMin && classesAfter <= rules.classCountMax;
+  const budgetOk = draftTotal >= 1 && draftTotal <= remainingBudget;
+  const canConfirm = countOk && budgetOk;
+
+  // 調整技能等級（寫進當前職業那一份草稿）
   const handleSetSkillSL = (skillName, newSL) => {
-    setDraftSkills(prev => ({
+    if (!activeClassName) return;
+    setDraft(prev => ({
       ...prev,
-      [skillName]: Math.max(0, newSL)
+      [activeClassName]: {
+        ...(prev[activeClassName] || draftSkillsOf(activeClassName)),
+        [skillName]: Math.max(0, newSL)
+      }
     }));
   };
 
-  // 當前投入的總等級數
-  const totalAllocatedSL = useMemo(() => {
-    return Object.values(draftSkills).reduce((sum, sl) => sum + sl, 0);
-  }, [draftSkills]);
-
-  const isClassAlreadyAdded = activeClassItem ? existingClassNames.includes(activeClassItem.className) : false;
-
-  // 確認修習此職業
+  /** 把草稿轉成 `onSelectClasses` 要的形狀 */
   const handleConfirm = () => {
-    if (!activeClassItem || isClassAlreadyAdded) return;
-    if (totalAllocatedSL < 1 || totalAllocatedSL >= rules.skillPointBudget) return;
-
-    const allSkills = activeClassItem.def.skills || [];
-    const chosenSkills = [];
-    allSkills.forEach(sk => {
-      const sl = draftSkills[sk.name] || 0;
-      if (sl > 0) {
-        chosenSkills.push({
-          name: sk.name,
-          sl: Math.min(sk.maxSL || 5, sl)
-        });
-      }
-    });
-
-    onSelectClass(activeClassItem.className, chosenSkills);
+    if (!canConfirm) return;
+    const entries = assignedEntries.map(({ className }) => {
+      const allSkills = (rulesData.classes[className] || {}).skills || [];
+      const skills = [];
+      allSkills.forEach(sk => {
+        const sl = draft[className]?.[sk.name] || 0;
+        if (sl > 0) skills.push({ name: sk.name, sl: Math.min(sk.maxSL || 5, sl) });
+      });
+      return { className, skills };
+    }).filter(e => e.skills.length > 0);
+    if (entries.length === 0) return;
+    onSelectClasses(entries);
     onClose();
   };
+
+  const allBooksOn = Object.keys(SOURCEBOOKS).every(k => enabledBooks.includes(k));
 
   return (
     <JRPGModal
@@ -183,37 +221,104 @@ export default function ClassPickerModal({
       maxWidth="max-w-5xl"
     >
       <div className="flex flex-col h-[82vh] md:h-[76vh] max-h-[730px] overflow-hidden -m-1">
-        {/* 頂部上排：官方拓展打勾開關列 */}
+        {/* ==================== 頂部上排：拓展開關 ＋ 已選職業配點 ==================== */}
         <div
-          className="px-3 py-2 rounded-xl border flex items-center justify-between flex-wrap gap-2 transition-colors mb-2.5 shrink-0"
+          className="px-3 py-2 rounded-xl border flex flex-col gap-2 transition-colors mb-2.5 shrink-0"
           style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
         >
-          <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
-            <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} />
-            官方拓展職業:
-          </span>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {Object.keys(SOURCEBOOKS).map(sbKey => {
-              const sb = SOURCEBOOKS[sbKey];
-              const isEnabled = enabledBooks.includes(sbKey);
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: theme.textDark }}>
+              <GiSpellBook className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+              官方拓展職業:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* 使用者要求：開一個「全部」，而且預設就是全部，免得切來切去 */}
+              <button
+                type="button"
+                onClick={() => onSetSourcebooks && onSetSourcebooks(Object.keys(SOURCEBOOKS))}
+                className="text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                style={
+                  allBooksOn
+                    ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
+                    : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
+                }
+                title="一次開啟全部手冊（預設）"
+              >
+                {allBooksOn ? <GiCheckMark className="w-3 h-3" /> : null}
+                <span>全部</span>
+              </button>
 
-              return (
-                <button
-                  key={sbKey}
-                  type="button"
-                  onClick={() => onToggleSourcebook && onToggleSourcebook(sbKey)}
-                  className="text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
-                  style={
-                    isEnabled
-                      ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
-                      : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
-                  }
-                >
-                  {isEnabled ? <GiCheckMark className="w-3 h-3" /> : null}
-                  <span>{sb.shortName}</span>
-                </button>
-              );
-            })}
+              {Object.keys(SOURCEBOOKS).map(sbKey => {
+                const sb = SOURCEBOOKS[sbKey];
+                const isEnabled = enabledBooks.includes(sbKey);
+
+                return (
+                  <button
+                    key={sbKey}
+                    type="button"
+                    onClick={() => onToggleSourcebook && onToggleSourcebook(sbKey)}
+                    className="text-xs px-2.5 py-1 rounded-lg border font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+                    style={
+                      isEnabled
+                        ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
+                        : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
+                    }
+                  >
+                    {isEnabled ? <GiCheckMark className="w-3 h-3" /> : null}
+                    <span>{sb.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 已選職業與配點：點徽章跳去那個職業；右上角角標＝投入等級 */}
+          <div
+            className="flex items-center gap-1.5 flex-wrap pt-2 border-t"
+            style={{ borderColor: theme.border }}
+          >
+            <span className="text-[11px] font-bold shrink-0" style={{ color: theme.textMuted }}>
+              已選職業：
+            </span>
+            {assignedEntries.length === 0 ? (
+              <span className="text-[11px]" style={{ color: theme.textMuted }}>
+                還沒配點——在右邊點技能加號，可以連續挑好幾個職業再一起確定
+              </span>
+            ) : (
+              assignedEntries.map(({ className, total, info }) => {
+                const isActive = activeClassName === className;
+                return (
+                  <button
+                    key={className}
+                    type="button"
+                    onClick={() => focusClass(className)}
+                    title={`${className}：投入 ${total} 級（點一下跳到它）`}
+                    className="relative flex items-center gap-1 pl-1.5 pr-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all active:scale-95"
+                    style={
+                      isActive
+                        ? { backgroundColor: theme.accent, borderColor: theme.accentDark, color: '#ffffff' }
+                        : { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }
+                    }
+                  >
+                    <GameIcon name={info?.icon || className} size={13} />
+                    <span className="truncate max-w-[7rem]">{className}</span>
+                    <span
+                      className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-mono font-black flex items-center justify-center border"
+                      style={{
+                        backgroundColor: theme.accentDark || theme.accent,
+                        borderColor: theme.panelBg,
+                        color: '#ffffff'
+                      }}
+                    >
+                      {total}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+            <span className="text-[11px] font-mono font-bold ml-auto shrink-0" style={{ color: theme.textMuted }}>
+              這次配了 {draftTotal} 級 ／ 還能配 {remainingBudget} 級
+            </span>
           </div>
         </div>
 
@@ -257,18 +362,17 @@ export default function ClassPickerModal({
           {/* 職業清單（單一滾動容器，絕不卡死） */}
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
             {filteredClasses.map((item) => {
-              const isSelected = selectedClassName === item.className;
+              const isSelected = activeClassName === item.className;
               const isAdded = existingClassNames.includes(item.className);
+              const allocated = allocatedOf(item.className);
 
               return (
                 <div
                   key={item.className}
                   onClick={() => {
-                    if (!isAdded) {
-                      handleSelectClassItem(item.className);
-                    }
+                    if (!isAdded) focusClass(item.className);
                   }}
-                  className={`p-2.5 rounded-xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer select-none ${
+                  className={`relative p-2.5 rounded-xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer select-none ${
                     isAdded
                       ? 'opacity-40 bg-slate-100/60 border-slate-200 cursor-not-allowed'
                       : isSelected
@@ -281,6 +385,16 @@ export default function ClassPickerModal({
                     '--tw-ring-color': theme.accent
                   }}
                 >
+                  {/* 這個職業已經配了幾級（跟上面的徽章同一個數字，方便對照） */}
+                  {allocated > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-mono font-black flex items-center justify-center border"
+                      style={{ backgroundColor: theme.accent, borderColor: theme.panelBg, color: '#ffffff' }}
+                    >
+                      {allocated}
+                    </span>
+                  )}
+
                   <div className="flex items-center justify-between gap-1.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <div
@@ -419,58 +533,30 @@ export default function ClassPickerModal({
 
                 {/* 5 項技能卡片 */}
                 {(activeClassItem.def.skills || []).map((sk) => {
-                  const currentSL = draftSkills[sk.name] || 0;
+                  const currentSL = activeDraftSkills[sk.name] || 0;
                   const maxSL = sk.maxSL || 5;
-                  const isLearned = currentSL > 0;
 
                   return (
                     <div
                       key={sk.name}
-                      onClick={() => {
-                        if (currentSL < maxSL) {
-                          handleSetSkillSL(sk.name, currentSL + 1);
-                        } else {
-                          handleSetSkillSL(sk.name, 0);
-                        }
+                      className="p-2.5 sm:p-3 rounded-xl border space-y-2 shadow-2xs"
+                      style={{
+                        backgroundColor: currentSL > 0 ? theme.subpanelBg : theme.cardBg,
+                        borderColor: currentSL > 0 ? theme.accent : theme.border
                       }}
-                      className={`p-3 rounded-xl border text-xs space-y-2 transition-all duration-200 cursor-pointer select-none ${
-                        isLearned
-                          ? 'bg-amber-50/80 border-amber-400 shadow-xs ring-1 ring-amber-400/40'
-                          : 'bg-white/70 border-slate-200/90 hover:bg-white hover:border-slate-300'
-                      }`}
                     >
-                      <div className="flex items-center justify-between gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                              isLearned ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-slate-300'
-                            }`}
-                          />
-                          {/* 需求：技能字體加大 */}
-                          <span
-                            className={`text-sm sm:text-base tracking-wide font-black ${
-                              isLearned ? 'text-amber-950 font-serif' : 'text-slate-800'
-                            }`}
-                          >
-                            {sk.name}
-                          </span>
-                          {isLearned && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-mono">
-                              SL {currentSL}
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="font-serif font-black text-sm" style={{ color: theme.textDark }}>
+                          {sk.name}
+                        </span>
 
-                        {/* 官方四方星芒指示器 + 加減快捷鍵 */}
                         <div className="flex items-center gap-2">
                           <SkillStarPips
-                            maxSL={maxSL}
-                            currentSL={currentSL}
-                            onChange={(newSL) => handleSetSkillSL(sk.name, newSL)}
-                            size={18}
+                            value={currentSL}
+                            max={maxSL}
+                            onChange={(v) => handleSetSkillSL(sk.name, v)}
                           />
-
-                          <div className="flex items-center gap-1 border-l pl-2 border-slate-200">
+                          <div className="flex items-center gap-1 font-mono">
                             <button
                               type="button"
                               onClick={() => handleSetSkillSL(sk.name, currentSL - 1)}
@@ -479,8 +565,11 @@ export default function ClassPickerModal({
                               style={{ borderColor: theme.border, color: theme.textDark }}
                               title="減少 1 級"
                             >
-                              -
+                              −
                             </button>
+                            <span className="w-6 text-center font-black text-sm" style={{ color: theme.textDark }}>
+                              {currentSL}
+                            </span>
                             <button
                               type="button"
                               onClick={() => handleSetSkillSL(sk.name, currentSL + 1)}
@@ -521,27 +610,37 @@ export default function ClassPickerModal({
                 {/* 投入等級統計與正確認知規則引導 */}
                 <div className="text-xs space-y-0.5 text-center sm:text-left w-full sm:w-auto">
                   <div className="font-bold flex items-center justify-center sm:justify-start gap-1.5" style={{ color: theme.textDark }}>
-                    <span>目前投入：</span>
+                    <span>這次總共投入：</span>
                     <strong className={`font-mono text-sm px-1.5 py-0.2 rounded ${
-                      totalAllocatedSL === 0
+                      draftTotal === 0
                         ? 'text-slate-500 bg-slate-100'
-                        : totalAllocatedSL >= rules.skillPointBudget
+                        : !budgetOk
                           ? 'text-rose-700 bg-rose-100'
                           : 'text-amber-800 bg-amber-100'
                     }`}>
-                      {totalAllocatedSL} 級
+                      {draftTotal} 級
                     </strong>
+                    <span className="text-slate-500 font-normal">
+                      （{assignedEntries.length} 個職業）
+                    </span>
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    {totalAllocatedSL === 0 ? (
-                      <span className="text-amber-700">請至少為此職業分配 1 級技能</span>
-                    ) : totalAllocatedSL >= rules.skillPointBudget ? (
+                    {draftTotal === 0 ? (
+                      <span className="text-amber-700">請至少為一個職業分配 1 級技能</span>
+                    ) : draftTotal > remainingBudget ? (
                       <span className="text-rose-600 font-bold flex items-center justify-center sm:justify-start gap-1">
                         <GiHazardSign className="w-3.5 h-3.5 shrink-0" />
-                        開局必須修習 {rules.classCountMin}~{rules.classCountMax} 個職業，請至少保留等級給其他職業
+                        超出可分配等級：這次 {draftTotal} 級，但只剩 {remainingBudget} 級
+                      </span>
+                    ) : !countOk ? (
+                      <span className="text-rose-600 font-bold flex items-center justify-center sm:justify-start gap-1">
+                        <GiHazardSign className="w-3.5 h-3.5 shrink-0" />
+                        確定後會有 {classesAfter} 個職業，開局規定是 {rules.classCountMin}~{rules.classCountMax} 個
                       </span>
                     ) : (
-                      <span>起始 {rules.startingLevel} 級必須分配於 {rules.classCountMin}~{rules.classCountMax} 個不同職業</span>
+                      <span>
+                        確定後共 {classesAfter} 個職業；可以在上面繼續挑別的職業再一起確定
+                      </span>
                     )}
                   </p>
                 </div>
@@ -559,18 +658,18 @@ export default function ClassPickerModal({
                   <JRPGButton
                     variant={theme.buttonVariant || 'primary'}
                     size="sm"
-                    icon={totalAllocatedSL >= 1 && totalAllocatedSL < rules.skillPointBudget ? GiCheckMark : GiSparkles}
+                    icon={canConfirm ? GiCheckMark : GiSparkles}
                     onClick={handleConfirm}
-                    disabled={isClassAlreadyAdded || totalAllocatedSL < 1 || totalAllocatedSL >= rules.skillPointBudget}
+                    disabled={!canConfirm}
                     className="w-full sm:w-auto min-h-[38px]"
                   >
-                    {isClassAlreadyAdded
-                      ? '該職業已修習'
-                      : totalAllocatedSL === 0
-                        ? '請先分配技能等級'
-                        : totalAllocatedSL >= rules.skillPointBudget
+                    {draftTotal === 0
+                      ? '請先分配技能等級'
+                      : !budgetOk
+                        ? '等級超出上限'
+                        : !countOk
                           ? `開局需兼修 ${rules.classCountMin}~${rules.classCountMax} 個職業`
-                          : `確認修習【${withEn(activeClassItem.className)}】（投入 ${totalAllocatedSL} 級）`}
+                          : `確定修習 ${assignedEntries.length} 個職業（共 ${draftTotal} 級）`}
                   </JRPGButton>
                 </div>
               </div>
@@ -582,8 +681,8 @@ export default function ClassPickerModal({
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
     </JRPGModal>
   );
 }

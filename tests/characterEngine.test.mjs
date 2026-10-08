@@ -371,7 +371,9 @@ check('六大狀態旗標齊備且全為 false',
 check('當前 HP / MP / IP 皆為 null（null 代表等於最大值）',
   [fresh.currentHp, fresh.currentMp, fresh.currentIp], [null, null, null]);
 check('職業清單預設為空', fresh.classes, []);
-check('啟用來源手冊預設僅核心', fresh.enabledSourcebooks, ['core']);
+// 2026-10-06 起預設全開（使用者裁定；上限仍由 allowedSourcebooks 把關）
+check('啟用來源手冊預設全開', fresh.enabledSourcebooks,
+  ['core', 'highFantasy', 'technoFantasy', 'naturalFantasy', 'bonus', 'playtest']);
 check('情感羈絆預設 0 條（原書 p.154 創角八步驟無羈絆；羈絆於遊戲中建立 p.57）', fresh.bonds.length, 0);
 check('個人命刻預設 0 座（原書創角八步驟無命刻，不預先種一條；見 §AB 的預設羈絆）', fresh.clocks.length, 0);
 check('咒語與英雄技能預設為空', [fresh.spells.length, fresh.heroicSkills.length], [0, 0]);

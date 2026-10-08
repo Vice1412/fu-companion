@@ -28,7 +28,7 @@ import {
   SHEET_DISCIPLINES
 } from '../src/features/character-sheet/components/CharacterSheetExport.jsx';
 import { createNewCharacter, getProficiencies, calculateCharacterStats } from '../src/features/character-sheet/utils/characterEngine.js';
-import { resolveCreationRules } from '../src/features/character-sheet/data/creationRules.js';
+import { resolveCreationRules, DEFAULT_CREATION_RULES } from '../src/features/character-sheet/data/creationRules.js';
 import { HeroicSkillPickerBody } from '../src/features/character-sheet/components/HeroicSkillPickerModal.jsx';
 import ClassHeroicSkillsBlock from '../src/features/character-sheet/components/ClassHeroicSkillsBlock.jsx';
 import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js';
@@ -733,6 +733,29 @@ check('定稿後整塊瀏覽入口收起來（自己已拿到的效果照常顯�
 const lockedStep5 = renderEditorAt(5, { locked: true, lockedAt: '2026-01-01T00:00:00.000Z' });
 check('定稿後第 5 步不再有「選擇英雄技能」的入口',
   lockedStep5.includes('選擇英雄技能'), false);
+
+// 職業選擇流程重構（2026-10-06 使用者要求）：
+// 舊流程「選職業 → 點技能 → 確認 → 再選職業」來回很繁瑣，
+// 改成在**同一個彈窗**裡把各職業點完，按一次確定全部寫入。
+const pickerSrcFlow = read('../src/features/character-sheet/components/ClassPickerModal.jsx');
+check('草稿是跨職業累積的（不是只有當前職業那一份）',
+  [pickerSrcFlow.includes('const [draft, setDraft]'), pickerSrcFlow.includes('allocatedOf')],
+  [true, true]);
+check('上排有「已選職業」欄位，徽章帶右上角的等級角標',
+  [pickerSrcFlow.includes('已選職業：'), /-top-1\.5 -right-1\.5/.test(pickerSrcFlow)], [true, true]);
+check('徽章可以點，跳到那個職業',
+  pickerSrcFlow.includes('onClick={() => focusClass(className)}'), true);
+check('上排有「全部」手冊鈕，且預設就是全開',
+  [pickerSrcFlow.includes('>全部<'), pickerSrcFlow.includes('onSetSourcebooks'),
+    DEFAULT_CREATION_RULES.defaultSourcebooks.length > 1],
+  [true, true, true]);
+check('一次確定多個職業（批次入口，不是單一職業）',
+  [pickerSrcFlow.includes('onSelectClasses(entries)'),
+    editorCode.includes('handleSelectClassesFromPicker'),
+    pickerSrcFlow.includes('onSelectClass(activeClassItem')],
+  [true, true, false]);
+check('確定會關掉彈窗（回到顯示已選技能的畫面）',
+  /onSelectClasses\(entries\);\s*\n\s*onClose\(\);/.test(pickerSrcFlow), true);
 
 // 名冊頁：開局名額的同團重複警告（Playtest p.4）
 const sheetSrcAj = read('../src/features/character-sheet/CharacterSheet.jsx');

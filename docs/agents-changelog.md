@@ -504,3 +504,9 @@
 *③ **純瀏覽，選用只有一個入口**。那份清單沒有選用鈕（沒有 `onPick`／`onSelect`），實際取得一律回第 5 步的 `HeroicSkillPickerModal`——`checkHeroicSkillRequirement` 只有一個呼叫端要維護。*
 *④ **定稿後收掉瀏覽入口，自己已拿到的照常顯示**。目錄是創角輔助；但跑團時要查自己技能的內容，藏起來不方便。實作：`ClassHeroicSkillsBlock` 收 `locked` 為真時回 `null`；`ClassPickerModal` 收 `locked` 往下傳（**彈窗本身定稿後仍到得了**——第 2 步不在 `LOCKED_CREATION_TABS`，升級時還要能加職業）；第 5 步的「選擇英雄技能」入口在 `locked` 時不渲染。**不動**：第 5 步已選清單的效果全文、角色卡、跑團面板、三頁匯出。*
 *測試：`test:ui` 225 → **228**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0。決策紀錄見 `docs/decisions.md` §AN。*
+
+*2026-10-06（職業選擇流程重構）：使用者說舊流程「選職業 → 點職業 → 點技能 → 確認 → 再按選擇職業」很繁瑣，要求在**同一個彈窗**裡把各職業點完再一次確定；上排加一顆「全部」並把預設改成全開；上排加一個「已選職業」欄位顯示各職業配了幾級。*
+*① **草稿改成跨職業累積**：舊版 `draftSkills` 只存當前職業那一份，所以一次只能寫入一個職業。改成 `draft = { 職業名: { 技能名: 級數 } }`，在同一輪把 2~3 個職業點完、按一次「確定修習 N 個職業（共 M 級）」一次寫入，然後關閉回到顯示已選技能的畫面。編輯器端新增 `handleSelectClassesFromPicker(entries)` 取代單一職業那支，成長履歷記一整批。*
+*② **上排「全部」鈕 ＋ 預設全開**：`DEFAULT_CREATION_RULES.defaultSourcebooks` 由 `['core']` 改成全部。⚠️ 這一格只決定「選單一開始顯示什麼」，真正的上限仍是 `allowedSourcebooks`（GM 收窄照樣擋得住）。新增 `onSetSourcebooks(keys)`——**不能用 `onToggleSourcebook` 逐本呼叫**，每次讀同一份 `character.enabledSourcebooks` 會遺失更新。*
+*③ **上排「已選職業」欄位**：徽章 = 職業圖示 ＋ 職業名 ＋ 右上角角標（投入等級），點它跳到那個職業。左側名冊卡片右上角也放同一個數字。右端顯示「這次配了 N 級 ／ 還能配 M 級」，`M` 把**既有職業已投入的等級**算進去（新增 `budgetUsed` prop；舊版沒算，多職業一次確定會算錯總額）。確定鈕的三種不通過各有各的訊息，不是只變灰。*
+*測試：`test:creation` 231 → **232**、`test:ui` 228 → **234**、`test:engine` 345 持平。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0。目視驗證：上排「全部 ✓ 核心 ✓ 高度奇幻 ✓ 科技奇幻 ✓ 自然奇幻 ✓ 特典合輯 ✓ 公測修訂 ✓」全開、徽章欄位空狀態、底部確定列。決策紀錄見 `docs/decisions.md` §AO。*

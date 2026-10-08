@@ -95,7 +95,12 @@ check('起始職業數 2~3（Core p.158）',
   [DEFAULT_CREATION_RULES.classCountMin, DEFAULT_CREATION_RULES.classCountMax], [2, 3]);
 check('技能點數 = 起始等級（每級 1 點）',
   DEFAULT_CREATION_RULES.skillPointBudget, DEFAULT_CREATION_RULES.startingLevel);
-check('新角色預設只開核心', [...DEFAULT_CREATION_RULES.defaultSourcebooks], ['core']);
+// 2026-10-06 改成全部（使用者裁定：「默認不要只有核心，而是全部，不然要切換來切換去很麻煩」）。
+// 這一格只決定選單一開始顯示什麼；真正的上限仍是 allowedSourcebooks。
+check('新角色預設全開手冊', [...DEFAULT_CREATION_RULES.defaultSourcebooks],
+  ['core', 'highFantasy', 'technoFantasy', 'naturalFantasy', 'bonus', 'playtest']);
+check('預設勾選仍受 allowedSourcebooks 上限約束',
+  resolveCreationRules({ allowedSourcebooks: ['core'] }).defaultSourcebooks, ['core']);
 check('拓展上限預設為全部手冊（沒有 campaign 時不該擋玩家）',
   [...DEFAULT_CREATION_RULES.allowedSourcebooks].sort(), [...ALL_BOOK_KEYS].sort());
 check('預設不指定必修職業', [...DEFAULT_CREATION_RULES.requiredClasses], []);
@@ -166,7 +171,9 @@ section('C. createNewCharacter：起始等級／資金／拓展由規則決定')
 const fresh = createNewCharacter();
 check('預設新角色等級 5', fresh.level, 5);
 check('預設新角色資金 500z', fresh.zenit, 500);
-check('預設新角色只開核心', fresh.enabledSourcebooks, ['core']);
+check('預設新角色全開手冊（2026-10-06 起；上限仍由 allowedSourcebooks 把關）',
+  fresh.enabledSourcebooks,
+  ['core', 'highFantasy', 'technoFantasy', 'naturalFantasy', 'bonus', 'playtest']);
 
 const custom = createNewCharacter({}, {
   startingLevel: 10,
@@ -183,9 +190,10 @@ check('overrides 仍為最上層（優先於規則）',
 check('規則物件不會被角色共用參考（改角色不影響規則）',
   (() => {
     const a = createNewCharacter();
-    a.enabledSourcebooks.push('highFantasy');
-    return createNewCharacter().enabledSourcebooks;
-  })(), ['core']);
+    // 推一個不存在的鍵——這樣斷言就不必跟著預設值跑
+    a.enabledSourcebooks.push('__sentinel__');
+    return createNewCharacter().enabledSourcebooks.includes('__sentinel__');
+  })(), false);
 check('不傳規則等同官方標準',
   [createNewCharacter({}, undefined).level, createNewCharacter({}, undefined).zenit], [5, 500]);
 

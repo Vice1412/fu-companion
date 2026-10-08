@@ -119,8 +119,14 @@ export const DEFAULT_CREATION_RULES = Object.freeze({
    * 玩家就是自己的 GM，不該被擋；GM 自訂開局時把這裡收窄，才成為真正的上限。
    */
   allowedSourcebooks: Object.freeze([...ALL_SOURCEBOOK_KEYS]),
-  /** 新角色預設勾選的拓展（預設只開核心，避免 35 個職業一次灌進選單） */
-  defaultSourcebooks: Object.freeze(['core']),
+  /**
+   * 新角色預設勾選哪些拓展。
+   *
+   * 2026-10-06 改成**全部**（使用者裁定）：「默認不要只有核心，而是全部，不然要切換來切換去很麻煩。」
+   * 這一格只決定「選單一開始顯示什麼」——**真正的上限是 `allowedSourcebooks`**，
+   * 所以 GM 收窄手冊時照樣擋得住（`validateCharacter` 的「啟用了未開放的拓展」是 error）。
+   */
+  defaultSourcebooks: Object.freeze([...ALL_SOURCEBOOK_KEYS]),
   /** GM 指定必須修習的職業（空陣列＝不指定） */
   requiredClasses: Object.freeze([]),
   /** 是否允許金手指 */

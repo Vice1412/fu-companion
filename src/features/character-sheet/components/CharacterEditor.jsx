@@ -266,28 +266,46 @@ export default function CharacterEditor({
   ];
 
   // Class & Skill handlers
-  const handleSelectClassFromPicker = (cName, selectedSkills = []) => {
-    if (!cName || !rulesData.classes[cName]) return;
+  /**
+   * 一次確認多個職業（使用者要求：在同一個彈窗裡把各職業的技能點完再一次確定，
+   * 不要再「選職業 → 點技能 → 確認 → 再選職業」來回）。
+   *
+   * `entries` = `[{ className, skills: [{ name, sl }] }]`，只含真的有點到等級的職業。
+   */
+  const handleSelectClassesFromPicker = (entries = []) => {
     const curClasses = character.classes || [];
-    if (curClasses.some(c => c.className === cName)) return;
+    const additions = [];
+    (entries || []).forEach(({ className, skills }) => {
+      if (!className || !rulesData.classes[className]) return;
+      if (curClasses.some((c) => c.className === className)) return;
+      const activeSkills = (skills || []).filter((s) => s.sl > 0);
+      const totalLevel = activeSkills.reduce((sum, s) => sum + s.sl, 0);
+      if (totalLevel < 1) return;
+      additions.push({ className, level: totalLevel, skills: activeSkills });
+    });
+    if (additions.length === 0) return;
 
-    const activeSkills = (selectedSkills || []).filter(s => s.sl > 0);
-    const totalLevel = activeSkills.reduce((sum, s) => sum + s.sl, 0);
-
-    updateField('classes', [
-      ...curClasses,
-      {
-        className: cName,
-        level: totalLevel,
-        skills: activeSkills
-      }
-    ], {
+    const summary = additions.map((a) => `【${a.className}】${a.level} 級`).join('、');
+    updateField('classes', [...curClasses, ...additions], {
       kind: 'skill',
-      title: `修習【${cName}】（投入 ${totalLevel} 級${activeSkills.length ? `：${activeSkills.map(s => `${s.name} ${s.sl}`).join('、')}` : ''}）`,
+      title: `修習 ${summary}`,
       fields: []
     });
-    setNewlyAddedClassName(null);
+    setNewlyAddedClassName(additions[additions.length - 1].className);
   };
+
+  /** 一次把某幾本手冊設為開放／關閉（上排「全部」鈕用；逐本呼叫會遺失更新） */
+  const setEnabledSourcebooks = (keys) => {
+    const wanted = (keys || []).filter((k) => rules.allowedSourcebooks.includes(k));
+    if (wanted.length === 0) return;
+    updateField('enabledSourcebooks', wanted);
+  };
+
+  // 既有職業已經吃掉的技能等級——一次確定多個職業時要把總額算進去（見 ClassPickerModal）
+  const usedSkillLevels = (character.classes || []).reduce(
+    (sum, c) => sum + (c.skills || []).reduce((s, sk) => s + (sk.sl || 0), 0),
+    0
+  );
 
   // 免費增益二選一（最大 HP 或 最大 MP）：寫入 classes[].chosenBenefit，引擎據此決定 +5 落在 HP 還是 MP
   const handleUpdateClassBenefit = (classIdx, benefit) => {
@@ -1370,7 +1388,9 @@ export default function CharacterEditor({
                 enabledBooks={enabledBooks}
                 onToggleSourcebook={toggleSourcebook}
                 existingClassNames={(character.classes || []).map(c => c.className)}
-                onSelectClass={handleSelectClassFromPicker}
+                onSelectClasses={handleSelectClassesFromPicker}
+                onSetSourcebooks={setEnabledSourcebooks}
+                budgetUsed={usedSkillLevels}
                 creationRules={rules}
                 locked={locked}
               />
