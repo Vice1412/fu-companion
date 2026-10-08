@@ -8,7 +8,12 @@ import { FLORIST_MAGISEEDS } from '../../data/skillSuboptionsData';
  * 植物學家花園生長盤 (FloristGardenTracker)
  *
  * 專為植物學家【植生術】打造之跑團戰備追蹤盤：
- * 1. 依據【植生術 SL】決定花園同時種植容量上限（至多 SL 株）。
+ * 1. 花園**同時只能容納 1 顆魔法種子**——官方 Natural Fantasy 手冊 p.140 的 THE GARDEN
+ *    寫得明確（`Your garden can only contain one magiseed at a time`），
+ *    而且 CHLOROMANCY 的觸發條件是「if there are no magiseeds in your garden」、
+ *    GRAFT／BRAMBLEHEART／GREATER CHLOROMANCY 也都以「花園裡的那一顆」為前提。
+ *    ※ 舊版這個元件讓容量隨【植生術 SL】放大，那是錯的（本專案自己的規則速查
+ *      `ruleCodexExpansion.js` 與跑團面板都採「一顆」模型，只有這裡例外）。
  * 2. 支援從已掌握的魔法種子中快速選擇並「播種至花園」。
  * 3. 每株已播種植物配備 0~4 格生長命刻，支援一鍵「+1 回合命刻」與「回合結束：花園全體生長」。
  * 4. 根據當前命刻（0~1格 / 2~3格 / 4格離園）即時高亮當前生效的機制效果，無需翻查手冊。
@@ -24,7 +29,9 @@ export default function FloristGardenTracker({
 
   // 取得角色當前花園資料
   const gardenList = character.floristGarden || [];
-  const maxCapacity = Math.max(1, skillSL || 1);
+  // 官方上限就是 1（見檔頭）。`skillSL` 保留在 props 裡是為了「已掌握幾種種子」等其他用途，
+  // 不再參與容量計算。
+  const maxCapacity = 1;
 
   // 提取已掌握的種子定義清單
   const availableSeedNames = Array.isArray(selectedOptions) ? selectedOptions : [];
@@ -44,7 +51,7 @@ export default function FloristGardenTracker({
   const handlePlantSeed = (seedName) => {
     if (!seedName) return;
     if (gardenList.length >= maxCapacity) {
-      if (showToast) showToast(`花園容量已滿（上限 ${maxCapacity} 株，等同植生術 SL）！`, 'warning');
+      if (showToast) showToast(`花園容量已滿（上限 ${maxCapacity} 顆）！`, 'warning');
       return;
     }
 

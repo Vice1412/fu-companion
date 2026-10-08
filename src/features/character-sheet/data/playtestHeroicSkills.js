@@ -34,8 +34,8 @@
  * | Resourceful | 有備無患 | 旅人技能 |
  * | Faithful Companion | 忠實夥伴 | 旅人技能 |
  * | Personal Vehicle | 個人載具 | 機師技能 |
- * | Theriomorphosis | 無拘形態 | 突變體（進階無拘形態＝Greater Theriomorphosis） |
- * | Ecdysis / Akromorphosis | 蛻皮／混合變形 | 突變體（進階蛻皮／進階混合變形） |
+ * | Theriomorphosis | 混合變形 | 突變體（進階無拘形態＝Greater Theriomorphosis） |
+ * | Ecdysis / Akromorphosis | 蛻皮／無拘形態 | 突變體（進階蛻皮／進階混合變形） |
  * | Charging Cavalry | 騎兵衝鋒 | 指揮官技能 |
  * | Follow My Lead | 隨我引導 | 舞者技能 |
  * | Peacock Dance / Hydra Dance | 孔雀舞／九頭蛇 | `skillSuboptionsData.js` 的舞步表 |
@@ -256,7 +256,7 @@ export const PLAYTEST_HEROIC_SKILLS = Object.freeze([
   },
   {
     name: '穩固突變',
-    requirement: '突變體，且已取得【無拘形態】',
+    requirement: '突變體，且已取得【混合變形】',
     source: PLAYTEST_SOURCE,
     effect: '獲得此英雄技能時，你學會兩種自選的突變型態。\n當你休息時，從你已知的突變型態中選擇至多兩種；你不能選擇多足型，且只能在節肢型、動力獸型與迅捷獸型之中選擇一種。所選的突變型態成為「穩固」，直到你再次休息為止。\n只要你沒有顯現任何非穩固的突變型態，你便被視為同時顯現你的兩種穩固突變型態並獲得它們的好處（這些好處不會在場景之間結束，也不會因你執行防禦動作而結束）。\n只要你顯現以下一種或多種突變型態，你也獲得對應傷害類型的抗性：兩棲型（冰）、電鱗型（電）、板足型（土）、氣囊型（風）、焰羽型（火）、毒棘型（毒）。'
   },
