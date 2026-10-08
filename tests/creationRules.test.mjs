@@ -43,7 +43,9 @@ import {
   HEROIC_SKILL_SOURCE_LABELS,
   heroicSkillsForClass,
   heroicSkillMaxAcquisitions,
-  findDuplicateStartingHeroicSkills
+  findDuplicateStartingHeroicSkills,
+  attributeDieUpgradesAllowed,
+  attributeDieUpgradesUsed
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { PLAYTEST_HEROIC_SKILLS } from '../src/features/character-sheet/data/playtestHeroicSkills.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
@@ -83,7 +85,12 @@ section('A. 官方標準開卡規則（逐項對照原書）');
 
 check('起始等級 5（Core p.157）', DEFAULT_CREATION_RULES.startingLevel, 5);
 check('起始裝備預算 500z（Core p.164）', DEFAULT_CREATION_RULES.startingZenit, 500);
-check('起始四維總和 32（Core p.155–156）', DEFAULT_CREATION_RULES.attributeTotal, 32);
+check('起始四維**不是**一條規則（官方是三組固定陣列，見 §AM）',
+  [CREATION_RULE_FIELDS.includes('attributeTotal'), DEFAULT_CREATION_RULES.attributeTotal],
+  [false, undefined]);
+check('官方三組起始陣列（Core 印刷 p.162）',
+  ATTRIBUTE_PRESET_ARRAYS.map((p) => [...p.diceList].sort((a, b) => b - a).join('/')),
+  ['10/8/8/6', '8/8/8/8', '10/10/6/6']);
 check('起始職業數 2~3（Core p.158）',
   [DEFAULT_CREATION_RULES.classCountMin, DEFAULT_CREATION_RULES.classCountMax], [2, 3]);
 check('技能點數 = 起始等級（每級 1 點）',
@@ -118,8 +125,9 @@ check('起始等級 10.7 → 取整 10', resolveCreationRules({ startingLevel: 1
 check('起始資金負數 → 退回預設', resolveCreationRules({ startingZenit: -1 }).startingZenit, 500);
 check('起始資金 0 是合法值（GM 可以開無資金開局）',
   resolveCreationRules({ startingZenit: 0 }).startingZenit, 0);
-check('屬性總和 2 → 退回預設（低於四顆骰的下限）',
-  resolveCreationRules({ attributeTotal: 2 }).attributeTotal, 32);
+check('舊存檔殘留的 attributeTotal 會被忽略（不再是一條規則）',
+  [resolveCreationRules({ attributeTotal: 2 }).attributeTotal,
+    isDefaultCreationRules({ attributeTotal: 40 })], [undefined, true]);
 
 check('職業數下限 > 上限 → 上限被拉齊',
   [resolveCreationRules({ classCountMin: 5, classCountMax: 3 }).classCountMin,
@@ -198,14 +206,36 @@ const base = (over = {}) => createNewCharacter({
   ...over
 });
 
-check('預設規則下，屬性總和 32 不報屬性警告',
-  msgs(base(), {}).filter((m) => m.includes('屬性骰階')), []);
-check('屬性總和 34 → 警告且訊息引用規則的 32',
-  msgs(base({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 8 } }), {}).filter((m) => m.includes('屬性骰階')),
-  ['屬性骰階點數總和為 34 (起始標準為 32)']);
-check('GM 把屬性總和改成 34 後，34 就不再是警告',
-  msgs(base({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 8 } }), { attributeTotal: 34 })
-    .filter((m) => m.includes('屬性骰階')), []);
+check('官方陣列（d8×4）不報屬性警告',
+  msgs(base({ attributes: { dex: 8, ins: 8, mig: 8, wlp: 8 } }), {}).filter((m) => m.includes('屬性骰')), []);
+check('官方陣列（d10,d8,d8,d6）不報屬性警告',
+  msgs(base({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 } }), {}).filter((m) => m.includes('屬性骰')), []);
+// d10,d8,d8,d8 的索引和是 5（官方三組都是 4）＝ 多升了一次，而 5 級給 0 次
+check('d10,d8,d8,d8（不在官方陣列上）→ 警告「已升級 1 次但 5 級只給 0 次」',
+  msgs(base({ attributes: { dex: 10, ins: 8, mig: 8, wlp: 8 } }), {})
+    .filter((m) => m.includes('屬性骰已升級 1 次')).length, 1);
+
+// 等級獎勵（Core 印刷 p.229）：20 級與 40 級各可把一顆**基礎**骰 +1 階，上限 d12
+check('20 級給 1 次、40 級給 2 次',
+  [attributeDieUpgradesAllowed(19), attributeDieUpgradesAllowed(20),
+    attributeDieUpgradesAllowed(39), attributeDieUpgradesAllowed(40),
+    attributeDieUpgradesAllowed(50)], [0, 1, 1, 2, 2]);
+check('d10,d8,d8,d6 是 0 次升級',
+  attributeDieUpgradesUsed({ dex: 10, ins: 8, mig: 8, wlp: 6 }), 0);
+check('d12,d8,d8,d6 是 1 次升級',
+  attributeDieUpgradesUsed({ dex: 12, ins: 8, mig: 8, wlp: 6 }), 1);
+check('20 級升過一次的角色（d12,d8,d8,d6）不再被誤報',
+  msgs(base({ level: 20, attributes: { dex: 12, ins: 8, mig: 8, wlp: 6 } }), {})
+    .filter((m) => m.includes('屬性骰')), []);
+check('20 級還沒升 → info 提示（不是違規）',
+  msgs(base({ level: 20, attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 } }), {})
+    .filter((m) => m.includes('可以選一顆屬性骰')).length, 1);
+check('5 級不會出現升級提示',
+  msgs(base({ level: 5, attributes: { dex: 10, ins: 8, mig: 8, wlp: 6 } }), {})
+    .filter((m) => m.includes('可以選一顆屬性骰')).length, 0);
+check('升級次數超過等級允許的 → 警告',
+  msgs(base({ level: 5, attributes: { dex: 12, ins: 10, mig: 8, wlp: 6 } }), {})
+    .filter((m) => m.includes('只給')).length, 1);
 
 const withClasses = (names) => base({
   classes: names.map((className) => ({ className, level: 1, skills: [] }))

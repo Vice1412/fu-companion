@@ -488,3 +488,12 @@
 *⑤ `fu_companion_creation_rules` 不再有寫入端 → 移到 `LEGACY_KEYS`（`creationRulesCampaign`）並註明退役原因，不刪使用者資料。另加 `LOG_FIELD_LABELS.creationRules = '開卡規則'`，調整規則會留痕。*
 *⑥ **底力技不在這次範圍**：它不是開關，是官方特典的 Zero Power 子系統，本專案完全沒收錄（要能開它得先建那個子系統）。*
 *測試：`test:creation` 218 → **223**、`test:ui` 214 → **219**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,199.62 kB / gzip 634.33 kB）。目視驗證：面板在編輯器最上方、自訂時自動展開、六個數字與手冊勾選都對（順手修掉說明文字裡沒被渲染的 `**`）。決策紀錄見 `docs/decisions.md` §AL。*
+
+*2026-10-06（四維骰階改讀官方規則 ＋ 等級獎勵 ＋ 職業頁的英雄技能 ＋ 英雄技能表格選擇器）：使用者一次提出三件事。*
+*① **`attributeTotal` 不是官方概念**（使用者指出「骰子大小就那幾個」）。原書**印刷 p.162** 是三組固定陣列（d8×4／d10,d8,d8,d6／d10,d10,d6,d6），三組索引和都剛好是 4——「總和 32」只是巧合。欄位從 `CREATION_RULE_FIELDS`／`DEFAULT_CREATION_RULES`／`resolveCreationRules`／規則面板全部移除。*
+*② **順帶修掉一個真的 bug**：舊版第 3 步驗「總和必須等於 32」，但 20 級升級（d10→d12）會讓總和變 34 → **app 對照著官方規則升級的玩家噴假警告**。改成官方的「三組陣列 ＋ 等級獎勵」：新增 `attributeDieUpgradesAllowed`（p.229：20／40 級各一次、上限 d12、加在**基礎**骰）、`attributeDieUpgradesUsed`（索引和 − 4）、`attributeDiceReachable`（降冪逐位相減，重排不等式即最佳配對）；驗證改三態（超過次數→warning／不是官方陣列→warning／**還剩次數→info**）。*
+*③ **等級獎勵的操作介面**：`AttributeMatrixPicker` 新增 `remainingUpgrades`，還有次數時顯示一列「可以選一顆屬性骰 +1 階」＋四顆按鈕（d12 或未分配的自動停用）；驗證的 info 也會出現在側邊自檢與進度表。*
+*④ **「職業與技能」頁顯示該職業的英雄技能**（使用者追問「這個功能怎麼我沒有看見」）：§AJ 我做在**挑職業的彈窗**裡，但使用者要的是**已選職業**在職業頁上看得到。新增 `ClassHeroicSkillsBlock`，接在每個職業卡下面、**印出條件與效果全文**、預設展開。*
+*⑤ **英雄技能改成表格式選擇器**：新增 `HeroicSkillPickerModal`，取代第 5 步的 `<select>`＋「添加」。四欄（名稱／出處／條件／效果）＋選用鈕；預設只列與職業有關的、可取消勾選看全部，另有搜尋與出處篩選；不合格的列照樣列出並寫出原因；入口按鈕不因為「沒精通」而停用。**拆成 `HeroicSkillPickerBody` ＋ Modal**（`JRPGModal` 用 portal，SSR 是空的，測試直接 SSR Body——同 `CharacterSheetExportBody` 的理由）。*
+*⑥ **截圖抓到我逐字比對漏掉的東西**：`堡壘` 與 `一點就通` 的效果文尾巴掛著 `【Playtest】`——兩筆**都是核心技能**，那是舊版標來源的土法標記（現在有 `source` 欄位了）。§AJ3 的判準只寫「數字／機制／限制的錯漏」，土法標記不落在裡面，但它是資料錯誤。**逐字比對也要比資料的乾淨程度。***
+*測試：`test:creation` 223 → **231**、`test:ui` 219 → **225**、`test:engine` 345 持平（斷言改寫）。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,209.85 kB / gzip 636.97 kB）。目視驗證：骰階升級列（Lv20 →「還剩 1 次」、未分配時四顆按鈕停用顯示「—」）、職業頁的英雄技能區塊（守護者 9 筆、條件與效果全文）。決策紀錄見 `docs/decisions.md` §AM。*

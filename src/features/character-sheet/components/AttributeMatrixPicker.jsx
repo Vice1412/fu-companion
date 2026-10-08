@@ -9,6 +9,7 @@ import {
 import { Info, X, RotateCcw, Check } from 'lucide-react';
 // 三大屬性陣列與四個屬性名都是**資料**，放在 data/ 讓測試可以直接匯入（不必把 React 拉進 node 測試）
 import { ATTRIBUTE_PRESET_ARRAYS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS } from '../data/sourcebookConfig';
+import { ATTRIBUTE_DICE_TIERS } from '../utils/characterEngine';
 
 /**
  * 骰階色彩漸層配置（視覺直覺區分，無文字贅述）：
@@ -122,6 +123,8 @@ export default function AttributeMatrixPicker({
   // 預設是空的（0 = 尚未指派）——不替玩家先套「萬事通」，見 createNewCharacter 的註解。
   attributes = { dex: 0, ins: 0, mig: 0, wlp: 0 },
   onChange = () => {},
+  // 等級獎勵還能用幾次（原書 p.229：20／40 級各一次）。0 = 不顯示升級列。
+  remainingUpgrades = 0,
   theme = {}
 }) {
   // 4 顆骰子物件（每個骰子有獨立 ID、面數、以及當前放置在何處 assignedTo: 'dex'|'ins'|'mig'|'wlp'|null）
@@ -195,9 +198,22 @@ export default function AttributeMatrixPicker({
   const floatingCol = floatingDie ? getDiceColorConfig(floatingDie.val) : null;
   const FloatingDieIcon = floatingDie ? getDieIcon(floatingDie.val) : null;
 
+  /**
+   * 等級獎勵：把某一顆屬性骰 +1 階（原書 p.229）。
+   * 上限 d12——已經是 d12 的那顆，按鈕會停用。
+   */
+  const handleUpgradeDie = (statKey) => {
+    const idx = dicePool.findIndex((d) => d.assignedTo === statKey);
+    if (idx < 0) return;
+    const at = ATTRIBUTE_DICE_TIERS.indexOf(dicePool[idx].val);
+    if (at < 0 || at >= ATTRIBUTE_DICE_TIERS.length - 1) return;
+    const next = dicePool.map((d, i) => (i === idx ? { ...d, val: ATTRIBUTE_DICE_TIERS[at + 1] } : d));
+    setDicePool(next);
+    notifyParent(next);
+  };
+
   // 同步通知父層
-  const notifyParent = (newPool) => {
-    const newAttrs = { ...attributes };
+  const notifyParent = (newPool) => {    const newAttrs = { ...attributes };
     let anyAssigned = false;
     newPool.forEach(d => {
       if (d.assignedTo) {
@@ -525,6 +541,43 @@ export default function AttributeMatrixPicker({
           })}
         </div>
       </div>
+
+      {/* ==================== 等級獎勵：屬性骰 +1 階（原書 p.229） ==================== */}
+      {remainingUpgrades > 0 && (
+        <div
+          className="rounded-xl border-2 px-3 py-2.5 space-y-2"
+          style={{ backgroundColor: theme.subpanelBg || '#f5efdf', borderColor: theme.accent || '#b45309' }}
+        >
+          <div className="text-xs leading-relaxed" style={{ color: theme.textDark || '#3c2415' }}>
+            <strong>等級獎勵：可以選一顆屬性骰 +1 階</strong>
+            <span className="text-[11px] ml-1.5 opacity-80">
+              （20 級與 40 級各一次，上限 d12，加在<strong>基礎</strong>骰上；還剩 {remainingUpgrades} 次）
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ATTRIBUTE_KEYS.map((key) => {
+              const die = dicePool.find((d) => d.assignedTo === key);
+              const at = die ? ATTRIBUTE_DICE_TIERS.indexOf(die.val) : -1;
+              const maxed = at >= ATTRIBUTE_DICE_TIERS.length - 1;
+              const next = at >= 0 ? ATTRIBUTE_DICE_TIERS[at + 1] : null;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!die || maxed}
+                  onClick={() => handleUpgradeDie(key)}
+                  title={!die ? '先把骰子分配到這一項' : maxed ? '已經是 d12（上限）' : `把 ${ATTRIBUTE_NAMES[key]} 從 d${die.val} 升到 d${next}`}
+                  className="text-[11px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                  style={{ backgroundColor: theme.cardBg || '#fffdf9', borderColor: theme.border || '#d6c7ab', color: theme.textDark || '#3c2415' }}
+                >
+                  {key.toUpperCase()} {die ? `d${die.val}` : '—'}
+                  {!maxed && next ? ` ➔ d${next}` : ''}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ==================== 狀態指示列 ==================== */}
       <div className="flex items-center justify-between flex-wrap gap-2 text-xs px-1">

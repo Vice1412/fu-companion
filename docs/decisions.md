@@ -3187,6 +3187,92 @@ Zero Power 子系統（另一套技能與資源），本專案完全沒收錄（
 `test:creation` 218 → **223**（同團重複改成逐卡讀規則 5 條 ＋ 每角色自帶規則的護欄 4 條）、
 `test:ui` 214 → **219**（面板存在／預設收合／名冊頁開關已移除／不再吃全域 prop）。
 
+### AM. 四維骰階改讀官方規則、等級獎勵、職業頁的英雄技能、英雄技能表格選擇器
+
+使用者一次提出三件事。
+
+#### AM1. `attributeTotal` 不是官方概念（使用者指出）
+
+> 四位總和我覺得沒什麼必要在此團開卡規則，因為不管怎樣骰子大小就那幾個。
+
+**他是對的。** 原書 **印刷 p.162**（PDF p.164）寫的是**三組固定陣列**：
+
+> Choose one of the following profiles for your hero, then distribute the corresponding die sizes
+> among their four Attributes.
+> • Jack of All Trades: d8, d8, d8, d8 ／ • Average: d10, d8, d8, d6 ／ • Specialized: d10, d10, d6, d6
+
+三組的索引和**都剛好是 4**（d6=0、d8=1、d10=2、d12=3），所以「總和 32」只是這三組的巧合，
+不是規則。`attributeTotal` 從 `CREATION_RULE_FIELDS`／`DEFAULT_CREATION_RULES`／
+`resolveCreationRules`／規則面板全部移除（舊存檔殘留的鍵會被 `resolveCreationRules` 忽略）。
+
+#### AM2. **順帶修掉一個真的 bug**：照規則升級反而被噴警告
+
+舊版第 3 步驗的是「總和必須等於 32」。但 20 級升級會把 d10 推成 d12 → 總和 34 →
+**app 會對照著官方規則升級的玩家報一個假的警告**。
+
+改法（`characterEngine.js`）：
+
+- `attributeDieUpgradesAllowed(level)`：原書 **印刷 p.229**「If you just reached **level 20 or 40**,
+  choose one of your Attributes and increase its **base** die size by one step, up to a maximum of d12.」
+  → 20 級 1 次、40 級再 1 次（等級上限 50，所以最多 2 次）。
+- `attributeDieUpgradesUsed(attributes)`：索引和 − 4（三組陣列的索引和都是 4，這是整套判定的支點）。
+- `attributeDiceReachable(attributes, allowed)`：把兩邊降冪排序後逐位相減（重排不等式就是最佳配對），
+  檢查每個差 ≥ 0 且總和 ≤ 允許次數。
+- 第 3 步的驗證改成三態：**超過等級允許的升級次數** → warning；**不是官方陣列推得出來的組合** →
+  warning；**還剩升級次數** → **info**（晚點再選也可以，不影響定稿）。
+
+#### AM3. 等級獎勵的操作介面（使用者要求「到達等級需求就跳出提示」）
+
+- `AttributeMatrixPicker` 新增 `remainingUpgrades` prop：還有次數時顯示一列
+  「等級獎勵：可以選一顆屬性骰 +1 階（20 級與 40 級各一次，上限 d12，加在**基礎**骰上；還剩 N 次）」
+  ＋ 四顆按鈕（DEX／INS／MIG／WLP 顯示目前骰階與升級後的階，已經 d12 或還沒分配的就停用）。
+- 編輯器算出 `remainingDieUpgrades` 傳進去。
+- 第 3 步的驗證 info 也會出現在側邊「規則自檢」與導航列的進度表上，所以開卡時看得到。
+
+#### AM4. 「職業與技能」頁顯示該職業的英雄技能（使用者追問「這個功能怎麼我沒有看見」）
+
+§AJ 我把「精通後可解鎖的英雄技能」做在 `ClassPickerModal`（**挑職業的彈窗**）裡，
+但使用者要的是**已經選定的職業**在「職業與技能」頁上看得到。
+
+新增 `components/ClassHeroicSkillsBlock.jsx`：接在每個職業卡下面，列出該職業可解鎖的英雄技能，
+**每一條都印條件與效果全文**（不是只給名字）。預設**展開**——使用者抱怨過「怎麼我沒有看見」，
+預設收合等於再一次看不見。
+
+與 `ClassPickerModal` 那排小標籤的差別是刻意的：那裡是挑職業時的**掃視**用（文字塞多了會淹掉面板），
+這裡是選定之後的**查閱**用。
+
+#### AM5. 英雄技能改成表格式選擇器（使用者要求「像裝備那樣獨立成表」）
+
+> 選擇開局英雄界面做得太簡陋了，應該要像裝備那樣獨立成表的，然後列出每一條的條件和規則，
+> 並提供過濾功能，預設只會出現跟開卡職業有關的英雄技能，可以勾選或過濾其他職業。
+
+新增 `components/HeroicSkillPickerModal.jsx`，取代第 5 步的 `<select>` ＋「添加」鈕：
+
+- 表格四欄：**名稱／出處／條件／效果全文** ＋ 選用鈕。
+- 過濾：**預設只列與這張卡的職業有關的**（`heroicSkillsForClass` 的判定，與
+  `checkHeroicSkillRequirement` 共用）＋「只顯示與我的職業有關的」勾選框（取消就看全部）
+  ＋ 搜尋框（名稱／條件／效果）＋ 出處下拉。
+- 不合格的列**照樣列出**、按鈕停用、原因寫在旁邊（§U 的原則：不能選的原因要在選之前看見）。
+  藏起來的話玩家只會覺得「怎麼找不到」。
+- 入口按鈕**不因為「沒精通」而停用**——停用等於看不到有哪些技能可以往哪走。
+- **拆成 `HeroicSkillPickerBody` ＋ `HeroicSkillPickerModal`**：`JRPGModal` 用 portal ＋
+  `useEffect` 掛載，SSR 輸出空字串，所以測試直接 SSR Body（與 `CharacterSheetExportBody` 同一個理由）。
+
+#### AM6. 截圖抓到的：兩筆核心技能尾巴掛著 `【Playtest】`
+
+`堡壘` 與 `一點就通` 的效果文尾端有 ` 【Playtest】`。那是舊版標「這筆來自 Playtest」的土法標記，
+現在每筆都有結構化的 `source` 欄位，所以它是純汙染——而且這兩筆**都是核心技能**，標記本身也是錯的
+（與 §AJ3 修的 `背水` 同一種汙染）。
+
+**這是我的 Core 逐字比對漏掉的**：§AJ3 的判準寫的是「必修＝數字／機制／限制的錯漏」，
+土法標記不落在那三類裡——但它是資料錯誤。**逐字比對不能只比機制，也要比資料的乾淨程度。**
+
+#### AM7. 測試
+
+`test:creation` 223 → **231**、`test:engine` 345 持平（把「屬性總和」那組改成「官方陣列 ＋ 升級次數」）、
+`test:ui` 219 → **225**（表格選擇器 10 條、職業頁區塊 3 條、骰階升級列 0 條——那條靠截圖）。
+
+
 
 
 

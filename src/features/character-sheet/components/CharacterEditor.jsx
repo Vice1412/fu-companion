@@ -40,6 +40,7 @@ import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
+import ClassHeroicSkillsBlock from './ClassHeroicSkillsBlock';
 import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
@@ -58,6 +59,7 @@ import {
 import StarterPresetsModal from './StarterPresetsModal';
 import CharacterPreviewModal from './CharacterPreviewModal';
 import CreationRulesPanel from './CreationRulesPanel';
+import HeroicSkillPickerModal from './HeroicSkillPickerModal';
 
 /** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
 const TAB_COUNT = 6;
@@ -73,6 +75,8 @@ import {
   getCharacterLevel,
   checkHeroicSkillRequirement,
   heroicSkillMaxAcquisitions,
+  attributeDieUpgradesAllowed,
+  attributeDieUpgradesUsed,
   HEROIC_SKILLS,
   HEROIC_SKILL_SOURCE_LABELS
 } from '../utils/characterEngine';
@@ -124,7 +128,8 @@ export default function CharacterEditor({
   const [isCustomTheme, setIsCustomTheme] = useState(() => !CANONICAL_THEMES.includes(normalizeTheme(character?.theme)) && Boolean(character?.theme));
   const [isClassPickerOpen, setIsClassPickerOpen] = useState(false);
   const [newlyAddedClassName, setNewlyAddedClassName] = useState(null);
-  const [selectedHeroicToAdd, setSelectedHeroicToAdd] = useState('');
+  // 英雄技能選擇器（表格式，見 HeroicSkillPickerModal）
+  const [isHeroicPickerOpen, setIsHeroicPickerOpen] = useState(false);
   // 目前開啟中的裝備選擇欄位（null = 未開啟）
   const [pickerSlot, setPickerSlot] = useState(null);
 
@@ -143,6 +148,12 @@ export default function CharacterEditor({
   const validation = validateCharacter(character, rules);
   const stats = calculateCharacterStats(character);
 
+  // 等級獎勵：屬性骰 +1 階（原書 p.229：20／40 級各一次）。傳給四維選擇器顯示升級列。
+  const remainingDieUpgrades = Math.max(
+    0,
+    attributeDieUpgradesAllowed(character.level) - (attributeDieUpgradesUsed(character.attributes) ?? 0)
+  );
+
   // 創角進度：同一份驗證結果按步驟整理成主線（導航列本身就是進度表）
   const checklist = buildCreationChecklist(character, rules);
   const checklistById = new Map(checklist.map((item) => [item.id, item]));
@@ -152,42 +163,29 @@ export default function CharacterEditor({
   // 英雄技能的前提（原書 p.232；開局名額見 Playtest Materials 2026-10-01 p.4）：
   // **不能選的原因要在選之前看見**，不是選完才被擋。判定與 `validateCharacter` 共用同一份。
   const ownedClassNames = (character.classes || []).map((c) => c.className);
-  const heroicOptions = HEROIC_SKILLS.map((skill) => {
-    const acquiredCount = (character.heroicSkills || [])
-      .filter((x) => (x?.name || x) === skill.name).length;
-    const maxAcquisitions = heroicSkillMaxAcquisitions(skill);
-    const mastery = checkHeroicSkillRequirement(skill, {
+  const charLevel = getCharacterLevel(character);
+
+  // 開局名額只有一個（Playtest 原文：an additional Heroic Skill）。
+  // 「用到名額」＝這個技能已經取得，而且它**不是**靠精通拿的（精通路徑不受名額限制）。
+  //
+  // 舊版是從 `heroicOptions` 反推（`o.already && o.needsSlot`）。那個陣列已經移除——
+  // 逐列判定搬到 `HeroicSkillPickerModal`（表格要顯示「為什麼不能選」），
+  // 但名額狀態還要在第 5 步的標題上顯示，所以在這裡獨立算一次。
+  const creationSlotUsed = (character.heroicSkills || []).filter((entry) => {
+    const def = HEROIC_SKILLS.find((h) => h.name === (entry?.name || entry));
+    if (!def) return false;
+    const byMastery = checkHeroicSkillRequirement(def, {
       masteredClasses: stats.masteredClasses,
-      level: getCharacterLevel(character)
-    });
-    const creation = rules.startingHeroicSkill
-      ? checkHeroicSkillRequirement(skill, {
-        classes: ownedClassNames,
-        level: getCharacterLevel(character),
-        atCreation: true
-      })
-      : { ok: false, reason: '' };
-    return {
-      skill,
-      mastery,
-      creation,
-      // 顯示哪一條理由：規則有開就講開局名額的條件（那是玩家正在嘗試的路），
-      // 否則講精通。**不能寫成 `mastery.ok ? mastery : creation`**——規則關閉時
-      // `creation.reason` 是空字串，選項會變成只有一個沒有原因的「✕」。
-      verdict: mastery.ok
-        ? mastery
-        : (rules.startingHeroicSkill ? creation : mastery),
-      // 只能靠開局名額取得（精通條件還沒到）
-      needsSlot: !mastery.ok && creation.ok,
-      acquiredCount,
-      // 「已習得」只在**達到可取得次數上限**時才成立——原書預設 1 次，
-      // 但嵌合術精通 2 次、解剖學家 3 次（見 heroicSkillMaxAcquisitions）
-      maxAcquisitions,
-      already: acquiredCount >= maxAcquisitions
-    };
-  });
-  // 開局名額只有一個（Playtest 原文：an additional Heroic Skill）
-  const creationSlotUsed = heroicOptions.filter((o) => o.already && o.needsSlot).length;
+      classes: ownedClassNames,
+      level: charLevel
+    }).ok;
+    if (byMastery) return false;
+    return checkHeroicSkillRequirement(def, {
+      classes: ownedClassNames,
+      level: charLevel,
+      atCreation: true
+    }).ok;
+  }).length;
   const creationSlotFull = Boolean(rules.startingHeroicSkill) && creationSlotUsed >= 1;
 
   // 英雄技能的出處（使用者要求「必須要標出出處」）。
@@ -1203,6 +1201,7 @@ export default function CharacterEditor({
               {/* 2x2 四宮格拖曳分配矩陣 */}
               <AttributeMatrixPicker
                 attributes={character.attributes || { dex: 8, ins: 8, mig: 8, wlp: 8 }}
+                remainingUpgrades={remainingDieUpgrades}
                 onChange={(newAttrs) => {
                   onChange({
                     ...character,
@@ -1348,18 +1347,26 @@ export default function CharacterEditor({
                   </div>
                 ) : (
                   (character.classes || []).map((cl, cIdx) => (
-                    <ClassSkillCard
-                      key={cl.className}
-                      classItem={cl}
-                      classIndex={cIdx}
-                      character={character}
-                      theme={theme}
-                      isInitialEdit={newlyAddedClassName === cl.className}
-                      onUpdateSkills={handleUpdateClassSkills}
-                      onUpdateClassBenefit={handleUpdateClassBenefit}
-                      onRemoveClass={handleRemoveClass}
-                      onUpdateCharacter={onChange}
-                    />
+                    <div key={cl.className} className="space-y-2">
+                      <ClassSkillCard
+                        classItem={cl}
+                        classIndex={cIdx}
+                        character={character}
+                        theme={theme}
+                        isInitialEdit={newlyAddedClassName === cl.className}
+                        onUpdateSkills={handleUpdateClassSkills}
+                        onUpdateClassBenefit={handleUpdateClassBenefit}
+                        onRemoveClass={handleRemoveClass}
+                        onUpdateCharacter={onChange}
+                      />
+                      {/* 使用者要求：選了這個職業之後，下面就看得到它對應的英雄技能
+                          學習條件與效果（不是只給名字）。 */}
+                      <ClassHeroicSkillsBlock
+                        className={cl.className}
+                        theme={theme}
+                        mastered={(cl.level || 0) >= 10}
+                      />
+                    </div>
                   ))
                 )}
               </div>
@@ -1374,6 +1381,20 @@ export default function CharacterEditor({
                 existingClassNames={(character.classes || []).map(c => c.className)}
                 onSelectClass={handleSelectClassFromPicker}
                 creationRules={rules}
+              />
+
+              {/* 英雄技能選擇器（表格式：條件與效果全文 ＋ 過濾） */}
+              <HeroicSkillPickerModal
+                isOpen={isHeroicPickerOpen}
+                onClose={() => setIsHeroicPickerOpen(false)}
+                character={character}
+                rules={rules}
+                stats={stats}
+                theme={theme}
+                slotBlocked={creationSlotFull}
+                onPick={(skill) => {
+                  updateField('heroicSkills', [...(character.heroicSkills || []), skill]);
+                }}
               />
             </div>
           )}
@@ -1724,50 +1745,22 @@ export default function CharacterEditor({
                   </p>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedHeroicToAdd}
-                    onChange={e => setSelectedHeroicToAdd(e.target.value)}
-                    disabled={stats.masteredClasses.length === 0 && !rules.startingHeroicSkill}
-                    className="flex-1 border rounded-lg px-3 py-1.5 text-xs outline-none shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                  >
-                    <option value="">-- 選擇英雄技能 --</option>
-                    {heroicOptions.map(({ skill: h, verdict, already, needsSlot, acquiredCount, maxAcquisitions }) => {
-                      const slotBlocked = needsSlot && creationSlotFull;
-                      return (
-                        <option key={h.name} value={h.name} disabled={!verdict.ok || already || slotBlocked}>
-                          {h.name} · {HEROIC_SKILL_SOURCE_LABELS[h.source] || h.source} [{h.requirement}]
-                          {already
-                            ? (maxAcquisitions > 1 ? ` ✕ 已取滿 ${acquiredCount}/${maxAcquisitions}` : ' ✕ 已習得')
-                            : !verdict.ok
-                              ? ` ✕ ${verdict.reason}`
-                              : slotBlocked
-                                ? ' ✕ 開局名額已用完'
-                                : needsSlot
-                                  ? ' ◈ 用開局名額'
-                                  : (acquiredCount > 0 ? ` ✎ 可再取（${acquiredCount}/${maxAcquisitions}）` : '')}
-                        </option>
-                      );
-                    })}
-                  </select>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* 舊版這裡是一個 `<select>` ＋「添加」鈕：條件與效果都看不到，158 筆擠在
+                      一個下拉裡也沒辦法過濾。改成開表格（見 HeroicSkillPickerModal）。
+                      **不因為「沒精通」而停用**——停用等於看不到有哪些技能可以往哪走；
+                      表格會逐列寫出「為什麼現在不能選」。 */}
                   <JRPGButton
                     variant={theme.buttonVariant || 'primary'}
                     size="xs"
-                    onClick={() => {
-                      if (!selectedHeroicToAdd) return;
-                      const picked = heroicOptions.find((o) => o.skill.name === selectedHeroicToAdd);
-                      // 選單已經停用不合格的選項，這裡是第二道防線
-                      if (picked && picked.verdict.ok && !picked.already
-                        && !(picked.needsSlot && creationSlotFull)) {
-                        updateField('heroicSkills', [...(character.heroicSkills || []), picked.skill]);
-                      }
-                      setSelectedHeroicToAdd('');
-                    }}
-                    disabled={!selectedHeroicToAdd}
+                    icon={GiLaurelCrown}
+                    onClick={() => setIsHeroicPickerOpen(true)}
                   >
-                    添加
+                    選擇英雄技能
                   </JRPGButton>
+                  <span className="text-[11px]" style={{ color: theme.textMuted }}>
+                    表格列出每一條的條件與效果，預設只顯示與你的職業有關的
+                  </span>
                 </div>
 
                 <div className="space-y-2">

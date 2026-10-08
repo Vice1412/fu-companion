@@ -1,6 +1,6 @@
 import rulesData from '../data/rulesData.json';
 import { PLAYTEST_HEROIC_SKILLS } from '../data/playtestHeroicSkills';
-import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS } from '../data/sourcebookConfig';
+import { SOURCEBOOKS, STATUS_AFFLICTIONS, ATTRIBUTE_NAMES, ATTRIBUTE_KEYS, ATTRIBUTE_PRESET_ARRAYS } from '../data/sourcebookConfig';
 import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/skillSuboptionsData';
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
@@ -18,6 +18,71 @@ const DICE_STEPS = [6, 8, 10, 12];
  * `DICE_STEPS`、匯入端則完全沒有——於是匯入的 `dex: 20` 會直接進引擎。
  */
 export const ATTRIBUTE_DICE_TIERS = Object.freeze([...DICE_STEPS]);
+
+/**
+ * 骰階在階梯上的索引（d6=0、d8=1、d10=2、d12=3）；不在階梯上回 -1。
+ * 「+1 階」就是索引 +1，所以整個升級機制可以用索引加減表達。
+ */
+export const attributeDieIndex = (die) => ATTRIBUTE_DICE_TIERS.indexOf(Number(die));
+
+/**
+ * 官方三組起始陣列的**索引和**（Core 印刷 p.162）：
+ *   Jack of All Trades d8,d8,d8,d8 → 1+1+1+1 = 4
+ *   Average d10,d8,d8,d6          → 2+1+1+0 = 4
+ *   Specialized d10,d10,d6,d6     → 2+2+0+0 = 4
+ * 三組都是 4，所以「這張卡用掉了幾次升級」＝ 索引和 − 4。這是整套判定的支點。
+ */
+export const ATTRIBUTE_PROFILE_INDEX_SUM = 4;
+
+/**
+ * 依等級**應該已經用掉幾次**屬性骰升級（Core 印刷 p.229）：
+ *
+ * > If you just reached **level 20 or 40**, choose one of your Attributes and increase its
+ * > **base** die size by one step, up to a maximum of d12.
+ *
+ * 所以 20 級給 1 次、40 級再給 1 次（等級上限 50，所以最多 2 次）。
+ * 加的是**基礎**骰——與 HP/MP 的算法一致（`calculateCharacterStats` 用 base 骰）。
+ */
+export const attributeDieUpgradesAllowed = (level) => {
+  const lv = Number(level);
+  if (!Number.isFinite(lv)) return 0;
+  return (lv >= 20 ? 1 : 0) + (lv >= 40 ? 1 : 0);
+};
+
+/** 這組四維用掉了幾次升級（索引和 − 4）。有骰階不在階梯上時回 null。 */
+export const attributeDieUpgradesUsed = (attributes) => {
+  const idx = ATTRIBUTE_KEYS.map((key) => attributeDieIndex(attributes?.[key]));
+  if (idx.some((i) => i < 0)) return null;
+  return idx.reduce((sum, i) => sum + i, 0) - ATTRIBUTE_PROFILE_INDEX_SUM;
+};
+
+/**
+ * 這組四維是不是「從官方三組陣列出發、用不超過 `allowed` 次升級」推得出來的。
+ *
+ * 骰子只能往上、不能超過 d12；把兩邊都**降冪**排序後逐位相減就是最佳配對
+ * （重排不等式）——所以只需要檢查每個差都 ≥ 0 且總和 ≤ 允許次數。
+ *
+ * 這取代了舊版的「總和必須等於 32」：那條在 20 級升過一次之後就變成假的
+ * （d10→d12 讓總和變 34，app 會對照規則升級的玩家噴警告）。
+ */
+export const attributeDiceReachable = (attributes, allowed) => {
+  const dice = ATTRIBUTE_KEYS.map((key) => attributeDieIndex(attributes?.[key]));
+  if (dice.some((i) => i < 0)) {
+    return { ok: false, reason: `骰階必須是 ${ATTRIBUTE_DICE_TIERS.map((d) => `d${d}`).join('／')}` };
+  }
+  const desc = [...dice].sort((a, b) => b - a);
+  for (const preset of ATTRIBUTE_PRESET_ARRAYS) {
+    const profile = preset.diceList.map(attributeDieIndex).sort((a, b) => b - a);
+    const need = desc.map((v, i) => v - profile[i]);
+    if (need.every((v) => v >= 0) && need.reduce((s, v) => s + v, 0) <= allowed) {
+      return { ok: true, preset: preset.name, steps: need.reduce((s, v) => s + v, 0) };
+    }
+  }
+  return {
+    ok: false,
+    reason: ATTRIBUTE_PRESET_ARRAYS.map((p) => `${p.name} ${p.diceList.map((d) => `d${d}`).join(',')}`).join('／')
+  };
+};
 
 /** 把任意數字夾到合法骰階（取最接近的一階；同距取低的那一階，不替玩家灌水） */
 export const snapToAttributeDie = (value) => {
@@ -866,13 +931,36 @@ export const validateCharacter = (char, rules = null) => {
       message: `四維屬性還有 ${unassigned.length} 項未指派（${unassigned.map((k) => ATTRIBUTE_NAMES[k]).join('、')}）`
     });
   } else {
-    const attrSum = ATTRIBUTE_KEYS.reduce((sum, key) => sum + char.attributes[key], 0);
-    if (attrSum !== creation.attributeTotal) {
+    // 官方規則（印刷 p.162）是「從三組固定陣列挑一組」，**不是「總和 32」**；
+    // 而 20／40 級各可再把一顆**基礎**骰 +1 階（p.229）。所以合法組合＝
+    // 「某組陣列 ＋ 不超過 allowed 次 +1 階」。
+    // 舊版驗總和，於是照規則在 20 級升級（d10→d12，總和 32→34）反而會被噴警告。
+    const upgradesAllowed = attributeDieUpgradesAllowed(char.level);
+    const upgradesUsed = attributeDieUpgradesUsed(char.attributes);
+    const reach = attributeDiceReachable(char.attributes, upgradesAllowed);
+    if (upgradesUsed !== null && upgradesUsed > upgradesAllowed) {
       warnings.push({
         step: 3,
         field: 'attributes',
         type: 'warning',
-        message: `屬性骰階點數總和為 ${attrSum} (起始標準為 ${creation.attributeTotal})`
+        message: `屬性骰已升級 ${upgradesUsed} 次，但 ${char.level} 級只給 ${upgradesAllowed} 次`
+          + '（20 級與 40 級各一次，原書 p.229）'
+      });
+    } else if (!reach.ok) {
+      warnings.push({
+        step: 3,
+        field: 'attributes',
+        type: 'warning',
+        message: `屬性骰不是官方三組起始陣列推得出來的組合（官方：${reach.reason}）`
+      });
+    } else if (upgradesUsed < upgradesAllowed) {
+      // 「提示」而非「違規」——晚點再選也可以，所以是 info，不影響定稿
+      warnings.push({
+        step: 3,
+        field: 'attributes',
+        type: 'info',
+        message: `已達 ${char.level} 級：可以選一顆屬性骰 +1 階（上限 d12），還剩 `
+          + `${upgradesAllowed - upgradesUsed} 次`
       });
     }
 

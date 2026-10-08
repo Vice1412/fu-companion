@@ -27,7 +27,9 @@ import {
   EXPERIENCE_POINT_RULES,
   SHEET_DISCIPLINES
 } from '../src/features/character-sheet/components/CharacterSheetExport.jsx';
-import { createNewCharacter, getProficiencies } from '../src/features/character-sheet/utils/characterEngine.js';
+import { createNewCharacter, getProficiencies, calculateCharacterStats } from '../src/features/character-sheet/utils/characterEngine.js';
+import { resolveCreationRules } from '../src/features/character-sheet/data/creationRules.js';
+import { HeroicSkillPickerBody } from '../src/features/character-sheet/components/HeroicSkillPickerModal.jsx';
 import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js';
 import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
 import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebookConfig.js';
@@ -601,6 +603,22 @@ const renderEditorAt = (tab, over = {}, rules = null) => renderToStaticMarkup(Re
   ...(rules ? { creationRules: rules } : {})
 }));
 
+/**
+ * 英雄技能選擇器（表格式彈窗）。
+ * 第 5 步的入口要點開才看得到，SSR 截不到，所以直接 SSR 彈窗本體——
+ * 表格反而比 `<select>` 的展開清單好斷言。
+ */
+const renderHeroicPicker = (over = {}, rules = {}) => {
+  const char = createNewCharacter({ name: '挑選測試', startingFundsRolled: true, ...over });
+  return renderToStaticMarkup(React.createElement(HeroicSkillPickerBody, {
+    character: char,
+    rules: resolveCreationRules(rules),
+    stats: calculateCharacterStats(char),
+    theme: {},
+    onPick: () => {}
+  }));
+};
+
 const tab2Html = renderEditorAt(2);
 const tab3Html = renderEditorAt(3);
 
@@ -626,56 +644,81 @@ check('第 6 步有姓名、性別與角色背景',
 check('第 6 步排在特質與命刻之後（導航列的最後一格）',
   tab6Html.lastIndexOf('命名與背景') > tab6Html.lastIndexOf('特質與命刻'), true);
 
-// 英雄技能的資格關卡（原書 p.232）：不合格的選項要停用並寫出原因。
-// `<select>` 的展開清單截不到圖，所以用 SSR 斷言——比截圖更強。
+// 英雄技能的資格關卡（原書 p.232）：不合格的要停用並寫出原因。
+//
+// 2026-10-06 起第 5 步不再是 `<select>`，改成表格式的 `HeroicSkillPickerModal`
+// （使用者要求「像裝備那樣獨立成表、列出條件和規則、提供過濾」）。
+// 所以這裡直接 SSR 那個彈窗——`<select>` 的展開清單本來就截不到圖，表格反而 SSR 得到。
 const masterHtml = renderEditorAt(5, {
   classes: [{ className: '守護者', level: 10, skills: [] }],
   heroicSkills: []
 });
 const noMasterHtml = renderEditorAt(5, { classes: [], heroicSkills: [] });
 check('已精通職業時顯示資格', masterHtml.includes('已精通職業'), true);
-check('不合格的英雄技能選項被停用', /value="背水"[^>]*disabled/.test(masterHtml), true);
-check('合格的不會被停用', /value="額外HP"[^>]*disabled/.test(masterHtml), false);
-check('停用的選項寫出原因', masterHtml.includes('✕ 需精通【暗黑之刃】其中之一'), true);
-check('未精通時整支選單說明需要什麼',
+check('未精通時說明需要什麼',
   noMasterHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
+check('第 5 步有「選擇英雄技能」的入口（不再是下拉選單）',
+  [masterHtml.includes('選擇英雄技能'), masterHtml.includes('-- 選擇英雄技能 --')], [true, false]);
 
-// 出處（使用者要求「必須要標出出處」）：選項標籤帶手冊名
-check('英雄技能選項標出出處（核心）', masterHtml.includes('· 核心'), true);
-check('Playtest 的技能也在選單裡，且標著 Playtest',
-  renderEditorAt(5, { classes: [{ className: '秘儀師', level: 10, skills: [] }] })
-    .includes('· Playtest'), true);
-check('Playtest 的技能出現在選單裡（抽樣：瘴氣）',
-  renderEditorAt(5, { classes: [{ className: '元素師', level: 10, skills: [] }] })
-    .includes('瘴氣'), true);
+const guardianPicker = renderHeroicPicker({ classes: [{ className: '守護者', level: 10, skills: [] }] });
+check('表格有「名稱／出處／條件／效果」四欄',
+  ['名稱', '出處', '條件', '效果'].map((k) => guardianPicker.includes(k)), [true, true, true, true]);
+check('預設只列與職業有關的：守護者可解鎖的技能在表上',
+  guardianPicker.includes('不破之人'), true);
+check('可選的列有「選用」按鈕', guardianPicker.includes('選用'), true);
+check('出處標在列上', guardianPicker.includes('核心'), true);
+check('Playtest 的技能也在表上（抽樣：預言守護者）',
+  guardianPicker.includes('預言守護者'), true);
+check('有搜尋框與「只顯示與我的職業有關的」開關',
+  [guardianPicker.includes('搜尋名稱、條件或效果'), guardianPicker.includes('只顯示與我的職業有關的')],
+  [true, true]);
+
+// 不合格的技能**照樣列出**、按鈕停用、並寫出原因——不是直接藏起來（§U 的原則）。
+// 用「已精通守護者、但暗黑之刃只有 3 級」的角色：這樣 背水 的停用原因才會是
+// 「需精通【暗黑之刃】其中之一」，而不是「需先精通一個職業」那句通用話。
+const darkbladePicker = renderHeroicPicker({
+  classes: [{ className: '守護者', level: 10, skills: [] }, { className: '暗黑之刃', level: 3, skills: [] }]
+});
+check('不合格的技能照樣列出（不是藏起來）',
+  [darkbladePicker.includes('背水'), darkbladePicker.includes('不可選')], [true, true]);
+check('停用的列寫出原因', darkbladePicker.includes('需精通【暗黑之刃】其中之一'), true);
+
+// 可重複取得的技能：拿了一次之後仍然可以再拿（原書明文例外，見 §AK1）
+const repeatPicker = renderHeroicPicker({
+  classes: [{ className: '嵌合師', level: 10, skills: [] }],
+  heroicSkills: [{ name: '嵌合術精通', requirement: '嵌合師', source: 'core', effect: 'x' }]
+});
+check('可重複取得的技能拿了一次之後標出「已持有 1/2」',
+  repeatPicker.includes('已持有 1/2'), true);
+check('預設只能取一次的技能，拿過就標「已習得」',
+  renderHeroicPicker({
+    classes: [{ className: '暗黑之刃', level: 10, skills: [] }],
+    heroicSkills: [{ name: '背水', requirement: '暗黑之刃', source: 'core', effect: 'x' }]
+  }).includes('已習得'), true);
 
 // 開局英雄技能（Playtest Materials 2026-10-01 p.4 的選用規則）
 const startRuleHtml = renderEditorAt(5, {
   classes: [{ className: '暗黑之刃', level: 3, skills: [] }],
   heroicSkills: []
 }, { startingHeroicSkill: true });
-check('規則開啟時，靠開局名額取得的技能標示 ◈',
-  startRuleHtml.includes('◈ 用開局名額'), true);
+check('規則開啟時，靠開局名額取得的技能變成可選',
+  [renderHeroicPicker({ classes: [{ className: '暗黑之刃', level: 3, skills: [] }] },
+    { startingHeroicSkill: true }).includes('不可選')], [false]);
 check('規則開啟時說明這是哪一條規則',
   startRuleHtml.includes('開局贈送一個英雄技能'), true);
 check('規則開啟時顯示名額狀態', startRuleHtml.includes('開局名額：'), true);
 check('規則關閉時不會出現開局名額的標示',
   renderEditorAt(5, { classes: [{ className: '暗黑之刃', level: 3, skills: [] }] })
-    .includes('◈ 用開局名額'), false);
+    .includes('開局名額：'), false);
 
-// 可重複取得的技能：拿了一次之後選項仍然可用，並標出還剩幾次
-const repeatHtml = renderEditorAt(5, {
-  classes: [{ className: '嵌合師', level: 10, skills: [] }],
-  heroicSkills: [{ name: '嵌合術精通', requirement: '嵌合師', source: 'core', effect: 'x' }]
-});
-check('可重複取得的技能拿了一次之後仍可再拿（標出 1/2）',
-  [repeatHtml.includes('✎ 可再取（1/2）'), /value="嵌合術精通"[^>]*disabled/.test(repeatHtml)],
-  [true, false]);
-check('預設只能取一次的技能，拿過就停用',
-  /value="背水"[^>]*disabled/.test(renderEditorAt(5, {
-    classes: [{ className: '暗黑之刃', level: 10, skills: [] }],
-    heroicSkills: [{ name: '背水', requirement: '暗黑之刃', source: 'core', effect: 'x' }]
-  })), true);
+// 「職業與技能」頁：每個已選職業下面直接看得到它對應的英雄技能條件與效果
+// （使用者要求「這個功能怎麼我沒有看見」——舊版只做在挑職業的彈窗裡）
+const guardianStep2 = renderEditorAt(2, { classes: [{ className: '守護者', level: 10, skills: [] }] });
+check('職業與技能頁有「精通後可解鎖的英雄技能」區塊',
+  guardianStep2.includes('精通後可解鎖的英雄技能'), true);
+check('那個區塊直接印出條件與效果（不是只給名字）',
+  [guardianStep2.includes('條件：'), guardianStep2.includes('不破之人')], [true, true]);
+check('已精通的職業會標出來', guardianStep2.includes('已精通'), true);
 
 // 名冊頁：開局名額的同團重複警告（Playtest p.4）
 const sheetSrcAj = read('../src/features/character-sheet/CharacterSheet.jsx');

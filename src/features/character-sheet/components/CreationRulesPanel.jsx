@@ -34,7 +34,6 @@ const NUMBER_FIELDS = [
   { key: 'startingLevel', label: '起始等級', min: 1, max: 50, hint: '官方 5 級' },
   { key: 'classCountMin', label: '職業數下限', min: 1, max: 10, hint: '官方 2' },
   { key: 'classCountMax', label: '職業數上限', min: 1, max: 10, hint: '官方 3' },
-  { key: 'attributeTotal', label: '四維總和', min: 4, max: 96, hint: '官方 32' },
   { key: 'startingZenit', label: '起始資金', min: 0, max: 99999, hint: '官方 500z' },
   { key: 'skillPointBudget', label: '技能點數', min: 1, max: 50, hint: '官方＝起始等級' }
 ];
@@ -227,7 +226,7 @@ export default function CreationRulesPanel({ rules, diff = {}, onChange, theme =
             <span className="text-[10px]" style={{ color: theme.textMuted }}>
               官方標準：{DEFAULT_CREATION_RULES.startingLevel} 級、
               {DEFAULT_CREATION_RULES.classCountMin}~{DEFAULT_CREATION_RULES.classCountMax} 職業、
-              四維 {DEFAULT_CREATION_RULES.attributeTotal}、{DEFAULT_CREATION_RULES.startingZenit}z
+              {DEFAULT_CREATION_RULES.startingZenit}z
             </span>
           </div>
         </div>

@@ -563,14 +563,16 @@ check('合規角色：errors 為空', validRes.errors.length, 0);
 const hasField = (res, field) => res.warnings.some((w) => w.field === field);
 const findField = (res, field) => res.warnings.find((w) => w.field === field);
 
-// 步驟 3：屬性總和必須為 32（屬性排在職業之後——原書 p.154 第 4 步職業、第 5 步屬性）
+// 步驟 3：屬性骰必須是官方三組陣列之一，或由它們加上等級獎勵（20／40 級各 +1 階）推出來
+// （屬性排在職業之後——原書 p.154 第 4 步職業、第 5 步屬性）。
+// 2026-10-06 起不再是「總和必須為 32」：那條在 20 級升過一次（d10→d12，總和 34）就會誤報。
 const badSum = validateCharacter({ ...validChar, attributes: { dex: 10, ins: 8, mig: 8, wlp: 8 } });
-check('屬性總和 34 -> 產生 attributes 警告', hasField(badSum, 'attributes'), true);
-check('屬性總和 34 -> 警告層級為 warning', findField(badSum, 'attributes').type, 'warning');
-check('屬性總和 34 -> 警告屬於步驟 3', findField(badSum, 'attributes').step, 3);
-check('屬性總和 34 -> 訊息載明實得總和', findField(badSum, 'attributes').message.includes('34'), true);
-check('屬性總和 34 -> 不是 error，isValid 仍為 true', badSum.isValid, true);
-check('屬性總和 32 -> 不產生 attributes 警告', hasField(validRes, 'attributes'), false);
+check('d10,d8,d8,d8（不在官方陣列上）-> 產生 attributes 警告', hasField(badSum, 'attributes'), true);
+check('d10,d8,d8,d8 -> 警告層級為 warning', findField(badSum, 'attributes').type, 'warning');
+check('d10,d8,d8,d8 -> 警告屬於步驟 3', findField(badSum, 'attributes').step, 3);
+check('d10,d8,d8,d8 -> 訊息載明升級次數', findField(badSum, 'attributes').message.includes('已升級 1 次'), true);
+check('d10,d8,d8,d8 -> 不是 error，isValid 仍為 true', badSum.isValid, true);
+check('官方陣列 -> 不產生 attributes 警告', hasField(validRes, 'attributes'), false);
 
 // 步驟 2：5 級起始必須配置 2~3 個職業
 const cls = (n) => ['武器大師', '吟唱者', '暗黑之刃', '元素師'].slice(0, n)

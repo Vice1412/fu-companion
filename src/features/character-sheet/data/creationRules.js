@@ -24,6 +24,12 @@
  * ※ 這份物件**只放真的有東西在讀的欄位**。原書特典的底力技（Zero Power）、
  * 自訂武器（Custom Weapon）等子系統本專案尚未收錄，因此不預先開旗標——
  * 沒有讀取端的設定欄位就是幻覺欄位（見 `docs/decisions.md` §U15 的教訓）。
+ *
+ * ※ **`attributeTotal` 已於 2026-10-06 移除**（見 `docs/decisions.md` §AM）。
+ * 使用者指出「骰子大小就那幾個」，而原書 p.162 確實是**三組固定陣列**（d8×4／
+ * d10,d8,d8,d6／d10,d10,d6,d6），不是「總和 32」。真正的變數是**等級獎勵**
+ * （p.229：20 級與 40 級各可把一顆**基礎**骰 +1 階，上限 d12），
+ * 由 `attributeDieUpgradesAllowed` 處理，不是一條 GM 規則。
  */
 import { SOURCEBOOKS } from './sourcebookConfig';
 
@@ -31,7 +37,6 @@ import { SOURCEBOOKS } from './sourcebookConfig';
 export const CREATION_RULE_FIELDS = Object.freeze([
   'startingLevel',
   'startingZenit',
-  'attributeTotal',
   'classCountMin',
   'classCountMax',
   'skillPointBudget',
@@ -103,8 +108,6 @@ export const DEFAULT_CREATION_RULES = Object.freeze({
   startingLevel: 5,
   /** 起始裝備預算（zenit）。這是 5 級角色的官方值（p.164）。 */
   startingZenit: 500,
-  /** 起始四維骰階點數總和 */
-  attributeTotal: 32,
   /** 起始必須修習的職業數下限 */
   classCountMin: 2,
   /** 起始必須修習的職業數上限 */
@@ -173,7 +176,6 @@ export const resolveCreationRules = (overrides = {}) => {
   // 高階角色（原書 p.229）：預設預算隨起始等級提高；明確給了 `startingZenit` 就以它為準。
   const levelBonus = startingLevel > d.startingLevel ? ZENIT_PER_LEVEL * startingLevel : 0;
   const startingZenit = toInt(given.startingZenit, d.startingZenit + levelBonus, { min: 0 });
-  const attributeTotal = toInt(given.attributeTotal, d.attributeTotal, { min: 4 });
 
   let classCountMin = toInt(given.classCountMin, d.classCountMin, { min: 1, max: 10 });
   let classCountMax = toInt(given.classCountMax, d.classCountMax, { min: 1, max: 10 });
@@ -202,7 +204,6 @@ export const resolveCreationRules = (overrides = {}) => {
   return {
     startingLevel,
     startingZenit,
-    attributeTotal,
     classCountMin,
     classCountMax,
     skillPointBudget,
