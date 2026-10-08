@@ -43,7 +43,7 @@ import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
-import { DEFAULT_CREATION_RULES, resolveCreationRules, filterQuirksBySources } from '../data/creationRules';
+import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import { loggableChange, formatLogTime } from '../utils/characterLog';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
@@ -58,6 +58,7 @@ import StarterPresetsModal from './StarterPresetsModal';
 import CharacterPreviewModal from './CharacterPreviewModal';
 import CreationRulesPanel from './CreationRulesPanel';
 import HeroicSkillPickerModal from './HeroicSkillPickerModal';
+import QuirkPickerModal from './QuirkPickerModal';
 
 /** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
 const TAB_COUNT = 6;
@@ -128,6 +129,8 @@ export default function CharacterEditor({
   const [newlyAddedClassName, setNewlyAddedClassName] = useState(null);
   // 英雄技能選擇器（表格式，見 HeroicSkillPickerModal）
   const [isHeroicPickerOpen, setIsHeroicPickerOpen] = useState(false);
+  // 金手指選擇器（只列題目、點開看細節，見 QuirkPickerModal）
+  const [isQuirkPickerOpen, setIsQuirkPickerOpen] = useState(false);
   // 目前開啟中的裝備選擇欄位（null = 未開啟）
   const [pickerSlot, setPickerSlot] = useState(null);
 
@@ -1685,26 +1688,44 @@ export default function CharacterEditor({
                   整條規則關閉時，這個入口本身就不該存在）。 */}
               {rules.allowQuirk && (
                 <div className="space-y-2">
-                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                    金手指特質
-                  </label>
-                  <select
-                    value={character.quirk || '無'}
-                    onChange={e => updateField('quirk', e.target.value)}
-                    className="w-full border rounded-lg px-3.5 py-2 text-xs outline-none shadow-sm cursor-pointer"
-                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                  >
-                    <option value="無">無特殊金手指</option>
-                    {filterQuirksBySources(rulesData.quirks, rules.allowedSourcebooks, character.quirk).map(q => (
-                      <option key={q.name} value={q.name}>{q.name}</option>
-                    ))}
-                  </select>
-                  {character.quirk && character.quirk !== '無' && (
-                    <p
-                      className="text-[11px] italic p-2.5 rounded-lg border"
-                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                      金手指特質
+                    </label>
+                    <JRPGButton
+                      variant={theme.outlineButtonVariant || 'outline'}
+                      size="xs"
+                      icon={GiSparkles}
+                      onClick={() => setIsQuirkPickerOpen(true)}
                     >
-                      {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
+                      {character.quirk && character.quirk !== '無' ? '更換金手指' : '選擇金手指'}
+                    </JRPGButton>
+                  </div>
+
+                  {character.quirk && character.quirk !== '無' ? (
+                    <div
+                      className="rounded-xl p-3 border space-y-1.5 shadow-2xs"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.accent }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-serif font-black text-sm" style={{ color: theme.textDark }}>
+                          {character.quirk}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateField('quirk', '無')}
+                          className="text-[11px] text-slate-400 hover:text-red-700 cursor-pointer"
+                        >
+                          移除
+                        </button>
+                      </div>
+                      <p className="text-[11px] leading-relaxed" style={{ color: theme.textDark }}>
+                        {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px]" style={{ color: theme.textMuted }}>
+                      尚未選擇。金手指是**選用規則**（三大奇幻手冊才推出）——不選也完全可以。
                     </p>
                   )}
                 </div>
@@ -1885,6 +1906,16 @@ export default function CharacterEditor({
             onPick={(skill) => {
               updateField('heroicSkills', [...(character.heroicSkills || []), skill]);
             }}
+          />
+
+          {/* 金手指選擇器：只列題目，點進去看細節。與英雄技能同一個理由掛在最外層。 */}
+          <QuirkPickerModal
+            isOpen={isQuirkPickerOpen}
+            onClose={() => setIsQuirkPickerOpen(false)}
+            theme={theme}
+            selectedName={character.quirk === '無' ? '' : (character.quirk || '')}
+            onPick={(q) => updateField('quirk', q.name)}
+            onClear={() => updateField('quirk', '無')}
           />
 
           {/* Wizard Footer Navigation Bar */}

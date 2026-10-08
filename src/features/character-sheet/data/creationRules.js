@@ -63,38 +63,18 @@ const ALL_SOURCEBOOK_KEYS = Object.freeze(Object.keys(SOURCEBOOKS));
  */
 export const ZENIT_PER_LEVEL = 50;
 
-/**
- * 金手指的名稱裡帶著來源標記（`（高奇）`／`（自奇）`／`（科奇）`）。
- *
- * 只有 55 筆中的 17 筆有標記（實測）。沒標記的 38 筆無法判定來源，
- * 因此**一律顯示**——寧可多顯示，也不要憑印象猜是哪本書（本專案吃過「憑印象編資料」的虧）。
- * 補齊來源需要逐筆核對原書，屬獨立的資料工程。
- */
-const QUIRK_SOURCE_MARKS = Object.freeze({
-  '高奇': 'highFantasy',
-  '自奇': 'naturalFantasy',
-  '科奇': 'technoFantasy'
-});
-
-/** 從金手指名稱取出它宣告的來源手冊鍵；沒標記則回 null（＝不設限） */
-export const getQuirkSource = (name) => {
-  const matched = /（(高奇|自奇|科奇)）/.exec(name || '');
-  return matched ? QUIRK_SOURCE_MARKS[matched[1]] : null;
-};
-
-/**
- * 依「開放哪些手冊」過濾金手指。
- * `keepName` 用來保留目前已經選好的那一個——否則玩家關掉某本手冊時，
- * 他原本的金手指會從清單裡消失，但角色身上還掛著，看起來像壞掉。
- */
-export const filterQuirksBySources = (quirks, allowedSourcebooks = ALL_SOURCEBOOK_KEYS, keepName = '') => {
-  const allowed = new Set(allowedSourcebooks || []);
-  return (quirks || []).filter((q) => {
-    if (keepName && q.name === keepName) return true;
-    const source = getQuirkSource(q.name);
-    return source === null || allowed.has(source);
-  });
-};
+// 金手指的來源過濾（`filterQuirksBySources`／`getQuirkSource`）**已移除**（2026-10-06）。
+//
+// 原本的做法是從名稱裡的「（高奇）（自奇）（科奇）」標記反推來源，但那只涵蓋 55 筆中的 17 筆，
+// 而且標記本身是**顯示字串**——直接違反規則三（禁止括號附註）。名稱已清理乾淨。
+//
+// 使用者裁定：「檢查一下三大擴展的金手指是否有重複，如果沒有就把金手指的出處也列出來；
+// 有的話就不列。」實測**有重複**（FLIGHT 與 CURSED 同時收錄於高度奇幻與自然奇幻手冊，
+// ROBOT 同時收錄於高度奇幻與科技奇幻手冊），所以介面不列出處。
+//
+// ※ 若日後要恢復「依手冊過濾金手指」，正確做法是**補一個 `source` 欄位**，
+// 而不是回到名稱標記。抽取工具已經備好：`scratch/extract_en_quirks.py`
+// （HF 15 筆／NF 10 筆／TF 10 筆，另加特典合輯的 Halloween 系列）。
 
 const ALL_CLASS_NAMES = Object.freeze([
   ...new Set(

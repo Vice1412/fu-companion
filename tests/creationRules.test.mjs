@@ -20,9 +20,7 @@ import {
   ZENIT_PER_LEVEL,
   resolveCreationRules,
   isDefaultCreationRules,
-  diffCreationRules,
-  getQuirkSource,
-  filterQuirksBySources
+  diffCreationRules
 } from '../src/features/character-sheet/data/creationRules.js';
 import {
   createNewCharacter,
@@ -408,31 +406,23 @@ check('已定稿時仍可切換分頁（導航列不在凍結範圍內）',
   editor.includes('const frozenTab = locked && LOCKED_CREATION_TABS.includes(activeTab)'), true);
 
 // ─────────────────────────────────────────────────────────── N
-section('N. 金手指的來源過濾與「0 不是缺值」（2026-10-06）');
+section('N. 金手指的名稱清理與去重（2026-10-06）');
 
-check('金手指名稱裡的高奇標記 -> highFantasy', getQuirkSource('草木成精（高奇）'), 'highFantasy');
-check('自奇 -> naturalFantasy', getQuirkSource('倖存者（自奇）'), 'naturalFantasy');
-check('科奇 -> technoFantasy', getQuirkSource('機器人（科奇）'), 'technoFantasy');
-check('沒有標記 -> null（不設限，一律顯示）', getQuirkSource('空手道'), null);
-check('空字串也不會炸', getQuirkSource(''), null);
-
+// 2026-10-06：名稱裡的「（高奇）（自奇）（科奇）」標記已移除。
+//   ① 那是**顯示字串**，直接違反規則三（禁止括號附註）；
+//   ② 使用者裁定「三大擴展的金手指有重複就不列出處」——實測 FLIGHT／CURSED／ROBOT
+//      各出現在兩本，所以介面不列出處，標記就沒有意義了。
+// 連帶地，靠標記做的來源過濾（`filterQuirksBySources`／`getQuirkSource`）也一起移除——
+// 那本來就只涵蓋 17/55 筆，留著是半殘的功能。
 const allQuirks = rulesData.quirks;
-const onlyCore = filterQuirksBySources(allQuirks, ['core']);
-check('關掉三本手冊後，有標記的金手指全部消失',
-  onlyCore.some((q) => getQuirkSource(q.name) !== null), false);
-check('沒標記的仍然顯示（無法判定來源就不猜）',
-  onlyCore.some((q) => q.name === '空手道'), true);
-check('開啟高度奇幻後，高奇金手指回來了',
-  filterQuirksBySources(allQuirks, ['core', 'highFantasy']).some((q) => q.name === '草木成精（高奇）'),
-  true);
-check('已選中的那一個永遠保留（否則角色身上的金手指會憑空消失）',
-  filterQuirksBySources(allQuirks, ['core'], '倖存者（自奇）').some((q) => q.name === '倖存者（自奇）'),
-  true);
-
-// 這條是「現況說明」不是期望：55 筆裡只有 17 筆有來源標記。
-// 數字變了代表有人補了標記 —— 那是好事，請一併更新這裡與 docs/decisions.md。
-check('有來源標記的金手指目前是 17 筆（其餘 38 筆待補來源）',
-  allQuirks.filter((q) => getQuirkSource(q.name) !== null).length, 17);
+check('金手指名稱不含來源標記（規則三：禁止括號附註）',
+  allQuirks.filter((q) => /[（(](高奇|自奇|科奇)[)）]/.test(q.name)).map((q) => q.name), []);
+check('金手指已去重（同名只留一筆）',
+  allQuirks.length, new Set(allQuirks.map((q) => q.name)).size);
+check('金手指總數 46（三大手冊 35 ＋ 特典合輯 Halloween 系列，去重後）',
+  allQuirks.length, 46);
+check('每一筆都有名稱與效果',
+  allQuirks.filter((q) => !q.name || !q.desc).map((q) => q.name), []);
 
 // `0 || 3` 會把合法的 0 當成缺值。全站不得再出現這個寫法（一律用 `??`）。
 const sourceFiles = fs.readdirSync(new URL('../src/features/character-sheet', import.meta.url), { recursive: true })
