@@ -104,7 +104,9 @@ check('預設勾選仍受 allowedSourcebooks 上限約束',
 check('拓展上限預設為全部手冊（沒有 campaign 時不該擋玩家）',
   [...DEFAULT_CREATION_RULES.allowedSourcebooks].sort(), [...ALL_BOOK_KEYS].sort());
 check('預設不指定必修職業', [...DEFAULT_CREATION_RULES.requiredClasses], []);
-check('預設允許金手指', DEFAULT_CREATION_RULES.allowQuirk, true);
+// 官方核心規則沒有金手指這個制度——它是三大奇幻手冊才推出的，所以預設必須是關的。
+// 要玩的團由 GM 在「此團開卡規則」打開。
+check('預設不開放金手指', DEFAULT_CREATION_RULES.allowQuirk, false);
 
 check('欄位集護欄：不多不少，就這幾個欄位（幻覺欄位進不來）',
   Object.keys(DEFAULT_CREATION_RULES).sort(), [...CREATION_RULE_FIELDS].sort());
@@ -157,7 +159,7 @@ check('必修職業含不存在的職業 → 過濾掉',
 check('必修職業去重',
   resolveCreationRules({ requiredClasses: ['守護者', '守護者'] }).requiredClasses, ['守護者']);
 check('allowQuirk 非 boolean → 退回預設',
-  resolveCreationRules({ allowQuirk: 'yes' }).allowQuirk, true);
+  resolveCreationRules({ allowQuirk: 'yes' }).allowQuirk, false);
 
 check('isDefaultCreationRules：空物件為 true', isDefaultCreationRules({}), true);
 check('isDefaultCreationRules：改過為 false', isDefaultCreationRules({ startingZenit: 800 }), false);
@@ -271,7 +273,7 @@ check('必修職業具備 → 無 error',
 check('未開放金手指但填了金手指 → error',
   errs(base({ quirk: '倖存者' }), { allowQuirk: false }), ['此團未開放金手指，請移除「倖存者」']);
 check('未開放金手指但填「無」→ 不報錯', errs(base({ quirk: '無' }), { allowQuirk: false }), []);
-check('開放金手指時填了也不報錯', errs(base({ quirk: '倖存者' }), {}), []);
+check('開放金手指時填了也不報錯', errs(base({ quirk: '倖存者' }), { allowQuirk: true }), []);
 
 check('啟用了未開放的拓展 → error',
   errs(base({ enabledSourcebooks: ['core', 'technoFantasy'] }), { allowedSourcebooks: ['core'] }),

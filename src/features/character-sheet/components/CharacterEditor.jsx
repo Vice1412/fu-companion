@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   ArrowLeft,
   Plus,
-  Trash2,
   Info,
   ChevronRight,
   ChevronLeft,
@@ -414,22 +413,8 @@ export default function CharacterEditor({
     setIsPresetsModalOpen(false);
   };
 
-  // Clocks
-  const handleAddClock = () => {
-    const newClock = {
-      id: `clk_${Date.now()}`,
-      title: '新個人誓約命刻',
-      totalSegments: 6,
-      filledSegments: 0,
-      theme: 'amber',
-      type: 'circle'
-    };
-    updateField('clocks', [...(character.clocks || []), newClock]);
-  };
-
-  const handleRemoveClock = (clkId) => {
-    updateField('clocks', (character.clocks || []).filter(c => c.id !== clkId));
-  };
+  // 命刻的增刪已移除——創角八步驟（原書 p.154）沒有這一項，命刻是跑團中的 GM 工具。
+  // 跑團面板（CharacterPlayHUD）的「個人命刻」分頁仍有完整的增刪與填充。
 
   // 創角步驟＝原書 p.154 的八個步驟（身世／四維／職業與技能／裝備／特質與命刻，
   // 其中「名字」併入身世、「HP/MP/IP 等數值」由引擎自動算）。
@@ -1690,7 +1675,7 @@ export default function CharacterEditor({
                   <span style={{ color: theme.accent }}>5.</span> 英雄技能、特質與個人命刻
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  精通職業後解鎖英雄技能，並可設定特質與個人誓約命刻。
+                  精通職業後解鎖英雄技能，並可設定特質。
                 </p>
               </div>
 
@@ -1827,70 +1812,10 @@ export default function CharacterEditor({
               </div>
               )}
 
-              {/* Personal Clocks */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                    個人誓約命刻
-                  </label>
-                  <JRPGButton
-                    variant={theme.outlineButtonVariant || 'outline'}
-                    size="xs"
-                    icon={Plus}
-                    onClick={handleAddClock}
-                  >
-                    新增命刻
-                  </JRPGButton>
-                </div>
-
-                <div className="space-y-2">
-                  {(character.clocks || []).map(clk => (
-                    <div
-                      key={clk.id}
-                      className="rounded-xl p-3 border flex items-center justify-between gap-3 shadow-sm"
-                      style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
-                    >
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={clk.title || ''}
-                          onChange={e => {
-                            const updated = character.clocks.map(c => c.id === clk.id ? { ...c, title: e.target.value } : c);
-                            updateField('clocks', updated);
-                          }}
-                          placeholder="命刻目標..."
-                          className="bg-transparent font-bold text-xs outline-none w-full border-b border-transparent focus:border-current"
-                          style={{ color: theme.textDark }}
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={clk.totalSegments || 6}
-                          onChange={e => {
-                            const updated = character.clocks.map(c => c.id === clk.id ? { ...c, totalSegments: parseInt(e.target.value, 10) } : c);
-                            updateField('clocks', updated);
-                          }}
-                          className="border rounded px-2 py-1 text-xs cursor-pointer"
-                          style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                        >
-                          <option value={4}>4 格</option>
-                          <option value={6}>6 格</option>
-                          <option value={8}>8 格</option>
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveClock(clk.id)}
-                          className="p-1 text-slate-400 hover:text-red-700 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* 個人誓約命刻：**已移除**（2026-10-06 使用者裁定）。
+                  原書的創角八步驟（p.154）沒有命刻這一項——命刻是**跑團中**由 GM 用來追蹤
+                  進度的工具（Core 的 Clocks 規則），不是開卡時要玩家自己種幾座的東西。
+                  跑團面板的「個人命刻」分頁仍然保留，那裡才是它的位置。 */}
             </div>
           )}
 

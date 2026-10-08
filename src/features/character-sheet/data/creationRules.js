@@ -130,7 +130,9 @@ export const DEFAULT_CREATION_RULES = Object.freeze({
   /** GM 指定必須修習的職業（空陣列＝不指定） */
   requiredClasses: Object.freeze([]),
   /** 是否允許金手指 */
-  allowQuirk: true,
+  // 官方預設**沒有**金手指——三大奇幻手冊才推出這個制度，所以不開就是「照官方核心規則開卡」。
+  // 要玩金手指的團由 GM 在「此團開卡規則」自己打開。
+  allowQuirk: false,
   /**
    * 選用規則：開局就給一個英雄技能（Playtest Materials 2026-10-01, p.4）。
    *
