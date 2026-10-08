@@ -839,7 +839,7 @@ export const EXPANSION_PRESETS = [
     title: '收藏家', en: 'COLLECTOR',
     attributes: { dex: 8, ins: 8, mig: 6, wlp: 10 },
     classes: [
-      { className: '卡牌大師', level: 3, skills: [{ name: '魔力套牌', sl: 1 }, { name: '陷阱卡', sl: 2 }] },
+      { className: '卡牌大師', level: 3, skills: [{ name: '魔法卡組', sl: 1 }, { name: '陷阱卡', sl: 2 }] },
       { className: '嵌合師', level: 1, skills: [{ name: '咒語模仿', sl: 1 }] },
       { className: '遊蕩者', level: 1, skills: [{ name: '靈魂竊取', sl: 1 }] }
     ],
@@ -851,7 +851,7 @@ export const EXPANSION_PRESETS = [
     title: '騙徒', en: 'TRICKSTER',
     attributes: { dex: 8, ins: 8, mig: 8, wlp: 8 },
     classes: [
-      { className: '卡牌大師', level: 2, skills: [{ name: '孤注一擲', sl: 1 }, { name: '魔力套牌', sl: 1 }] },
+      { className: '卡牌大師', level: 2, skills: [{ name: '孤注一擲', sl: 1 }, { name: '魔法卡組', sl: 1 }] },
       { className: '熵師', level: 2, skills: [{ name: '熵系魔法', sl: 1, selectedOptions: ['預測'] }, { name: '幸運七', sl: 1 }] },
       { className: '神射手', level: 1, skills: [{ name: '交叉火力', sl: 1 }] }
     ],

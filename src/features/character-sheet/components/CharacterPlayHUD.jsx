@@ -1932,7 +1932,7 @@ export default function CharacterPlayHUD({
                     </div>
                   )}
 
-                  {cl.className === '卡牌大師' && (cl.skills || []).some(s => s.name === '魔力套牌' && s.sl > 0) && (
+                  {cl.className === '卡牌大師' && (cl.skills || []).some(s => s.name === '魔法卡組' && s.sl > 0) && (
                     <div className="mt-3">
                       <AceOfCardsTable
                         character={character}

@@ -173,7 +173,7 @@ export default function AceOfCardsTable({
   const skillSL = (name) =>
     Math.max(0, Math.floor(Number((aceClass?.skills || []).find((s) => s.name === name)?.sl) || 0));
 
-  const magicCardsSL = skillSL('魔力套牌');
+  const magicCardsSL = skillSL('魔法卡組');
   const highOrLowSL = skillSL('牌運亨通');
   const mulliganSL = skillSL('再調度');
   const trapSL = skillSL('陷阱卡');
@@ -193,7 +193,7 @@ export default function AceOfCardsTable({
     });
   };
 
-  // 未習得【魔力套牌】就完全不渲染
+  // 未習得【魔法卡組】就完全不渲染
   if (magicCardsSL <= 0) return null;
 
   // 牌桌狀態判準抽在資料層（`isDeckInConflict`）——舊版用 `deck.length > 0`，
@@ -738,6 +738,9 @@ export default function AceOfCardsTable({
                 <div className="space-y-1.5">
                   {matches.map((m) => {
                     const on = (chosenEffect || matches[0]?.id) === m.id;
+                    // 【禁忌帝王】是全牌組最難湊齊的組合（4 張同值 ＋ 1 張小丑牌，共 5 張），
+                    // 而且要先拿【被封印的儀式】才會出現在清單裡——給它一段專屬視覺。
+                    const isMonarch = m.id === 'forbiddenMonarch';
                     return (
                       <button
                         key={m.id}
@@ -747,12 +750,34 @@ export default function AceOfCardsTable({
                           setStatusPicked([]);
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-lg border text-[11px] transition-all cursor-pointer ${
-                          on ? 'bg-white border-emerald-500 ring-2 ring-emerald-400' : 'bg-white/60 border-emerald-200'
+                          isMonarch
+                            ? on
+                              ? 'bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-100 border-amber-600 ring-2 ring-amber-400 shadow-[0_0_14px_rgba(217,119,6,0.45)]'
+                              : 'bg-gradient-to-r from-amber-50 via-yellow-50/60 to-amber-50 border-amber-400 shadow-[0_0_8px_rgba(217,119,6,0.25)]'
+                            : on
+                              ? 'bg-white border-emerald-500 ring-2 ring-emerald-400'
+                              : 'bg-white/60 border-emerald-200'
                         }`}
                       >
-                        <span className="font-bold text-[#3c2415]">{m.name}</span>
-                        <span className={`font-mono text-[10px] ${T.sub} ml-1`}>（{m.requirement}）</span>
-                        <span className="block text-[#3c2415] mt-0.5">
+                        <span className="flex items-center gap-1.5 flex-wrap">
+                          {isMonarch && (
+                            <span className="fu-icon text-amber-600 text-base leading-none" title="禁忌組合">
+                              ◆
+                            </span>
+                          )}
+                          <span className={`font-bold ${isMonarch ? 'text-amber-900' : 'text-[#3c2415]'}`}>
+                            {m.name}
+                          </span>
+                          <span className={`font-mono text-[10px] ${T.sub}`}>（{m.requirement}）</span>
+                          {isMonarch && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-600 bg-amber-100 text-amber-900">
+                              禁忌
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className={`block mt-0.5 ${isMonarch ? 'text-amber-900 font-bold' : 'text-[#3c2415]'}`}
+                        >
                           {renderTextWithAffinities(m.describe)}
                         </span>
                       </button>

@@ -27,7 +27,7 @@
  *
  * ## 技能互動（p.7）
  *
- * - **魔力套牌**：花 MP 從手牌打出並結算一組牌；結算後補抽等量（含「無對應效果」的組合）
+ * - **魔法卡組**：花 MP 從手牌打出並結算一組牌；結算後補抽等量（含「無對應效果」的組合）
  * - **牌運亨通**：結算的組合含小丑牌／7 → +SL 傷害；含小丑牌／1 → 減傷 SL；三者皆無 → 回復 SL×2 HP
  * - **再調度**：你的回合內以攻擊命中敵人後，棄至多 `SL + 1` 張並補抽等量
  * - **陷阱卡**：敵人結算動作後，棄至多 `SL + 1` 張「小丑牌或花色對應該動作」的牌並補抽，
@@ -364,7 +364,7 @@ export const SET_EFFECTS = [
   },
   {
     id: 'forbiddenMonarch',
-    name: '禁忌君王',
+    name: '禁忌帝王',
     requirement: '4 張同值（非小丑牌）+ 1 張小丑牌',
     reference: '對每個可見敵人造成 777 點傷害；4 張同值牌的共同值為偶數則為光屬性，奇數則為暗屬性。',
     cards: 5,
@@ -450,7 +450,7 @@ export const detectSets = (rawCards, level = 1, opts = {}) => {
 export const isValidSet = (cards, level = 1, opts = {}) => detectSets(cards, level, opts).length > 0;
 
 /**
- * 【魔力套牌】這次最多能結算幾張。
+ * 【魔法卡組】這次最多能結算幾張。
  *
  * 原書 p.7：「spend up to (10 + (SL x 5)) MP (minimum 10) ...
  * discard and resolve 1 card from your hand for every 5 MP spent this way
