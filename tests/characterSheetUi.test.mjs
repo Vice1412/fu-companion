@@ -30,6 +30,7 @@ import {
 import { createNewCharacter, getProficiencies, calculateCharacterStats } from '../src/features/character-sheet/utils/characterEngine.js';
 import { resolveCreationRules } from '../src/features/character-sheet/data/creationRules.js';
 import { HeroicSkillPickerBody } from '../src/features/character-sheet/components/HeroicSkillPickerModal.jsx';
+import ClassHeroicSkillsBlock from '../src/features/character-sheet/components/ClassHeroicSkillsBlock.jsx';
 import { LOG_KINDS } from '../src/features/character-sheet/utils/characterLog.js';
 import { EQUIPMENT_ICONS } from '../src/features/character-sheet/utils/equipmentRules.js';
 import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebookConfig.js';
@@ -711,14 +712,27 @@ check('規則關閉時不會出現開局名額的標示',
   renderEditorAt(5, { classes: [{ className: '暗黑之刃', level: 3, skills: [] }] })
     .includes('開局名額：'), false);
 
-// 「職業與技能」頁：每個已選職業下面直接看得到它對應的英雄技能條件與效果
-// （使用者要求「這個功能怎麼我沒有看見」——舊版只做在挑職業的彈窗裡）
+// 使用者定調（2026-10-06）：英雄技能的**瀏覽**入口只在挑職業的彈窗裡、預設收合、純瀏覽；
+// 編輯器第 2 步不再常駐那一塊（原本預設展開，使用者說「太滿了」）。
+const blockSrc = read('../src/features/character-sheet/components/ClassHeroicSkillsBlock.jsx');
+const pickerSrcHere = read('../src/features/character-sheet/components/ClassPickerModal.jsx');
 const guardianStep2 = renderEditorAt(2, { classes: [{ className: '守護者', level: 10, skills: [] }] });
-check('職業與技能頁有「精通後可解鎖的英雄技能」區塊',
-  guardianStep2.includes('精通後可解鎖的英雄技能'), true);
-check('那個區塊直接印出條件與效果（不是只給名字）',
-  [guardianStep2.includes('條件：'), guardianStep2.includes('不破之人')], [true, true]);
-check('已精通的職業會標出來', guardianStep2.includes('已精通'), true);
+check('第 2 步不再常駐英雄技能那一塊',
+  [guardianStep2.includes('精通後可解鎖的英雄技能'), guardianStep2.includes('顯示英雄技能')],
+  [false, false]);
+check('職業彈窗裡有「顯示英雄技能」按鈕（放在職業技能下面）',
+  [blockSrc.includes('顯示英雄技能'), pickerSrcHere.includes('<ClassHeroicSkillsBlock')],
+  [true, true]);
+check('那份清單預設收合', /useState\(false\)/.test(blockSrc), true);
+check('那份清單是純瀏覽（沒有選用入口）',
+  [blockSrc.includes('onPick'), blockSrc.includes('onSelect')], [false, false]);
+check('定稿後整塊瀏覽入口收起來（自己已拿到的效果照常顯示）',
+  renderToStaticMarkup(React.createElement(ClassHeroicSkillsBlock, {
+    className: '守護者', theme: {}, locked: true
+  })), '');
+const lockedStep5 = renderEditorAt(5, { locked: true, lockedAt: '2026-01-01T00:00:00.000Z' });
+check('定稿後第 5 步不再有「選擇英雄技能」的入口',
+  lockedStep5.includes('選擇英雄技能'), false);
 
 // 名冊頁：開局名額的同團重複警告（Playtest p.4）
 const sheetSrcAj = read('../src/features/character-sheet/CharacterSheet.jsx');
@@ -755,14 +769,16 @@ check('未指派時托盤是空的（顯示提示、剩餘 0）',
 check('已指派時托盤有骰子（不再顯示空提示）',
   filledPicker.includes('先從上方'), false);
 
-// 職業彈窗：精通該職業能解鎖哪些英雄技能（只列名稱，效果放 tooltip 以免文字塞爆面板）
+// 職業彈窗：精通該職業能解鎖哪些英雄技能。
+// 2026-10-06 改版：那排只給名字的小標籤換成了「顯示英雄技能」按鈕 ＋ 條件與效果全文
+// （使用者定調：它是選職業的參考，純瀏覽，實際選用回第 5 步）。
 const classPickerSrc = read('../src/features/character-sheet/components/ClassPickerModal.jsx');
-check('職業彈窗有「精通後可解鎖的英雄技能」區塊，且判定走引擎',
-  [classPickerSrc.includes('精通後可解鎖的英雄技能'), classPickerSrc.includes('heroicSkillsForClass')],
+check('職業彈窗掛上了英雄技能區塊，判定走引擎',
+  [classPickerSrc.includes('ClassHeroicSkillsBlock'), blockSrc.includes('heroicSkillsForClass')],
   [true, true]);
-check('那塊把效果全文放進 title（避免文字塞爆）',
-  [classPickerSrc.includes('cursor-help'), classPickerSrc.includes('title={`【${h.name}】')],
-  [true, true]);
+check('那塊印出條件與效果全文（不再只給名字 ＋ tooltip）',
+  [blockSrc.includes('條件：'), blockSrc.includes('{h.effect}'), blockSrc.includes('cursor-help')],
+  [true, true, false]);
 
 // ─────────────────────────────────────────────────────────── N
 section('N. 屬性譯名：四個名字只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）');

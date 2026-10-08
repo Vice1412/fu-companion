@@ -40,7 +40,6 @@ import { renderTextWithAffinities } from '../../../components/ui/FUIcon';
 import IdentityTablesModal from './IdentityTablesModal';
 import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
-import ClassHeroicSkillsBlock from './ClassHeroicSkillsBlock';
 import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
 import EquipmentSlotCard from './EquipmentSlotCard';
@@ -1347,26 +1346,18 @@ export default function CharacterEditor({
                   </div>
                 ) : (
                   (character.classes || []).map((cl, cIdx) => (
-                    <div key={cl.className} className="space-y-2">
-                      <ClassSkillCard
-                        classItem={cl}
-                        classIndex={cIdx}
-                        character={character}
-                        theme={theme}
-                        isInitialEdit={newlyAddedClassName === cl.className}
-                        onUpdateSkills={handleUpdateClassSkills}
-                        onUpdateClassBenefit={handleUpdateClassBenefit}
-                        onRemoveClass={handleRemoveClass}
-                        onUpdateCharacter={onChange}
-                      />
-                      {/* 使用者要求：選了這個職業之後，下面就看得到它對應的英雄技能
-                          學習條件與效果（不是只給名字）。 */}
-                      <ClassHeroicSkillsBlock
-                        className={cl.className}
-                        theme={theme}
-                        mastered={(cl.level || 0) >= 10}
-                      />
-                    </div>
+                    <ClassSkillCard
+                      key={cl.className}
+                      classItem={cl}
+                      classIndex={cIdx}
+                      character={character}
+                      theme={theme}
+                      isInitialEdit={newlyAddedClassName === cl.className}
+                      onUpdateSkills={handleUpdateClassSkills}
+                      onUpdateClassBenefit={handleUpdateClassBenefit}
+                      onRemoveClass={handleRemoveClass}
+                      onUpdateCharacter={onChange}
+                    />
                   ))
                 )}
               </div>
@@ -1381,6 +1372,7 @@ export default function CharacterEditor({
                 existingClassNames={(character.classes || []).map(c => c.className)}
                 onSelectClass={handleSelectClassFromPicker}
                 creationRules={rules}
+                locked={locked}
               />
 
               {/* 英雄技能選擇器（表格式：條件與效果全文 ＋ 過濾） */}
@@ -1749,18 +1741,24 @@ export default function CharacterEditor({
                   {/* 舊版這裡是一個 `<select>` ＋「添加」鈕：條件與效果都看不到，158 筆擠在
                       一個下拉裡也沒辦法過濾。改成開表格（見 HeroicSkillPickerModal）。
                       **不因為「沒精通」而停用**——停用等於看不到有哪些技能可以往哪走；
-                      表格會逐列寫出「為什麼現在不能選」。 */}
-                  <JRPGButton
-                    variant={theme.buttonVariant || 'primary'}
-                    size="xs"
-                    icon={GiLaurelCrown}
-                    onClick={() => setIsHeroicPickerOpen(true)}
-                  >
-                    選擇英雄技能
-                  </JRPGButton>
-                  <span className="text-[11px]" style={{ color: theme.textMuted }}>
-                    表格列出每一條的條件與效果，預設只顯示與你的職業有關的
-                  </span>
+                      表格會逐列寫出「為什麼現在不能選」。
+                      **定稿後整個入口收起來**（使用者裁定：目錄是創角輔助；已經拿到的技能
+                      在下面的清單與角色卡／跑團面板照常顯示）。 */}
+                  {!locked && (
+                    <>
+                      <JRPGButton
+                        variant={theme.buttonVariant || 'primary'}
+                        size="xs"
+                        icon={GiLaurelCrown}
+                        onClick={() => setIsHeroicPickerOpen(true)}
+                      >
+                        選擇英雄技能
+                      </JRPGButton>
+                      <span className="text-[11px]" style={{ color: theme.textMuted }}>
+                        表格列出每一條的條件與效果，預設只顯示與你的職業有關的
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">
