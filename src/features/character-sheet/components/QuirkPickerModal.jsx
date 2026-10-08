@@ -4,6 +4,7 @@ import JRPGModal from '../../../components/ui/JRPGModal';
 import JRPGBadge from '../../../components/ui/JRPGBadge';
 import JRPGButton from '../../../components/ui/JRPGButton';
 import SkillDescription from '../utils/skillFormulaEvaluator';
+import { splitParagraphs } from '../utils/paragraphs';
 import rulesData from '../data/rulesData.json';
 
 /**
@@ -139,9 +140,15 @@ export function QuirkPickerBody({
                     <SkillDescription desc={opened.flavor} />
                   </p>
                 )}
-                <div className="text-xs sm:text-[13px] leading-relaxed space-y-2" style={{ color: theme.textDark }}>
-                  {(opened.desc || '').split('\n').map((para, i) => (
-                    <p key={i}><SkillDescription desc={para} /></p>
+                <div className="text-xs sm:text-[13px] leading-relaxed space-y-2.5" style={{ color: theme.textDark }}>
+                  {/* 兩層分段：空行＝段落、單一換行＝同一段內的行（清單項目）。
+                      見 utils/paragraphs.js 的說明。 */}
+                  {splitParagraphs(opened.desc).map((block, bi) => (
+                    <div key={bi} className="space-y-1">
+                      {block.map((line, li) => (
+                        <p key={li}><SkillDescription desc={line} /></p>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>

@@ -45,6 +45,7 @@ import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import { loggableChange, formatLogTime } from '../utils/characterLog';
+import { splitParagraphs } from '../utils/paragraphs';
 import CharacterAvatarUploader from './CharacterAvatarUploader';
 import { getCharacterTheme, CHARACTER_THEMES } from '../utils/characterThemes';
 import {
@@ -432,7 +433,7 @@ export default function CharacterEditor({
     { id: 2, label: '職業與技能' },
     { id: 3, label: '四維屬性' },
     { id: 4, label: '裝備配置' },
-    { id: 5, label: '特質與命刻' },
+    { id: 5, label: '英雄技能與特質' },
     { id: 6, label: '命名與背景' }
   ];
   // 上面那個 useState 的夾制用 TAB_COUNT（不能讀 TABS，會踩 TDZ）；test:ui 有一條護欄綁住兩者相等。
@@ -474,7 +475,7 @@ export default function CharacterEditor({
       null,
       { kind: 'zenit', title: '擲起始資金 2d6 × 10' }
     );
-    alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit} 澤尼特！`);
+    alert(`[2d6 擲骰] [${d1}] + [${d2}] = ${d1 + d2} (× 10 = ${rollSum}z)！\n加上剩餘裝備預算 ${Math.max(0, remainingBudget)}z，角色的起始儲蓄已結算為 ${finalZenit}z！`);
   };
 
   const mainHandName = character.equipment?.mainHand || '';
@@ -704,7 +705,7 @@ export default function CharacterEditor({
 
             <p className="text-[10px] leading-relaxed" style={{ color: theme.textMuted }}>
               {locked
-                ? '身世與四維屬性已凍結；等級、技能、裝備、命刻仍可隨時調整。'
+                ? '身世與四維屬性已凍結；等級、技能、裝備仍可隨時調整。'
                 : canLock
                   ? `${TABS.length} 個步驟都通過規則檢查，可以定稿了。定稿後創角欄位會凍結。`
                   : `還有 ${blockedCount} 項未符合規則，補完後即可定稿。`}
@@ -1670,12 +1671,12 @@ export default function CharacterEditor({
             </div>
           )}
 
-          {/* ==================== TAB 5: 特質與命刻 ==================== */}
+          {/* ==================== TAB 5: 英雄技能與特質 ==================== */}
           {activeTab === 5 && (
             <div className="space-y-5 animate-fade-in">
               <div>
                 <h4 className="font-serif font-black text-lg flex items-center gap-2" style={{ color: theme.textDark }}>
-                  <span style={{ color: theme.accent }}>5.</span> 英雄技能、特質與個人命刻
+                  <span style={{ color: theme.accent }}>5.</span> 英雄技能與特質
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   精通職業後解鎖英雄技能，並可設定特質。
@@ -1690,7 +1691,7 @@ export default function CharacterEditor({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-1">
                     <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                      金手指特質
+                      金手指
                     </label>
                     <JRPGButton
                       variant={theme.outlineButtonVariant || 'outline'}
@@ -1719,13 +1720,21 @@ export default function CharacterEditor({
                           移除
                         </button>
                       </div>
-                      <p className="text-[11px] leading-relaxed" style={{ color: theme.textDark }}>
-                        {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
-                      </p>
+                      <div className="space-y-1.5">
+                        {splitParagraphs(rulesData.quirks.find(q => q.name === character.quirk)?.desc).map((block, bi) => (
+                          <div key={bi} className="space-y-0.5">
+                            {block.map((line, li) => (
+                              <p key={li} className="text-[11px] leading-relaxed" style={{ color: theme.textDark }}>
+                                {renderTextWithAffinities(line)}
+                              </p>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <p className="text-[11px]" style={{ color: theme.textMuted }}>
-                      尚未選擇。金手指是**選用規則**（三大奇幻手冊才推出）——不選也完全可以。
+                      尚未選擇。金手指是選用規則（三大奇幻手冊才推出）——不選也完全可以。
                     </p>
                   )}
                 </div>
@@ -1741,7 +1750,7 @@ export default function CharacterEditor({
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                    掌握之英雄技能
+                    英雄技能
                   </label>
                   <span className="flex items-center gap-2 flex-wrap">
                     {stats.masteredClasses.length > 0 ? (

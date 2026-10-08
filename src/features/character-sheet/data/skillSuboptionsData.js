@@ -688,7 +688,7 @@ export const SYMBOLIST_SYMBOLS = [
   {
     id: 'sym_prosperity',
     name: '繁榮徽記',
-    effect: '攜帶者消耗 1 點物語點觸發背景或羈絆時，額外獲得 100 澤尼特。'
+    effect: '攜帶者消耗 1 點物語點觸發背景或羈絆時，額外獲得 100 z。'
   },
   {
     id: 'sym_protection',

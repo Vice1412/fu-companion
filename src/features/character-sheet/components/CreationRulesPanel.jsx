@@ -39,7 +39,9 @@ const NUMBER_FIELDS = [
 ];
 
 const TOGGLE_FIELDS = [
-  { key: 'allowQuirk', label: '開放金手指', hint: '官方預設開放' },
+  // 金手指是三大奇幻手冊才推出的選用制度——官方核心規則**沒有**這個東西，
+  // 所以預設是關的（`DEFAULT_CREATION_RULES.allowQuirk === false`），不是開的。
+  { key: 'allowQuirk', label: '開放金手指', hint: '官方核心規則沒有；三大奇幻手冊選用' },
   { key: 'startingHeroicSkill', label: '開局贈送一個英雄技能', hint: 'Playtest 選用規則' }
 ];
 
