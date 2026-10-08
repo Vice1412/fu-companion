@@ -658,7 +658,7 @@ export const SYMBOLIST_SYMBOLS = [
   {
     id: 'sym_elements',
     name: '元素徽記',
-    effect: '創造時自選八大傷害屬性之一。攜帶者造成傷害時，可消耗三分之一總傷害點數的【MP】將其全數轉為所選屬性。'
+    effect: '創造時自選八大傷害屬性之一。攜帶者造成傷害時，可消耗三分之一總傷害點數（含任何額外傷害來源）的【MP】將其全數轉為所選屬性。'
   },
   {
     id: 'sym_enmity',

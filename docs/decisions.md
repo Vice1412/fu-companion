@@ -3485,20 +3485,25 @@ Zero Power 子系統（另一套技能與資源），本專案完全沒收錄（
   `壓縮技術` 漏掉「安全地／隨時」；`竊取時間` 的「戰鬥」改「衝突」；
   以及 4 筆技能表入口的頁碼引用（元素魔法／熵系魔法／咒語之刃／痛苦的教訓／秘儀學派儀式／綁定和召喚）。
 
+#### AP6. 並排檔以外的三件同源問題（使用者：「處理」）
 
+這三件是代理在掃職業技能時順手發現的，不在並排檔裡，所以第一／二輪都沒涵蓋。
 
+1. **`turn back a Clock` 被寫成「阻礙」。** `ruleCodexExpansion.js` 的 3 處（:83／:480／:488）。
+   英文出處 HF Atlas PDF **p.141**：「…and that Check allows them to advance or **turn back** a Clock…」。
+   專案自己其他地方都用「迴轉」（`skillSuboptionsData.js:241`「推進或迴轉命刻」），只有這 3 處例外。
+2. **元素徽記的 MP 消耗漏掉「含任何額外傷害來源」。** `ruleCodexExpansion.js:176` 與
+   `skillSuboptionsData.js:661`。英文出處 HF Atlas PDF **p.151**：「…Mind Points equal to one third
+   of the total damage being inflicted to those creatures **(including any sources of extra damage)**.」
+   ——括號那半句會直接改變玩家算出的 MP（例如武器技能、狀態加成算不算進去）。
+3. **【再調度】被自己多鎖了「每回合一次」。** `AceOfCardsTable.jsx`。英文（特典合輯 p.9）只寫
+   「When you hit one or more enemies with an attack during your turn, you may discard up to
+   (SL + 1) cards. If you do, draw that many cards.」——**沒有次數限制**。
+   有次數限制的是**【陷阱卡】**（`you cannot use this Skill again until the start of your next turn`），
+   舊版把兩者混為一談。已移除鎖、移除 UI 上的「本回合已使用過再調度」、
+   並把 `usedThisTurn.mulligan` 這個**已經沒有讀取端**的欄位一起刪掉
+   （專案原則：沒有讀取端的欄位就是幻覺欄位）。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+**執行過程中 emoji 關卡抓到我自己**：我在註解裡寫了 `⚠️`（U+26A0）——規則一軌道 3 明文禁止，
+**連註解都不行**，而 `AGENTS.md` §3.2 記的就是這個錯以前發生過三次。已換成允許的 `※`。
+**這條關卡證明它自己有用。**

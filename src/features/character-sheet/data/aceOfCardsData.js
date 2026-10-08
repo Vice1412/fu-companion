@@ -632,7 +632,16 @@ export const selfBenefitForEffect = (effectId, ctx = {}) => {
 export const FULL_STATUS_CHOICES = ['dazed', 'shaken', 'slow', 'weak'];
 
 /** 結算時寫入的每回合使用記錄（原書：再調度與陷阱卡都各自受限）。 */
-export const emptyTurnUsage = () => ({ mulligan: false, trap: false });
+/**
+ * 每回合使用記錄。
+ *
+ * ※ 只有【陷阱卡】有每回合一次的限制——原書明文
+ * `you cannot use this Skill again until the start of your next turn`。
+ * 【再調度】原書**沒有**次數限制（`When you hit one or more enemies with an attack during your
+ * turn, you may discard up to (SL + 1) cards.`），舊版把兩者混為一談而多鎖了 `mulligan`，
+ * 已移除——欄位沒有讀取端就不該留著。
+ */
+export const emptyTurnUsage = () => ({ trap: false });
 
 // ─────────────────────────────────────────────────────────
 // 牌桌狀態

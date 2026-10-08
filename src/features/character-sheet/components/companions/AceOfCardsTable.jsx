@@ -76,8 +76,10 @@ import {
  * - 同時符合多個效果時**只能選一個**；組合沒有對應效果時仍可打出（原書「the effect of the set (if any)」）
  * - 【牌運亨通】依結算牌是否含小丑牌／1／7 產生 +SL 傷害／減傷 SL／回復 SL×2 HP
  * - 【再調度】命中敵人後，**由玩家自選**至多 `SL + 1` 張棄掉並補抽
+ *   —— ※ **原書沒有次數限制**（`When you hit one or more enemies with an attack during your
+ *   turn, you may discard up to (SL + 1) cards.`）。舊版自己加了「每回合一次」，已移除。
  * - 【陷阱卡】敵人結算動作後，棄至多 `SL + 1` 張「小丑牌或花色對應該動作」的牌並補抽，
- *   然後可免費施放總 MP ≤ `SL × 5` 的咒語；與再調度各自每回合一次
+ *   然後可免費施放總 MP ≤ `SL × 5` 的咒語；**同一回合不能再使用**（這條限制原書有明文）
  *
  * > 英雄技能（黑與白／先鋒卡／決鬥大師／禁忌儀式）需精通職業（Lv 10）才可習得，尚未實作。
  */
@@ -256,7 +258,7 @@ export default function AceOfCardsTable({
     setTrapActionKey(null);
     setTrapPicked([]);
     setMulliganPicked([]);
-    showToast('新回合：再調度與陷阱卡的每回合限制已解除', 'info');
+    showToast('新回合：【陷阱卡】的每回合限制已解除', 'info');
   };
 
   const togglePick = (id) => {
@@ -353,14 +355,18 @@ export default function AceOfCardsTable({
     setJokerAssign({});
   };
 
-  /** 再調度：玩家自選至多 SL+1 張棄掉後補抽等量（每回合一次）。 */
+  /**
+   * 再調度：玩家自選至多 SL+1 張棄掉後補抽等量。
+   *
+   * ※ **沒有每回合一次的限制**——原書（特典合輯 p.9）只寫
+   * `When you hit one or more enemies with an attack during your turn, you may discard up to
+   * (SL + 1) cards. If you do, draw that many cards.`
+   * 有次數限制的是【陷阱卡】（`you cannot use this Skill again until the start of your next turn`），
+   * 舊版把兩者混為一談、一併鎖了每回合一次。
+   */
   const doMulligan = () => {
     if (mulliganSL <= 0) {
       showToast('尚未習得【再調度】', 'warning');
-      return;
-    }
-    if (usedThisTurn.mulligan) {
-      showToast('本回合已使用過【再調度】，請先推進回合', 'warning');
       return;
     }
     const pick = pickMulligan(hand, mulliganPicked, mulliganSL);
@@ -372,8 +378,7 @@ export default function AceOfCardsTable({
     write({
       deck: r.deck,
       discard: r.discard,
-      hand: [...pick.rest, ...r.drawn],
-      usedThisTurn: { ...usedThisTurn, mulligan: true }
+      hand: [...pick.rest, ...r.drawn]
     });
     setMulliganPicked([]);
     showToast(`再調度：棄 ${pick.cards.length} 張、抽 ${r.drawn.length} 張`, 'success');
@@ -824,10 +829,11 @@ export default function AceOfCardsTable({
               </div>
             )}
 
-            {/* 每回合限制 */}
+            {/* 每回合限制（只有【陷阱卡】有；【再調度】原書沒有次數限制） */}
             <div className={`p-2.5 rounded-xl ${T.bg} border ${T.border} flex items-center justify-between flex-wrap gap-2`}>
               <span className={`text-[11px] font-bold ${T.text}`}>
-                本回合：再調度 {usedThisTurn.mulligan ? '已使用' : '未使用'}／陷阱卡 {usedThisTurn.trap ? '已使用' : '未使用'}
+                本回合：陷阱卡 {usedThisTurn.trap ? '已使用' : '未使用'}
+                <span className={`font-normal ${T.sub}`}>（再調度沒有次數限制）</span>
               </span>
               <button
                 type="button"
@@ -857,17 +863,15 @@ export default function AceOfCardsTable({
                   </div>
                   <button
                     type="button"
-                    disabled={mulliganPicked.length === 0 || usedThisTurn.mulligan}
+                    disabled={mulliganPicked.length === 0}
                     onClick={doMulligan}
                     className={`w-full px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-                      mulliganPicked.length === 0 || usedThisTurn.mulligan
+                      mulliganPicked.length === 0
                         ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                         : 'bg-amber-700 hover:bg-amber-800 text-white cursor-pointer'
                     }`}
                   >
-                    {usedThisTurn.mulligan
-                      ? '本回合已使用過再調度'
-                      : `棄 ${mulliganPicked.length} 張並補抽 ${mulliganPicked.length} 張`}
+                    {`棄 ${mulliganPicked.length} 張並補抽 ${mulliganPicked.length} 張`}
                   </button>
                 </div>
               </details>

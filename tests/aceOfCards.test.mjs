@@ -424,7 +424,7 @@ check('三重支援 -> 牌值總和 × 3', selfBenefitForEffect('tripleSupport',
 check('炫目順子 -> 無自身受益', selfBenefitForEffect('blindingFlush', { total: 18 }), { hp: 0, mp: 0 });
 check('未知效果 -> 全 0', selfBenefitForEffect('nope', { total: 9 }), { hp: 0, mp: 0 });
 check('狀態滿貫可選的 4 種狀態', FULL_STATUS_CHOICES, ['dazed', 'shaken', 'slow', 'weak']);
-check('每回合使用記錄初始為未使用', emptyTurnUsage(), { mulligan: false, trap: false });
+check('每回合使用記錄初始為未使用（只有陷阱卡有次數限制）', emptyTurnUsage(), { trap: false });
 check('每個效果都有靜態速查文字',
   SET_EFFECTS.every((e) => typeof e.reference === 'string' && e.reference.length > 10), true);
 check('狀態滿貫的動態敘述列出 4 種狀態',
@@ -492,7 +492,7 @@ check('衝突結束狀態：牌庫 30 張', idle.deck.length, DECK_SIZE);
 check('衝突結束狀態：手牌清空', idle.hand.length, 0);
 check('衝突結束狀態：棄牌堆清空', idle.discard.length, 0);
 check('衝突結束狀態：牌運亨通狀態清空', idle.highOrLow, null);
-check('衝突結束狀態：每回合記錄歸零', idle.usedThisTurn, { mulligan: false, trap: false });
+check('衝突結束狀態：每回合記錄歸零', idle.usedThisTurn, { trap: false });
 // ★ 這兩條就是「再也抽不了卡」的回歸護欄
 check('★ 衝突結束後 -> 不在衝突中（舊版判準 deck.length > 0 會誤判為 true）',
   isDeckInConflict(idle), false);
