@@ -750,20 +750,48 @@ check('可重複的技能拿兩次是合法的（嵌合術精通）',
   })).warnings.filter((w) => w.field === 'heroicSkills'), []);
 
 // 開局名額的「同團不得重複」（Playtest p.4）
-const dupA = createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: L3('暗黑之刃') });
-const dupB = createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: L3('暗黑之刃') });
-check('規則關閉時不做同團重複檢查',
-  findDuplicateStartingHeroicSkills([dupA, dupB]), []);
+// 規則**存在角色身上**，所以這裡是把規則寫進角色、不是傳給函式
+const dupA = createNewCharacter({
+  name: '甲', heroicSkills: ['背水'], classes: L3('暗黑之刃'), creationRules: START_RULE
+});
+const dupB = createNewCharacter({
+  name: '乙', heroicSkills: ['背水'], classes: L3('暗黑之刃'), creationRules: START_RULE
+});
+check('兩張卡都沒開規則時不做同團重複檢查',
+  findDuplicateStartingHeroicSkills([
+    createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: L3('暗黑之刃') }),
+    createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: L3('暗黑之刃') })
+  ]), []);
 check('規則開啟時，兩個角色用開局名額拿同一個技能 → 回報',
-  findDuplicateStartingHeroicSkills([dupA, dupB], START_RULE),
+  findDuplicateStartingHeroicSkills([dupA, dupB]),
   [{ name: '背水', characters: ['甲', '乙'] }]);
 check('只有一個角色用到開局名額 → 不回報',
-  findDuplicateStartingHeroicSkills([dupA], START_RULE), []);
+  findDuplicateStartingHeroicSkills([dupA]), []);
 check('靠精通取得的不算佔用開局名額',
   findDuplicateStartingHeroicSkills([
-    createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: master('暗黑之刃') }),
-    createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: master('暗黑之刃') })
-  ], START_RULE), []);
+    createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: master('暗黑之刃'), creationRules: START_RULE }),
+    createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: master('暗黑之刃'), creationRules: START_RULE })
+  ]), []);
+check('只有一張卡開了規則 → 那張卡的名額才算數（另一張不參與）',
+  findDuplicateStartingHeroicSkills([dupA, createNewCharacter({
+    name: '丙', heroicSkills: ['背水'], classes: L3('暗黑之刃')
+  })]), []);
+
+// 開卡規則存在角色身上（見 CreationRulesPanel）——這一段是那個重構的護欄
+const ruleChar = createNewCharacter({ creationRules: { startingLevel: 10, classCountMin: 3, classCountMax: 4 } });
+check('validateCharacter 預設讀「這張卡自己的」規則',
+  validateCharacter(ruleChar).warnings.filter((w) => w.field === 'classes').length, 0);
+check('同一張卡用官方標準驗證就會報職業數',
+  validateCharacter(ruleChar, DEFAULT_CREATION_RULES).warnings
+    .filter((w) => w.field === 'classes').map((w) => w.type), ['error']);
+check('明確傳入的規則優先於角色自帶的',
+  validateCharacter(ruleChar, { classCountMin: 2, classCountMax: 3 }).warnings
+    .filter((w) => w.field === 'classes').map((w) => w.type), ['error']);
+// 沒有 creationRules 的舊存檔 → 官方標準（行為與重構前完全相同）：
+// error＝職業數不足；warning＝職業等級總和（3）不等於角色等級（5）
+check('沒有 creationRules 的舊存檔 → 官方標準（行為不變）',
+  validateCharacter(createNewCharacter({ classes: L3('守護者') })).warnings
+    .filter((w) => w.field === 'classes').map((w) => w.type), ['error', 'warning']);
 
 // 【預言守護者】把基礎洞察骰面加進最大 HP（Playtest p.16）
 const prophetBase = createNewCharacter({ attributes: { dex: 8, ins: 10, mig: 6, wlp: 8 } });

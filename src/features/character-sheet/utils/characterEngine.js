@@ -132,11 +132,12 @@ export const heroicSkillMaxAcquisitions = (skill) => {
  * （名冊頁）來檢查。回傳重複的技能名與用到它的角色名。
  * 只有「靠開局名額取得」的才算；靠精通取得的不受此限（每個人本來就各拿各的）。
  */
-export const findDuplicateStartingHeroicSkills = (roster = [], rules = DEFAULT_CREATION_RULES) => {
-  const creation = resolveCreationRules(rules);
-  if (!creation.startingHeroicSkill) return [];
+export const findDuplicateStartingHeroicSkills = (roster = []) => {
   const seen = new Map();
   (roster || []).forEach((char) => {
+    // 規則存在角色身上：只有「這張卡自己」開了開局英雄技能，它的名額才算數
+    const creation = resolveCreationRules(char?.creationRules);
+    if (!creation.startingHeroicSkill) return;
     const stats = calculateCharacterStats(char);
     const owned = (char.classes || []).map((c) => c.className);
     const level = getCharacterLevel(char);
@@ -810,8 +811,11 @@ export const applyLevelUp = (char, { className, skillName, isNewClass = false })
  * 預設是官方核心規則，GM 自訂開局時傳入不同的規則即可，
  * 不必改這支函式。訊息一律引用規則裡的數值，不寫死。
  */
-export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
-  const creation = resolveCreationRules(rules);
+export const validateCharacter = (char, rules = null) => {
+  // **規則存在角色身上**（`char.creationRules`，見 `CreationRulesPanel` 的說明）。
+  // 明確傳入的 `rules` 優先——測試與未來的 GM 需求匯入會用到；不傳就用這張卡自己的。
+  // 舊存檔沒有該欄位 → `resolveCreationRules(undefined)` 補成官方標準，行為與以前相同。
+  const creation = resolveCreationRules(rules ?? char?.creationRules);
   const warnings = [];
   const stats = calculateCharacterStats(char);
 

@@ -52,6 +52,9 @@ export const LOG_FIELD_LABELS = Object.freeze({
   accessory: '飾品',
   classes: '職業',
   spells: '咒語',
+  // 開卡規則現在存在角色身上（`char.creationRules`），調整它要留痕——
+  // 否則「為什麼這張卡的職業數上限跟別人不一樣」在履歷上查不到
+  creationRules: '開卡規則',
   name: '姓名',
   identity: '身分',
   theme: '主題',

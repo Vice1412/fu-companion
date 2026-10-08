@@ -34,14 +34,6 @@ export const STORAGE_KEYS = Object.freeze({
   npcCardTheme: 'fabula-npc-card-theme',
   /** 角色卡配色 */
   characterTheme: 'fu_companion_character_theme',
-  /**
-   * 團務開卡規則（GM 自訂開局）。
-   *
-   * 這本機名冊就是「這一團」——規則存在這裡而不是每個角色身上，因為它是團務層級的
-   * （例如「開局贈送一個英雄技能」是全團一起用的選用規則）。
-   * 內容是 `data/creationRules.js` 的覆寫物件，經 `resolveCreationRules` 補齊預設值。
-   */
-  creationRules: 'fu_companion_creation_rules',
 });
 
 /**
@@ -57,6 +49,15 @@ export const LEGACY_KEYS = Object.freeze({
   npcLibraryStray: 'fu_npc_library',
   /** NPC 卡片配色的舊版鍵 */
   npcCardThemeV1: 'fabula-npc-theme',
+  /**
+   * 團務層級的開卡規則（2026-10-06 短暫存在過）。
+   *
+   * 當時把開卡規則放在名冊層級、並在名冊頁放了一顆「開局英雄技能」開關。使用者指出
+   * 那會**一次改掉名冊裡所有角色**（包括別的團的），與「GM 列出需求 → 玩家照著建角色」
+   * 的流程不符。規則已改為**存在角色身上**（`char.creationRules`，見 `CreationRulesPanel`），
+   * 這個鍵不再有任何寫入端。保留在舊鍵表是為了不刪使用者資料。
+   */
+  creationRulesCampaign: 'fu_companion_creation_rules',
 });
 
 /** 全部鍵的聯集，供測試與稽核使用。 */

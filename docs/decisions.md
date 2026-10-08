@@ -3112,6 +3112,82 @@ Versatile Tactics、Piercing Sorcery、Thaumaturge、Spell Buffet…），
 `test:creation` 207 → **218**（可重複次數 5 條、同團重複 4 條、預言守護者 2 條）、
 `test:ui` 211 → **214**（可重複選項 2 條、名冊頁警告 1 條）。
 
+### AL. 開卡規則搬到編輯器、存到角色身上（使用者指出的設計錯誤）
+
+#### AL1. 使用者的流程與批評
+
+使用者說明了他的實際流程：
+
+> GM 開團，列出開卡需求。玩家自發性去開卡，去角色卡助手根據 GM 的需求創建角色。
+> 創建好後給 GM 審查，都符合條件之後就加入各自的跑團房間管理狀態。
+> 一般上可能會看情況開放的開卡規則有：playtest 初始英雄技能、金手指、底力技。
+> 所以這些應該是要在**開卡界面**下調整才對，現在名冊一次過改那個玩家所有的角色內容
+> 本身就很奇怪。
+
+**他是對的，而且那個開關是我加的。** §AH 要實裝 Playtest 的「開局英雄技能」時，
+它需要一個開關，而 app 裡**根本還沒有 campaign 物件**（`creationRules` 的原始設計是
+「一份 campaign 帶上這份規則」，但那份規則從頭到尾只有 `DEFAULT_CREATION_RULES` 在被讀）。
+我找不到「這一團」在哪裡，就把它掛在名冊頁——那是最接近的地方，結果就是**一顆開關一次改掉
+名冊裡所有角色，包括別的團的**。
+
+#### AL2. 實際狀況：整組開卡規則都沒有介面
+
+編輯器**讀**了 `rules` 二十幾個地方（起始等級、起始資金、職業數上下限、四維總和、
+開放拓展、金手指、開局英雄技能），但**沒有任何地方能改**。唯一的例外是我臨時釘上去的那顆開關。
+
+`CREATION_RULE_FIELDS` 共 11 個欄位：`startingLevel`／`startingZenit`／`attributeTotal`／
+`classCountMin`／`classCountMax`／`skillPointBudget`／`allowedSourcebooks`／
+`defaultSourcebooks`／`requiredClasses`／`allowQuirk`／`startingHeroicSkill`。
+
+#### AL3. 新設計：規則存角色身上 ＋ 面板在編輯器
+
+- **規則存在角色身上**：`char.creationRules`，存的是與官方預設不同的欄位 diff
+  （`diffCreationRules` 的格式）。舊存檔沒有這個欄位 → `resolveCreationRules(undefined)`
+  補成官方標準，**行為與重構前完全相同**。
+- **新增 `components/CreationRulesPanel.jsx`**，放在編輯器主內容最上方、**`fieldset` 外面**
+  （定稿後仍可調整——它是 GM 的需求，不是玩家的創角決定）。
+  - 官方標準時**收合**；**自訂時自動展開**（否則你只會看到一張跟別人不一樣的卡，
+    卻不知道是哪條規則造成的）。
+  - 內容：兩個開關（開放金手指、開局贈送一個英雄技能）、六個數字（起始等級／職業數上下限／
+    四維總和／起始資金／技能點數）、開放的手冊勾選、必修職業勾選（可收合的職業清單）、
+    重設為官方標準。
+  - `defaultSourcebooks` 不列——那是新角色的起始勾選，由角色自己的拓展開關決定。
+- **`validateCharacter(char, rules = null)`**：明確傳入的 `rules` 優先（測試與未來的
+  GM 需求匯入用），不傳就用**這張卡自己的**。
+- **`findDuplicateStartingHeroicSkills(roster)`**：不再吃規則參數，改成逐卡讀
+  `char.creationRules`——只有「那張卡自己」開了開局英雄技能，它的名額才算數。
+- **名冊頁那顆開關拿掉**（連同 `campaignRules` state 與寫入）。
+
+#### AL4. 順帶修好一個還沒踩到但遲早會踩的問題
+
+舊設計下，改一次規則會**追溯影響所有既有角色**——包括已經給 GM 審過、已經在跑團房間裡的
+別的團的角色。改成每角色自帶之後，**一張卡帶著它被創建時的那份需求**，後來的規則改動
+不會波及它。這也讓「這張卡當初是照什麼規則建的」變成可追溯的事實。
+
+#### AL5. `keys.js` 的處置
+
+`fu_companion_creation_rules` 這個鍵**不再有任何寫入端**。依專案「永不刪除舊鍵」的慣例，
+移到 `LEGACY_KEYS`（`creationRulesCampaign`）並註明它的來歷與退役原因，不刪使用者資料。
+
+#### AL6. 順手：調整規則要留痕
+
+`LOG_FIELD_LABELS` 加 `creationRules: '開卡規則'`，編輯器的面板變更走
+`updateField('creationRules', …, { kind: 'note', title: '調整開卡規則' })`。
+否則「為什麼這張卡的職業數上限跟別人不一樣」在成長履歷上查不到。
+
+#### AL7. 底力技不在這次範圍
+
+使用者把「底力技」也列在常開放的規則裡，但它**不是一個開關**——它是官方特典的
+Zero Power 子系統（另一套技能與資源），本專案完全沒收錄（`creationRules.js` 的註解
+自己就寫著「尚未收錄，因此不預先開旗標」）。要能開它，得先把那個子系統建起來，
+屬獨立的一塊。**這次沒有動它。**
+
+#### AL8. 測試
+
+`test:creation` 218 → **223**（同團重複改成逐卡讀規則 5 條 ＋ 每角色自帶規則的護欄 4 條）、
+`test:ui` 214 → **219**（面板存在／預設收合／名冊頁開關已移除／不再吃全域 prop）。
+
+
 
 
 

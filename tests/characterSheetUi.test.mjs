@@ -683,6 +683,19 @@ check('名冊頁有開局名額的同團重複警告',
   [sheetSrcAj.includes('findDuplicateStartingHeroicSkills'), sheetSrcAj.includes('開局名額撞了')],
   [true, true]);
 
+// 開卡規則搬進編輯器、存在角色身上（使用者指出：規則要在開卡界面調整，
+// 而不是名冊頁一次改掉名冊裡所有角色）
+const rulesPanelSrc = read('../src/features/character-sheet/components/CreationRulesPanel.jsx');
+check('編輯器有「此團開卡規則」面板',
+  [editorCode.includes('CreationRulesPanel'), rulesPanelSrc.includes('此團開卡規則')], [true, true]);
+check('面板預設收合（開卡的人不必一直看到它）',
+  renderEditorAt(1).includes('展開'), true);
+check('名冊頁不再有那顆一次改全部角色的開關',
+  [sheetSrcAj.includes('開局英雄技能：'), sheetSrcAj.includes('patchCampaignRules')], [false, false]);
+check('規則改讀角色自帶的（不再吃全域 prop）',
+  editorCode.includes('resolveCreationRules(creationRules ?? character.creationRules)'), true);
+check('面板有「重設為官方標準」', rulesPanelSrc.includes('重設為官方標準'), true);
+
 // 四維托盤預設是空的（使用者指示：「要讓玩家自己選起始陣列才會在那邊出現 4 個骰子」）
 const emptyPicker = renderToStaticMarkup(React.createElement(AttributeMatrixPicker, {
   attributes: { dex: 0, ins: 0, mig: 0, wlp: 0 },

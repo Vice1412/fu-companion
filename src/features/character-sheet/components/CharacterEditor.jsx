@@ -57,6 +57,7 @@ import {
 } from '../data/sourcebookConfig';
 import StarterPresetsModal from './StarterPresetsModal';
 import CharacterPreviewModal from './CharacterPreviewModal';
+import CreationRulesPanel from './CreationRulesPanel';
 
 /** 編輯器的分頁數量。夾制 initialTab 時不能讀 TABS（宣告在下面，會踩 TDZ），所以另存常數。 */
 const TAB_COUNT = 6;
@@ -102,7 +103,7 @@ export default function CharacterEditor({
   showToast = null,
   // 開卡規則：預設為官方核心規則；GM 自訂開局時由上游傳入該團的規則
   // （見 data/creationRules.js——起始等級、起始資金、必修職業、開放拓展都由此決定）
-  creationRules = DEFAULT_CREATION_RULES,
+  creationRules = null,
   // 開啟時要停在哪一個分頁（例如從跑團卡的升級流程連過來看「職業與技能」）
   initialTab = 1
 }) {
@@ -132,7 +133,11 @@ export default function CharacterEditor({
   const theme = getCharacterTheme(character.themeColor || themeId);
 
   // 開卡規則（起始等級／起始資金／必修職業／開放拓展…）
-  const rules = resolveCreationRules(creationRules);
+  //
+  // **規則存在角色身上**（`character.creationRules`，存的是與官方預設不同的欄位 diff）。
+  // 舊存檔沒有這個欄位 → `resolveCreationRules(undefined)` 補成官方標準，行為與以前相同。
+  // `creationRules` 這個 prop 保留給呼叫端明確覆寫（測試與未來的 GM 需求匯入用）。
+  const rules = resolveCreationRules(creationRules ?? character.creationRules);
 
   // Validation checklist（以這一團的規則驗證，不是寫死的官方標準）
   const validation = validateCharacter(character, rules);
@@ -991,6 +996,15 @@ export default function CharacterEditor({
           style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
         >
           <ErrorBoundary inline label={TABS.find(t => t.id === activeTab)?.label || '編輯步驟'}>
+          {/* 此團開卡規則：放在 fieldset 外面，定稿後仍可調整——它是 GM 的需求，
+              不是玩家的創角決定（改動只影響這一張卡，不會追溯其他角色）。 */}
+          <CreationRulesPanel
+            rules={rules}
+            diff={character.creationRules || {}}
+            onChange={(next) => updateField('creationRules', next, { kind: 'note', title: '調整開卡規則' })}
+            theme={theme}
+          />
+
           {/* 定稿後凍結創角分頁：`fieldset[disabled]` 會連同內部所有表單控件一起停用，
               所以不必逐個 input 加 disabled（也才不會漏掉任何一個） */}
           <fieldset

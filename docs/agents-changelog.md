@@ -479,3 +479,12 @@
 *④ **卡牌大師的 4 個英雄技能收錄**（Bonus Collection p.10–11，規則書有、Excel 沒有）。譯名由使用者裁定：**黑與白**／**卡片先導者**／**決鬥大師**／**被封印的儀式**。效果文裡的術語（雙重麻煩／魔法對子／魔法同花順／炫目順子／魔法牌／先鋒卡／小丑牌）**反查 `aceOfCardsData.js`，不自己翻**。英雄技能總數 154 → **158**（正式 115 ＋ Playtest 43）。*
 *⑤ **順帶修掉我上一輪自己造的不一致**：新加的 4 筆寫成「需精通卡牌大師」，而既有 111 筆用 Excel 的裸職業名——`test:creation` 的護欄「沒有英雄技能指向不存在的職業」當場抓到 `卡片先導者`，**它抓到的是真的**。已把 Playtest 43 筆的「需精通X」前綴一併拿掉，統一成 Excel 的寫法。*
 *測試：`test:creation` 207 → **218**、`test:ui` 211 → **214**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,194.30 kB / gzip 633.12 kB）。決策紀錄見 `docs/decisions.md` §AK。*
+
+*2026-10-06（開卡規則搬到編輯器、存到角色身上）：使用者指出設計錯誤——他的流程是「GM 開團列需求 → 玩家去角色卡助手照著建 → 給 GM 審查」，所以**常開放的開卡規則（playtest 初始英雄技能、金手指、底力技）應該在開卡界面調整**，而「名冊一次過改那個玩家所有的角色內容」很奇怪。*
+*① **他是對的，而且那顆開關是我加的**。§AH 要實裝 Playtest 的開局英雄技能時它需要一個開關，但 app 裡**根本沒有 campaign 物件**（`creationRules` 的原始設計是「一份 campaign 帶上這份規則」，實際上只有 `DEFAULT_CREATION_RULES` 在被讀），我找不到「這一團」在哪裡就掛在名冊頁 → 一顆開關一次改掉名冊裡所有角色，包括別的團的。*
+*② **實際狀況**：編輯器讀了 `rules` 二十幾個地方，但**整組開卡規則都沒有介面**——唯一的例外就是我臨時釘上去的那顆。*
+*③ **新設計**：規則**存在角色身上**（`char.creationRules`，存 diff；舊存檔沒有該欄位 → 官方標準，行為不變）；新增 `components/CreationRulesPanel.jsx` 放在編輯器最上方、**fieldset 外面**（定稿後仍可調整，因為那是 GM 的需求不是玩家的決定），官方標準時收合、**自訂時自動展開**；`validateCharacter(char, rules = null)` 改成不傳就用這張卡自己的；`findDuplicateStartingHeroicSkills(roster)` 改成逐卡讀規則；**名冊頁那顆開關拿掉**。*
+*④ **順帶修好一個還沒踩到的問題**：舊設計下改一次規則會**追溯影響所有既有角色**（包括已給 GM 審過、已在跑團房間裡的別的團的角色）。現在一張卡帶著它被創建時的那份需求。*
+*⑤ `fu_companion_creation_rules` 不再有寫入端 → 移到 `LEGACY_KEYS`（`creationRulesCampaign`）並註明退役原因，不刪使用者資料。另加 `LOG_FIELD_LABELS.creationRules = '開卡規則'`，調整規則會留痕。*
+*⑥ **底力技不在這次範圍**：它不是開關，是官方特典的 Zero Power 子系統，本專案完全沒收錄（要能開它得先建那個子系統）。*
+*測試：`test:creation` 218 → **223**、`test:ui` 214 → **219**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,199.62 kB / gzip 634.33 kB）。目視驗證：面板在編輯器最上方、自訂時自動展開、六個數字與手冊勾選都對（順手修掉說明文字裡沒被渲染的 `**`）。決策紀錄見 `docs/decisions.md` §AL。*
