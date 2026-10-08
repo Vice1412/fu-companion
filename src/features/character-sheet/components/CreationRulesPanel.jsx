@@ -42,6 +42,9 @@ const TOGGLE_FIELDS = [
   // 金手指是三大奇幻手冊才推出的選用制度——官方核心規則**沒有**這個東西，
   // 所以預設是關的（`DEFAULT_CREATION_RULES.allowQuirk === false`），不是開的。
   { key: 'allowQuirk', label: '開放金手指', hint: '官方核心規則沒有；三大奇幻手冊選用' },
+  // 定制武器同理（高度奇幻手冊 p.106），但**不綁高度奇幻手冊**——
+  // 原書說它「簡單、沒有深遠的遊戲影響，可以永遠開給任何有興趣的人」。
+  { key: 'allowCustomWeapon', label: '開放【定制武器】', hint: '高度奇幻手冊 p.106 選用規則；任何團都能單獨開' },
   { key: 'startingHeroicSkill', label: '開局贈送一個英雄技能', hint: 'Playtest 選用規則' }
 ];
 

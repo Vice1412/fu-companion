@@ -112,6 +112,24 @@ check('resolve 的輸出欄位集與預設一致',
   Object.keys(resolveCreationRules({})).sort(), [...CREATION_RULE_FIELDS].sort());
 check('預設規則物件是凍結的', Object.isFrozen(DEFAULT_CREATION_RULES), true);
 
+// 每個規則欄位都必須有**開關**——不然就是一個玩家碰不到的死欄位。
+// 這條是補 §AS 的洞：`allowCustomWeapon` 當時有讀取端（validateCharacter 會擋）、
+// 欄位集護欄也過，但 `CreationRulesPanel` 根本沒有那一格，
+// 於是裝備分頁寫著「請在第 1 步打開」而那個開關不存在。
+// 直接用 fs 讀面板原始碼（read 助手定義在檔案後段，這裡用不到它）
+const panelSrc = fs.readFileSync(new URL('../src/features/character-sheet/components/CreationRulesPanel.jsx', import.meta.url), 'utf8');
+const PANEL_EXEMPT = {
+  defaultSourcebooks: '新角色的起始勾選，由角色自己的拓展開關決定（面板刻意不列）'
+};
+check('每個開卡規則欄位都有 UI 開關（或在豁免清單裡並註明理由）',
+  [...CREATION_RULE_FIELDS].filter((key) => !panelSrc.includes(`'${key}'`) && !PANEL_EXEMPT[key]),
+  []);
+check('豁免清單只放真的刻意不列的面板欄位',
+  Object.keys(PANEL_EXEMPT).filter((key) => !CREATION_RULE_FIELDS.includes(key)),
+  []);
+check('開放【定制武器】的開關在面板上（§AS 的補洞）',
+  panelSrc.includes("'allowCustomWeapon'"), true);
+
 // ─────────────────────────────────────────────────────────── B
 section('B. resolveCreationRules：壞資料一律退回官方預設');
 

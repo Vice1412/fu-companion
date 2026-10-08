@@ -536,3 +536,5 @@
 *⑥ **過程失誤**：用 SSR → 無頭截圖驗證，**截圖全白**——`JRPGModal` 用 `ReactDOM.createPortal`，portal 在 SSR 下不渲染任何東西。改用**真實瀏覽器掛載**才看到畫面。**教訓：SSR 煙霧測試對所有 portal 元件都是無效的驗證。***
 *測試：`test:equipment` 180 → **221**（W 區段：名額／互斥／元素／可變形成對／成本／傷害／條目形狀／官方配置 25 筆全數驗證）、`test:engine` → **362**（L 區段：物防魔防提升進引擎、countsAsShield、雙手武器、規則閘門）、`test:ui` → **246**（N 區段：鍛造台與裝備分頁的接線）、`test:presets` 修 2 條舊護欄（主手現在可以是定制武器名）。*
 *驗證：`npm test` 全 16 關卡通過，exit 0；`npm run build` exit 0（2,246.63 kB / gzip 648.59 kB）。決策紀錄見 `docs/decisions.md` §AS。*
+
+*2026-10-06（補洞）：使用者問「開卡規則在哪裡有定制武器？」——查下去發現 **§AS 漏了 UI 開關**：`creationRules.js` 有 `allowCustomWeapon`、欄位集護欄也過、`validateCharacter` 有讀取端、裝備分頁還寫著「請在第 1 步的『此團開卡規則』打開」，**但 `CreationRulesPanel` 根本沒有那一格** → 玩家永遠打不開，而提示指向一個不存在的東西。修法：面板的 `TOGGLE_FIELDS` 加上該欄位；並新增護欄「**每個開卡規則欄位都必須有 UI 開關**，或在豁免清單裡註明理由」（唯一豁免 `defaultSourcebooks`）。護欄已**刻意破壞驗證**（拿掉那一格 → 2 條 FAIL，還原 → 229/229）。`test:creation` 226 → **229**。*
