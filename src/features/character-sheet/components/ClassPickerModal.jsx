@@ -545,12 +545,20 @@ export default function ClassPickerModal({
                         borderColor: currentSL > 0 ? theme.accent : theme.border
                       }}
                     >
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="font-serif font-black text-sm" style={{ color: theme.textDark }}>
+                      {/* 手機版直向堆疊：技能名自己一行、控制項在下面。
+                          原本是 `flex-wrap` 的橫向列，但技能名是可壓縮的 flex 項目——
+                          在窄螢幕上（尤其 SL 星星多的技能，例如【咒語模仿】5 顆）
+                          名字會被擠到逐字換行，變成很難讀的直排。
+                          加上 `whitespace-nowrap shrink-0` 讓名字永不被壓縮。 */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span
+                          className="font-serif font-black text-sm whitespace-nowrap shrink-0"
+                          style={{ color: theme.textDark }}
+                        >
                           {sk.name}
                         </span>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <SkillStarPips
                             currentSL={currentSL}
                             maxSL={maxSL}

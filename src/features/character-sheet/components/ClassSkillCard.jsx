@@ -630,8 +630,14 @@ export default function ClassSkillCard({
                     className="p-3 rounded-xl border text-xs space-y-1.5 transition-colors shadow-2xs"
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold flex items-center gap-1.5 text-sm sm:text-base" style={{ color: theme.textDark }}>
+                    {/* 手機版直向堆疊：技能名自己一行、星星在下面。
+                        原本是橫向列，技能名是可壓縮的 flex 項目——窄螢幕上會被擠成直排
+                        （SL 星星越多越嚴重，例如【咒語模仿】5 顆）。 */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
+                      <span
+                        className="font-bold flex items-center gap-1.5 text-sm sm:text-base whitespace-nowrap shrink-0"
+                        style={{ color: theme.textDark }}
+                      >
                         <span style={{ color: theme.accent }}>✦</span>
                         {sk.name}
                       </span>

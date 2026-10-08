@@ -69,16 +69,19 @@ export default function JRPGModal({
   if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto min-w-0">
       {/* Clickable Backdrop */}
       <div 
         className="fixed inset-0 -z-10" 
         onClick={onClose} 
       />
 
-      {/* Modal Dialog Card */}
+      {/* Modal Dialog Card
+          ※ `min-w-0` 是必要的：flex 項目的 `min-width` 預設是 `auto`，
+          所以即使有 `w-full`，內容的 min-content 寬度（例如一排不會換行的技能名）
+          還是會把整個彈窗撐破、在手機上造成橫向溢出。`min-w-0` 讓它可以真的縮到容器寬度。 */}
       <div
-        className={`relative w-full ${maxWidth} bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh] text-[#2c221e]`}
+        className={`relative w-full min-w-0 ${maxWidth} bg-[#fffdf9] border-2 border-[#d6c7ab] rounded-xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh] text-[#2c221e]`}
         style={theme ? { backgroundColor: theme.cardBg || '#ffffff', borderColor: theme.border, color: theme.textDark } : {}}
       >
         {/* Top accent line */}
@@ -109,8 +112,8 @@ export default function JRPGModal({
           </button>
         </div>
 
-        {/* Modal Content */}
-        <div className="p-2.5 sm:p-5 overflow-y-auto flex-1 flex flex-col min-h-0">
+        {/* Modal Content。`min-w-0` 同上：讓內容也能跟著縮，而不是被 min-content 撐破。 */}
+        <div className="p-2.5 sm:p-5 overflow-y-auto flex-1 flex flex-col min-h-0 min-w-0">
           {children}
         </div>
 
