@@ -53,6 +53,7 @@ import SkillDescription, { openRuleCodex } from '../utils/skillFormulaEvaluator'
 import ArcanistManager from './companions/ArcanistManager';
 import ChimeristManager from './companions/ChimeristManager';
 import WayfarerCompanionSheet from './companions/WayfarerCompanionSheet';
+import NecromancerMinionSheet from './companions/NecromancerMinionSheet';
 import PilotVehicleCombatSheet from './companions/PilotVehicleCombatSheet';
 import TinkererWorkshop from './companions/TinkererWorkshop';
 import GourmetCookbook from './companions/GourmetCookbook';
@@ -1391,6 +1392,20 @@ export default function CharacterPlayHUD({
                     character={character}
                     onChange={onChange}
                     onOpenDice={onOpenDice}
+                    showToast={showToast}
+                  />
+                </div>
+              )}
+
+              {/* 死靈術士【殘酷的誕生】的僕從。條件是「有沒有拿那個英雄技能」——
+                  僕從的有無則看 `necroData.minion.active`，摧毀後面板會回到空狀態。 */}
+              {(character.heroicSkills || []).some(
+                (h) => (typeof h === 'string' ? h : h?.name) === '殘酷的誕生'
+              ) && (
+                <div className="pt-2 border-t">
+                  <NecromancerMinionSheet
+                    character={character}
+                    onChange={onChange}
                     showToast={showToast}
                   />
                 </div>

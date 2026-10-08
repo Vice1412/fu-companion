@@ -812,6 +812,20 @@ const unknownShield = calculateCharacterStats(mk({
 }));
 check('副手名字查不到 -> 等同無盾牌', unknownShield.def, neutralArmor.def);
 
+// ─────────────────────────────────────────────────────────── 死靈術士【殘酷的誕生】的僕從
+section('死靈術士【殘酷的誕生】：僕從代價（HP／MP 上限各減去該 NPC 的等級）');
+const noMinion = stats();
+const withMinion = stats({ necroData: { minion: { active: true, npcLevel: 7 } } });
+check('有僕從時最大 HP 減去 NPC 等級', noMinion.maxHp - withMinion.maxHp, 7);
+check('有僕從時最大 MP 減去 NPC 等級', noMinion.maxMp - withMinion.maxMp, 7);
+// 官方：「如果你的僕從被摧毀，你的 HP 和 MP 上限會恢復正常」
+const destroyed = stats({ necroData: { minion: { active: false, npcLevel: 7 } } });
+check('僕從被摧毀後 HP 上限恢復正常', destroyed.maxHp, noMinion.maxHp);
+check('僕從被摧毀後 MP 上限恢復正常', destroyed.maxMp, noMinion.maxMp);
+// 沒有 active 這個旗標（舊存檔或半填狀態）不該倒扣
+check('沒有 active 旗標時不倒扣', stats({ necroData: { minion: { npcLevel: 7 } } }).maxHp, noMinion.maxHp);
+check('NPC 等級 0 不會倒扣', stats({ necroData: { minion: { active: true, npcLevel: 0 } } }).maxHp, noMinion.maxHp);
+
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
 console.log(`\n${'='.repeat(56)}`);

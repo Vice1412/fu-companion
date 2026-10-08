@@ -590,6 +590,17 @@ export const calculateCharacterStats = (char) => {
     addMp(`金手指 ${quirkName}`, 5, 'quirk');
   }
 
+  // (5) 死靈術士【殘酷的誕生】的僕從代價
+  //     官方原文：「減少你自己相當於該 NPC 等級的 HP 和 MP 上限」，
+  //     並明說「如果你的僕從被摧毀，你的 HP 和 MP 上限會恢復正常」——
+  //     所以這裡只看「現在有沒有活著的僕從」，不是看有沒有拿那個英雄技能。
+  const minion = char.necroData?.minion;
+  const minionCost = Math.max(0, Math.floor(Number(minion?.npcLevel) || 0));
+  if (minion?.active && minionCost > 0) {
+    addHp(`僕從代價（${minionCost} 級）`, -minionCost, 'minion');
+    addMp(`僕從代價（${minionCost} 級）`, -minionCost, 'minion');
+  }
+
   // 官方規則：最大 HP / MP 基礎計算採用 BASE 力量與意志（不受異常狀態減骰影響）
   const maxHp = baseMig * 5 + level + bonusHp;
   const maxMp = baseWlp * 5 + level + bonusMp;
@@ -607,7 +618,16 @@ export const calculateCharacterStats = (char) => {
   const armorDef = rulesData.equipment.armors.find(a => a.name === char.equipment?.armor || a.name === normName(char.equipment?.armor))
     || findByName(rulesData.equipment.armors, NEUTRAL_ARMOR);
   // 雙手武器佔滿兩個手部欄位（Core p.131）→ 副手裝備不生效，回退到中性條目（無盾牌）
-  const mainHandDef = rulesData.equipment.weapons.find(w => w.name === char.equipment?.mainHand || w.name === normName(char.equipment?.mainHand));
+  //
+  // 主手武器先在官方武器表找，找不到再找**角色自己鍛造的定制武器**（HF p.106）。
+  // 定制武器的條目欄位與官方武器完全相同（見 `data/customWeapons.js` 的
+  // `buildCustomWeaponEntry`），所以底下所有計算都不用為它開特例。
+  const customWeaponEntries = buildCustomWeaponEntries(char);
+  const mainHandName = char.equipment?.mainHand;
+  const mainHandDef = findByName(rulesData.equipment.weapons, mainHandName)
+    || findByName(rulesData.equipment.weapons, normName(mainHandName))
+    || customWeaponEntries.find((w) => w.name === mainHandName)
+    || null;
   const offHandSuppressed = Number(mainHandDef?.hands) === 2;
   const shieldDef = offHandSuppressed
     ? findByName(rulesData.equipment.shields, NEUTRAL_SHIELD)
@@ -673,6 +693,20 @@ export const calculateCharacterStats = (char) => {
     mdef += shieldMdefBonus;
     if (shieldDefBonus) defTerms.push({ label: `${shieldLabel} 物防 +${shieldDefBonus}`, value: shieldDefBonus, kind: 'equip' });
     if (shieldMdefBonus) mdefTerms.push({ label: `${shieldLabel} 魔防 +${shieldMdefBonus}`, value: shieldMdefBonus, kind: 'equip' });
+  }
+
+  // 定制武器的【物防提升】與【魔防提升】（HF p.107）。
+  // 這兩項是「持有者獲得加值」，不是武器本身的數值，所以算在這裡而不是武器條目裡。
+  // `countsAsShield` 另外回報給技能判定——原書明講它會被視為裝備著一面盾牌。
+  const mainHandWeapon = mainHandDef;
+  const countsAsShield = Boolean(mainHandWeapon?.countsAsShield);
+  if (mainHandWeapon?.defBoost) {
+    def += mainHandWeapon.defBoost;
+    defTerms.push({ label: `${mainHandWeapon.name} 物防提升 +${mainHandWeapon.defBoost}`, value: mainHandWeapon.defBoost, kind: 'equip' });
+  }
+  if (mainHandWeapon?.mdefBoost) {
+    mdef += mainHandWeapon.mdefBoost;
+    mdefTerms.push({ label: `${mainHandWeapon.name} 魔防提升 +${mainHandWeapon.mdefBoost}`, value: mainHandWeapon.mdefBoost, kind: 'equip' });
   }
 
   // 機師載具搭乘防禦覆蓋 (Techno Fantasy Atlas p. 161)
@@ -814,6 +848,10 @@ export const calculateCharacterStats = (char) => {
     masteredClasses,
     totalSkillLevels,
     breakdown,
+    // 定制武器的【物防提升】＝「在技能判定上視為裝備著一面盾牌」（HF p.107）。
+    // 消費端（防守掌握／閃避等技能）讀這個旗標，不必自己去翻武器規格。
+    countsAsShield,
+    mainHandWeapon,
     isLevelMatched: totalSkillLevels === level
   };
 };
