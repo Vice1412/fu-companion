@@ -274,8 +274,13 @@ check('跑團卡的六項資源變更都帶記錄種類',
   []);
 check('跑團卡的升級會留下記錄', hud.includes("kind: 'levelup'"), true);
 check('跑團卡的數值出口支援 meta', /const updateField = \(field, val, meta = null\)/.test(hud), true);
-check('編輯器的等級／資金／裝備都會留下記錄',
-  ["kind: 'levelup'", "kind: 'zenit'", "kind: 'equipment'"].filter((k) => !editor.includes(k)), []);
+// 2026-10-06：等級與初始金額在編輯器改成**唯讀顯示**（由開卡規則決定，GM 在
+// CreationRulesPanel 調），所以那兩個寫入端沒有了。兩者的實際變更一律發生在跑團面板
+// （經驗升級／花錢賺錢），那裡仍然留記錄——見上一條。
+check('編輯器的裝備變更會留下記錄', editor.includes("kind: 'equipment'"), true);
+check('編輯器不再提供等級／初始金額的輸入框（改由開卡規則與跑團面板決定）',
+  [editor.includes("onChange={e => updateField('level'"), editor.includes('label="初始持有金幣"')],
+  [false, false]);
 check('編輯器的職業與技能變更會留下記錄',
   (editor.match(/kind: 'skill'/g) || []).length >= 3, true);
 check('編輯器的欄位出口支援 meta', /const updateField = \(field, value, meta = null\)/.test(editor), true);

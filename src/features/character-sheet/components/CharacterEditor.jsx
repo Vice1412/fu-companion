@@ -1059,6 +1059,11 @@ export default function CharacterEditor({
               />
 
               {/* 姓名不在這裡——原書第 8 步把它放在最後，見分頁 6「命名與背景」 */}
+
+              {/* 角色等級：由開卡規則決定（GM 在「此團開卡規則」設定起始等級）。
+                  ※ **刻意做成唯讀**——升級走跑團面板的「經驗升級」（消耗 10 EXP，
+                  見 CharacterPlayHUD）。以前這裡是可輸入的數字框，玩家會誤以為可以自己調，
+                  而實際上那是 GM 在規則面板調的東西。 */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold" style={{ color: theme.textDark }}>
@@ -1068,18 +1073,18 @@ export default function CharacterEditor({
                     className="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors"
                     style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
                   >
-                    起始 {rules.startingLevel} 級
+                    由開卡規則決定
                   </span>
                 </div>
-                <input
-                  type="number"
-                  min={rules.startingLevel}
-                  max={50}
-                  value={character.level || rules.startingLevel}
-                  onChange={e => updateField('level', parseInt(e.target.value, 10) || rules.startingLevel, { kind: 'levelup', title: '調整等級' })}
-                  className="w-full rounded-lg px-3 py-2 text-xs outline-none shadow-sm border transition-all font-mono font-bold"
-                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                />
+                <div
+                  className="w-full rounded-lg px-3 py-2 text-xs border shadow-sm font-mono font-bold flex items-center justify-between gap-2"
+                  style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                >
+                  <span>{character.level || rules.startingLevel} 級</span>
+                  <span className="text-[10px] font-sans font-normal" style={{ color: theme.textMuted }}>
+                    升級請用跑團面板的「經驗升級」
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1178,17 +1183,26 @@ export default function CharacterEditor({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  <JRPGInput
-                    label="初始持有金幣"
-                    type="number"
-                    value={character.zenit !== undefined ? character.zenit : rules.startingZenit}
-                    onChange={e => updateField(
-                      { zenit: parseInt(e.target.value, 10) || 0, startingFundsRolled: true },
-                      null,
-                      { kind: 'zenit', title: '調整資金' }
-                    )}
-                    theme={theme}
-                  />
+                  {/* 初始持有金幣：由開卡規則決定（GM 在「此團開卡規則」設定起始金額），
+                      或由「擲 2d6 × 10」／官方經典職業搭配一次寫入。
+                      ※ **刻意做成唯讀**——玩家在跑團中花錢、賺錢是跑團面板的事，
+                      這裡不該是一個可以隨手改的數字框。 */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                        初始持有金幣
+                      </label>
+                      <span className="text-[10px] font-bold" style={{ color: theme.textMuted }}>
+                        由開卡規則決定
+                      </span>
+                    </div>
+                    <div
+                      className="w-full rounded-lg px-3 py-2 text-xs border shadow-sm font-mono font-bold"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                    >
+                      {character.zenit !== undefined ? character.zenit : rules.startingZenit} z
+                    </div>
+                  </div>
                   <JRPGInput
                     label="初始物語點"
                     type="number"
@@ -1393,20 +1407,6 @@ export default function CharacterEditor({
                 budgetUsed={usedSkillLevels}
                 creationRules={rules}
                 locked={locked}
-              />
-
-              {/* 英雄技能選擇器（表格式：條件與效果全文 ＋ 過濾） */}
-              <HeroicSkillPickerModal
-                isOpen={isHeroicPickerOpen}
-                onClose={() => setIsHeroicPickerOpen(false)}
-                character={character}
-                rules={rules}
-                stats={stats}
-                theme={theme}
-                slotBlocked={creationSlotFull}
-                onPick={(skill) => {
-                  updateField('heroicSkills', [...(character.heroicSkills || []), skill]);
-                }}
               />
             </div>
           )}
@@ -1694,35 +1694,44 @@ export default function CharacterEditor({
                 </p>
               </div>
 
-              {/* Quirk Selection */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold" style={{ color: theme.textDark }}>
-                  金手指特質
-                </label>
-                <select
-                  value={character.quirk || '無'}
-                  onChange={e => updateField('quirk', e.target.value)}
-                  className="w-full border rounded-lg px-3.5 py-2 text-xs outline-none shadow-sm cursor-pointer"
-                  style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
-                >
-                  <option value="無">無特殊金手指</option>
-                  {filterQuirksBySources(rulesData.quirks, rules.allowedSourcebooks, character.quirk).map(q => (
-                    <option key={q.name} value={q.name}>{q.name}</option>
-                  ))}
-                </select>
-                {character.quirk && character.quirk !== '無' && (
-                  <p
-                    className="text-[11px] italic p-2.5 rounded-lg border"
-                    style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+              {/* 金手指特質：開卡規則沒開就直接整塊收掉。
+                  ※ 沒開的話清單裡只剩「無特殊金手指」，留一個只能選「無」的下拉是純噪音
+                  （見 §U 的「不能選的原因要在選之前看見」——那是對**選項**的要求；
+                  整條規則關閉時，這個入口本身就不該存在）。 */}
+              {rules.allowQuirk && (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold" style={{ color: theme.textDark }}>
+                    金手指特質
+                  </label>
+                  <select
+                    value={character.quirk || '無'}
+                    onChange={e => updateField('quirk', e.target.value)}
+                    className="w-full border rounded-lg px-3.5 py-2 text-xs outline-none shadow-sm cursor-pointer"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   >
-                    {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
-                  </p>
-                )}
-              </div>
+                    <option value="無">無特殊金手指</option>
+                    {filterQuirksBySources(rulesData.quirks, rules.allowedSourcebooks, character.quirk).map(q => (
+                      <option key={q.name} value={q.name}>{q.name}</option>
+                    ))}
+                  </select>
+                  {character.quirk && character.quirk !== '無' && (
+                    <p
+                      className="text-[11px] italic p-2.5 rounded-lg border"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
+                    >
+                      {renderTextWithAffinities(rulesData.quirks.find(q => q.name === character.quirk)?.desc)}
+                    </p>
+                  )}
+                </div>
+              )}
 
-              {/* Heroic Skills —— 原書 p.232：「當一個玩家角色將一個職業提升到 10 級時，
-                  這個角色可以從下面的列表中獲得一個英雄技能。」所以未精通就沒有資格；
+              {/* 英雄技能：開卡規則沒開「開局英雄技能」、又還沒精通任何職業時，這裡
+                  **完全沒有可做的事**——原書 p.232 的取得條件是「將一個職業提升到 10 級」，
+                  5 級開卡根本到不了。留一個按了也只會被停用的入口只是噪音，所以整塊收掉
+                  （使用者要求：「開卡規則沒有允許金手指或開局英雄技能，就直接把第 5 頁的
+                  按鈕都隱藏」）。升級到精通之後它會自己回來——那時才真的有東西可選。
                   個別技能另有指定的職業與等級前提，不合格的選項直接停用並寫出原因。 */}
+              {(rules.startingHeroicSkill || stats.masteredClasses.length > 0) && (
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold" style={{ color: theme.textDark }}>
@@ -1816,6 +1825,7 @@ export default function CharacterEditor({
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Personal Clocks */}
               <div className="space-y-3 pt-2">
@@ -1934,6 +1944,23 @@ export default function CharacterEditor({
           )}
           </fieldset>
           </ErrorBoundary>
+
+          {/* 英雄技能選擇器（表格式：條件與效果全文 ＋ 過濾）。
+              ※ **必須掛在這裡（`fieldset` 外面、不分頁）**——它原本被我放在 `activeTab === 2`
+              的區塊裡，於是在第 5 步按「選擇英雄技能」只改了 state、彈窗根本沒掛載，
+              要切回第 2 頁才會冒出來。使用者回報「按了沒有直接跳出技能視窗」。 */}
+          <HeroicSkillPickerModal
+            isOpen={isHeroicPickerOpen}
+            onClose={() => setIsHeroicPickerOpen(false)}
+            character={character}
+            rules={rules}
+            stats={stats}
+            theme={theme}
+            slotBlocked={creationSlotFull}
+            onPick={(skill) => {
+              updateField('heroicSkills', [...(character.heroicSkills || []), skill]);
+            }}
+          />
 
           {/* Wizard Footer Navigation Bar */}
           <div className="pt-5 border-t flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: theme.border }}>

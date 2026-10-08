@@ -656,8 +656,15 @@ const masterHtml = renderEditorAt(5, {
 });
 const noMasterHtml = renderEditorAt(5, { classes: [], heroicSkills: [] });
 check('已精通職業時顯示資格', masterHtml.includes('已精通職業'), true);
-check('未精通時說明需要什麼',
-  noMasterHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
+// 2026-10-06：沒開「開局英雄技能」又還沒精通任何職業時，英雄技能**整塊收掉**
+// （使用者要求：「開卡規則沒有允許金手指或開局英雄技能，就直接把第 5 頁的按鈕都隱藏」）。
+// 5 級開卡到不了精通（原書 p.232 要 10 級），所以那個入口在那個狀態下永遠按不動。
+check('未開局名額又未精通時，英雄技能整塊收掉',
+  [noMasterHtml.includes('掌握之英雄技能'), noMasterHtml.includes('選擇英雄技能')], [false, false]);
+const noMasterWithSlotHtml = renderEditorAt(5, { classes: [], heroicSkills: [] },
+  { startingHeroicSkill: true });
+check('開了開局名額、未精通時說明需要什麼',
+  noMasterWithSlotHtml.includes('需先精通一個職業（單一職業達 10 級）'), true);
 check('第 5 步有「選擇英雄技能」的入口（不再是下拉選單）',
   [masterHtml.includes('選擇英雄技能'), masterHtml.includes('-- 選擇英雄技能 --')], [true, false]);
 
