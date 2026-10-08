@@ -471,3 +471,11 @@
 *④ **發現一個必須記下來的障礙**：位置對齊對 Atlas **不可靠**——HF 的偏移量開頭是 2、結尾是 1（中間有一筆對不上），NF 也不一致。Core 與 Bonus 可靠（用明列對照表）。Atlas 得改用「職業前提序列」對齊或讀各書自己的索引表，這是下一步。*
 *⑤ **附帶更正**：§AI 的抽取範圍（Bonus p.19 起）漏掉 p.14–15 的「NECROMANCER HEROIC SKILLS」，所以當時對不出「死亡饋贈」那 3 筆——它們就在同一本特典裡（`BIRTH OF THE CRUEL`／`HARVESTER OF SORROW`／`PULSE OF THE MAGGOTS`）。*
 *測試：`test:creation` 200 → **207**、`test:ui` 207 → **211**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,190.67 kB / gzip 631.71 kB）。目視驗證：托盤空狀態（「剩餘 0」＋提示、三個起始陣列卡都不標「目前」）。決策紀錄見 `docs/decisions.md` §AJ。*
+
+*2026-10-06（英雄技能 4 項缺陷修正）：使用者指定「實裝 123」，並提供第 4 項的譯名、定下「規則書有但 Excel 沒有的也要實裝」。*
+*① **可重複取得的技能不再被擋**。原書明文有例外：`嵌合術精通`（may be acquired up to twice）與 `解剖學家`（can be acquired up to three times），但舊版選單的 `already` 是**無條件**擋重複 → 那兩個技能拿不到第二次。改法：`maxAcquisitions` 欄位 ＋ `heroicSkillMaxAcquisitions()`（預設 1）、`already` 改成比次數、`validateCharacter` 加超過上限的 error、選項標籤顯示「✎ 可再取（1/2）」／「✕ 已取滿 2/2」。*
+*② **開局名額的「同團不得重複」補上**。官方 p.4「no two characters may acquire the same Heroic Skill this way」——§AH 記了要寫 `findDuplicateStartingHeroicSkills`，**實際上沒寫**。新增該函式（團務層級，由持有名冊的名冊頁呼叫；只算靠開局名額取得的），名冊頁偵測到重複時顯示警告並列出是哪個技能被哪些角色佔用。*
+*③ **【預言守護者】的 HP 加成補進引擎**。它讓最大 HP 增加**基礎**洞察骰面，但引擎的英雄技能加成只認 `額外HP`／`額外MP`／`額外IP` → 選了它 HP 不會變。加上 `addHp(baseIns, 'heroic')`（用基礎骰，官方寫的是 "your base Insight die size"）。*
+*④ **卡牌大師的 4 個英雄技能收錄**（Bonus Collection p.10–11，規則書有、Excel 沒有）。譯名由使用者裁定：**黑與白**／**卡片先導者**／**決鬥大師**／**被封印的儀式**。效果文裡的術語（雙重麻煩／魔法對子／魔法同花順／炫目順子／魔法牌／先鋒卡／小丑牌）**反查 `aceOfCardsData.js`，不自己翻**。英雄技能總數 154 → **158**（正式 115 ＋ Playtest 43）。*
+*⑤ **順帶修掉我上一輪自己造的不一致**：新加的 4 筆寫成「需精通卡牌大師」，而既有 111 筆用 Excel 的裸職業名——`test:creation` 的護欄「沒有英雄技能指向不存在的職業」當場抓到 `卡片先導者`，**它抓到的是真的**。已把 Playtest 43 筆的「需精通X」前綴一併拿掉，統一成 Excel 的寫法。*
+*測試：`test:creation` 207 → **218**、`test:ui` 211 → **214**。`npm test` 17 道全過 exit 0；`npm run test:emoji` 0 命中；`npm run build` exit 0（2,194.30 kB / gzip 633.12 kB）。決策紀錄見 `docs/decisions.md` §AK。*

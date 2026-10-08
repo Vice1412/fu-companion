@@ -113,6 +113,50 @@ export const heroicSkillsForClass = (className) => {
 };
 
 /**
+ * 這個英雄技能最多可以取得幾次。
+ *
+ * 原書預設是 1 次（「除非特別說明，每個英雄技能只能獲得一次」），但**少數技能明文寫著
+ * 可以拿多次**——`嵌合術精通`（may be acquired up to twice）、`解剖學家`
+ * （can be acquired up to three times）。舊版介面無條件擋重複，那兩個技能等於拿不到第二次。
+ */
+export const heroicSkillMaxAcquisitions = (skill) => {
+  const n = Number(skill?.maxAcquisitions);
+  return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
+};
+
+/**
+ * 開局名額的「同團不得重複」（Playtest Materials 2026-10-01, p.4）：
+ * 「**no two characters may acquire the same Heroic Skill this way**」。
+ *
+ * 這是**團務層級**的限制——`validateCharacter` 只看得到一張卡，所以由持有名冊的呼叫端
+ * （名冊頁）來檢查。回傳重複的技能名與用到它的角色名。
+ * 只有「靠開局名額取得」的才算；靠精通取得的不受此限（每個人本來就各拿各的）。
+ */
+export const findDuplicateStartingHeroicSkills = (roster = [], rules = DEFAULT_CREATION_RULES) => {
+  const creation = resolveCreationRules(rules);
+  if (!creation.startingHeroicSkill) return [];
+  const seen = new Map();
+  (roster || []).forEach((char) => {
+    const stats = calculateCharacterStats(char);
+    const owned = (char.classes || []).map((c) => c.className);
+    const level = getCharacterLevel(char);
+    (char.heroicSkills || []).forEach((entry) => {
+      const name = typeof entry === 'string' ? entry : entry?.name;
+      const def = HEROIC_SKILLS.find((h) => h.name === name);
+      if (!def) return;
+      // 靠精通取得 → 不算佔用開局名額
+      if (checkHeroicSkillRequirement(def, { masteredClasses: stats.masteredClasses, classes: owned, level }).ok) return;
+      if (!checkHeroicSkillRequirement(def, { classes: owned, level, atCreation: true }).ok) return;
+      if (!seen.has(name)) seen.set(name, []);
+      seen.get(name).push(char.name || char.id || '(未命名)');
+    });
+  });
+  return [...seen.entries()]
+    .filter(([, who]) => who.length > 1)
+    .map(([name, characters]) => ({ name, characters }));
+};
+
+/**
  * 開局名額**不能**取得的英雄技能（Playtest Materials 2026-10-01, p.4 明文列出）。
  *
  * 官方原文列的是英文名，這裡是對應的繁中名——對應方式是**官方字母序**：
@@ -450,7 +494,7 @@ export const calculateCharacterStats = (char) => {
   if (accName.includes('魔力寶戒')) addMp(`飾品 ${accName}`, 5, 'equip');
   if (accName.includes('工匠工具帶')) addIp(`飾品 ${accName}`, 2, 'equip');
 
-  // (3) 英雄技能常駐加成 (額外HP, 額外MP, 額外IP)
+  // (3) 英雄技能常駐加成 (額外HP, 額外MP, 額外IP, 預言守護者的基礎洞察骰面)
   (char.heroicSkills || []).forEach(hs => {
     const hName = typeof hs === 'string' ? hs : (hs?.name || '');
     if (hName.includes('額外HP') || hName.toLowerCase().includes('extra hp')) {
@@ -461,6 +505,11 @@ export const calculateCharacterStats = (char) => {
     }
     if (hName.includes('額外IP') || hName.toLowerCase().includes('extra ip')) {
       addIp(`英雄技能 ${hName}`, 4, 'heroic');
+    }
+    // Playtest【預言守護者】：最大 HP 永久增加等同於**基礎**洞察骰面大小的數值
+    // （官方原文 "your base Insight die size"——用基礎骰，不是當前骰，所以不受狀態減值影響）
+    if (hName.includes('預言守護者')) {
+      addHp(`英雄技能 ${hName}`, baseIns, 'heroic');
     }
   });
 
@@ -1034,6 +1083,27 @@ export const validateCharacter = (char, rules = DEFAULT_CREATION_RULES) => {
         + `${viaCreationSlot.join('、')}）`
     });
   }
+
+  // 取得次數上限（原書 p.232：「除非特別說明，每個英雄技能只能獲得一次」）。
+  // 少數技能明文可以拿多次（嵌合術精通 2 次、解剖學家 3 次），見 `heroicSkillMaxAcquisitions`。
+  const skillCounts = new Map();
+  heroic.forEach((entry) => {
+    const name = typeof entry === 'string' ? entry : entry?.name;
+    skillCounts.set(name, (skillCounts.get(name) || 0) + 1);
+  });
+  skillCounts.forEach((count, name) => {
+    const def = HEROIC_SKILLS.find((h) => h.name === name);
+    if (!def) return;
+    const max = heroicSkillMaxAcquisitions(def);
+    if (count > max) {
+      warnings.push({
+        step: 5,
+        field: 'heroicSkills',
+        type: 'error',
+        message: `【${name}】最多只能取得 ${max} 次（目前 ${count} 次）`
+      });
+    }
+  });
 
   // 步驟 6: 命名與背景（原書第 8 步，p.154／p.170）
   //

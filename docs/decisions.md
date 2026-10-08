@@ -3037,6 +3037,82 @@ Versatile Tactics、Piercing Sorcery、Thaumaturge、Spell Buffet…），
 `test:creation` 200 → **207**（新增 `heroicSkillsForClass` 的 7 條）、
 `test:ui` 207 → **211**（托盤空狀態 2 條、職業彈窗 2 條）。
 
+### AK. 英雄技能的 4 項缺陷修正（使用者指示「實裝 123」，並授權一併做 4）
+
+§AJ 的稽核列出 9 項未完成，使用者指定先修 1／2／3，並提供第 4 項的譯名、同時定下
+**「規則書有但 Excel 沒有的也要實裝」**（與 §AI 的「Excel 有但規則書沒有 → 刪」互為反方向）。
+
+#### AK1. 可重複取得的技能不再被擋（缺陷）
+
+原書 p.232：「除非特別說明，每個 Heroic Skill 只能獲得一次」——**但確實有明文例外**：
+
+| 技能 | 官方原文 | 可取得次數 |
+|---|---|---|
+| 嵌合術精通 | This Heroic Skill may be acquired **up to twice** | 2 |
+| 解剖學家 | This Heroic Skill can be acquired **up to three times** | 3 |
+
+舊版選單的 `already` 是**無條件**擋重複，所以那兩個技能拿不到第二次——那是錯的，不是缺功能。
+
+改法：`heroicSkills` 加 **`maxAcquisitions`** 欄位（只有 >1 的才寫，其餘靠
+`heroicSkillMaxAcquisitions()` 預設 1）；`already` 改成「已取得次數 ≥ 上限」；
+`validateCharacter` 加一條超過上限的 `error`；選項標籤在拿了一次但還能再拿時顯示
+「✎ 可再取（1/2）」，取滿時顯示「✕ 已取滿 2/2」。
+
+#### AK2. 開局名額的「同團不得重複」（缺陷）
+
+官方 p.4：「**no two characters may acquire the same Heroic Skill this way**」。
+§AH 記了要寫 `findDuplicateStartingHeroicSkills`，**實際上沒寫**（全站零命中）。
+
+改法：新增 `findDuplicateStartingHeroicSkills(roster, rules)`——**團務層級**的檢查
+（`validateCharacter` 只看得到一張卡，所以由持有名冊的呼叫端做）。只算「靠開局名額取得」的；
+靠精通取得的不受此限（每個人本來就各拿各的）。名冊頁在偵測到重複時顯示琥珀色警告，
+列出是哪個技能被哪些角色同時佔用。
+
+#### AK3. 【預言守護者】的常駐加成沒進數值引擎（缺陷）
+
+它的第一句是「你的最大 HP 永久增加等同於你的**基礎**洞察骰面大小的數值」。
+引擎的英雄技能加成區塊只認 `額外HP`／`額外MP`／`額外IP` 三個名字，
+**選了【預言守護者】HP 不會變**。
+
+改法：同一個區塊加上 `預言守護者` → `addHp(baseIns, 'heroic')`。
+用**基礎**洞察骰（`baseIns`）而不是當前骰——官方寫的是 "your base Insight die size"，
+所以不受狀態減值影響（與 §N 的「HP/MP 用基礎骰」一致）。
+
+#### AK4. 卡牌大師的 4 個英雄技能收錄（規則書有、Excel 沒有）
+
+它們在 Bonus Collection **p.10–11**，而專案原本的 bonus 17 筆＝死靈術士 3 ＋萬聖 14，
+這 4 筆完全沒收錄（`aceOfCardsData.js:82` 的註解自己就寫著「尚未實作」）。
+
+譯名由**使用者裁定**：**黑與白**（Black & White）／**卡片先導者**（Card Vanguard）／
+**決鬥大師**（Duel Master）／**被封印的儀式**（Forbidden Rite）。
+效果文裡的既有術語**反查專案資料，不自己翻**（規則二）：
+
+| 英文 | 專案譯名 | 反查依據 |
+|---|---|---|
+| Double Trouble | 雙重麻煩 | `aceOfCardsData.js` 的 `effects` |
+| Magic Pair | 魔法對子 | 同上 |
+| Magic Flush | 魔法同花順 | 同上（`magicFlush`） |
+| Blinding Flush | 炫目順子 | 同上（`blindingFlush`） |
+| Magic Cards | 魔法牌 | 同上（註解「原書 Magic Cards」） |
+| vanguard card | 先鋒卡 | 同上（`MAX_VANGUARD` 的註解） |
+| joker | 小丑牌 | 同上 |
+
+#### AK5. 順帶修掉一個我自己造的不一致
+
+新加的 4 筆我寫成「需精通卡牌大師」，而既有 111 筆用的是 Excel「学习要求」欄的**裸職業名**
+（「暗黑之刃」／「狂怒鬥士或武器大師」）。`test:creation` 的護欄
+「沒有任何英雄技能的前提指向不存在的職業」當場把 `卡片先導者` 判成違規——**它抓到的是真的**。
+
+處理：把上一輪我為 Playtest 43 筆寫的「需精通X」前綴一併拿掉，全部統一成 Excel 的裸職業名
+（`scratch/normalize_heroic_req.py`）。判定端（`checkHeroicSkillRequirement`）兩種寫法都吃，
+所以改的純粹是資料一致性與顯示。
+
+#### AK6. 測試
+
+`test:creation` 207 → **218**（可重複次數 5 條、同團重複 4 條、預言守護者 2 條）、
+`test:ui` 211 → **214**（可重複選項 2 條、名冊頁警告 1 條）。
+
+
 
 
 

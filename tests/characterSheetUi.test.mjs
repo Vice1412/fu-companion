@@ -663,6 +663,26 @@ check('規則關閉時不會出現開局名額的標示',
   renderEditorAt(5, { classes: [{ className: '暗黑之刃', level: 3, skills: [] }] })
     .includes('◈ 用開局名額'), false);
 
+// 可重複取得的技能：拿了一次之後選項仍然可用，並標出還剩幾次
+const repeatHtml = renderEditorAt(5, {
+  classes: [{ className: '嵌合師', level: 10, skills: [] }],
+  heroicSkills: [{ name: '嵌合術精通', requirement: '嵌合師', source: 'core', effect: 'x' }]
+});
+check('可重複取得的技能拿了一次之後仍可再拿（標出 1/2）',
+  [repeatHtml.includes('✎ 可再取（1/2）'), /value="嵌合術精通"[^>]*disabled/.test(repeatHtml)],
+  [true, false]);
+check('預設只能取一次的技能，拿過就停用',
+  /value="背水"[^>]*disabled/.test(renderEditorAt(5, {
+    classes: [{ className: '暗黑之刃', level: 10, skills: [] }],
+    heroicSkills: [{ name: '背水', requirement: '暗黑之刃', source: 'core', effect: 'x' }]
+  })), true);
+
+// 名冊頁：開局名額的同團重複警告（Playtest p.4）
+const sheetSrcAj = read('../src/features/character-sheet/CharacterSheet.jsx');
+check('名冊頁有開局名額的同團重複警告',
+  [sheetSrcAj.includes('findDuplicateStartingHeroicSkills'), sheetSrcAj.includes('開局名額撞了')],
+  [true, true]);
+
 // 四維托盤預設是空的（使用者指示：「要讓玩家自己選起始陣列才會在那邊出現 4 個骰子」）
 const emptyPicker = renderToStaticMarkup(React.createElement(AttributeMatrixPicker, {
   attributes: { dex: 0, ins: 0, mig: 0, wlp: 0 },

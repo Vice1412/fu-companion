@@ -41,7 +41,9 @@ import {
   STARTING_HEROIC_SKILL_BLOCKLIST,
   HEROIC_SKILLS,
   HEROIC_SKILL_SOURCE_LABELS,
-  heroicSkillsForClass
+  heroicSkillsForClass,
+  heroicSkillMaxAcquisitions,
+  findDuplicateStartingHeroicSkills
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { PLAYTEST_HEROIC_SKILLS } from '../src/features/character-sheet/data/playtestHeroicSkills.js';
 import { getLog } from '../src/features/character-sheet/utils/characterLog.js';
@@ -682,12 +684,13 @@ const sourceCounts = () => {
   return Object.keys(c).sort().map((k) => `${k}:${c[k]}`);
 };
 
-check('正式規則書 111 筆 ＋ Playtest 43 筆 ＝ 154',
-  [HEROIC_SKILLS.length, rulesData.heroicSkills.length, PLAYTEST_HEROIC_SKILLS.length], [154, 111, 43]);
+check('正式規則書 115 筆 ＋ Playtest 43 筆 ＝ 158',
+  [HEROIC_SKILLS.length, rulesData.heroicSkills.length, PLAYTEST_HEROIC_SKILLS.length], [158, 115, 43]);
 // 出處回填自繁中版角色卡 Excel V2.17 的來源區段（位置對齊，已驗證順序完全一致）
-check('既有 111 筆的出處分佈就是 Excel 的六個區段',
+// ＋ 卡牌大師那 4 筆（規則書有、Excel 沒有，使用者指示要實裝）
+check('出處分佈：核心 31／高度奇幻 24／科技 18／自然 21／特典 21（含卡牌大師 4 筆）',
   sourceCounts(),
-  ['bonus:17', 'core:31', 'highFantasy:24', 'naturalFantasy:21', 'technoFantasy:18']);
+  ['bonus:21', 'core:31', 'highFantasy:24', 'naturalFantasy:21', 'technoFantasy:18']);
 check('每一筆都有出處，且顯示表裡有對應的中文名',
   HEROIC_SKILLS.filter((h) => !HEROIC_SKILL_SOURCE_LABELS[h.source]).map((h) => h.name), []);
 check('Playtest 那批全部標 playtest',
@@ -726,6 +729,52 @@ check('【銃劍士】連擁有都沒有 → 擋',
     classes: ['守護者'],
     level: 5
   }).ok, false);
+
+// 可重複取得的技能（原書 p.232 預設 1 次；少數明文寫著可以拿多次）
+check('可重複次數：預設 1 次',
+  heroicSkillMaxAcquisitions(HEROIC_SKILLS.find((h) => h.name === '背水')), 1);
+check('可重複次數：嵌合術精通 2 次（官方 may be acquired up to twice）',
+  heroicSkillMaxAcquisitions(HEROIC_SKILLS.find((h) => h.name === '嵌合術精通')), 2);
+check('可重複次數：解剖學家 3 次（官方 can be acquired up to three times）',
+  heroicSkillMaxAcquisitions(HEROIC_SKILLS.find((h) => h.name === '解剖學家')), 3);
+check('取得超過上限 → error',
+  validateCharacter(createNewCharacter({
+    heroicSkills: ['背水', '背水'],
+    classes: master('暗黑之刃')
+  })).warnings.filter((w) => w.field === 'heroicSkills').map((w) => w.message),
+  ['【背水】最多只能取得 1 次（目前 2 次）']);
+check('可重複的技能拿兩次是合法的（嵌合術精通）',
+  validateCharacter(createNewCharacter({
+    heroicSkills: ['嵌合術精通', '嵌合術精通'],
+    classes: master('嵌合師')
+  })).warnings.filter((w) => w.field === 'heroicSkills'), []);
+
+// 開局名額的「同團不得重複」（Playtest p.4）
+const dupA = createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: L3('暗黑之刃') });
+const dupB = createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: L3('暗黑之刃') });
+check('規則關閉時不做同團重複檢查',
+  findDuplicateStartingHeroicSkills([dupA, dupB]), []);
+check('規則開啟時，兩個角色用開局名額拿同一個技能 → 回報',
+  findDuplicateStartingHeroicSkills([dupA, dupB], START_RULE),
+  [{ name: '背水', characters: ['甲', '乙'] }]);
+check('只有一個角色用到開局名額 → 不回報',
+  findDuplicateStartingHeroicSkills([dupA], START_RULE), []);
+check('靠精通取得的不算佔用開局名額',
+  findDuplicateStartingHeroicSkills([
+    createNewCharacter({ name: '甲', heroicSkills: ['背水'], classes: master('暗黑之刃') }),
+    createNewCharacter({ name: '乙', heroicSkills: ['背水'], classes: master('暗黑之刃') })
+  ], START_RULE), []);
+
+// 【預言守護者】把基礎洞察骰面加進最大 HP（Playtest p.16）
+const prophetBase = createNewCharacter({ attributes: { dex: 8, ins: 10, mig: 6, wlp: 8 } });
+const prophetWith = createNewCharacter({
+  attributes: { dex: 8, ins: 10, mig: 6, wlp: 8 },
+  heroicSkills: ['預言守護者']
+});
+check('【預言守護者】最大 HP 增加基礎洞察骰面（d10 → +10）',
+  calculateCharacterStats(prophetWith).maxHp - calculateCharacterStats(prophetBase).maxHp, 10);
+check('【預言守護者】不影響 MP',
+  calculateCharacterStats(prophetWith).maxMp - calculateCharacterStats(prophetBase).maxMp, 0);
 
 // 職業 → 可解鎖的英雄技能（職業彈窗下方那塊，使用者要求）
 check('heroicSkillsForClass：回傳的每一筆都真的提到該職業',

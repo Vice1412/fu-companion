@@ -40,6 +40,7 @@ import { withEn } from '../../utils/properNouns';
 import { STORAGE_KEYS } from '../../data/keys';
 import { readJSON, writeJSON } from '../../data/store';
 import { resolveCreationRules } from './data/creationRules';
+import { findDuplicateStartingHeroicSkills } from './utils/characterEngine';
 
 const STORAGE_KEY = STORAGE_KEYS.characterRoster;
 
@@ -75,6 +76,8 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
   const patchCampaignRules = (patch) => setCampaignRules((prev) => ({ ...prev, ...patch }));
   // 補齊預設值後的完整規則（顯示與傳給編輯器都用這一份，不要各自 resolve 一次）
   const campaignCreationRules = resolveCreationRules(campaignRules);
+  // 開局名額的同團重複檢查（Playtest p.4）——只有這一頁看得到整份名冊
+  const duplicateStartingHeroic = findDuplicateStartingHeroicSkills(roster, campaignRules);
 
   const showToast = (msg, type = 'info') => {
     setToastMessage(msg);
@@ -536,6 +539,25 @@ export default function CharacterSheet({ onOpenDice = null, onSubNavChange = nul
               </button>
             </div>
           </div>
+
+          {/* 開局名額的「同團不得重複」（Playtest Materials 2026-10-01 p.4）。
+              這是團務層級的規則，所以只有持有名冊的這一頁檢查得到。 */}
+          {duplicateStartingHeroic.length > 0 && (
+            <div className="mt-4 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 flex items-start gap-2.5">
+              <GiLaurelCrown className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed text-amber-950">
+                <strong>開局名額撞了</strong>
+                ：官方選用規則明文「同一團不得有兩個角色用這個名額拿到同一個英雄技能」。
+                <ul className="mt-1 list-disc list-inside">
+                  {duplicateStartingHeroic.map((d) => (
+                    <li key={d.name}>
+                      【{d.name}】被 {d.characters.join('、')} 同時用開局名額取得
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* Roster Empty State (Matches NPC Workshop empty card) */}
           {roster.length === 0 ? (

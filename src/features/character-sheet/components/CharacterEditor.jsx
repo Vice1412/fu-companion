@@ -71,6 +71,7 @@ import {
   LOCKED_CREATION_TABS,
   getCharacterLevel,
   checkHeroicSkillRequirement,
+  heroicSkillMaxAcquisitions,
   HEROIC_SKILLS,
   HEROIC_SKILL_SOURCE_LABELS
 } from '../utils/characterEngine';
@@ -147,6 +148,9 @@ export default function CharacterEditor({
   // **不能選的原因要在選之前看見**，不是選完才被擋。判定與 `validateCharacter` 共用同一份。
   const ownedClassNames = (character.classes || []).map((c) => c.className);
   const heroicOptions = HEROIC_SKILLS.map((skill) => {
+    const acquiredCount = (character.heroicSkills || [])
+      .filter((x) => (x?.name || x) === skill.name).length;
+    const maxAcquisitions = heroicSkillMaxAcquisitions(skill);
     const mastery = checkHeroicSkillRequirement(skill, {
       masteredClasses: stats.masteredClasses,
       level: getCharacterLevel(character)
@@ -170,7 +174,11 @@ export default function CharacterEditor({
         : (rules.startingHeroicSkill ? creation : mastery),
       // 只能靠開局名額取得（精通條件還沒到）
       needsSlot: !mastery.ok && creation.ok,
-      already: (character.heroicSkills || []).some((x) => (x?.name || x) === skill.name)
+      acquiredCount,
+      // 「已習得」只在**達到可取得次數上限**時才成立——原書預設 1 次，
+      // 但嵌合術精通 2 次、解剖學家 3 次（見 heroicSkillMaxAcquisitions）
+      maxAcquisitions,
+      already: acquiredCount >= maxAcquisitions
     };
   });
   // 開局名額只有一個（Playtest 原文：an additional Heroic Skill）
@@ -1711,20 +1719,20 @@ export default function CharacterEditor({
                     style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
                   >
                     <option value="">-- 選擇英雄技能 --</option>
-                    {heroicOptions.map(({ skill: h, verdict, already, needsSlot }) => {
+                    {heroicOptions.map(({ skill: h, verdict, already, needsSlot, acquiredCount, maxAcquisitions }) => {
                       const slotBlocked = needsSlot && creationSlotFull;
                       return (
                         <option key={h.name} value={h.name} disabled={!verdict.ok || already || slotBlocked}>
                           {h.name} · {HEROIC_SKILL_SOURCE_LABELS[h.source] || h.source} [{h.requirement}]
                           {already
-                            ? ' ✕ 已習得'
+                            ? (maxAcquisitions > 1 ? ` ✕ 已取滿 ${acquiredCount}/${maxAcquisitions}` : ' ✕ 已習得')
                             : !verdict.ok
                               ? ` ✕ ${verdict.reason}`
                               : slotBlocked
                                 ? ' ✕ 開局名額已用完'
                                 : needsSlot
                                   ? ' ◈ 用開局名額'
-                                  : ''}
+                                  : (acquiredCount > 0 ? ` ✎ 可再取（${acquiredCount}/${maxAcquisitions}）` : '')}
                         </option>
                       );
                     })}
