@@ -13,6 +13,7 @@
  * 本測試只驗證「資料自洽 + 與 rulesData 對得上」，不重抄官方數值；
  * 官方數值本身記錄於 `implementation_plan-classic-presets.md` §6。
  */
+import { readFileSync } from 'node:fs';
 import { ALL_STARTER_PRESETS, STARTER_PRESETS } from '../src/features/character-sheet/data/starterPresets.js';
 import { EXPANSION_PRESETS } from '../src/features/character-sheet/data/expansionPresets.js';
 import { SOURCEBOOKS } from '../src/features/character-sheet/data/sourcebookConfig.js';
@@ -271,22 +272,43 @@ const theme = getCharacterTheme('emerald');
 const html = renderToStaticMarkup(
   React.createElement(StarterPresetsPanel, { theme, onApply: () => {} })
 );
-check('渲染成功且含規模說明', html.includes('共 81 組經典職業搭配'), true);
+// 內容斷言用這一份：SSR 沒辦法「點開」，所以直接把全部 id 傳進去讓它一開始就展開。
+// 這樣「折疊」不會讓原本的內容覆蓋憑空消失，而是分成兩組斷言各驗各的。
+const htmlAll = renderToStaticMarkup(
+  React.createElement(StarterPresetsPanel, {
+    theme, onApply: () => {}, initialExpandedIds: ALL_STARTER_PRESETS.map((p) => p.id)
+  })
+);
+// 組數由 presets 現算，不寫死——所以斷言也跟著資料走。
+check('渲染成功且含規模說明',
+  [html.includes('組經典職業搭配'), html.includes(`共 <strong>${ALL_STARTER_PRESETS.length}</strong> 組`)],
+  [true, true]);
 check('含五本手冊篩選鈕',
   ['全部', '核心', '高度奇幻', '自然奇幻', '科技奇幻', '特典合輯'].every((n) => html.includes(n)), true);
 check('含預組隊伍區塊標題', html.includes('樂團：這節奏將拯救世界！'), true);
 check('含預組成員數', html.includes('4 名成員'), true);
-check('含定制武器註記前綴', html.includes('定制武器:'), true);
-check('含魔晶石註記前綴', html.includes('魔晶石:'), true);
-check('含金手指註記前綴', html.includes('金手指:'), true);
-check('職業只顯示中文（不帶英文名）', html.includes('舞者 Lv'), true);
-check('技能清單的職業前綴亦為純中文', html.includes('舞者:'), true);
+// 2026-10-06：搭配卡改成**預設收合**（使用者：「全部配置太多了…讓它們更容易掃過這些搭配的名字」），
+// 所以配置內容不再出現在預設的 SSR 輸出裡。註記本身改用原始碼確認還在。
+check('預設收合：配置內容不出現在預設 HTML 裡',
+  [html.includes('習得技能'), html.includes('套用此經典配置'), html.includes('定制武器:')],
+  [false, false, false]);
+// 收合指示用的是規則一允許的封閉詞彙（△ ▽ ▼ ◆ 那一組）。
+check('預設收合：每張卡都有收合指示', html.includes('▽'), true);
+// 讀元件原始碼：SSR 沒辦法「點開」折疊區，所以展開後才會出現的內容只能用原始碼確認。
+const panelSrc = readFileSync(
+  new URL('../src/features/character-sheet/components/StarterPresetsModal.jsx', import.meta.url), 'utf8');
+check('註記前綴仍在原始碼裡（展開後會渲染）',
+  [panelSrc.includes('定制武器:'), panelSrc.includes('魔晶石:'), panelSrc.includes('金手指:')],
+  [true, true, true]);
+check('含金手指註記前綴', htmlAll.includes('金手指:'), true);
+check('職業只顯示中文（不帶英文名）', htmlAll.includes('舞者 Lv'), true);
+check('技能清單的職業前綴亦為純中文', htmlAll.includes('舞者:'), true);
 check('不得渲染任何官方英文角色名或職業英文名',
-  ALL_STARTER_PRESETS.map((p) => p.en).filter((en) => html.includes(en)), []);
-check('不得出現「中文 · ENGLISH」並列格式', html.includes(' · '), false);
-check('擴充職業圖示槽位有渲染', html.includes('Lv3'), true);
-check('渲染輸出不含 undefined（無漏欄位）', html.includes('undefined'), false);
-check('渲染輸出不含風味欄位殘留文案', html.includes('tagline') || html.includes('identity'), false);
+  ALL_STARTER_PRESETS.map((p) => p.en).filter((en) => htmlAll.includes(en)), []);
+check('不得出現「中文 · ENGLISH」並列格式', htmlAll.includes(' · '), false);
+check('擴充職業圖示槽位有渲染', htmlAll.includes('Lv3'), true);
+check('渲染輸出不含 undefined（無漏欄位）', htmlAll.includes('undefined'), false);
+check('渲染輸出不含風味欄位殘留文案', htmlAll.includes('tagline') || htmlAll.includes('identity'), false);
 
 // ─────────────────────────────────────────────────────────── M
 section('M. 技能子選擇（套用時連咒語一起選好）');

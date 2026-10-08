@@ -17,9 +17,41 @@ import { ALL_BOOKS, buildPresetSections } from '../utils/presetFilters';
  * @param {object} theme 角色卡主題
  * @param {(preset: object) => void} onApply 套用回呼
  */
-export function StarterPresetsPanel({ presets = ALL_STARTER_PRESETS, theme, onApply }) {
+/** 各書的官方頁碼範圍（書上的事實，不隨資料變動）。組數則由 presets 現算，避免寫死後對不上。 */
+const SOURCEBOOK_PAGES = {
+  core: 'p.172-175',
+  highFantasy: 'p.132-135',
+  naturalFantasy: 'p.134-137',
+  technoFantasy: 'p.146-149',
+  bonus: 'p.11、p.24-25'
+};
+
+export function StarterPresetsPanel({
+  presets = ALL_STARTER_PRESETS,
+  theme,
+  onApply,
+  /** 一開始就展開的搭配 id。預設全部收合；留這個入口是為了「從別處直接打開某一組」，
+   *  以及讓測試能 SSR 到展開後的內容（SSR 沒辦法「點開」）。 */
+  initialExpandedIds = []
+}) {
   const [search, setSearch] = useState('');
   const [sourcebook, setSourcebook] = useState(ALL_BOOKS);
+  /**
+   * 已展開的搭配 id。
+   *
+   * 使用者：「現在全部配置太多了，讓用戶要選到有眼緣的搭配不容易。
+   * 要求讓它們更容易掃過這些搭配的名字」——所以**預設全部收合**，只顯示名字與來源。
+   * 用 Set 而不是單一 id：可以同時展開好幾組來比較（那是選搭配時真正會做的事）。
+   */
+  const [expanded, setExpanded] = useState(() => new Set(initialExpandedIds));
+  const toggleExpanded = (id) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const sections = buildPresetSections(presets, { search, sourcebook });
   const count = sections.reduce((sum, s) => sum + s.items.length, 0);
@@ -32,9 +64,22 @@ export function StarterPresetsPanel({ presets = ALL_STARTER_PRESETS, theme, onAp
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-600 leading-relaxed -mt-1">
-        嚴格遵循官方五本手冊實裝，共 81 組經典職業搭配：核心 20 組（p.172-175）、高度奇幻 18 組（p.132-135）、
-        自然奇幻 18 組（p.134-137）、科技奇幻 17 組（p.146-149）、特典合輯 8 組（p.24-25）。
-        含特技分配、起始裝備與資金。
+        嚴格遵循官方五本手冊實裝，共 <strong>{presets.length}</strong> 組經典職業搭配：
+        {/* 只列「真的有搭配」的手冊——沒有的會變成「公測修訂 0 組（）」這種噪音。 */}
+        {Object.keys(SOURCEBOOKS)
+          .map((key) => ({
+            key,
+            shortName: SOURCEBOOKS[key].shortName,
+            count: presets.filter((p) => (p.sourcebook || 'core') === key).length
+          }))
+          .filter((b) => b.count > 0)
+          .map((b, i) => (
+            <React.Fragment key={b.key}>
+              {i > 0 && '、'}
+              {b.shortName} <strong>{b.count}</strong> 組（{SOURCEBOOK_PAGES[b.key]}）
+            </React.Fragment>
+          ))}
+        。含特技分配、起始裝備與資金。
       </p>
 
       {/* 手冊篩選 */}
@@ -97,35 +142,53 @@ export function StarterPresetsPanel({ presets = ALL_STARTER_PRESETS, theme, onAp
                 <span className="text-[10px] text-slate-400 font-mono">{section.items.length} 名成員</span>
               </div>
             )}
-            {section.items.map((preset) => (
+            {section.items.map((preset) => {
+              const isOpen = expanded.has(preset.id);
+              return (
               <div
                 key={preset.id}
-                className="rounded-xl border p-4 flex flex-col justify-between gap-3 transition-all shadow-xs hover:shadow-md"
+                className="rounded-xl border transition-all shadow-xs hover:shadow-md overflow-hidden"
                 style={{ backgroundColor: theme.panelBg, borderColor: theme.border }}
               >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-serif font-black text-base" style={{ color: theme.textDark }}>
+                {/* 標頭：**永遠可見**，只放名字與來源。
+                    使用者：「現在全部配置太多了，讓用戶要選到有眼緣的搭配不容易。
+                    要求讓它們更容易掃過這些搭配的名字」——所以預設只留最少的資訊，
+                    配置全部收進展開區。 */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(preset.id)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between gap-2 p-3 text-left cursor-pointer"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="font-serif font-black text-base truncate"
+                      style={{ color: theme.textDark }}
+                    >
                       {preset.title}
                     </span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded border shadow-2xs"
-                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.accent }}
-                      >
-                        {SOURCEBOOKS[preset.sourcebook || 'core'].shortName}
-                      </span>
-                      <span
-                        className="text-[11px] font-bold px-2 py-0.5 rounded border font-mono shadow-2xs"
-                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.textDark }}
-                      >
-                        {preset.zenit}z
-                      </span>
+                    <span
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded border shadow-2xs shrink-0"
+                      style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border, color: theme.accent }}
+                    >
+                      {SOURCEBOOKS[preset.sourcebook || 'core'].shortName}
                     </span>
-                  </div>
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-mono" style={{ color: theme.textMuted }}>
+                      {preset.zenit}z
+                    </span>
+                    {/* 折疊指示：規則一允許的封閉詞彙（△ ▽ ▼ ◆ 那一組） */}
+                    <span className="text-xs" style={{ color: theme.textMuted }}>
+                      {isOpen ? '▼' : '▽'}
+                    </span>
+                  </span>
+                </button>
 
+                {isOpen && (
+                <div className="px-3 pb-3 space-y-2">
                   {/* 職業徽章與四維陣列 */}
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1 font-mono text-[11px]">
+                  <div className="flex items-center gap-1.5 flex-wrap font-mono text-[11px]">
                     {preset.classes.map((c, i) => (
                       <span
                         key={i}
@@ -199,18 +262,20 @@ export function StarterPresetsPanel({ presets = ALL_STARTER_PRESETS, theme, onAp
                       <span className="font-bold text-slate-700">金手指:</span> {preset.quirk}
                     </div>
                   )}
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => onApply(preset)}
-                  className="w-full py-2 rounded-lg text-white font-bold text-xs shadow-xs transition-all hover:opacity-90 active:scale-98 cursor-pointer"
-                  style={{ backgroundColor: theme.accent }}
-                >
-                  套用此經典配置
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onApply(preset)}
+                    className="w-full py-2 rounded-lg text-white font-bold text-xs shadow-xs transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                    style={{ backgroundColor: theme.accent }}
+                  >
+                    套用此經典配置
+                  </button>
+                </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </React.Fragment>
         ))}
       </div>
