@@ -3,6 +3,7 @@ import { GiMagnifyingGlass, GiLaurelCrown } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGModal from '../../../components/ui/JRPGModal';
 import { SOURCEBOOKS } from '../data/sourcebookConfig';
+import { describeCustomWeapon } from '../data/customWeapons';
 import { ALL_STARTER_PRESETS } from '../data/starterPresets';
 import { ALL_BOOKS, buildPresetSections } from '../utils/presetFilters';
 
@@ -169,13 +170,17 @@ export function StarterPresetsPanel({ presets = ALL_STARTER_PRESETS, theme, onAp
                     ].filter(Boolean).join('、')}
                   </div>
 
-                  {/* 自訂武器／魔晶石／金手指註記（僅該配置有此欄位時顯示） */}
-                  {preset.customWeapon && (
+                  {/* 定制武器／魔晶石／金手指註記（僅該配置有此欄位時顯示）
+                      有結構化規格時由規格推導（單一來源）；只有出處的（如科技奇幻樣本）才印原文。 */}
+                  {(preset.customWeapons?.length > 0 || preset.customWeapon) && (
                     <div
                       className="text-[11px] text-slate-600 bg-white/70 rounded-lg px-2.5 py-1.5 border leading-relaxed shadow-2xs"
                       style={{ borderColor: theme.border }}
                     >
-                      <span className="font-bold text-slate-700">自訂武器:</span> {preset.customWeapon}
+                      <span className="font-bold text-slate-700">定制武器:</span>{' '}
+                      {preset.customWeapons?.length > 0
+                        ? preset.customWeapons.map((w) => `${w.name}（${describeCustomWeapon(w)}）`).join(' ／ ')
+                        : preset.customWeapon}
                     </div>
                   )}
                   {preset.mnemosphere && (

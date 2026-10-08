@@ -5,6 +5,7 @@ import { getSkillSuboptionConfig, calculateSkillSuboptionMax } from '../data/ski
 import { PILOT_ARMOR_MODULES } from '../data/pilotVehicleData';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
 import { buildLoadoutIssues } from './equipmentRules';
+import { buildCustomWeaponEntries, validateCustomWeapon, CUSTOM_WEAPON_BASE } from '../data/customWeapons';
 import { appendLog, createLogEntry } from './characterLog';
 
 // Dice ladder for step reductions
@@ -390,9 +391,14 @@ export const createNewCharacter = (overrides = {}, rules = DEFAULT_CREATION_RULE
       accessory: ""
     },
 
+    // 角色自己鍛造的【定制武器】（高度奇幻手冊 p.106 的選用規則）。
+    // 舊存檔沒有這個欄位 → 視為空陣列，行為與以前完全相同。
+    // 這裡只存「規格」，實際的武器條目由 `data/customWeapons.js` 的
+    // `buildCustomWeaponEntries()` 即時產生——單一來源，避免兩份資料漂移。
+    customWeapons: [],
+
     // 已學會法術、英雄技能、金手指與個人筆記
-    spells: [],
-    heroicSkills: [],
+    spells: [],    heroicSkills: [],
     quirk: "無",
     backpackNotes: "",
 
@@ -1121,7 +1127,11 @@ export const validateCharacter = (char, rules = null) => {
   buildLoadoutIssues({
     character: char,
     stats,
-    weaponMap: new Map(rulesData.equipment.weapons.map((w) => [w.name, w])),
+    // 定制武器也要進這張表，否則「這件裝備你裝備不了／超出預算」的檢查會看不到它
+    weaponMap: new Map([
+      ...rulesData.equipment.weapons.map((w) => [w.name, w]),
+      ...buildCustomWeaponEntries(char).map((w) => [w.name, w])
+    ]),
     shieldMap: new Map(rulesData.equipment.shields.map((s) => [s.name, s])),
     armorMap: new Map(rulesData.equipment.armors.map((a) => [a.name, a])),
     accessoryMap: new Map(rulesData.equipment.accessories.map((a) => [a.name, a])),
@@ -1160,6 +1170,29 @@ export const validateCharacter = (char, rules = null) => {
       message: `此團未開放金手指，請移除「${char.quirk}」`
     });
   }
+
+  // 定制武器（HF p.106 的選用規則）：規則沒開就不該存在。
+  // 規格本身的合法性（名額、強力限制、可變形成對…）由 `validateCustomWeapon` 判定，
+  // 這裡只處理「這條規則這團有沒有開」。
+  if (!creation.allowCustomWeapon && (char.customWeapons || []).length > 0) {
+    warnings.push({
+      step: 4,
+      field: 'customWeapons',
+      type: 'error',
+      message: `此團未開放【${CUSTOM_WEAPON_BASE.label}】，請移除已鍛造的武器`
+    });
+  }
+  (char.customWeapons || []).forEach((spec) => {
+    const { ok, issues } = validateCustomWeapon(spec, { siblings: char.customWeapons || [] });
+    if (!ok) {
+      warnings.push({
+        step: 4,
+        field: 'customWeapons',
+        type: 'error',
+        message: `【${spec?.name || CUSTOM_WEAPON_BASE.label}】${issues[0].message}`
+      });
+    }
+  });
 
   // 英雄技能的前提（原書 p.232）。以前這裡完全沒有檢查——5 級、零精通也能從選單
   // 直接加英雄技能，而畫面只印了一行「已精通職業: …【具備英雄技能資格】」當裝飾。

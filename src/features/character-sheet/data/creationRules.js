@@ -44,6 +44,7 @@ export const CREATION_RULE_FIELDS = Object.freeze([
   'defaultSourcebooks',
   'requiredClasses',
   'allowQuirk',
+  'allowCustomWeapon',
   'startingHeroicSkill'
 ]);
 
@@ -113,6 +114,13 @@ export const DEFAULT_CREATION_RULES = Object.freeze({
   // 官方預設**沒有**金手指——三大奇幻手冊才推出這個制度，所以不開就是「照官方核心規則開卡」。
   // 要玩金手指的團由 GM 在「此團開卡規則」自己打開。
   allowQuirk: false,
+  /**
+   * 是否開放【定制武器】（高度奇幻手冊 p.106 的選用規則）。
+   *
+   * 官方預設**沒有**——那是手冊的選用規則。原書說它「簡單、沒有深遠的遊戲影響，
+   * 可以永遠開給任何有興趣的人」，所以它**不綁高度奇幻手冊**：任何團都能單獨打開。
+   */
+  allowCustomWeapon: false,
   /**
    * 選用規則：開局就給一個英雄技能（Playtest Materials 2026-10-01, p.4）。
    *
@@ -185,6 +193,9 @@ export const resolveCreationRules = (overrides = {}) => {
     : [...d.requiredClasses];
 
   const allowQuirk = typeof given.allowQuirk === 'boolean' ? given.allowQuirk : d.allowQuirk;
+  const allowCustomWeapon = typeof given.allowCustomWeapon === 'boolean'
+    ? given.allowCustomWeapon
+    : d.allowCustomWeapon;
   const startingHeroicSkill = typeof given.startingHeroicSkill === 'boolean'
     ? given.startingHeroicSkill
     : d.startingHeroicSkill;
@@ -199,6 +210,7 @@ export const resolveCreationRules = (overrides = {}) => {
     defaultSourcebooks,
     requiredClasses,
     allowQuirk,
+    allowCustomWeapon,
     startingHeroicSkill
   };
 };

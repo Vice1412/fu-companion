@@ -841,6 +841,39 @@ check('「敏捷」仍可作為普通形容詞（NPC 特質輸入框的範例、
   ],
   [true, true]);
 
+// ─────────────────────────────────────────────────────────── N
+section('N. 定制武器鍛造台（HF p.106）');
+
+const forgeSrc = read('../src/features/character-sheet/components/CustomWeaponForgeModal.jsx');
+check('鍛造台是獨立元件', forgeSrc.includes('export default function CustomWeaponForgeModal'), true);
+check('裝備分頁有鍛造入口', editorCode.includes('鍛造${CUSTOM_WEAPON_BASE.label}'), true);
+check('只有規則開放時才顯示鍛造按鈕',
+  editorCode.includes('rules.allowCustomWeapon ?'), true);
+check('未開放時給出指引（不是靜靜消失）',
+  editorCode.includes('此團未開放——請在第 1 步的「此團開卡規則」打開'), true);
+check('裝備分頁列出已鍛造的武器（可裝備／編輯／刪除）',
+  [editorCode.includes('handleEquipCustomWeapon'), editorCode.includes('handleRemoveCustomWeapon'),
+    editorCode.includes('handleSaveCustomWeapons')],
+  [true, true, true]);
+check('鍛造台只從資料層拿規則，不自己寫死',
+  [forgeSrc.includes('CUSTOM_WEAPON_SLOTS'), forgeSrc.includes('validateCustomWeapon'),
+    forgeSrc.includes('buildCustomWeaponEntry')],
+  [true, true, true]);
+// 只看 label() 呼叫的順序——直接 indexOf 會被區塊說明文字裡的同一個詞干擾
+const labelOrder = [...forgeSrc.matchAll(/label\('([^']+)'/g)].map((m) => m[1]);
+check('面板順序照使用者的 Excel：類別→名稱→攻擊類型→命中檢定→訂製能力',
+  labelOrder.slice(0, 5),
+  ['武器類別', '自定義名字', '攻擊類型', '命中檢定', '訂製能力']);
+check('即時預覽顯示引擎會收到的條目',
+  forgeSrc.includes('entry.attr') && forgeSrc.includes('entry.damage'), true);
+check('可變形時切換兩個型態',
+  forgeSrc.includes('形態一') && forgeSrc.includes('形態二'), true);
+check('官方配置的定制武器會進裝備欄（presetApply 有帶）',
+  read('../src/features/character-sheet/utils/presetApply.js').includes('customWeapons: JSON.parse'),
+  true);
+check('裝備挑選器與預算試算共用同一張武器表（含定制武器）',
+  editorCode.includes('...buildCustomWeaponEntries(character).map(w => [w.name, w])'), true);
+
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));
 console.log(`\n${'='.repeat(56)}`);

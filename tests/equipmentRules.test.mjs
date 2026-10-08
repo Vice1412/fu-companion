@@ -12,6 +12,20 @@
  * - 起始裝備預算 500z p.164（僅限基本裝備；飾品一律稀有，不列入）
  */
 import rulesData from '../src/features/character-sheet/data/rulesData.json';
+import { ALL_STARTER_PRESETS } from '../src/features/character-sheet/data/starterPresets';
+import {
+  CUSTOMIZATIONS,
+  CUSTOM_WEAPON_CATEGORIES,
+  CUSTOM_WEAPON_ELEMENTS,
+  buildCustomWeaponEntry,
+  createCustomWeaponSpec,
+  customWeaponCost,
+  customWeaponDamageBonus,
+  isMartialCustomWeapon,
+  remainingSlots,
+  usedSlots,
+  validateCustomWeapon
+} from '../src/features/character-sheet/data/customWeapons';
 import {
   WEAPON_CATEGORIES,
   DICE_ATTRS,
@@ -618,6 +632,104 @@ check('原物件不會被就地修改',
 check('雙手武器清單：戰斧／巨劍／法杖為雙手，青銅劍／徒手打擊為單手',
   ['戰斧', '巨劍', '法杖', '青銅劍', '徒手打擊'].map((n) => isTwoHanded(weaponsByName.get(n))),
   [true, true, true, false, false]);
+
+// ─────────────────────────────────────────────────────────── W
+section('W. 定制武器（HF 印刷 p.106～108 的選用規則）');
+
+const cwBase = createCustomWeaponSpec({ name: '測試武器' });
+check('起始規格：成本 300z', customWeaponCost(cwBase), 300);
+check('起始規格：雙手武器', buildCustomWeaponEntry(cwBase).hands, 2);
+check('起始規格：傷害【HR + 5】', buildCustomWeaponEntry(cwBase).damage, '【HR + 5】物理');
+check('起始規格：預設不是職業武器', isMartialCustomWeapon(cwBase), false);
+check('三個訂製能力名額', remainingSlots(cwBase), 3);
+check('十個類別（Core p.129）', CUSTOM_WEAPON_CATEGORIES.length, 10);
+check('八種元素', CUSTOM_WEAPON_ELEMENTS.length, 8);
+check('七項訂製能力', CUSTOMIZATIONS.length, 7);
+
+// 名額：迅捷佔兩個（原書 p.107）
+const cwQuick = createCustomWeaponSpec({ name: '雙刃', customizations: ['quick'] });
+check('迅捷佔 2 個名額', usedSlots(cwQuick), 2);
+check('迅捷之後只剩 1 個名額', remainingSlots(cwQuick), 1);
+check('迅捷是職業武器', isMartialCustomWeapon(cwQuick), true);
+check('迅捷 + 第三項 = 剛好用滿',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', customizations: ['quick', 'accurate'] })).ok, true);
+check('迅捷 + 兩項 = 超出名額',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', customizations: ['quick', 'accurate', 'defenseBoost'] })).ok, false);
+
+// 強力的兩個限制（原書 p.107）
+check('強力不能用在奧術',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', category: '奧術', customizations: ['powerful'] })).ok, false);
+check('強力不能用在匕首',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', category: '匕首', customizations: ['powerful'] })).ok, false);
+check('強力不能與迅捷並存',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', category: '劍', customizations: ['powerful', 'quick'] })).ok, false);
+check('強力可以用在重型',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', category: '重型', customizations: ['powerful'] })).ok, true);
+check('同一個訂製能力不能選兩次',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', customizations: ['accurate', 'accurate'] })).ok, false);
+
+// 傷害與成本（原書 p.106～107）
+check('元素：改屬性並 +2 傷害',
+  buildCustomWeaponEntry(createCustomWeaponSpec({ name: 'x', customizations: ['elemental'], element: '火' })).damage,
+  '【HR + 7】火');
+check('強力（非重型）+5 → HR + 10',
+  customWeaponDamageBonus(createCustomWeaponSpec({ name: 'x', category: '劍', customizations: ['powerful'] })), 10);
+check('強力（重型）+7 → HR + 12',
+  customWeaponDamageBonus(createCustomWeaponSpec({ name: 'x', category: '重型', customizations: ['powerful'] })), 12);
+check('元素 + 強力（重型）= 5 + 2 + 7 = HR + 14',
+  customWeaponDamageBonus(createCustomWeaponSpec({ name: 'x', category: '重型', customizations: ['elemental', 'powerful'], element: '電' })), 14);
+check('精準：命中檢定 +2（格式與官方武器表一致）',
+  buildCustomWeaponEntry(createCustomWeaponSpec({ name: 'x', accuracy: 'DEX + MIG', customizations: ['accurate'] })).attr,
+  'DEX + MIG + 2');
+check('可變形：成本 +100z', customWeaponCost(createCustomWeaponSpec({ name: 'x', customizations: ['transforming'] })), 400);
+
+// 元素必須指定屬性（兩個方向都要擋）
+check('選了元素卻沒指定屬性 → 不合法',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', customizations: ['elemental'] })).ok, false);
+check('沒選元素卻指定了屬性 → 不合法',
+  validateCustomWeapon(createCustomWeaponSpec({ name: 'x', element: '火' })).ok, false);
+
+// 可變形必須成對互指（原書 p.107）
+const formA = createCustomWeaponSpec({ id: 'a', name: '形態一', customizations: ['transforming'] });
+const formB = createCustomWeaponSpec({ id: 'b', name: '形態二', customizations: ['transforming'] });
+check('可變形沒指定第二型態 → 不合法',
+  validateCustomWeapon(createCustomWeaponSpec({ id: 'a', name: 'x', customizations: ['transforming'] })).ok, false);
+check('第二型態沒有可變形 → 不合法',
+  validateCustomWeapon({ ...formA, transformingId: 'b' }, { siblings: [{ ...formB, customizations: [] }] }).ok, false);
+check('兩者互指 → 合法',
+  validateCustomWeapon({ ...formA, transformingId: 'b' }, { siblings: [{ ...formB, transformingId: 'a' }] }).ok, true);
+
+// 條目形狀必須與官方武器表一致（引擎與介面只認這幾個欄位）
+const cwEntry = buildCustomWeaponEntry(createCustomWeaponSpec({
+  name: '戰車', category: '重型', range: '近戰', accuracy: 'DEX + MIG',
+  customizations: ['accurate', 'defenseBoost', 'powerful']
+}));
+check('條目欄位與官方武器表相同',
+  Object.keys(cwEntry).filter((k) => ['name', 'category', 'cost', 'hands', 'attr', 'damage', 'range'].includes(k)).sort(),
+  ['attr', 'category', 'cost', 'damage', 'hands', 'name', 'range']);
+check('條目標記為定制武器', cwEntry.isCustomWeapon, true);
+check('物防提升：條目帶 defBoost 2 與 countsAsShield', [cwEntry.defBoost, cwEntry.countsAsShield], [2, true]);
+check('魔防提升：條目帶 mdefBoost 2',
+  buildCustomWeaponEntry(createCustomWeaponSpec({ name: 'x', customizations: ['magicDefenseBoost'] })).mdefBoost, 2);
+check('parseDamage 讀得懂產生的傷害字串', parseDamage(cwEntry.damage), { damageBonus: 12, damageType: '物理' });
+check('parseAccuracy 讀得懂產生的命中字串',
+  parseAccuracy(cwEntry.attr), { accuracyBonus: 2, attrs: ['DEX', 'MIG'] });
+check('evaluateWeapon 換算成該角色的骰',
+  evaluateWeapon(cwEntry, { DEX: 8, MIG: 6 }).accuracyLabel, 'DEX d8 + MIG d6 +2');
+
+// 官方配置的定制武器（`expansionPresets.js`）必須全部合法
+const presetSpecs = ALL_STARTER_PRESETS.flatMap((p) => p.customWeapons || []);
+check('官方配置裡的定制武器數量', presetSpecs.length, 25);
+check('每一把都通過驗證',
+  presetSpecs.filter((s) => !validateCustomWeapon(s, { siblings: presetSpecs }).ok).map((s) => s.name), []);
+check('主手都指向那把定制武器（不是官方武器表裡的名字）',
+  ALL_STARTER_PRESETS.filter((p) => (p.customWeapons || []).length > 0)
+    .filter((p) => p.equipment.mainHand !== p.customWeapons[0].name).map((p) => p.title), []);
+check('定制武器是雙手武器 → 官方配置的副手一律清空',
+  ALL_STARTER_PRESETS.filter((p) => (p.customWeapons || []).length > 0)
+    .filter((p) => p.equipment.offHand !== '無盾牌').map((p) => p.title), []);
+check('只剩 1 筆是純出處（科技奇幻樣本，沒有規格）',
+  ALL_STARTER_PRESETS.filter((p) => p.customWeapon && !(p.customWeapons || []).length).length, 1);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

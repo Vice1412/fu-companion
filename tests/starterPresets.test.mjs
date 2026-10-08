@@ -171,7 +171,10 @@ const accessoryNames = new Set(rulesData.equipment.accessories.map((a) => a.name
 const badEquip = [];
 ALL_STARTER_PRESETS.forEach((p) => {
   const e = p.equipment;
-  if (!weaponNames.has(e.mainHand)) badEquip.push(`${p.id} 主手 ${e.mainHand}`);
+  // 定制武器（HF p.106）不在 rulesData 的武器表裡——它是角色自己鍛造的，
+  // 所以主手除了官方武器名，也接受該配置自己帶的定制武器名。
+  const ownCustom = new Set((p.customWeapons || []).map((w) => w.name));
+  if (!(weaponNames.has(e.mainHand) || ownCustom.has(e.mainHand))) badEquip.push(`${p.id} 主手 ${e.mainHand}`);
   if (!(shieldNames.has(e.offHand) || weaponNames.has(e.offHand))) badEquip.push(`${p.id} 副手 ${e.offHand}`);
   if (!armorNames.has(e.armor)) badEquip.push(`${p.id} 防具 ${e.armor}`);
   if (e.accessory && !accessoryNames.has(e.accessory)) badEquip.push(`${p.id} 飾品 ${e.accessory}`);
@@ -273,7 +276,7 @@ check('含五本手冊篩選鈕',
   ['全部', '核心', '高度奇幻', '自然奇幻', '科技奇幻', '特典合輯'].every((n) => html.includes(n)), true);
 check('含預組隊伍區塊標題', html.includes('樂團：這節奏將拯救世界！'), true);
 check('含預組成員數', html.includes('4 名成員'), true);
-check('含自訂武器註記前綴', html.includes('自訂武器:'), true);
+check('含定制武器註記前綴', html.includes('定制武器:'), true);
 check('含魔晶石註記前綴', html.includes('魔晶石:'), true);
 check('含金手指註記前綴', html.includes('金手指:'), true);
 check('職業只顯示中文（不帶英文名）', html.includes('舞者 Lv'), true);

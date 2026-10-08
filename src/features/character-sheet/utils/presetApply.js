@@ -30,6 +30,10 @@ export const applyPreset = (character, preset) => {
     // 深拷貝：`selectedOptions` 等子選擇內嵌在技能上，會一併帶入
     classes: JSON.parse(JSON.stringify(preset.classes)),
     equipment: { ...preset.equipment },
+    // 官方配置的【定制武器】（HF p.106）。深拷貝，避免套用後改動污染預設資料。
+    // 沒有這一行的話，`equipment.mainHand` 會指向一個官方武器表裡不存在的名字，
+    // 裝備欄就只會顯示「找不到」——那正是這批 preset 長久以來的狀況。
+    customWeapons: JSON.parse(JSON.stringify(preset.customWeapons || [])),
     zenit: preset.zenit,
     // 官方經典搭配的 zenit 是原書印好的剩餘金額（p.172–175），等於已經結算過，
     // 所以不再要求玩家按「擲 2d6 × 10 結算」（見 characterEngine 的 startingFundsRolled）。

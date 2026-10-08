@@ -47,6 +47,7 @@ import {
   getCharacterLevel
 } from '../src/features/character-sheet/utils/characterEngine.js';
 import { DEFAULT_CREATION_RULES } from '../src/features/character-sheet/data/creationRules.js';
+import { createCustomWeaponSpec } from '../src/features/character-sheet/data/customWeapons.js';
 // 屬性名只有一份定義（使用者裁定：照繁中版角色卡 Excel V2.17）
 import { ATTRIBUTE_NAMES } from '../src/features/character-sheet/data/sourcebookConfig.js';
 
@@ -825,6 +826,55 @@ check('僕從被摧毀後 MP 上限恢復正常', destroyed.maxMp, noMinion.maxM
 // 沒有 active 這個旗標（舊存檔或半填狀態）不該倒扣
 check('沒有 active 旗標時不倒扣', stats({ necroData: { minion: { npcLevel: 7 } } }).maxHp, noMinion.maxHp);
 check('NPC 等級 0 不會倒扣', stats({ necroData: { minion: { active: true, npcLevel: 0 } } }).maxHp, noMinion.maxHp);
+
+// ─────────────────────────────────────────────────────────── L
+section('L. 定制武器進引擎（HF p.106）');
+
+const cwSpec = createCustomWeaponSpec({
+  name: '戰車', category: '重型', range: '近戰', accuracy: 'DEX + MIG',
+  customizations: ['defenseBoost', 'magicDefenseBoost']
+});
+const cwChar = mk({
+  attributes: ALL_8,
+  equipment: { mainHand: '戰車', offHand: '無盾牌', armor: '無裝甲 / 冒險服', accessory: '' },
+  customWeapons: [cwSpec]
+});
+const cwStats = calculateCharacterStats(cwChar);
+const plainStats = calculateCharacterStats(mk({ attributes: ALL_8 }));
+
+check('定制武器被引擎認得（主手解析得到條目）', cwStats.mainHandWeapon?.isCustomWeapon, true);
+check('【物防提升】+2 進物防', cwStats.def, plainStats.def + 2);
+check('【魔防提升】+2 進魔防', cwStats.mdef, plainStats.mdef + 2);
+check('逐項分解看得到物防提升',
+  cwStats.breakdown.def.terms.some((t) => t.label.includes('物防提升')), true);
+check('物防提升的逐項相加等於合計', sumTerms(cwStats.breakdown.def), cwStats.def);
+check('【物防提升】回報 countsAsShield（技能判定要用）', cwStats.countsAsShield, true);
+check('沒選物防提升就不算盾牌',
+  calculateCharacterStats(mk({
+    attributes: ALL_8,
+    equipment: { mainHand: '戰車', offHand: '無盾牌', armor: '無裝甲 / 冒險服', accessory: '' },
+    customWeapons: [createCustomWeaponSpec({ name: '戰車', customizations: ['accurate'] })]
+  })).countsAsShield, false);
+check('雙手定制武器 → 副手不生效（維持 §U 的規則）',
+  calculateCharacterStats(mk({
+    attributes: ALL_8,
+    equipment: { mainHand: '戰車', offHand: '符文圓盾', armor: '無裝甲 / 冒險服', accessory: '' },
+    customWeapons: [cwSpec]
+  })).def, cwStats.def);
+
+// 規則沒開就不該存在
+check('規則未開放卻帶著定制武器 → 錯誤',
+  validateCharacter({ ...cwChar, creationRules: { ...DEFAULT_CREATION_RULES, allowCustomWeapon: false } })
+    .errors.some((e) => e.message.includes('未開放【定制武器】')), true);
+check('規則開放時沒有這條錯誤',
+  validateCharacter({ ...cwChar, creationRules: { ...DEFAULT_CREATION_RULES, allowCustomWeapon: true } })
+    .errors.some((e) => e.message.includes('未開放【定制武器】')), false);
+check('規格本身不合法（超出名額）→ 錯誤',
+  validateCharacter({
+    ...cwChar,
+    creationRules: { ...DEFAULT_CREATION_RULES, allowCustomWeapon: true },
+    customWeapons: [createCustomWeaponSpec({ name: '壞的', customizations: ['quick', 'accurate', 'defenseBoost'] })]
+  }).errors.some((e) => e.message.includes('超出名額')), true);
 
 // ─────────────────────────────────────────────────────────── 結果
 console.log(lines.join('\n'));

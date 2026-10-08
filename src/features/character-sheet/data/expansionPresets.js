@@ -155,8 +155,18 @@ export const EXPANSION_PRESETS = [
       { className: '旅人', level: 1, skills: [{ name: '酒館閒聊', sl: 1 }] },
       { className: '武器大師', level: 1, skills: [{ name: '碎骨擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '短匕首', offHand: '短匕首', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '雙匕首（自訂武器：DEX＋INS、匕首、近戰、精準、快速）',
+    equipment: { mainHand: '雙匕首', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '雙匕首',
+        category: '匕首',
+        range: '近戰',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'quick'],
+        element: '',
+        id: 'cw_雙匕首'
+      }
+    ],
     zenit: 120
   },
   {
@@ -209,8 +219,18 @@ export const EXPANSION_PRESETS = [
       { className: '舞者', level: 1, skills: [{ name: '起舞', sl: 1, selectedOptions: ['夢魘麋'] }] },
       { className: '神射手', level: 2, skills: [{ name: '遠程武器掌握', sl: 1 }, { name: '警告射擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '鎖鏈鞭', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '狂風提琴（自訂武器：DEX＋MIG、連枷、遠程、風屬性、快速）',
+    equipment: { mainHand: '狂風提琴', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '狂風提琴',
+        category: '連枷',
+        range: '遠程',
+        accuracy: 'DEX + MIG',
+        customizations: ['elemental', 'quick'],
+        element: '風',
+        id: 'cw_狂風提琴'
+      }
+    ],
     zenit: 120
   },
   {
@@ -222,8 +242,18 @@ export const EXPANSION_PRESETS = [
       { className: '魔奏者', level: 4, skills: [{ name: '魔法演奏', sl: 3, selectedOptions: { keys: ['熾熱', '霜凍'], tones: ['冷靜', '洶湧'] } }, { name: '塞壬之歌', sl: 1 }] },
       { className: '吟唱者', level: 1, skills: [{ name: '意外盟友', sl: 1 }] }
     ],
-    equipment: { mainHand: '魔導書', offHand: '無盾牌', armor: '絲綢外衣', accessory: '' },
-    customWeapon: '魅惑麥克風（自訂武器：DEX＋INS、奧術、遠程、精準、光屬性、防禦強化）',
+    equipment: { mainHand: '魅惑麥克風', offHand: '無盾牌', armor: '絲綢外衣', accessory: '' },
+    customWeapons: [
+      {
+        name: '魅惑麥克風',
+        category: '奧術',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'elemental', 'defenseBoost'],
+        element: '光',
+        id: 'cw_魅惑麥克風'
+      }
+    ],
     zenit: 170
   },
   {
@@ -236,8 +266,18 @@ export const EXPANSION_PRESETS = [
       { className: '狂怒鬥士', level: 1, skills: [{ name: '挑釁', sl: 1 }] },
       { className: '守護者', level: 1, skills: [{ name: '保護', sl: 1 }] }
     ],
-    equipment: { mainHand: '戰斧', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '鐵甲貝斯（自訂武器：DEX＋MIG、重型、近戰、精準、防禦強化、強力）',
+    equipment: { mainHand: '鐵甲貝斯', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '鐵甲貝斯',
+        category: '重型',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_鐵甲貝斯'
+      }
+    ],
     zenit: 70
   },
   {
@@ -249,8 +289,18 @@ export const EXPANSION_PRESETS = [
       { className: '魔奏者', level: 3, skills: [{ name: '魔法演奏', sl: 2, selectedOptions: { keys: ['閃雷'], tones: ['瘋狂', '洶湧'] } }, { name: '顫音', sl: 1 }] },
       { className: '武器大師', level: 2, skills: [{ name: '劍刃風暴', sl: 1 }, { name: '碎骨擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '戰斧', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
-    customWeapon: '雷霆鼓（自訂武器：DEX＋MIG、重型、近戰、精準、電屬性、強力）',
+    equipment: { mainHand: '雷霆鼓', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '雷霆鼓',
+        category: '重型',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'elemental', 'powerful'],
+        element: '電',
+        id: 'cw_雷霆鼓'
+      }
+    ],
     zenit: 170
   },
 
@@ -266,8 +316,18 @@ export const EXPANSION_PRESETS = [
       { className: '祈喚者', level: 3, skills: [{ name: '元素祈喚', sl: 2 }, { name: '波紋', sl: 1 }] },
       { className: '神射手', level: 1, skills: [{ name: '連續射擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '手裡劍', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '巨型環刃（自訂武器：DEX＋MIG、投擲、遠程、精準、防禦強化、強力）',
+    equipment: { mainHand: '巨型環刃', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '巨型環刃',
+        category: '投擲',
+        range: '遠程',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_巨型環刃'
+      }
+    ],
     zenit: 120
   },
   {
@@ -290,8 +350,18 @@ export const EXPANSION_PRESETS = [
       { className: '商人', level: 2, skills: [{ name: '我聽說過', sl: 1 }, { name: '貿易之風', sl: 1 }] },
       { className: '神射手', level: 2, skills: [{ name: '交叉火力', sl: 1 }, { name: '警告射擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '手槍', offHand: '手槍', armor: '旅行皮甲', accessory: '' },
-    customWeapon: '雙袖珍手槍（自訂武器：DEX＋INS、火器、遠程、精準、快速）',
+    equipment: { mainHand: '雙袖珍手槍', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '雙袖珍手槍',
+        category: '火器',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'quick'],
+        element: '',
+        id: 'cw_雙袖珍手槍'
+      }
+    ],
     zenit: 170
   },
   {
@@ -327,8 +397,18 @@ export const EXPANSION_PRESETS = [
       { className: '植物學家', level: 2, skills: [{ name: '戰地園藝', sl: 1 }, { name: '植生術', sl: 1, selectedOptions: ['海洋蓮花'] }] },
       { className: '武器大師', level: 1, skills: [{ name: '招架反擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '刺劍', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '睡蓮之刃（自訂武器：DEX＋INS、劍、近戰、精準、冰屬性、魔法防禦強化）',
+    equipment: { mainHand: '睡蓮之刃', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '睡蓮之刃',
+        category: '劍',
+        range: '近戰',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'elemental', 'magicDefenseBoost'],
+        element: '冰',
+        id: 'cw_睡蓮之刃'
+      }
+    ],
     zenit: 70
   },
   {
@@ -436,8 +516,18 @@ export const EXPANSION_PRESETS = [
       { className: '美食家', level: 2, skills: [{ name: '烹飪', sl: 1 }, { name: '鹽與胡椒', sl: 1 }] },
       { className: '守護者', level: 2, skills: [{ name: '保鏢', sl: 1 }, { name: '保護', sl: 1 }] }
     ],
-    equipment: { mainHand: '鐵指虎', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
-    customWeapon: '鑊盾（自訂武器：DEX＋MIG、鬥毆、近戰、防禦強化、火屬性、魔法防禦強化）',
+    equipment: { mainHand: '鑊盾', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '鑊盾',
+        category: '鬥毆',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['defenseBoost', 'elemental', 'magicDefenseBoost'],
+        element: '火',
+        id: 'cw_鑊盾'
+      }
+    ],
     zenit: 70
   },
   {
@@ -450,8 +540,18 @@ export const EXPANSION_PRESETS = [
       { className: '神射手', level: 2, skills: [{ name: '連續射擊', sl: 1 }, { name: '遠程武器掌握', sl: 1 }] },
       { className: '修補匠', level: 1, skills: [{ name: '小工具', sl: 1 }] }
     ],
-    equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '絲綢外衣', accessory: '' },
-    customWeapon: '壺釜（自訂武器：DEX＋INS、火器、遠程、精準、魔法防禦強化、強力）',
+    equipment: { mainHand: '壺釜', offHand: '無盾牌', armor: '絲綢外衣', accessory: '' },
+    customWeapons: [
+      {
+        name: '壺釜',
+        category: '火器',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'magicDefenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_壺釜'
+      }
+    ],
     zenit: 170,
     gadgets: { alchemy: 0, infusion: 1, magitech: 0, magitechSpells: [] }
   },
@@ -465,8 +565,18 @@ export const EXPANSION_PRESETS = [
       { className: '美食家', level: 2, skills: [{ name: '烹飪', sl: 1 }, { name: '準備食材', sl: 1 }] },
       { className: '商人', level: 2, skills: [{ name: '小金庫', sl: 1 }, { name: '貿易之風', sl: 1 }] }
     ],
-    equipment: { mainHand: '短匕首', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '急凍器（自訂武器：DEX＋INS、匕首、近戰、精準、防禦強化、冰屬性）',
+    equipment: { mainHand: '急凍器', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '急凍器',
+        category: '匕首',
+        range: '近戰',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'defenseBoost', 'elemental'],
+        element: '冰',
+        id: 'cw_急凍器'
+      }
+    ],
     zenit: 70
   },
   {
@@ -494,8 +604,18 @@ export const EXPANSION_PRESETS = [
       { className: '突變體', level: 3, skills: [{ name: '混合變形', sl: 3, selectedOptions: ['追獵形態', '放電形態', '毒物形態'] }] },
       { className: '神射手', level: 2, skills: [{ name: '連續射擊', sl: 1 }, { name: '鷹眼', sl: 1 }] }
     ],
-    equipment: { mainHand: '短弓', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
-    customWeapon: '防禦弩（自訂武器：DEX＋INS、弓、遠程、精準、防禦強化、強力）',
+    equipment: { mainHand: '防禦弩', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '防禦弩',
+        category: '弓',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_防禦弩'
+      }
+    ],
     zenit: 70
   },
   {
@@ -507,8 +627,18 @@ export const EXPANSION_PRESETS = [
       { className: '突變體', level: 3, skills: [{ name: '吞噬', sl: 1 }, { name: '混合變形', sl: 2, selectedOptions: ['神經吞噬形態', '飛翼形態'] }] },
       { className: '神射手', level: 1, skills: [{ name: '連續射擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '「懺悔」左輪（自訂武器：DEX＋INS、火器、遠程、精準、光屬性、魔法防禦強化）',
+    equipment: { mainHand: '「懺悔」左輪', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '「懺悔」左輪',
+        category: '火器',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'elemental', 'magicDefenseBoost'],
+        element: '光',
+        id: 'cw_「懺悔」左輪'
+      }
+    ],
     zenit: 70
   },
   {
@@ -532,8 +662,18 @@ export const EXPANSION_PRESETS = [
       { className: '靈能者', level: 3, skills: [{ name: '認知焦點', sl: 1 }, { name: '心靈天賦', sl: 1, selectedOptions: ['光能掌握'] }, { name: '領航員', sl: 1 }] },
       { className: '博學士', level: 1, skills: [{ name: '靈光一閃', sl: 1 }] }
     ],
-    equipment: { mainHand: '魔導書', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '破壞者護手（自訂武器：DEX＋INS、奧術、遠程、精準、防禦強化、電屬性）',
+    equipment: { mainHand: '破壞者護手', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '破壞者護手',
+        category: '奧術',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'defenseBoost', 'elemental'],
+        element: '電',
+        id: 'cw_破壞者護手'
+      }
+    ],
     zenit: 70
   },
   {
@@ -573,8 +713,18 @@ export const EXPANSION_PRESETS = [
       { className: '靈能者', level: 3, skills: [{ name: '認知焦點', sl: 1 }, { name: '心靈天賦', sl: 1, selectedOptions: ['生命轉移'] }, { name: '念動力', sl: 1 }] },
       { className: '武器大師', level: 2, skills: [{ name: '碎骨擊', sl: 1 }, { name: '招架反擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '刺劍', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
-    customWeapon: '本我雙刃（自訂武器：DEX＋MIG、劍、近戰、暗屬性、快速）',
+    equipment: { mainHand: '本我雙刃', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '本我雙刃',
+        category: '劍',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['elemental', 'quick'],
+        element: '暗',
+        id: 'cw_本我雙刃'
+      }
+    ],
     zenit: 120
   },
   {
@@ -624,8 +774,18 @@ export const EXPANSION_PRESETS = [
       { className: '吟唱者', level: 1, skills: [{ name: '我相信你', sl: 1 }] },
       { className: '靈師', level: 3, skills: [{ name: '靈魂學派儀式', sl: 1 }, { name: '靈魂魔法', sl: 2, selectedOptions: ['治癒', '加強'] }] }
     ],
-    equipment: { mainHand: '魔導書', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '折疊權杖（自訂武器：DEX＋INS、奧術、近戰、精準、光屬性、魔法防禦強化）',
+    equipment: { mainHand: '折疊權杖', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '折疊權杖',
+        category: '奧術',
+        range: '近戰',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'elemental', 'magicDefenseBoost'],
+        element: '光',
+        id: 'cw_折疊權杖'
+      }
+    ],
     mnemosphere: '極性魔晶石（視同元素師 1 級）',
     zenit: 70
   },
@@ -639,8 +799,29 @@ export const EXPANSION_PRESETS = [
       { className: '遊蕩者', level: 2, skills: [{ name: '偷襲', sl: 2 }] },
       { className: '武器大師', level: 2, skills: [{ name: '劍刃風暴', sl: 1 }, { name: '碎骨擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '鐵指虎', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
-    customWeapon: '柔性纏手布（自訂武器：DEX＋MIG、鬥毆、近戰、變形（形態一：快速；形態二：精準、強力））',
+    equipment: { mainHand: '柔性纏手布', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '柔性纏手布',
+        category: '鬥毆',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['transforming', 'quick'],
+        element: '',
+        transformingId: 'cw_柔性纏手布_b',
+        id: 'cw_柔性纏手布'
+      },
+      {
+        name: '柔性纏手布（第二型態）',
+        category: '鬥毆',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['transforming', 'accurate', 'powerful'],
+        element: '',
+        transformingId: 'cw_柔性纏手布',
+        id: 'cw_柔性纏手布_b'
+      }
+    ],
     mnemosphere: '動能魔晶石（視同靈能者 1 級）',
     zenit: 70
   },
@@ -654,8 +835,18 @@ export const EXPANSION_PRESETS = [
       { className: '守護者', level: 1, skills: [{ name: '保護', sl: 1 }] },
       { className: '武器大師', level: 3, skills: [{ name: '劍刃風暴', sl: 1 }, { name: '破甲擊', sl: 1 }, { name: '招架反擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '巨劍', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
-    customWeapon: '魔警巨劍（自訂武器：DEX＋MIG、劍、近戰、精準、防禦強化、強力）',
+    equipment: { mainHand: '魔警巨劍', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '魔警巨劍',
+        category: '劍',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_魔警巨劍'
+      }
+    ],
     mnemosphere: '灼熱魔晶石（視同元素師 1 級）',
     zenit: 70
   },
@@ -697,8 +888,18 @@ export const EXPANSION_PRESETS = [
       { className: '機師', level: 1, skills: [{ name: '個人載具', sl: 1 }] },
       { className: '遊蕩者', level: 3, skills: [{ name: '偷襲', sl: 1 }, { name: '閃避', sl: 2 }] }
     ],
-    equipment: { mainHand: '鎖鏈鞭', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '弧光連枷（自訂武器：DEX＋INS、連枷、近戰、電屬性、快速）',
+    equipment: { mainHand: '弧光連枷', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '弧光連枷',
+        category: '連枷',
+        range: '近戰',
+        accuracy: 'DEX + INS',
+        customizations: ['elemental', 'quick'],
+        element: '電',
+        id: 'cw_弧光連枷'
+      }
+    ],
     zenit: 120,
     vehicle: { frameId: 'mecha', modules: ['aerial_module', 'flexible_plating', 'machine_gun_module'] }
   },
@@ -713,7 +914,7 @@ export const EXPANSION_PRESETS = [
       { className: '靈師', level: 1, skills: [{ name: '靈魂魔法', sl: 1, selectedOptions: ['治癒'] }] }
     ],
     equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '旅行皮甲', accessory: '' },
-    customWeapon: '埃克特里步槍（自訂武器樣本，見科技奇幻手冊 p.116）',
+    customWeapon: '埃克特里步槍（定制武器樣本，見科技奇幻手冊 p.116）',
     zenit: 70,
     vehicle: { frameId: 'mecha', modules: ['advanced_targeting_module', 'aerial_module', 'bow_module', 'counterstrike_module', 'runic_plating'] }
   },
@@ -755,8 +956,18 @@ export const EXPANSION_PRESETS = [
       { className: '舞者', level: 2, skills: [{ name: '起舞', sl: 2, selectedOptions: ['獅鷲形', '獨角獸'] }] },
       { className: '武器大師', level: 2, skills: [{ name: '碎骨擊', sl: 1 }, { name: '破甲擊', sl: 1 }] }
     ],
-    equipment: { mainHand: '鐵指虎', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '巨型麻糬杵（自訂武器：DEX＋MIG、鬥毆、近戰、精準、快速）',
+    equipment: { mainHand: '巨型麻糬杵', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '巨型麻糬杵',
+        category: '鬥毆',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'quick'],
+        element: '',
+        id: 'cw_巨型麻糬杵'
+      }
+    ],
     quirk: '怪物幫派',
     zenit: 120
   },
@@ -769,8 +980,18 @@ export const EXPANSION_PRESETS = [
       { className: '吟唱者', level: 2, skills: [{ name: '激勵', sl: 1 }, { name: '我相信你', sl: 1 }] },
       { className: '靈師', level: 2, skills: [{ name: '靈魂魔法', sl: 1, selectedOptions: ['治癒'] }, { name: '支援魔法', sl: 1 }] }
     ],
-    equipment: { mainHand: '魔導書', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '擴音器（自訂武器：DEX＋INS、奧術、遠程、精準、電屬性、魔法防禦強化）',
+    equipment: { mainHand: '擴音器', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '擴音器',
+        category: '奧術',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'elemental', 'magicDefenseBoost'],
+        element: '電',
+        id: 'cw_擴音器'
+      }
+    ],
     quirk: '地獄差生',
     zenit: 70
   },
@@ -796,8 +1017,18 @@ export const EXPANSION_PRESETS = [
       { className: '暗黑之刃', level: 1, skills: [{ name: '暗影突襲', sl: 1 }] },
       { className: '狂怒鬥士', level: 1, skills: [{ name: '腎上腺素', sl: 1 }] }
     ],
-    equipment: { mainHand: '巨劍', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
-    customWeapon: '祕儀巨劍（自訂武器：DEX＋MIG、劍、近戰、精準、防禦強化、強力）',
+    equipment: { mainHand: '祕儀巨劍', offHand: '無盾牌', armor: '戰鬥輕甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '祕儀巨劍',
+        category: '劍',
+        range: '近戰',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_祕儀巨劍'
+      }
+    ],
     quirk: '被推翻的王',
     zenit: 120
   },
@@ -810,8 +1041,18 @@ export const EXPANSION_PRESETS = [
       { className: '守護者', level: 2, skills: [{ name: '防守掌握', sl: 2 }] },
       { className: '神射手', level: 2, skills: [{ name: '連續射擊', sl: 1 }, { name: '鷹眼', sl: 1 }] }
     ],
-    equipment: { mainHand: '手槍', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
-    customWeapon: '腹砲原子加農（自訂武器：DEX＋MIG、火器、遠程、精準、防禦強化、強力）',
+    equipment: { mainHand: '腹砲原子加農', offHand: '無盾牌', armor: '青銅胸甲', accessory: '' },
+    customWeapons: [
+      {
+        name: '腹砲原子加農',
+        category: '火器',
+        range: '遠程',
+        accuracy: 'DEX + MIG',
+        customizations: ['accurate', 'defenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_腹砲原子加農'
+      }
+    ],
     quirk: '超級頭目(據說是)',
     zenit: 70,
     gadgets: { alchemy: 0, infusion: 1, magitech: 0, magitechSpells: [] }
@@ -858,8 +1099,18 @@ export const EXPANSION_PRESETS = [
     // 官方寫的是「疊牌（自訂武器）」，角色卡裝備欄沒有自訂武器這一格，
       // 所以主手填最接近的基礎投擲武器（《核心規則》的賭徒範例也是「手裡劍，描述成擲牌」），
       // 完整規格留在下面的 customWeapon。
-      equipment: { mainHand: '手裡劍', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
-    customWeapon: '疊牌（自訂武器：【DEX + INS】，投擲、遠程、精準、魔法防禦提升、強力）',
+      equipment: { mainHand: '疊牌', offHand: '無盾牌', armor: '賢者長袍', accessory: '' },
+    customWeapons: [
+      {
+        name: '疊牌',
+        category: '投擲',
+        range: '遠程',
+        accuracy: 'DEX + INS',
+        customizations: ['accurate', 'magicDefenseBoost', 'powerful'],
+        element: '',
+        id: 'cw_疊牌'
+      }
+    ],
     zenit: 70
   },
 ];

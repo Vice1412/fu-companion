@@ -27,7 +27,8 @@ import {
   GiScrollUnfurled,
   GiPalette,
   GiRoundShield,
-  GiCrystalBall
+  GiCrystalBall,
+  GiAnvil
 } from 'react-icons/gi';
 import GameIcon from '../../../components/ui/GameIcon';
 import JRPGButton from '../../../components/ui/JRPGButton';
@@ -41,6 +42,12 @@ import AttributeMatrixPicker from './AttributeMatrixPicker';
 import ClassSkillCard from './ClassSkillCard';
 import ClassPickerModal from './ClassPickerModal';
 import EquipmentPickerModal from './EquipmentPickerModal';
+import CustomWeaponForgeModal from './CustomWeaponForgeModal';
+import {
+  CUSTOM_WEAPON_BASE,
+  buildCustomWeaponEntries,
+  describeCustomWeapon
+} from '../data/customWeapons';
 import EquipmentSlotCard from './EquipmentSlotCard';
 import rulesData from '../data/rulesData.json';
 import { DEFAULT_CREATION_RULES, resolveCreationRules } from '../data/creationRules';
@@ -92,7 +99,8 @@ import {
   getEquipmentIcon,
   getDualShieldState,
   applyEquipmentChoice,
-  isTwoHanded
+  isTwoHanded,
+  CATEGORY_ICON
 } from '../utils/equipmentRules';
 import ErrorBoundary from '../../../components/ui/ErrorBoundary';
 import { withEn } from '../../../utils/properNouns';
@@ -134,6 +142,49 @@ export default function CharacterEditor({
   const [isQuirkPickerOpen, setIsQuirkPickerOpen] = useState(false);
   // 目前開啟中的裝備選擇欄位（null = 未開啟）
   const [pickerSlot, setPickerSlot] = useState(null);
+  // 定制武器鍛造台（`forgeEditingId` 為空字串＝開一把全新的）
+  const [isForgeOpen, setIsForgeOpen] = useState(false);
+  const [forgeEditingId, setForgeEditingId] = useState('');
+  const customWeaponList = character.customWeapons || [];
+
+  /** 鍛造完成：同 id 覆蓋、新 id 追加（可變形會一次交出兩個型態） */
+  const handleSaveCustomWeapons = (specs) => {
+    const list = [...(character.customWeapons || [])];
+    specs.forEach((spec) => {
+      const idx = list.findIndex((x) => x.id === spec.id);
+      if (idx >= 0) list[idx] = spec; else list.push(spec);
+    });
+    updateField('customWeapons', list, {
+      kind: 'equipment',
+      title: `鍛造${CUSTOM_WEAPON_BASE.label}：${specs[0]?.name || ''}`
+    });
+    setIsForgeOpen(false);
+  };
+
+  /** 刪除一把（可變形的話連第二型態一起刪，否則會留下孤兒型態） */
+  const handleRemoveCustomWeapon = (id) => {
+    const target = (character.customWeapons || []).find((w) => w.id === id);
+    const keep = (character.customWeapons || []).filter((w) => (
+      w.id !== id && w.id !== target?.transformingId
+    ));
+    // 被刪掉的正好是主手 → 回到徒手打擊，不要留著一個不存在的武器名
+    const equipment = target && character.equipment?.mainHand === target.name
+      ? { ...character.equipment, mainHand: '徒手打擊' }
+      : character.equipment;
+    updateField({ customWeapons: keep, equipment }, {
+      kind: 'equipment',
+      title: `移除${CUSTOM_WEAPON_BASE.label}：${target?.name || ''}`
+    });
+  };
+
+  /** 裝到主手（雙手武器，副手由 `applyEquipmentChoice` 自動清空） */
+  const handleEquipCustomWeapon = (name) => {
+    const next = applyEquipmentChoice(character.equipment, 'mainHand', name, weaponByName);
+    updateField('equipment', next, {
+      kind: 'equipment',
+      title: `更換主手武器：${name}`
+    });
+  };
 
   if (!character) return null;
 
@@ -448,7 +499,12 @@ export default function CharacterEditor({
   // 換算規則集中在 utils/equipmentRules.js，選裝彈窗與這裡共用同一份實作，
   // 避免「選單上算一套、角色卡上算另一套」。
   const equipDice = diceFromStats(stats);
-  const weaponByName = new Map(rulesData.equipment.weapons.map(w => [w.name, w]));
+  const weaponByName = new Map([
+    ...rulesData.equipment.weapons.map(w => [w.name, w]),
+    // 定制武器（HF p.106）也要進這張表——裝備挑選器、預算試算、載入衝突檢查
+    // 全部共用它，所以只要進來一次，底下每一處都會自動認得這把武器。
+    ...buildCustomWeaponEntries(character).map(w => [w.name, w])
+  ]);
   const armorByName = new Map(rulesData.equipment.armors.map(a => [a.name, a]));
   const shieldByName = new Map(rulesData.equipment.shields.map(s => [s.name, s]));
   const accessoryByName = new Map(rulesData.equipment.accessories.map(a => [a.name, a]));
@@ -593,7 +649,10 @@ export default function CharacterEditor({
   const accessoryLabel = accessory?.name || (accessoryName || '不佩戴飾品');
 
   // 裝備圖示一律取自使用者的裝備設計器對照表（見 equipmentRules.js 的 EQUIPMENT_ICONS）
-  const mainHandIcon = getEquipmentIcon(
+  // 定制武器沒有自己的圖示（名字是玩家取的）→ 退回**該類別**的圖示，
+  // 一把定制的弓就該長得像弓，而不是每個人都一把劍。
+  const customMainIcon = mainWeapon?.isCustomWeapon ? (CATEGORY_ICON[mainWeapon.category] || 'cat_sword') : null;
+  const mainHandIcon = customMainIcon || getEquipmentIcon(
     dualShield.active ? '雙盾' : (mainShield?.name || mainWeapon?.name || ''),
     'slot_mainhand'
   );
@@ -1627,6 +1686,88 @@ export default function CharacterEditor({
                 </div>
               </div>
 
+              {/* 定制武器（高度奇幻手冊 p.106 的選用規則）——只在規則開放時出現 */}
+              <div className="p-3 rounded-lg border space-y-2" style={{ backgroundColor: theme.cardBg, borderColor: theme.border }}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <GameIcon name="cat_sword" size={16} />
+                    <span className="text-xs font-bold" style={{ color: theme.textDark }}>{CUSTOM_WEAPON_BASE.label}</span>
+                    <span className="text-[11px] text-slate-500">
+                      {customWeaponList.length > 0 ? `${customWeaponList.length} 把` : '尚未鍛造'}
+                    </span>
+                  </div>
+                  {rules.allowCustomWeapon ? (
+                    <button
+                      type="button"
+                      onClick={() => { setForgeEditingId(''); setIsForgeOpen(true); }}
+                      className="px-2.5 py-1 rounded-lg border text-xs font-bold transition-all shadow-2xs flex items-center gap-1 shrink-0 cursor-pointer"
+                      style={{ backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.textDark }}
+                    >
+                      <GiAnvil className="w-3.5 h-3.5" style={{ color: theme.accent }} />
+                      <span>鍛造{CUSTOM_WEAPON_BASE.label}</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-500">
+                      此團未開放——請在第 1 步的「此團開卡規則」打開
+                    </span>
+                  )}
+                </div>
+
+                {customWeaponList.length > 0 && (
+                  <div className="space-y-1.5">
+                    {customWeaponList.map((w) => (
+                      <div
+                        key={w.id}
+                        className="flex items-center gap-2 p-2 rounded-lg border text-xs"
+                        style={{ backgroundColor: theme.subpanelBg, borderColor: theme.border }}
+                      >
+                        <GameIcon name={CATEGORY_ICON[w.category] || 'cat_sword'} size={16} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold" style={{ color: theme.textDark }}>{w.name}</span>
+                            {w.martial && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: theme.border, color: theme.accent }}>
+                                職業武器
+                              </span>
+                            )}
+                            {character.equipment?.mainHand === w.name && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ borderColor: theme.border, color: theme.accent }}>
+                                已裝備主手
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] truncate" style={{ color: theme.textDark }}>{describeCustomWeapon(w)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleEquipCustomWeapon(w.name)}
+                          className="px-2 py-1 rounded border text-[11px] font-bold shrink-0 cursor-pointer"
+                          style={{ borderColor: theme.border, color: theme.textDark }}
+                        >
+                          裝到主手
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setForgeEditingId(w.id); setIsForgeOpen(true); }}
+                          className="px-2 py-1 rounded border text-[11px] font-bold shrink-0 cursor-pointer"
+                          style={{ borderColor: theme.border, color: theme.textDark }}
+                        >
+                          編輯
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomWeapon(w.id)}
+                          className="px-2 py-1 rounded border text-[11px] font-bold shrink-0 cursor-pointer"
+                          style={{ borderColor: theme.border, color: '#9f1239' }}
+                        >
+                          刪除
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* 裝備選擇彈窗 */}
               <EquipmentPickerModal
                 isOpen={pickerSlot !== null}
@@ -1670,6 +1811,16 @@ export default function CharacterEditor({
               />
             </div>
           )}
+
+          {/* 定制武器鍛造台（HF p.106）：與裝備挑選器並列，只在裝備分頁渲染 */}
+          <CustomWeaponForgeModal
+            isOpen={isForgeOpen}
+            onClose={() => setIsForgeOpen(false)}
+            theme={theme}
+            character={character}
+            editingId={forgeEditingId}
+            onSave={handleSaveCustomWeapons}
+          />
 
           {/* ==================== TAB 5: 英雄技能與特質 ==================== */}
           {activeTab === 5 && (
